@@ -5,7 +5,8 @@
 import Conversation from '../models/Conversation.js';
 import {
   getProductActionNeedLevel,
-  isExplicitProductActionRequest
+  isExplicitProductActionRequest,
+  isAffirmativeProductActionConfirmation,
 } from './chatProductActionProposalService.js';
 
 export const MAX_NON_EXPLICIT_PRODUCT_PROPOSALS_PER_CONVERSATION = 2;
@@ -22,16 +23,6 @@ export const COOLDOWN_MS_BY_NEED_LEVEL = {
   medium: NON_EXPLICIT_PRODUCT_PROPOSAL_COOLDOWN_MS,
   high: 5 * 60 * 1000
 };
-
-function buildAskFirstPrompt(userContent) {
-  if (/estudiar|examen|materia|temario|apunte/i.test(userContent)) {
-    return '¿Quieres que lo convirtamos en una tarea de estudio concreta?';
-  }
-  if (/cocina|encimera|escritorio|desorden/i.test(userContent)) {
-    return '¿Quieres que lo convirtamos en una tarea concreta para empezar ahora?';
-  }
-  return '¿Quieres que lo pasemos a una tarea concreta?';
-}
 
 /**
  * @param {string} userContent
@@ -72,6 +63,15 @@ export async function evaluateProposedProductActionsState(
       status: { paused: false, reason: null, askFirst: false }
     };
   }
+  if (
+    isAffirmativeProductActionConfirmation(userContent) &&
+    proposedProductActions?.length > 0
+  ) {
+    return {
+      actions: proposedProductActions,
+      status: { paused: false, reason: null, askFirst: false }
+    };
+  }
   if (conversationId == null || String(conversationId).trim() === '') {
     return {
       actions: proposedProductActions,
@@ -85,7 +85,6 @@ export async function evaluateProposedProductActionsState(
   const n = conv?.nonExplicitProductProposalCount ?? 0;
   const rejectStreak = conv?.nonExplicitProductProposalRejectStreak ?? 0;
   const needLevel = getProductActionNeedLevel(userContent);
-  const askFirst = needLevel === 'medium';
   const dynamicCap = CAP_BY_NEED_LEVEL[needLevel] ?? MAX_NON_EXPLICIT_PRODUCT_PROPOSALS_PER_CONVERSATION;
   if (rejectStreak >= 3 && needLevel !== 'high') {
     return {
@@ -116,17 +115,6 @@ export async function evaluateProposedProductActionsState(
         }
       };
     }
-  }
-  if (askFirst) {
-    return {
-      actions: [],
-      status: {
-        paused: false,
-        reason: null,
-        askFirst: true,
-        askFirstPrompt: buildAskFirstPrompt(userContent)
-      }
-    };
   }
   return {
     actions: proposedProductActions,

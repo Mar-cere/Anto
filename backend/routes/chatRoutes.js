@@ -1802,6 +1802,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
                 let proposedProductActions = [];
                 let productActionStatus = { paused: false, reason: null, askFirst: false };
+                const productActionEnrichmentCtx =
+                  chatProductActionProposalService.resolveProductActionEnrichmentContext({
+                    userContent: content,
+                    assistantContent: response.content,
+                    conversationHistory,
+                  });
                 try {
                   proposedProductActions = chatProductActionProposalService.buildProposedProductActions({
                     riskLevel,
@@ -1809,7 +1815,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     userContent: content,
                     sessionIntention: conversation?.sessionIntention,
                     conversationId,
-                    assistantMessageId: assistantMessage._id
+                    assistantMessageId: assistantMessage._id,
+                    conversationHistory,
                   });
                 } catch (propErr) {
                   console.error('[ChatRoutes] proposedProductActions (stream):', propErr);
@@ -1836,8 +1843,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                       await chatProductActionLlmService.enrichProposedProductActionsWithLlm(
                         proposedProductActions,
                         {
-                          userContent: content,
-                          assistantContent: response.content,
+                          userContent: productActionEnrichmentCtx.userContent,
+                          assistantContent: productActionEnrichmentCtx.assistantContent,
                           primaryPsychoeducationId: suggestionPlan.primaryPsychoeducationId,
                           language: appLanguageForChat,
                         }
@@ -2253,6 +2260,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
         let proposedProductActions = [];
         let productActionStatus = { paused: false, reason: null, askFirst: false };
+        const productActionEnrichmentCtx =
+          chatProductActionProposalService.resolveProductActionEnrichmentContext({
+            userContent: content,
+            assistantContent: response.content,
+            conversationHistory,
+          });
         try {
           proposedProductActions = chatProductActionProposalService.buildProposedProductActions({
             riskLevel,
@@ -2260,7 +2273,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             userContent: content,
             sessionIntention: conversation?.sessionIntention,
             conversationId,
-            assistantMessageId: assistantMessage._id
+            assistantMessageId: assistantMessage._id,
+            conversationHistory,
           });
         } catch (propErr) {
           console.error('[ChatRoutes] proposedProductActions (non-stream):', propErr);
@@ -2287,8 +2301,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               await chatProductActionLlmService.enrichProposedProductActionsWithLlm(
                 proposedProductActions,
                 {
-                  userContent: content,
-                  assistantContent: response.content,
+                  userContent: productActionEnrichmentCtx.userContent,
+                  assistantContent: productActionEnrichmentCtx.assistantContent,
                   primaryPsychoeducationId: suggestionPlan.primaryPsychoeducationId,
                   language: appLanguageForChat,
                 }

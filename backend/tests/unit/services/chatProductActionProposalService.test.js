@@ -2,6 +2,9 @@ import {
   buildProposedProductActions,
   shouldOfferProductActions,
   isExplicitProductActionRequest,
+  isAffirmativeProductActionConfirmation,
+  resolveProductActionSourceFromHistory,
+  resolveProductActionEnrichmentContext,
   getProductActionNeedLevel,
   alignProductActionsWithPsychoeducation,
   getPsychoeducationProductActionContext,
@@ -194,6 +197,55 @@ describe('chatProductActionProposalService', () => {
     expect(getProductActionNeedLevel('me siento raro, no sé')).toBe('low');
     expect(getProductActionNeedLevel('quiero ordenar la semana')).toBe('medium');
     expect(getProductActionNeedLevel('estoy atareado, mañana examen y no sé por dónde empezar a estudiar')).toBe('high');
+  });
+
+  it('isAffirmativeProductActionConfirmation detecta confirmaciones breves', () => {
+    expect(isAffirmativeProductActionConfirmation('Sí')).toBe(true);
+    expect(isAffirmativeProductActionConfirmation('vale')).toBe(true);
+    expect(isAffirmativeProductActionConfirmation('me cuesta concentrarme')).toBe(false);
+  });
+
+  it('buildProposedProductActions tras «Sí» reutiliza el mensaje accionable previo', () => {
+    const history = [
+      { role: 'user', content: 'Sí' },
+      {
+        role: 'assistant',
+        content: '¿Quieres que lo pasemos a una tarea concreta para empezar ahora?',
+      },
+      { role: 'user', content: 'La cocina me agobia y no sé por dónde empezar mañana' },
+    ];
+    const actions = buildProposedProductActions({
+      ...base,
+      userContent: 'Sí',
+      sessionIntention: 'vent',
+      riskLevel: 'LOW',
+      isCrisis: false,
+      conversationHistory: history,
+    });
+    expect(actions).toHaveLength(1);
+    expect(actions[0].type).toBe('propose_task');
+    expect(actions[0].draft.title).toMatch(/cocina|encimera/i);
+  });
+
+  it('resolveProductActionEnrichmentContext usa el turno previo en confirmaciones', () => {
+    const history = [
+      { role: 'user', content: 'Sí' },
+      { role: 'assistant', content: 'Te propongo ordenar el escritorio por 15 minutos.' },
+      { role: 'user', content: 'El escritorio está hecho un desastre' },
+    ];
+    expect(
+      resolveProductActionEnrichmentContext({
+        userContent: 'Sí',
+        assistantContent: 'Perfecto, lo dejamos listo.',
+        conversationHistory: history,
+      }),
+    ).toEqual({
+      userContent: 'El escritorio está hecho un desastre',
+      assistantContent: 'Te propongo ordenar el escritorio por 15 minutos.',
+    });
+    expect(
+      resolveProductActionSourceFromHistory('ok', history),
+    ).not.toBeNull();
   });
 
   it('no sugiere si el usuario pide no sugerencias de tareas', () => {

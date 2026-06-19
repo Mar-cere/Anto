@@ -194,4 +194,18 @@ describe('conversationProductProposalCapService', () => {
       }
     );
   });
+
+  it('confirmación «Sí» con propuesta generada no aplica askFirst', async () => {
+    findByIdMock.mockReturnValue({
+      select: () => ({
+        lean: jest.fn().mockResolvedValue({ nonExplicitProductProposalCount: 0 })
+      })
+    });
+    const { evaluateProposedProductActionsState } = await import(
+      '../../../services/conversationProductProposalCapService.js'
+    );
+    const result = await evaluateProposedProductActionsState('Sí', convId, actions);
+    expect(result.actions).toEqual(actions);
+    expect(result.status.askFirst).toBe(false);
+  });
 });

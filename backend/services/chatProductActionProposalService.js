@@ -474,6 +474,80 @@ export function isExplicitProductActionRequest(userContent) {
   return EXPLICIT_TASK_TO_APP.test(c) || EXPLICIT_HABIT_TO_APP.test(c);
 }
 
+const AFFIRMATIVE_PRODUCT_CONFIRMATION =
+  /^(?:s[ií]|sip|sii|ok(?:ay)?|vale|claro|dale|de\s+acuerdo|perfecto|bueno|genial|hazlo|hagámoslo|si\s+por\s+favor|yes|yep|sure|agree|al\s+tanto)[.!?\s]*$/iu;
+
+const ASSISTANT_PRODUCT_OFFER_CUES =
+  /(?:tarea\s+concreta|pas(?:emos|ar)\s+(?:a\s+)?una\s+tarea|convertir(?:lo|la)?\s+en\s+(?:una\s+)?tarea|te\s+propongo|podemos\s+(?:empezar|convertir)|¿quieres\s+que\s+lo|paso\s+concreto|bloque\s+de\s+estudio|ordenar\s+(?:el\s+)?(?:escritorio|encimera))/iu;
+
+/** Respuesta breve de confirmación tras una oferta de tarea/hábito en el hilo. */
+export function isAffirmativeProductActionConfirmation(userContent) {
+  const t = String(userContent || '').trim();
+  if (!t || t.length > 24) return false;
+  return AFFIRMATIVE_PRODUCT_CONFIRMATION.test(t);
+}
+
+function normalizeHistoryMessages(conversationHistory) {
+  if (!Array.isArray(conversationHistory)) return [];
+  return conversationHistory
+    .map((m) => {
+      const role = m?.role === 'assistant' ? 'assistant' : m?.role === 'user' ? 'user' : null;
+      const content = String(m?.content || '').trim();
+      return role && content ? { role, content } : null;
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Si el usuario confirma con «Sí»/«vale», reutiliza el turno anterior accionable del hilo.
+ * @param {string} userContent
+ * @param {Array<{ role?: string, content?: string }>} conversationHistory newest-first
+ * @returns {{ effectiveUserContent: string, priorUserContent: string, priorAssistantContent: string } | null}
+ */
+export function resolveProductActionSourceFromHistory(userContent, conversationHistory) {
+  if (!isAffirmativeProductActionConfirmation(userContent)) return null;
+
+  const msgs = normalizeHistoryMessages(conversationHistory);
+  const priorUser = msgs.find((m, i) => i > 0 && m.role === 'user');
+  const priorAssistant = msgs.find((m, i) => i > 0 && m.role === 'assistant');
+  if (!priorUser && !priorAssistant) return null;
+
+  const assistantOffered =
+    Boolean(priorAssistant) && ASSISTANT_PRODUCT_OFFER_CUES.test(priorAssistant.content);
+  const userHadActionable =
+    Boolean(priorUser) && proposalConfidenceScore(priorUser.content) >= 2;
+
+  if (!assistantOffered && !userHadActionable) return null;
+
+  const effectiveUserContent = priorUser?.content || priorAssistant?.content || userContent;
+  return {
+    effectiveUserContent,
+    priorUserContent: priorUser?.content || '',
+    priorAssistantContent: priorAssistant?.content || '',
+  };
+}
+
+/**
+ * Contexto para enriquecer el borrador con LLM (p. ej. confirmación «Sí» usa el turno previo).
+ */
+export function resolveProductActionEnrichmentContext({
+  userContent,
+  assistantContent,
+  conversationHistory = [],
+}) {
+  const resolved = resolveProductActionSourceFromHistory(userContent, conversationHistory);
+  if (!resolved) {
+    return {
+      userContent: String(userContent || ''),
+      assistantContent: String(assistantContent || ''),
+    };
+  }
+  return {
+    userContent: resolved.priorUserContent || resolved.effectiveUserContent,
+    assistantContent: resolved.priorAssistantContent || String(assistantContent || ''),
+  };
+}
+
 /**
  * @param {{
  *   riskLevel?: string,
@@ -482,6 +556,7 @@ export function isExplicitProductActionRequest(userContent) {
  *   sessionIntention: unknown,
  *   conversationId: unknown,
  *   assistantMessageId: unknown,
+ *   conversationHistory?: Array<{ role?: string, content?: string }>,
  * }} input
  * @returns {Array<{ type: 'propose_task'|'propose_habit', id: string, draft: object, rationaleShort?: string }>}
  */
@@ -492,20 +567,30 @@ export function buildProposedProductActions(input) {
     userContent,
     sessionIntention,
     conversationId,
-    assistantMessageId
+    assistantMessageId,
+    conversationHistory = [],
   } = input;
 
   if (!shouldOfferProductActions({ riskLevel, isCrisis })) {
     return [];
   }
 
-  const content = String(userContent || '').trim();
-  if (content.length < 8) {
+  const confirmationContext = resolveProductActionSourceFromHistory(
+    userContent,
+    conversationHistory,
+  );
+  let content = String(userContent || '').trim();
+  if (confirmationContext) {
+    content = confirmationContext.effectiveUserContent;
+  }
+  if (content.length < 8 && !confirmationContext) {
     return [];
   }
 
   const intention = normalizeSessionIntention(sessionIntention);
-  if (!sessionAllowsProductDraft(intention, content)) {
+  const allowsDraft =
+    confirmationContext != null || sessionAllowsProductDraft(intention, content);
+  if (!allowsDraft) {
     return [];
   }
 
@@ -563,6 +648,9 @@ export function buildProposedProductActions(input) {
 export default {
   shouldOfferProductActions,
   isExplicitProductActionRequest,
+  isAffirmativeProductActionConfirmation,
+  resolveProductActionSourceFromHistory,
+  resolveProductActionEnrichmentContext,
   getProductActionNeedLevel,
   buildProposedProductActions,
   alignProductActionsWithPsychoeducation,

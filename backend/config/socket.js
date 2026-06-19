@@ -576,6 +576,12 @@ export const setupSocketIO = (server) => {
 
         let proposedProductActions = [];
         let productActionStatus = { paused: false, reason: null, askFirst: false };
+        const productActionEnrichmentCtx =
+          chatProductActionProposalService.resolveProductActionEnrichmentContext({
+            userContent: messageText,
+            assistantContent: response.content,
+            conversationHistory,
+          });
         try {
           proposedProductActions = chatProductActionProposalService.buildProposedProductActions({
             riskLevel,
@@ -583,7 +589,8 @@ export const setupSocketIO = (server) => {
             userContent: messageText,
             sessionIntention: conversation?.sessionIntention,
             conversationId: conversation._id,
-            assistantMessageId: assistantMessage._id
+            assistantMessageId: assistantMessage._id,
+            conversationHistory,
           });
         } catch (propErr) {
           console.error('[SocketIO] proposedProductActions:', propErr);
@@ -608,8 +615,8 @@ export const setupSocketIO = (server) => {
               await chatProductActionLlmService.enrichProposedProductActionsWithLlm(
                 proposedProductActions,
                 {
-                  userContent: messageText,
-                  assistantContent: response.content,
+                  userContent: productActionEnrichmentCtx.userContent,
+                  assistantContent: productActionEnrichmentCtx.assistantContent,
                   primaryPsychoeducationId:
                     turnEnhancements.suggestionPlan?.primaryPsychoeducationId || null,
                   language: socketLanguage,
