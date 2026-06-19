@@ -49,18 +49,22 @@ const DEFAULT_TEXTS = {
   FINISH: 'Finalizar',
   SWIPE_TO_SKIP: 'Desliza hacia abajo para omitir',
   ARROW_HINT: 'Mira abajo',
-  STEP_1_TITLE: 'Dashboard Principal',
+  ARROW_HINT_UP: 'Mira arriba',
+  STEP_1_TITLE: 'Tu inicio',
   STEP_1_DESCRIPTION:
-    'Tu centro de control con resumen de tareas, hábitos y bienestar emocional.',
-  STEP_2_TITLE: 'Chat de Apoyo',
+    'Check-in emocional, foco del día e ideas de Anto según cómo vas.',
+  STEP_2_TITLE: 'Chat con Anto',
   STEP_2_DESCRIPTION:
-    'Conversa con nuestro asistente de IA. Recibe apoyo emocional personalizado 24/7.',
-  STEP_3_TITLE: 'Tareas y Hábitos',
+    'Cuéntale cómo estás y recibe apoyo personalizado cuando lo necesites.',
+  STEP_3_TITLE: 'Recordatorios',
   STEP_3_DESCRIPTION:
-    'Organiza tu día y construye hábitos saludables con seguimiento constante.',
-  STEP_4_TITLE: 'Contactos de Emergencia',
+    'Tareas y hábitos en un solo lugar, con avisos cuando los necesites.',
+  STEP_4_TITLE: 'Técnicas',
   STEP_4_DESCRIPTION:
-    'Configura contactos de confianza que recibirán alertas en situaciones de riesgo.',
+    'Pomodoro, ejercicios guiados y protocolos TCC en un hub para practicar.',
+  STEP_5_TITLE: 'Seguridad y perfil',
+  STEP_5_DESCRIPTION:
+    'Contactos de confianza, tu resumen y ajustes de la app en Perfil y Ajustes.',
 };
 
 const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHighlightChange, userId = null }) => {
@@ -79,11 +83,11 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
     () => [
       {
         id: 1,
-        icon: 'home',
+        icon: 'home-heart',
         title: TEXTS.STEP_1_TITLE,
         description: TEXTS.STEP_1_DESCRIPTION,
         color: colors.primary,
-        highlightElement: null,
+        highlightElement: 'home-focus',
       },
       {
         id: 2,
@@ -95,17 +99,25 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
       },
       {
         id: 3,
-        icon: 'check-circle',
+        icon: 'clipboard-list',
         title: TEXTS.STEP_3_TITLE,
         description: TEXTS.STEP_3_DESCRIPTION,
         color: colors.warning,
-        highlightElement: 'tasks-habits',
+        highlightElement: 'reminders',
       },
       {
         id: 4,
-        icon: 'alert-circle',
+        icon: 'diamond-stone',
         title: TEXTS.STEP_4_TITLE,
         description: TEXTS.STEP_4_DESCRIPTION,
+        color: colors.success ?? colors.primary,
+        highlightElement: 'techniques',
+      },
+      {
+        id: 5,
+        icon: 'shield-account',
+        title: TEXTS.STEP_5_TITLE,
+        description: TEXTS.STEP_5_DESCRIPTION,
         color: colors.error,
         highlightElement: 'settings',
       },
@@ -632,7 +644,9 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
                         color={currentStepData.color}
                       />
                       <Text style={[styles.arrowText, { color: currentStepData.color }]}>
-                        {TEXTS.ARROW_HINT}
+                        {currentStepData.highlightElement === 'home-focus'
+                          ? TEXTS.ARROW_HINT_UP
+                          : TEXTS.ARROW_HINT}
                       </Text>
                     </View>
                   )}

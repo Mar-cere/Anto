@@ -1,5 +1,9 @@
 import { beforeAll, describe, expect, it } from '@jest/globals';
-import { buildContextualizedPrompt, resolveChatLanguage } from '../../../services/openai/openaiPromptBuilder.js';
+import {
+  buildContextualizedPrompt,
+  buildShortReplyContinuityHint,
+  resolveChatLanguage,
+} from '../../../services/openai/openaiPromptBuilder.js';
 
 beforeAll(() => {
   process.env.ENABLE_PROMPT_HISTORY_TELEMETRY = 'false';
@@ -76,6 +80,37 @@ describe('openaiPromptBuilder — guardrails de brevedad/factual/identidad clín
     expect(resolveChatLanguage({ profile: { preferences: { language: 'es' } } })).toBe('es');
     expect(resolveChatLanguage({ language: 'en' })).toBe('en');
     expect(resolveChatLanguage({})).toBe('es');
+  });
+
+  it('buildShortReplyContinuityHint continúa el último turno del asistente tras "Sí"', () => {
+    const history = [
+      { role: 'assistant', content: '¿Te resulta más fácil enfocarte con silencio?' },
+      { role: 'user', content: 'Me cuesta concentrarme' },
+      { role: 'assistant', content: '¿Qué te ayuda más: silencio o música suave?' },
+    ];
+    const hint = buildShortReplyContinuityHint('Sí', history, 'es');
+    expect(hint).toContain('Continuidad tras respuesta breve');
+    expect(hint).toContain('silencio o música suave');
+    expect(hint).toContain('repitas una respuesta previa del hilo');
+  });
+
+  it('buildShortReplyContinuityHint no aplica a mensajes largos ni sin historial', () => {
+    expect(buildShortReplyContinuityHint('Sí', [], 'es')).toBe('');
+    expect(
+      buildShortReplyContinuityHint(
+        'Me cuesta mucho concentrarme cuando hay ruido en casa',
+        [{ role: 'assistant', content: '¿Qué te ayuda?' }],
+        'es',
+      ),
+    ).toBe('');
+  });
+
+  it('buildShortReplyContinuityHint usa copy en inglés cuando language=en', () => {
+    const hint = buildShortReplyContinuityHint('Yes', [
+      { role: 'assistant', content: 'Does quiet help you focus?' },
+    ], 'en');
+    expect(hint).toContain('Short reply continuity');
+    expect(hint).toContain('Does quiet help you focus?');
   });
 
   it('inyecta directiva de respuesta en inglés cuando language=en', async () => {

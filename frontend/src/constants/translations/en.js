@@ -106,18 +106,22 @@ export const ONBOARDING = {
   FINISH: 'Finish',
   SWIPE_TO_SKIP: 'Swipe down to skip',
   ARROW_HINT: 'Look below',
-  STEP_1_TITLE: 'Main Dashboard',
+  ARROW_HINT_UP: 'Look above',
+  STEP_1_TITLE: 'Your home',
   STEP_1_DESCRIPTION:
-    'Your control center with tasks, habits, and emotional wellbeing summaries.',
-  STEP_2_TITLE: 'Support Chat',
+    'Mood check-in, daily focus, and gentle insights from Anto based on how you are doing.',
+  STEP_2_TITLE: 'Chat with Anto',
   STEP_2_DESCRIPTION:
-    'Chat with our AI assistant. Receive personalized emotional support 24/7.',
-  STEP_3_TITLE: 'Tasks and Habits',
+    'Share how you feel and get personalized support when you need it.',
+  STEP_3_TITLE: 'Reminders',
   STEP_3_DESCRIPTION:
-    'Organize your day and build healthy habits with continuous tracking.',
-  STEP_4_TITLE: 'Emergency Contacts',
+    'Tasks and habits in one place, with reminders when you need them.',
+  STEP_4_TITLE: 'Techniques',
   STEP_4_DESCRIPTION:
-    'Set trusted contacts who will receive alerts in risk situations.',
+    'Pomodoro, guided exercises, and CBT protocols in one practice hub.',
+  STEP_5_TITLE: 'Safety and profile',
+  STEP_5_DESCRIPTION:
+    'Trusted contacts, your summary, and app settings in Profile and Settings.',
   QUESTIONS_TITLE: 'What should we focus on?',
   QUESTIONS_SUBTITLE: 'Optional. Pick one option or skip.',
   QUESTIONS_MAIN_LABEL: 'Right now I care most about…',
@@ -360,12 +364,6 @@ export const SETTINGS = {
   SECTION_SYSTEM_INTRO: 'Theme, country, and notifications.',
   SECTION_CHAT: 'Chat',
   SECTION_CHAT_INTRO: 'Style and tone. Expand the row to adjust.',
-  SECTION_PATTERNS: 'Patterns and signals',
-  SECTION_PATTERNS_INTRO:
-    'Observational reports and optional device data. Not a diagnosis.',
-  PATTERNS_OPEN_WEEKLY: 'Weekly patterns',
-  PATTERNS_OPEN_SUMMARY: 'Your summary',
-  PATTERNS_OPEN_GRAPH: 'Topics and interventions map',
   CHAT_EXPANDED_DISCLAIMER:
     'You can change these options anytime. In high distress or risk situations, tone prioritizes your safety.',
   CHAT_CUSTOMIZATION_TITLE: 'Chat customization',
@@ -2245,6 +2243,9 @@ export const PROFILE = {
   ERROR_LOGOUT: 'Something went wrong',
   ERROR_LOGOUT_MESSAGE: 'Could not sign out. Please try again.',
   PROFILE_TITLE: 'My Profile',
+  PROGRESS_TITLE: 'Progress',
+  PROGRESS_INTRO:
+    'Observational patterns, your summary, and interventions. Not a substitute for professional guidance.',
   STATS_TITLE: 'Statistics',
   TASKS_COMPLETED: 'Completed Tasks',
   HABITS_ACTIVE: 'Active Habits',

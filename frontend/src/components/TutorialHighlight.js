@@ -1,50 +1,68 @@
 /**
- * Componente de Resaltado para Tutorial
- * 
- * Crea un overlay que ilumina/resalta elementos específicos de la UI
- * durante el tutorial de onboarding.
- * 
- * @author AntoApp Team
+ * Overlay de resaltado para el tutorial de onboarding.
+ * Coordenadas alineadas con FloatingNavBar (Inicio | Recordatorios | Chat | Técnicas | Ajustes).
  */
 
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Dimensions, StyleSheet, View } from 'react-native';
+import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
+const SCREEN_EDGE = SPACING.SCREEN_EDGE_INSET ?? 14;
+const NAV_CENTER_WIDTH = 64;
 
-// Posiciones y tamaños de los elementos a resaltar
-const ELEMENT_POSITIONS = {
-  chat: {
-    // Botón central de chat en FloatingNavBar
-    x: width / 2 - 30, // Centro menos la mitad del ancho del botón
-    y: height - 100, // Cerca del fondo donde está la barra de navegación
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  'tasks-habits': {
-    // Área de las tarjetas de tareas y hábitos (centro de la pantalla)
-    x: 20,
-    y: height * 0.3, // Aproximadamente donde están las tarjetas
-    width: width - 40,
-    height: 300, // Altura suficiente para cubrir ambas tarjetas
-    borderRadius: 16,
-  },
-  settings: {
-    // Botón de ajustes en FloatingNavBar (último botón a la derecha)
-    x: width - 80, // Cerca del borde derecho
-    y: height - 100, // Cerca del fondo
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-};
+function navTabHighlight(index) {
+  const barLeft = SCREEN_EDGE;
+  const barWidth = width - SCREEN_EDGE * 2;
+  const sideSlot = (barWidth - NAV_CENTER_WIDTH) / 4;
+  const tabSize = 56;
+  const navY = height - 92;
+
+  const centerX =
+    index === 0
+      ? barLeft + sideSlot * 0.5
+      : index === 1
+        ? barLeft + sideSlot * 1.5
+        : index === 2
+          ? width / 2
+          : index === 3
+            ? barLeft + 2 * sideSlot + NAV_CENTER_WIDTH + sideSlot * 0.5
+            : barLeft + 3 * sideSlot + NAV_CENTER_WIDTH + sideSlot * 0.5;
+
+  return {
+    x: centerX - tabSize / 2,
+    y: index === 2 ? height - 98 : navY,
+    width: tabSize,
+    height: tabSize,
+    borderRadius: tabSize / 2,
+  };
+}
+
+/** Posiciones de elementos resaltables (recalculadas al montar). */
+function buildElementPositions() {
+  return {
+    'home-focus': {
+      x: SCREEN_EDGE,
+      y: Math.max(100, height * 0.11),
+      width: width - SCREEN_EDGE * 2,
+      height: Math.min(260, height * 0.28),
+      borderRadius: 16,
+    },
+    chat: navTabHighlight(2),
+    reminders: navTabHighlight(1),
+    /** Alias legacy del tutorial anterior */
+    'tasks-habits': navTabHighlight(1),
+    techniques: navTabHighlight(3),
+    settings: navTabHighlight(4),
+  };
+}
 
 const TutorialHighlight = ({ highlightElement, visible }) => {
   const { colors } = useTheme();
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const glowAnim = useRef(new Animated.Value(0.5)).current;
+  const elementPositions = useMemo(() => buildElementPositions(), []);
 
   const styles = useMemo(
     () =>
@@ -96,7 +114,6 @@ const TutorialHighlight = ({ highlightElement, visible }) => {
 
   useEffect(() => {
     if (visible && highlightElement) {
-      // Animación de pulso
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -109,10 +126,9 @@ const TutorialHighlight = ({ highlightElement, visible }) => {
             duration: 1000,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       ).start();
 
-      // Animación de brillo
       Animated.loop(
         Animated.sequence([
           Animated.timing(glowAnim, {
@@ -125,7 +141,7 @@ const TutorialHighlight = ({ highlightElement, visible }) => {
             duration: 1500,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       ).start();
     } else {
       pulseAnim.setValue(1);
@@ -133,11 +149,12 @@ const TutorialHighlight = ({ highlightElement, visible }) => {
     }
   }, [visible, highlightElement, glowAnim, pulseAnim]);
 
-  if (!visible || !highlightElement || !ELEMENT_POSITIONS[highlightElement]) {
+  const element = highlightElement ? elementPositions[highlightElement] : null;
+
+  if (!visible || !element) {
     return null;
   }
 
-  const element = ELEMENT_POSITIONS[highlightElement];
   const glowOpacity = glowAnim.interpolate({
     inputRange: [0.5, 1],
     outputRange: [0.3, 0.7],
@@ -145,10 +162,8 @@ const TutorialHighlight = ({ highlightElement, visible }) => {
 
   return (
     <View style={styles.overlay} pointerEvents="none">
-      {/* Capa oscura de fondo */}
       <View style={styles.darkLayer} />
 
-      {/* Resplandor alrededor del elemento */}
       <Animated.View
         style={[
           styles.glow,
@@ -175,7 +190,6 @@ const TutorialHighlight = ({ highlightElement, visible }) => {
         />
       </Animated.View>
 
-      {/* Borde resaltado del elemento */}
       <Animated.View
         style={[
           styles.hole,
@@ -194,4 +208,3 @@ const TutorialHighlight = ({ highlightElement, visible }) => {
 };
 
 export default TutorialHighlight;
-

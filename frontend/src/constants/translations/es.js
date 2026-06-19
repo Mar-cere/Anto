@@ -106,18 +106,22 @@ export const ONBOARDING = {
   FINISH: 'Finalizar',
   SWIPE_TO_SKIP: 'Desliza hacia abajo para omitir',
   ARROW_HINT: 'Mira abajo',
-  STEP_1_TITLE: 'Dashboard Principal',
+  ARROW_HINT_UP: 'Mira arriba',
+  STEP_1_TITLE: 'Tu inicio',
   STEP_1_DESCRIPTION:
-    'Tu centro de control con resumen de tareas, hábitos y bienestar emocional.',
-  STEP_2_TITLE: 'Chat de Apoyo',
+    'Check-in emocional, foco del día e ideas de Anto según cómo vas.',
+  STEP_2_TITLE: 'Chat con Anto',
   STEP_2_DESCRIPTION:
-    'Conversa con nuestro asistente de IA. Recibe apoyo emocional personalizado 24/7.',
-  STEP_3_TITLE: 'Tareas y Hábitos',
+    'Cuéntale cómo estás y recibe apoyo personalizado cuando lo necesites.',
+  STEP_3_TITLE: 'Recordatorios',
   STEP_3_DESCRIPTION:
-    'Organiza tu día y construye hábitos saludables con seguimiento constante.',
-  STEP_4_TITLE: 'Contactos de Emergencia',
+    'Tareas y hábitos en un solo lugar, con avisos cuando los necesites.',
+  STEP_4_TITLE: 'Técnicas',
   STEP_4_DESCRIPTION:
-    'Configura contactos de confianza que recibirán alertas en situaciones de riesgo.',
+    'Pomodoro, ejercicios guiados y protocolos TCC en un hub para practicar.',
+  STEP_5_TITLE: 'Seguridad y perfil',
+  STEP_5_DESCRIPTION:
+    'Contactos de confianza, tu resumen y ajustes de la app en Perfil y Ajustes.',
   QUESTIONS_TITLE: 'Cuéntame en qué enfocarnos',
   QUESTIONS_SUBTITLE: 'Opcional. Elige una opción o omite.',
   QUESTIONS_MAIN_LABEL: 'Ahora mismo me interesa más…',
@@ -361,12 +365,6 @@ export const SETTINGS = {
   SECTION_SYSTEM_INTRO: 'Tema, país y notificaciones.',
   SECTION_CHAT: 'Chat',
   SECTION_CHAT_INTRO: 'Estilo y tono. Amplía la fila para ajustar.',
-  SECTION_PATTERNS: 'Patrones y señales',
-  SECTION_PATTERNS_INTRO:
-    'Informes observacionales y datos opcionales del dispositivo. No son diagnóstico.',
-  PATTERNS_OPEN_WEEKLY: 'Patrones de la semana',
-  PATTERNS_OPEN_SUMMARY: 'Tu resumen',
-  PATTERNS_OPEN_GRAPH: 'Mapa de temas e intervenciones',
   CHAT_EXPANDED_DISCLAIMER:
     'Puedes cambiar las opciones cuando quieras. En situaciones de mucha angustia o riesgo el tono prioriza tu seguridad.',
   CHAT_CUSTOMIZATION_TITLE: 'Personalización del chat',
@@ -2253,6 +2251,9 @@ export const PROFILE = {
   ERROR_LOGOUT_MESSAGE:
     'No se pudo cerrar sesión. Por favor, intenta nuevamente.',
   PROFILE_TITLE: 'Mi Perfil',
+  PROGRESS_TITLE: 'Progreso',
+  PROGRESS_INTRO:
+    'Patrones observacionales, tu resumen e intervenciones. No sustituyen orientación profesional.',
   STATS_TITLE: 'Estadísticas',
   TASKS_COMPLETED: 'Tareas Completadas',
   HABITS_ACTIVE: 'Hábitos Activos',

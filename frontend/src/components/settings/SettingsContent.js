@@ -46,7 +46,6 @@ import {
 } from '../../screens/settings/settingsScreenConstants';
 import SettingsResponseStyleModal from './SettingsResponseStyleModal';
 import SettingsCountryModal from './SettingsCountryModal';
-import SignalConsentPanel from '../signals/SignalConsentPanel';
 import {
   formatCountryPreferenceRowLabel,
   resolveStoredCountryPreference,
@@ -1265,66 +1264,6 @@ export default function SettingsContent({
               </TouchableOpacity>
             </View>
           )}
-        </View>
-
-        <View style={styles.settingsBlock}>
-          <Text style={styles.sectionTitle} accessibilityRole='header'>
-            {TEXTS.SECTION_PATTERNS}
-          </Text>
-          <Text style={styles.sectionIntro}>{TEXTS.SECTION_PATTERNS_INTRO}</Text>
-          <View style={styles.settingsLinkGroup}>
-            <TouchableOpacity
-              activeOpacity={LIST_PRESS_OPACITY}
-              style={styles.settingsLinkRow}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                navigation.navigate('WeeklyInsight', { period: 'week' });
-              }}
-              accessibilityRole='button'
-              accessibilityLabel={TEXTS.PATTERNS_OPEN_WEEKLY}
-            >
-              <MaterialCommunityIcons name='chart-bell-curve' size={ICON_SIZE} color={COLORS.PRIMARY} />
-              <View style={styles.itemTextContainer}>
-                <Text style={styles.itemTextNested}>{TEXTS.PATTERNS_OPEN_WEEKLY}</Text>
-              </View>
-              <MaterialCommunityIcons name='chevron-right' size={22} color={COLORS.ACCENT} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={LIST_PRESS_OPACITY}
-              style={styles.settingsLinkRow}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                navigation.navigate('ActivitySummary');
-              }}
-              accessibilityRole='button'
-              accessibilityLabel={TEXTS.PATTERNS_OPEN_SUMMARY}
-            >
-              <MaterialCommunityIcons name='chart-timeline-variant' size={ICON_SIZE} color={COLORS.PRIMARY} />
-              <View style={styles.itemTextContainer}>
-                <Text style={styles.itemTextNested}>{TEXTS.PATTERNS_OPEN_SUMMARY}</Text>
-              </View>
-              <MaterialCommunityIcons name='chevron-right' size={22} color={COLORS.ACCENT} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              activeOpacity={LIST_PRESS_OPACITY}
-              style={[styles.settingsLinkRow, styles.settingsLinkRowLast]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                navigation.navigate('InterventionGraph');
-              }}
-              accessibilityRole='button'
-              accessibilityLabel={TEXTS.PATTERNS_OPEN_GRAPH}
-            >
-              <MaterialCommunityIcons name='graph-outline' size={ICON_SIZE} color={COLORS.PRIMARY} />
-              <View style={styles.itemTextContainer}>
-                <Text style={styles.itemTextNested}>{TEXTS.PATTERNS_OPEN_GRAPH}</Text>
-              </View>
-              <MaterialCommunityIcons name='chevron-right' size={22} color={COLORS.ACCENT} />
-            </TouchableOpacity>
-          </View>
-          <View style={[styles.settingsLinkGroup, styles.settingsLinkGroupSpaced]}>
-            <SignalConsentPanel embedded />
-          </View>
         </View>
 
         <View style={styles.settingsBlock}>

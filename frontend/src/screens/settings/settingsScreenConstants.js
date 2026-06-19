@@ -16,12 +16,6 @@ export const TEXTS = {
   SECTION_CHAT: 'Chat',
   SECTION_CHAT_INTRO:
     'Estilo y tono. Amplía la fila para ajustar.',
-  SECTION_PATTERNS: 'Patrones y señales',
-  SECTION_PATTERNS_INTRO:
-    'Informes observacionales y datos opcionales del dispositivo. No son diagnóstico.',
-  PATTERNS_OPEN_WEEKLY: 'Patrones de la semana',
-  PATTERNS_OPEN_SUMMARY: 'Tu resumen',
-  PATTERNS_OPEN_GRAPH: 'Mapa de temas e intervenciones',
   /** Solo visible al expandir «Personalización del chat». */
   CHAT_EXPANDED_DISCLAIMER:
     'Puedes cambiar las opciones cuando quieras. En situaciones de mucha angustia o riesgo el tono prioriza tu seguridad.',

@@ -1,5 +1,5 @@
 /**
- * Opciones principales del perfil: resumen, editar perfil, ayuda
+ * Accesos secundarios del perfil: editar perfil y ayuda.
  */
 import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
@@ -14,36 +14,6 @@ export function ProfileOptions({ navigation }) {
     <View style={styles.optionsContainer}>
       <TouchableOpacity
         style={styles.optionButton}
-        onPress={() => navigation.navigate('ActivitySummary')}
-        accessibilityRole="button"
-        accessibilityLabel={TEXTS.SUMMARY_NAV_LABEL}
-      >
-        <MaterialCommunityIcons name="chart-timeline-variant" size={ICON_SIZE} color={profileColors.PRIMARY} />
-        <Text style={styles.optionText}>{TEXTS.SUMMARY_NAV}</Text>
-        <MaterialCommunityIcons name="chevron-right" size={ICON_SIZE} color={profileColors.PRIMARY} />
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.optionButton}
-        onPress={() => navigation.navigate('WeeklyInsight', { period: 'week' })}
-        accessibilityRole="button"
-        accessibilityLabel={TEXTS.WEEKLY_INSIGHT_NAV_LABEL}
-      >
-        <MaterialCommunityIcons name="chart-bell-curve" size={ICON_SIZE} color={profileColors.PRIMARY} />
-        <Text style={styles.optionText}>{TEXTS.WEEKLY_INSIGHT_NAV}</Text>
-        <MaterialCommunityIcons name="chevron-right" size={ICON_SIZE} color={profileColors.PRIMARY} />
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.optionButton}
-        onPress={() => navigation.navigate('InterventionGraph')}
-        accessibilityRole="button"
-        accessibilityLabel={TEXTS.INTERVENTION_GRAPH_NAV_LABEL}
-      >
-        <MaterialCommunityIcons name="graph-outline" size={ICON_SIZE} color={profileColors.PRIMARY} />
-        <Text style={styles.optionText}>{TEXTS.INTERVENTION_GRAPH_NAV}</Text>
-        <MaterialCommunityIcons name="chevron-right" size={ICON_SIZE} color={profileColors.PRIMARY} />
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.optionButton}
         onPress={() => navigation.navigate('EditProfile')}
         accessibilityLabel={TEXTS.EDIT_PROFILE_LABEL}
       >
@@ -52,7 +22,7 @@ export function ProfileOptions({ navigation }) {
         <MaterialCommunityIcons name="chevron-right" size={ICON_SIZE} color={profileColors.PRIMARY} />
       </TouchableOpacity>
       <TouchableOpacity
-        style={styles.optionButton}
+        style={[styles.optionButton, styles.optionButtonLast]}
         onPress={() => navigation.navigate('FaQ')}
         accessibilityLabel={TEXTS.HELP_LABEL}
       >

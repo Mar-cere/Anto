@@ -358,6 +358,36 @@ export function buildMetaRestartHint(currentContent, historyMessages) {
 - En la **misma** respuesta, ancla continuidad: una frase que deje claro que siguen en este chat y, si el historial o el resumen del hilo lo muestran, conecta con lo último que importaba (malestar, motivación, relación con la conversación, etc.). Si no hay detalle claro, ofrece suavemente seguir con lo anterior o cambiar de tema, **sin** menú largo ni reexplicar qué es la app.`;
 }
 
+const SHORT_REPLY_AFFIRMATION =
+  /^(?:s[ií]|yes|yeah|yep|ok|okay|vale|claro|exacto|cierto|correcto|afirmativo|de\s+acuerdo|así\s+es)[.!?,…]*$/iu;
+
+/**
+ * Afirmaciones breves ("sí", "ok") deben continuar el turno anterior, no reiniciar el hilo.
+ * @param {string} currentContent
+ * @param {Array<{ role?: string, content?: string }>} historyMessages
+ * @param {'es'|'en'} [language='es']
+ */
+export function buildShortReplyContinuityHint(currentContent, historyMessages, language = 'es') {
+  const trimmed = String(currentContent || '').trim();
+  if (!trimmed || trimmed.length > 24 || !SHORT_REPLY_AFFIRMATION.test(trimmed)) return '';
+  const assistants = (historyMessages || []).filter((m) => m?.role === 'assistant');
+  const lastAssistant = assistants[assistants.length - 1];
+  const lastText = String(lastAssistant?.content || '').trim();
+  if (!lastText) return '';
+
+  const preview = lastText.length > 140 ? `${lastText.slice(0, 139)}…` : lastText;
+  const en = language === 'en';
+  return en
+    ? `\n\n### Short reply continuity (high priority)
+- The user just replied briefly ("${trimmed}") to your last message.
+- Continue directly from your previous turn; do **not** repeat an earlier assistant message from this thread.
+- Your last message was: "${preview}"`
+    : `\n\n### Continuidad tras respuesta breve (prioridad alta)
+- El usuario acaba de responder muy breve ("${trimmed}") a tu último mensaje.
+- Sigue en continuidad directa con tu turno anterior; **no** repitas una respuesta previa del hilo.
+- Tu último mensaje fue: "${preview}"`;
+}
+
 /**
  * Guardarraíl para conversaciones de ansiedad + medicación.
  * @param {Object} contexto
@@ -1039,6 +1069,9 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
 
   const metaRestartHint = buildMetaRestartHint(mensaje.content, contexto.history);
   if (metaRestartHint) systemMessage += `\n\n${metaRestartHint}`;
+
+  const shortReplyHint = buildShortReplyContinuityHint(mensaje.content, contexto.history, language);
+  if (shortReplyHint) systemMessage += shortReplyHint;
 
   const longTermContext =
     contexto.isGuest

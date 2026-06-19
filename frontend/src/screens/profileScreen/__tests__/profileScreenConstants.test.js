@@ -36,6 +36,7 @@ describe('profileScreenConstants', () => {
     });
     it('debe tener título y secciones', () => {
       expect(TEXTS.PROFILE_TITLE).toBe('Mi Perfil');
+      expect(TEXTS.PROGRESS_TITLE).toBe('Progreso');
       expect(TEXTS.STATS_TITLE).toBe('Estadísticas');
       expect(TEXTS.EDIT_PROFILE).toBe('Editar Perfil');
       expect(TEXTS.HELP).toBe('Ayuda');

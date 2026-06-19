@@ -28,7 +28,13 @@ import {
   buildContextualizedPrompt,
   resolveChatLanguage,
 } from './openai/openaiPromptBuilder.js';
-import { adaptCachedResponse, generateResponseCacheKey, isCachedResponseValid } from './openai/openaiResponseCache.js';
+import {
+  adaptCachedResponse,
+  generateResponseCacheKey,
+  isCachedResponseValid,
+  resolveLastAssistantSignature,
+  shouldBypassResponseCache,
+} from './openai/openaiResponseCache.js';
 import { normalizeEmotionalAnalysis, validateMessage } from './openai/openaiValidation.js';
 import {
     formatTechniqueForResponse,
@@ -391,29 +397,46 @@ class OpenAIService {
         emotional: analisisEmocional,
       });
 
-      // MEJORA: Intentar obtener respuesta del caché si existe (módulo openaiResponseCache) — no en modo invitado ni crisis
+      // Caché solo para mensajes con contexto estable; afirmaciones cortas dependen del turno previo.
       let cachedResponse = null;
       /** Misma clave para get/set; debe vivir en este ámbito (antes estaba solo dentro del `if` y rompía el `set`). */
       let responseCacheKey = null;
-      if (!isGuest && !skipResponseCacheForCrisis) {
+      const historyForCache = contexto?.history || contexto?.safetyHistory || [];
+      const cacheLanguage = perfilUsuario?.preferences?.language === 'en' ? 'en' : 'es';
+      const canUseResponseCache =
+        !isGuest &&
+        !skipResponseCacheForCrisis &&
+        !shouldBypassResponseCache(contenidoNormalizado);
+      if (canUseResponseCache) {
         responseCacheKey = generateResponseCacheKey(
           contenidoNormalizado,
           analisisEmocional,
           analisisContextual,
-          perfilUsuario?.preferences?.language === 'en' ? 'en' : 'es',
+          cacheLanguage,
+          {
+            conversationId: contexto?.currentConversationId || mensaje?.conversationId,
+            lastAssistantSignature: resolveLastAssistantSignature(historyForCache),
+          },
         );
         try {
           cachedResponse = await cacheService.get(responseCacheKey);
-          if (cachedResponse && isCachedResponseValid(cachedResponse, analisisContextual)) {
+          if (
+            cachedResponse &&
+            isCachedResponseValid(cachedResponse, analisisContextual, historyForCache)
+          ) {
             console.log('[OpenAI] ✅ Respuesta obtenida del caché');
-            const adaptedResponse = adaptCachedResponse(cachedResponse.response, analisisContextual, contenidoNormalizado);
+            const adaptedResponse = adaptCachedResponse(
+              cachedResponse.response,
+              analisisContextual,
+              contenidoNormalizado,
+            );
             return {
               content: adaptedResponse,
               context: {
                 emotional: analisisEmocional,
                 contextual: analisisContextual,
-                modelRouting: { ...modelRouting, reason: 'cache_hit' }
-              }
+                modelRouting: { ...modelRouting, reason: 'cache_hit' },
+              },
             };
           }
         } catch (cacheError) {
@@ -723,7 +746,7 @@ class OpenAIService {
       }
 
       // MEJORA: Guardar respuesta en caché para futuras consultas similares (nunca en crisis)
-      if (responseCacheKey && !skipResponseCacheForCrisis) {
+      if (responseCacheKey && canUseResponseCache) {
         try {
           await cacheService.set(responseCacheKey, {
             response: respuestaFinal,

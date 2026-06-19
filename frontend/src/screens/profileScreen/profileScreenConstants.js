@@ -27,6 +27,9 @@ export const TEXTS = {
   ERROR_LOGOUT: 'Error',
   ERROR_LOGOUT_MESSAGE: 'No se pudo cerrar sesión. Por favor, intenta nuevamente.',
   PROFILE_TITLE: 'Mi Perfil',
+  PROGRESS_TITLE: 'Progreso',
+  PROGRESS_INTRO:
+    'Patrones observacionales, tu resumen e intervenciones. No sustituyen orientación profesional.',
   STATS_TITLE: 'Estadísticas',
   TASKS_COMPLETED: 'Tareas Completadas',
   HABITS_ACTIVE: 'Hábitos Activos',

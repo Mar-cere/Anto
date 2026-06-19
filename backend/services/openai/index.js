@@ -5,7 +5,14 @@
  * - openaiPromptBuilder: construcción del prompt contextualizado (system + context messages)
  */
 export { validateMessage, normalizeEmotionalAnalysis } from './openaiValidation.js';
-export { generateResponseCacheKey, isCachedResponseValid, adaptCachedResponse } from './openaiResponseCache.js';
+export {
+  adaptCachedResponse,
+  generateResponseCacheKey,
+  isCachedResponseDuplicateInThread,
+  isCachedResponseValid,
+  resolveLastAssistantSignature,
+  shouldBypassResponseCache,
+} from './openaiResponseCache.js';
 export {
   buildContextualizedPrompt,
   buildHistoryForPromptFromMessages,
@@ -15,6 +22,7 @@ export {
   generateConversationSummary,
   buildAntiEchoHint,
   buildMetaRestartHint,
+  buildShortReplyContinuityHint,
   generateLongTermContext,
   generarMensajesContexto
 } from './openaiPromptBuilder.js';

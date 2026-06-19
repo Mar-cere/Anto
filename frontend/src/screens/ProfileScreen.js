@@ -19,6 +19,7 @@ import { ProfileHeader } from './profileScreen/ProfileHeader';
 import { ProfileLoadingView } from './profileScreen/ProfileLoadingView';
 import { ProfileSubscription } from './profileScreen/ProfileSubscription';
 import { ProfileStats } from './profileScreen/ProfileStats';
+import { ProfileProgressSection } from './profileScreen/ProfileProgressSection';
 import { ProfileOptions } from './profileScreen/ProfileOptions';
 import { ProfileEmergencySection } from './profileScreen/ProfileEmergencySection';
 import { ProfileLogoutButton } from './profileScreen/ProfileLogoutButton';
@@ -91,6 +92,10 @@ export default function ProfileScreen() {
             />
           </View>
         ) : null}
+
+        <View style={styles.sectionBlock}>
+          <ProfileProgressSection navigation={navigation} />
+        </View>
 
         <View style={styles.sectionBlock}>
           <ProfileStats userData={userData} detailedStats={detailedStats} />

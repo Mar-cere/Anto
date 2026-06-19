@@ -161,6 +161,44 @@ function buildStyles(c, resolvedScheme) {
       marginTop: STAT_SUB_LABEL_MARGIN_TOP,
     },
     optionsContainer: {},
+    progressContainer: {
+      gap: 4,
+    },
+    progressIntro: {
+      fontSize: TYPOGRAPHY.SMALL,
+      lineHeight: 18,
+      color: c.TEXT_SECONDARY,
+      marginBottom: 12,
+      marginTop: -4,
+    },
+    progressLinkGroup: {
+      borderRadius: OPTION_BUTTON_BORDER_RADIUS,
+      borderWidth: OPTION_BUTTON_BORDER_WIDTH,
+      borderColor: c.CARD_BORDER,
+      backgroundColor: c.CARD_BACKGROUND,
+      overflow: 'hidden',
+    },
+    progressLinkRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: OPTION_BUTTON_PADDING,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.CARD_BORDER,
+      gap: OPTION_TEXT_MARGIN_LEFT,
+    },
+    progressLinkRowLast: {
+      borderBottomWidth: 0,
+    },
+    progressLinkText: {
+      flex: 1,
+      fontSize: TYPOGRAPHY.BODY,
+      fontWeight: '500',
+      color: c.TEXT,
+    },
+    progressSignalsWrap: {
+      marginTop: 12,
+    },
     optionButton: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -170,6 +208,9 @@ function buildStyles(c, resolvedScheme) {
       marginBottom: OPTION_BUTTON_MARGIN_BOTTOM,
       borderWidth: OPTION_BUTTON_BORDER_WIDTH,
       borderColor: c.CARD_BORDER,
+    },
+    optionButtonLast: {
+      marginBottom: 0,
     },
     optionText: {
       flex: 1,
