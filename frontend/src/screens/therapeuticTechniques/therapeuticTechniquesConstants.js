@@ -47,6 +47,7 @@ export const TEXTS = {
   EMOTION_FILTER_TOGGLE_HIDE: 'Ocultar filtro de emoción',
   SECTION_EXPAND: 'Abrir sección',
   SECTION_COLLAPSE: 'Cerrar sección',
+  CATEGORY_COUNT_A11Y: '{count} técnicas en esta sección',
   CATEGORY_HINT_IMMEDIATE: 'Para cuando necesitas calma o contención al momento',
   CATEGORY_HINT_CBT: 'Trabajar pensamientos, creencias y conductas',
   CATEGORY_HINT_DBT: 'Regular emociones muy intensas',
@@ -136,6 +137,9 @@ export function useTherapeuticTechniquesTexts() {
       SECTION_COLLAPSE:
         translated?.THERAPEUTIC_TECHNIQUES_SECTION_COLLAPSE ||
         TEXTS.SECTION_COLLAPSE,
+      CATEGORY_COUNT_A11Y:
+        translated?.THERAPEUTIC_TECHNIQUES_CATEGORY_COUNT_A11Y ||
+        TEXTS.CATEGORY_COUNT_A11Y,
       CATEGORY_HINT_IMMEDIATE:
         translated?.THERAPEUTIC_TECHNIQUES_CATEGORY_HINT_IMMEDIATE ||
         TEXTS.CATEGORY_HINT_IMMEDIATE,

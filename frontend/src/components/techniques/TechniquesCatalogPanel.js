@@ -11,8 +11,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import TechniqueCard from '../therapeutic/TechniqueCard';
+import DashboardGroupedRow from '../dashboard/DashboardGroupedRow';
 import { useTheme } from '../../context/ThemeContext';
+import { createDashboardStyles } from '../../styles/dashboardTheme';
 import {
   CATEGORIES,
   CATEGORY_ORDER,
@@ -26,6 +27,16 @@ import {
 } from '../../screens/therapeuticTechniques/therapeuticTechniquesConstants';
 import { therapeuticSafeNavigate } from '../../screens/therapeuticTechniques/therapeuticTechniquesNavigate';
 import { useTherapeuticTechniquesStyles } from '../../screens/therapeuticTechniques/therapeuticTechniquesStyles';
+import { useSectionTranslations } from '../../hooks/useTranslations';
+import {
+  buildTechniqueCatalogRowSubtitle,
+  createInitialCatalogExpanded,
+  formatTechniqueCategoryCountA11y,
+  hasTechniqueCatalogCategories,
+  resolveTechniqueCatalogType,
+  TECHNIQUE_TYPE_ICONS,
+} from '../../utils/techniquesCatalogUtils';
+import { openTechniquesHubScreen } from '../../utils/techniquesHubNavigation';
 
 const DIRECT_PROTOCOL_SCREENS = new Set([
   'BehavioralActivation',
@@ -34,32 +45,11 @@ const DIRECT_PROTOCOL_SCREENS = new Set([
   'AutomaticThoughtRecord',
 ]);
 
-const initialExpanded = () => ({
-  [CATEGORIES.IMMEDIATE]: true,
-  [CATEGORIES.CBT]: false,
-  [CATEGORIES.DBT]: false,
-  [CATEGORIES.ACT]: false,
-});
-
-function LibraryEntryCard({ styles, colors, icon, title, hint, testID, onPress }) {
-  return (
-    <TouchableOpacity
-      style={styles.psychoedCard}
-      testID={testID}
-      onPress={onPress}
-      activeOpacity={0.7}
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      accessibilityHint={hint}
-    >
-      <MaterialCommunityIcons name={icon} size={22} color={colors.primary} />
-      <View style={styles.psychoedCardText}>
-        <Text style={styles.psychoedCardTitle}>{title}</Text>
-        <Text style={styles.psychoedCardHint}>{hint}</Text>
-      </View>
-      <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
-    </TouchableOpacity>
-  );
+function HubIcon({ item, color }) {
+  if (item.iconSet === 'mci') {
+    return <MaterialCommunityIcons name={item.icon} size={22} color={color} />;
+  }
+  return null;
 }
 
 /**
@@ -68,6 +58,8 @@ function LibraryEntryCard({ styles, colors, icon, title, hint, testID, onPress }
  *   embedded?: boolean,
  *   showListIntro?: boolean,
  *   showStatsButton?: boolean,
+ *   focusTools?: Array<{ key: string, screen: string, icon: string, iconSet?: string, labelKey: string, hintKey: string }>,
+ *   focusTexts?: Record<string, string>,
  * }} props
  */
 export default function TechniquesCatalogPanel({
@@ -75,11 +67,18 @@ export default function TechniquesCatalogPanel({
   embedded = false,
   showListIntro = false,
   showStatsButton = false,
+  focusTools = [],
+  focusTexts = {},
 }) {
   const navigation = useNavigation();
-  const { colors } = useTheme();
+  const { colors, resolvedScheme } = useTheme();
   const TEXTS = useTherapeuticTechniquesTexts();
+  const TECHNIQUE_TEXTS = useSectionTranslations('TECHNIQUES');
   const styles = useTherapeuticTechniquesStyles();
+  const dashStyles = useMemo(
+    () => createDashboardStyles(colors, resolvedScheme),
+    [colors, resolvedScheme],
+  );
   const {
     selectedEmotion,
     setSelectedEmotion,
@@ -92,18 +91,66 @@ export default function TechniquesCatalogPanel({
     loadTechniques,
   } = catalog;
 
-  const [expandedSections, setExpandedSections] = useState(initialExpanded);
+  const [expandedSections, setExpandedSections] = useState(createInitialCatalogExpanded);
   const [emotionFilterOpen, setEmotionFilterOpen] = useState(false);
   const EMOTIONS = useMemo(() => createEmotionOptions(TEXTS), [TEXTS]);
   const CATEGORY_SHORT_LABEL = useMemo(() => createCategoryShortLabel(TEXTS), [TEXTS]);
   const CATEGORY_FULL_LABEL = useMemo(() => createCategoryFullLabel(TEXTS), [TEXTS]);
   const CATEGORY_HINT = useMemo(() => createCategoryHint(TEXTS), [TEXTS]);
   const categoryAccent = useMemo(() => createCategoryAccent(colors), [colors]);
+  const stepLabels = useMemo(
+    () => ({
+      singular: TECHNIQUE_TEXTS?.TECHNIQUE_CARD_STEPS_SINGULAR || 'paso',
+      plural: TECHNIQUE_TEXTS?.TECHNIQUE_CARD_STEPS_PLURAL || 'pasos',
+    }),
+    [TECHNIQUE_TEXTS],
+  );
+  const defaultTechniqueName = TECHNIQUE_TEXTS?.TECHNIQUE_CARD_DEFAULT_NAME || 'Técnica';
+
+  const quickAccessLabel = focusTexts.QUICK_ACCESS || focusTexts.FOCUS_SECTION || 'Acceso rápido';
+  const catalogSectionLabel = focusTexts.CATALOG_SECTION || focusTexts.GUIDED_SECTION || 'Catálogo';
 
   const selectedEmotionLabel = useMemo(() => {
     const found = EMOTIONS.find((e) => e.key === selectedEmotion);
     return found?.label ?? EMOTIONS[0].label;
   }, [selectedEmotion, EMOTIONS]);
+
+  const quickAccessRows = useMemo(() => {
+    const rows = [];
+    focusTools.forEach((item) => {
+      rows.push({
+        key: item.key,
+        iconNode: <HubIcon item={item} color={colors.primary} />,
+        title: focusTexts[item.labelKey] || item.labelKey,
+        subtitle: focusTexts[item.hintKey] || '',
+        onPress: () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+          openTechniquesHubScreen(navigation, item.screen);
+        },
+      });
+    });
+    rows.push({
+      key: 'psychoed',
+      iconNode: <MaterialCommunityIcons name="book-open-page-variant" size={22} color={colors.primary} />,
+      title: TEXTS.PSYCHOED_LIBRARY,
+      subtitle: TEXTS.PSYCHOED_LIBRARY_HINT,
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        therapeuticSafeNavigate(navigation, 'PsychoeducationLibrary');
+      },
+    });
+    rows.push({
+      key: 'microguides',
+      iconNode: <MaterialCommunityIcons name="compass-outline" size={22} color={colors.primary} />,
+      title: TEXTS.MICRO_GUIDE_LIBRARY,
+      subtitle: TEXTS.MICRO_GUIDE_LIBRARY_HINT,
+      onPress: () => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        therapeuticSafeNavigate(navigation, 'MicroGuideLibrary');
+      },
+    });
+    return rows;
+  }, [focusTools, focusTexts, colors.primary, navigation, TEXTS]);
 
   const clearEmotionFilter = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -171,6 +218,26 @@ export default function TechniquesCatalogPanel({
     </View>
   );
 
+  const renderQuickAccess = () => (
+    <View style={dashStyles.section}>
+      <Text style={[dashStyles.eyebrow, styles.sectionEyebrowEmbedded]} accessibilityRole="header">
+        {quickAccessLabel.toUpperCase()}
+      </Text>
+      <View style={dashStyles.groupedList}>
+        {quickAccessRows.map((row, index) => (
+          <DashboardGroupedRow
+            key={row.key}
+            iconNode={row.iconNode}
+            title={row.title}
+            subtitle={row.subtitle}
+            onPress={row.onPress}
+            isLast={index === quickAccessRows.length - 1}
+          />
+        ))}
+      </View>
+    </View>
+  );
+
   const renderCategorySection = (categoryKey) => {
     const list = groupedTechniques[categoryKey];
     if (!list || list.length === 0) return null;
@@ -184,7 +251,11 @@ export default function TechniquesCatalogPanel({
     return (
       <View style={styles.categorySection} key={categoryKey}>
         <TouchableOpacity
-          style={[styles.categoryHeader, { borderLeftColor: accent }]}
+          style={[
+            styles.categoryHeader,
+            { borderLeftColor: accent },
+            !expanded && styles.categoryHeaderCollapsed,
+          ]}
           onPress={() => toggleSection(categoryKey)}
           accessibilityRole="button"
           accessibilityLabel={`${full}. ${hint}`}
@@ -197,7 +268,7 @@ export default function TechniquesCatalogPanel({
                 <Text style={styles.categoryTitleShort}>{short}</Text>
                 <Text
                   style={styles.categoryCountBadge}
-                  accessibilityLabel={`${list.length} en esta sección`}
+                  accessibilityLabel={formatTechniqueCategoryCountA11y(list.length, TEXTS.CATEGORY_COUNT_A11Y)}
                 >
                   {list.length}
                 </Text>
@@ -208,7 +279,7 @@ export default function TechniquesCatalogPanel({
                 color={colors.textSecondary}
               />
             </View>
-            {hint ? (
+            {expanded && hint ? (
               <Text style={styles.categoryHint} numberOfLines={2}>
                 {hint}
               </Text>
@@ -216,70 +287,61 @@ export default function TechniquesCatalogPanel({
           </View>
         </TouchableOpacity>
         {expanded ? (
-          <View style={styles.categoryCards}>
-            {list.map((technique, index) => (
-              <TechniqueCard
-                key={technique?.id != null ? String(technique.id) : `technique-${index}`}
-                technique={technique}
-                variant="compact"
-                onPress={() => handleTechniquePress(technique)}
-              />
-            ))}
+          <View style={[dashStyles.groupedList, styles.categoryCardsGrouped]}>
+            {list.map((technique, index) => {
+              const type = resolveTechniqueCatalogType(technique);
+              const icon = TECHNIQUE_TYPE_ICONS[type] || 'book-open-variant';
+              const accentColor = categoryAccent[type] || colors.primary;
+              return (
+                <DashboardGroupedRow
+                  key={technique?.id != null ? String(technique.id) : `technique-${index}`}
+                  iconNode={
+                    <MaterialCommunityIcons name={icon} size={22} color={accentColor} />
+                  }
+                  title={
+                    technique?.name != null && String(technique.name).trim() !== ''
+                      ? String(technique.name)
+                      : defaultTechniqueName
+                  }
+                  subtitle={buildTechniqueCatalogRowSubtitle(technique, stepLabels)}
+                  onPress={() => handleTechniquePress(technique)}
+                  isLast={index === list.length - 1}
+                />
+              );
+            })}
           </View>
         ) : null}
       </View>
     );
   };
 
-  const renderLibraryEntries = () => (
-    <>
-      <LibraryEntryCard
-        styles={styles}
-        colors={colors}
-        icon="book-open-page-variant"
-        title={TEXTS.PSYCHOED_LIBRARY}
-        hint={TEXTS.PSYCHOED_LIBRARY_HINT}
-        testID="psychoed-entry-library"
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-          therapeuticSafeNavigate(navigation, 'PsychoeducationLibrary');
-        }}
-      />
-      <LibraryEntryCard
-        styles={styles}
-        colors={colors}
-        icon="compass-outline"
-        title={TEXTS.MICRO_GUIDE_LIBRARY}
-        hint={TEXTS.MICRO_GUIDE_LIBRARY_HINT}
-        testID="microguide-entry-library"
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-          therapeuticSafeNavigate(navigation, 'MicroGuideLibrary');
-        }}
-      />
-    </>
-  );
-
   const showEmotionTools = !loading && !error && techniques.length > 0;
+  const hasCatalogCategories = hasTechniqueCatalogCategories(groupedTechniques, CATEGORY_ORDER);
 
   if (loading && !refreshing) {
     return (
-      <View style={[styles.centerContainer, embedded && { minHeight: 160, paddingVertical: 24 }]}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>{TEXTS.LOADING}</Text>
+      <View style={embedded ? undefined : styles.scrollContent}>
+        {renderQuickAccess()}
+        <View style={[styles.centerContainer, embedded && { minHeight: 120, paddingVertical: 20 }]}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>{TEXTS.LOADING}</Text>
+        </View>
       </View>
     );
   }
 
   if (error && !refreshing) {
     return (
-      <View style={[styles.centerContainer, embedded && { minHeight: 160, paddingVertical: 24 }]}>
-        <MaterialCommunityIcons name="alert-circle" size={48} color={colors.error} />
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => loadTechniques()}>
-          <Text style={styles.retryButtonText}>{TEXTS.RETRY}</Text>
-        </TouchableOpacity>
-      </View>
+      <>
+        {renderQuickAccess()}
+        <View style={[styles.centerContainer, embedded && { minHeight: 120, paddingVertical: 20 }]}>
+          <MaterialCommunityIcons name="alert-circle" size={40} color={colors.error} />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => loadTechniques()}>
+            <Text style={styles.retryButtonText}>{TEXTS.RETRY}</Text>
+          </TouchableOpacity>
+        </View>
+      </>
     );
   }
 
@@ -287,10 +349,11 @@ export default function TechniquesCatalogPanel({
     const isFilteredEmpty = techniques.length > 0;
     return (
       <View style={embedded ? undefined : styles.scrollContent}>
-        <View style={[styles.centerContainer, { paddingVertical: embedded ? 16 : 32 }]}>
+        {renderQuickAccess()}
+        <View style={[styles.centerContainer, { paddingVertical: embedded ? 16 : 24 }]}>
           <MaterialCommunityIcons
             name={isFilteredEmpty ? 'filter-off' : 'book-open-variant'}
-            size={48}
+            size={40}
             color={colors.textSecondary}
           />
           <Text style={styles.emptyText}>
@@ -302,7 +365,6 @@ export default function TechniquesCatalogPanel({
             </TouchableOpacity>
           ) : null}
         </View>
-        {renderLibraryEntries()}
       </View>
     );
   }
@@ -310,12 +372,10 @@ export default function TechniquesCatalogPanel({
   return (
     <View style={embedded ? undefined : styles.scrollContent}>
       {showStatsButton ? (
-        <View style={styles.topBar}>
-          <View style={styles.topBarTextBlock}>
-            <Text style={styles.subtitle} numberOfLines={3}>
-              {TEXTS.SUBTITLE}
-            </Text>
-          </View>
+        <View style={styles.topBarEmbedded}>
+          <Text style={styles.subtitle} numberOfLines={2}>
+            {TEXTS.SUBTITLE}
+          </Text>
           <TouchableOpacity
             style={styles.statsButtonIcon}
             onPress={() => {
@@ -332,9 +392,11 @@ export default function TechniquesCatalogPanel({
         </View>
       ) : null}
 
+      {renderQuickAccess()}
+
       {showEmotionTools ? (
-        <>
-          <View style={styles.emotionToggleRow}>
+        <View style={dashStyles.section}>
+          <View style={styles.emotionToggleRowEmbedded}>
             <TouchableOpacity
               style={styles.emotionToggleMain}
               onPress={() => {
@@ -370,7 +432,7 @@ export default function TechniquesCatalogPanel({
             ) : null}
           </View>
           {emotionFilterOpen ? renderEmotionChips() : null}
-        </>
+        </View>
       ) : null}
 
       {showListIntro ? (
@@ -380,8 +442,14 @@ export default function TechniquesCatalogPanel({
         </View>
       ) : null}
 
-      {renderLibraryEntries()}
-      {CATEGORY_ORDER.map((key) => renderCategorySection(key))}
+      {hasCatalogCategories ? (
+        <View style={dashStyles.section}>
+          <Text style={[dashStyles.eyebrow, styles.sectionEyebrowEmbedded]} accessibilityRole="header">
+            {catalogSectionLabel.toUpperCase()}
+          </Text>
+          {CATEGORY_ORDER.map((key) => renderCategorySection(key))}
+        </View>
+      ) : null}
     </View>
   );
 }

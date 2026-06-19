@@ -59,6 +59,30 @@ export function createTherapeuticTechniquesStyles(colors, resolvedScheme = 'ligh
       borderColor: t.FOCUS_BORDER_SUBTLE,
       gap: 6,
     },
+    emotionToggleRowEmbedded: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 10,
+      paddingVertical: 8,
+      paddingLeft: 8,
+      paddingRight: 12,
+      borderRadius: 22,
+      backgroundColor: colors.cardBackground,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.FOCUS_BORDER_SUBTLE,
+      gap: 6,
+    },
+    sectionEyebrowEmbedded: {
+      marginBottom: 10,
+      paddingHorizontal: 2,
+    },
+    topBarEmbedded: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingBottom: 12,
+      gap: 12,
+    },
     emotionToggleMain: {
       flex: 1,
       flexDirection: 'row',
@@ -169,7 +193,7 @@ export function createTherapeuticTechniquesStyles(colors, resolvedScheme = 'ligh
       lineHeight: 18,
     },
     categorySection: {
-      marginBottom: 10,
+      marginBottom: 8,
     },
     categoryHeader: {
       flexDirection: 'row',
@@ -181,6 +205,9 @@ export function createTherapeuticTechniquesStyles(colors, resolvedScheme = 'ligh
       borderBottomColor: t.FOCUS_BORDER_SUBTLE,
       borderLeftWidth: 3,
       borderLeftColor: colors.primary,
+    },
+    categoryHeaderCollapsed: {
+      paddingVertical: 11,
     },
     categoryHeaderInner: {
       flex: 1,
@@ -203,7 +230,7 @@ export function createTherapeuticTechniquesStyles(colors, resolvedScheme = 'ligh
       fontSize: 12,
       color: colors.textSecondary,
       lineHeight: 16,
-      marginTop: 8,
+      marginTop: 6,
       paddingRight: 28,
     },
     categoryTitleShort: {
@@ -224,6 +251,9 @@ export function createTherapeuticTechniquesStyles(colors, resolvedScheme = 'ligh
     },
     categoryCards: {
       paddingTop: 12,
+    },
+    categoryCardsGrouped: {
+      marginTop: 8,
     },
     centerContainer: {
       flex: 1,

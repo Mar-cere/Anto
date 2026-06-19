@@ -1033,8 +1033,9 @@ export const NAV = {
 
 export const TECHNIQUES_HUB = {
   TITLE: 'Técnicas',
-  FOCUS_SECTION: 'Herramientas de enfoque',
-  GUIDED_SECTION: 'Técnicas guiadas',
+  SUBTITLE: 'Prácticas guiadas y herramientas para el momento que las necesites.',
+  QUICK_ACCESS: 'Acceso rápido',
+  CATALOG_SECTION: 'Catálogo por enfoque',
   POMODORO: 'Pomodoro',
   POMODORO_HINT: 'Enfócate en una tarea, paso a paso',
 };
@@ -2176,6 +2177,7 @@ export const TECHNIQUES = {
   THERAPEUTIC_TECHNIQUES_EMOTION_FILTER_TOGGLE_HIDE: 'Ocultar filtro de emoción',
   THERAPEUTIC_TECHNIQUES_SECTION_EXPAND: 'Abrir sección',
   THERAPEUTIC_TECHNIQUES_SECTION_COLLAPSE: 'Cerrar sección',
+  THERAPEUTIC_TECHNIQUES_CATEGORY_COUNT_A11Y: '{count} técnicas en esta sección',
   THERAPEUTIC_TECHNIQUES_CATEGORY_HINT_IMMEDIATE:
     'Para cuando necesitas calma o contención al momento',
   THERAPEUTIC_TECHNIQUES_CATEGORY_HINT_CBT:

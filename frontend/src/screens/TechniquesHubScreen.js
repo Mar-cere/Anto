@@ -1,10 +1,8 @@
 /**
  * Hub de técnicas y herramientas (tab principal de la navbar).
  */
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import * as Haptics from 'expo-haptics';
-import React, { useCallback, useMemo } from 'react';
+import { useRoute } from '@react-navigation/native';
+import React, { useMemo } from 'react';
 import {
   RefreshControl,
   ScrollView,
@@ -14,7 +12,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import DashboardGroupedRow from '../components/dashboard/DashboardGroupedRow';
 import FloatingNavBar from '../components/FloatingNavBar';
 import Header from '../components/Header';
 import TechniquesCatalogPanel from '../components/techniques/TechniquesCatalogPanel';
@@ -22,39 +19,31 @@ import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
-import { createDashboardStyles } from '../styles/dashboardTheme';
 import { useTherapeuticTechniquesScreen } from './therapeuticTechniques/useTherapeuticTechniquesScreen';
 import { TECHNIQUES_HUB_FOCUS_TOOLS } from '../utils/techniquesHubConfig';
-import { openTechniquesHubScreen } from '../utils/techniquesHubNavigation';
 
 const DEFAULT_TEXTS_ES = {
   TITLE: 'Técnicas',
-  FOCUS_SECTION: 'Herramientas de enfoque',
-  GUIDED_SECTION: 'Técnicas guiadas',
+  SUBTITLE: 'Prácticas guiadas y herramientas para el momento que las necesites.',
+  QUICK_ACCESS: 'Acceso rápido',
+  CATALOG_SECTION: 'Catálogo por enfoque',
   POMODORO: 'Pomodoro',
   POMODORO_HINT: 'Enfócate en una tarea, paso a paso',
 };
 
 const DEFAULT_TEXTS_EN = {
   TITLE: 'Techniques',
-  FOCUS_SECTION: 'Focus tools',
-  GUIDED_SECTION: 'Guided techniques',
+  SUBTITLE: 'Guided practices and tools for when you need them.',
+  QUICK_ACCESS: 'Quick access',
+  CATALOG_SECTION: 'Catalog by approach',
   POMODORO: 'Pomodoro',
   POMODORO_HINT: 'Focus on one task, step by step',
 };
 
-function HubIcon({ item, color }) {
-  if (item.iconSet === 'mci') {
-    return <MaterialCommunityIcons name={item.icon} size={22} color={color} />;
-  }
-  return null;
-}
-
 export default function TechniquesHubScreen() {
-  const navigation = useNavigation();
   const route = useRoute();
   const insets = useSafeAreaInsets();
-  const { colors, resolvedScheme, statusBarStyle } = useTheme();
+  const { colors, statusBarStyle } = useTheme();
   const { language } = useLanguage();
   const translated = useSectionTranslations('TECHNIQUES_HUB');
   const catalog = useTherapeuticTechniquesScreen();
@@ -63,16 +52,13 @@ export default function TechniquesHubScreen() {
   const TEXTS = useMemo(
     () => ({
       TITLE: translated?.TITLE || defaults.TITLE,
-      FOCUS_SECTION: translated?.FOCUS_SECTION || defaults.FOCUS_SECTION,
-      GUIDED_SECTION: translated?.GUIDED_SECTION || defaults.GUIDED_SECTION,
+      SUBTITLE: translated?.SUBTITLE || defaults.SUBTITLE,
+      QUICK_ACCESS: translated?.QUICK_ACCESS || defaults.QUICK_ACCESS,
+      CATALOG_SECTION: translated?.CATALOG_SECTION || defaults.CATALOG_SECTION,
       POMODORO: translated?.POMODORO || defaults.POMODORO,
       POMODORO_HINT: translated?.POMODORO_HINT || defaults.POMODORO_HINT,
     }),
     [translated, defaults],
-  );
-  const dashStyles = useMemo(
-    () => createDashboardStyles(colors, resolvedScheme),
-    [colors, resolvedScheme],
   );
   const styles = useMemo(
     () =>
@@ -89,45 +75,20 @@ export default function TechniquesHubScreen() {
           paddingTop: showBack ? 0 : 8,
         },
         pageTitle: {
-          fontSize: 34,
+          fontSize: 30,
           fontWeight: '700',
-          letterSpacing: -0.6,
+          letterSpacing: -0.5,
           color: colors.text,
-          marginBottom: 28,
+          marginBottom: 6,
         },
-        sectionEyebrow: {
-          ...dashStyles.eyebrow,
-          marginBottom: 10,
-          paddingHorizontal: 2,
-        },
-        catalogWrap: {
-          marginTop: 4,
+        pageSubtitle: {
+          fontSize: 15,
+          lineHeight: 21,
+          color: colors.textSecondary,
+          marginBottom: 22,
         },
       }),
-    [colors, dashStyles.eyebrow, showBack],
-  );
-
-  const openScreen = useCallback(
-    (screen) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-      openTechniquesHubScreen(navigation, screen);
-    },
-    [navigation],
-  );
-
-  const renderFocusRows = useCallback(
-    () =>
-      TECHNIQUES_HUB_FOCUS_TOOLS.map((item, index) => (
-        <DashboardGroupedRow
-          key={item.key}
-          iconNode={<HubIcon item={item} color={colors.primary} />}
-          title={TEXTS[item.labelKey]}
-          subtitle={TEXTS[item.hintKey]}
-          onPress={() => openScreen(item.screen)}
-          isLast={index === TECHNIQUES_HUB_FOCUS_TOOLS.length - 1}
-        />
-      )),
-    [TEXTS, colors.primary, openScreen],
+    [colors, showBack],
   );
 
   return (
@@ -150,28 +111,21 @@ export default function TechniquesHubScreen() {
       >
         <View style={styles.content}>
           {!showBack ? (
-            <Text style={styles.pageTitle} accessibilityRole="header">
-              {TEXTS.TITLE}
-            </Text>
+            <>
+              <Text style={styles.pageTitle} accessibilityRole="header">
+                {TEXTS.TITLE}
+              </Text>
+              <Text style={styles.pageSubtitle}>{TEXTS.SUBTITLE}</Text>
+            </>
           ) : null}
 
-          <View style={dashStyles.section}>
-            <Text style={styles.sectionEyebrow} accessibilityRole="header">
-              {TEXTS.FOCUS_SECTION.toUpperCase()}
-            </Text>
-            <View style={dashStyles.groupedList}>{renderFocusRows()}</View>
-          </View>
-
-          <View style={[dashStyles.section, styles.catalogWrap]}>
-            <Text style={styles.sectionEyebrow} accessibilityRole="header">
-              {TEXTS.GUIDED_SECTION.toUpperCase()}
-            </Text>
-            <TechniquesCatalogPanel
-              catalog={catalog}
-              embedded
-              showStatsButton={showBack}
-            />
-          </View>
+          <TechniquesCatalogPanel
+            catalog={catalog}
+            embedded
+            showStatsButton={showBack}
+            focusTools={TECHNIQUES_HUB_FOCUS_TOOLS}
+            focusTexts={TEXTS}
+          />
         </View>
       </ScrollView>
       <FloatingNavBar activeTab="techniques" />

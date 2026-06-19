@@ -24,13 +24,40 @@ describe('techniquesHub guard', () => {
 
   it('TechniquesHubScreen integra catálogo completo sin enlace ver todas', () => {
     const src = readSrc('screens/TechniquesHubScreen.js');
-    expect(src).toMatch(/TECHNIQUES_HUB_FOCUS_TOOLS/);
     expect(src).toMatch(/TechniquesCatalogPanel/);
     expect(src).toMatch(/useTherapeuticTechniquesScreen/);
+    expect(src).toMatch(/TECHNIQUES_HUB_FOCUS_TOOLS/);
+    expect(src).toMatch(/focusTools=/);
     expect(src).toMatch(/FloatingNavBar activeTab="techniques"/);
     expect(src).not.toMatch(/ALL_TECHNIQUES/);
     expect(src).not.toMatch(/Ver todas las técnicas/);
-    expect(src).not.toMatch(/TECHNIQUES_HUB_GUIDED/);
+  });
+
+  it('TechniquesCatalogPanel condensa acceso rápido y catálogo en acordeón', () => {
+    const src = readSrc('components/techniques/TechniquesCatalogPanel.js');
+    expect(src).toMatch(/DashboardGroupedRow/);
+    expect(src).toMatch(/quickAccessRows/);
+    expect(src).toMatch(/createInitialCatalogExpanded/);
+    expect(src).toMatch(/categoryHeaderCollapsed/);
+    expect(src).toMatch(/renderQuickAccess\(\)/);
+    expect(src).not.toMatch(/LibraryEntryCard/);
+    expect(src).not.toMatch(/TechniqueCard/);
+  });
+
+  it('techniquesCatalogUtils centraliza helpers del catálogo', () => {
+    const src = readSrc('utils/techniquesCatalogUtils.js');
+    expect(src).toMatch(/createInitialCatalogExpanded/);
+    expect(src).toMatch(/resolveTechniqueCatalogType/);
+    expect(src).toMatch(/buildTechniqueCatalogRowSubtitle/);
+    expect(src).toMatch(/hasTechniqueCatalogCategories/);
+  });
+
+  it('TechniquesHubScreen expone subtítulo y pasa focusTools al catálogo', () => {
+    const src = readSrc('screens/TechniquesHubScreen.js');
+    expect(src).toMatch(/pageSubtitle/);
+    expect(src).toMatch(/SUBTITLE/);
+    expect(src).toMatch(/focusTools=\{TECHNIQUES_HUB_FOCUS_TOOLS\}/);
+    expect(src).not.toMatch(/useNavigation/);
   });
 
   it('Pomodoro ya no monta la navbar y vuelve al hub sin historial', () => {
