@@ -12,12 +12,15 @@ import {
   Text,
   View,
 } from 'react-native';
+import EditEmergencyContactModal from '../components/EditEmergencyContactModal';
+import EmergencyContactsModal from '../components/EmergencyContactsModal';
 import { useProfileScreen } from './profileScreen/useProfileScreen';
 import { ProfileHeader } from './profileScreen/ProfileHeader';
 import { ProfileLoadingView } from './profileScreen/ProfileLoadingView';
 import { ProfileSubscription } from './profileScreen/ProfileSubscription';
 import { ProfileStats } from './profileScreen/ProfileStats';
 import { ProfileOptions } from './profileScreen/ProfileOptions';
+import { ProfileEmergencySection } from './profileScreen/ProfileEmergencySection';
 import { ProfileLogoutButton } from './profileScreen/ProfileLogoutButton';
 import { LastSessionSummaryCard } from '../components/LastSessionSummaryCard';
 import { useProfileScreenStyles } from './profileScreen/profileScreenStyles';
@@ -31,11 +34,21 @@ export default function ProfileScreen() {
     refreshing,
     userData,
     detailedStats,
+    emergencyContacts,
+    loadingContacts,
     subscriptionStatus,
     lastSessionSummary,
     openChatFromLastSession,
+    showEmergencyContactsModal,
+    setShowEmergencyContactsModal,
+    showEditContactModal,
+    selectedContact,
     handleRefresh,
+    handleDeleteContact,
+    handleEmergencyContactsSaved,
     handleLogout,
+    openEditContact,
+    closeEditContact,
   } = useProfileScreen(navigation);
 
   if (loading) {
@@ -87,8 +100,34 @@ export default function ProfileScreen() {
           <ProfileOptions navigation={navigation} />
         </View>
 
+        <View style={styles.sectionBlock}>
+          <ProfileEmergencySection
+            emergencyContacts={emergencyContacts}
+            loadingContacts={loadingContacts}
+            onOpenEmergencyModal={() => setShowEmergencyContactsModal(true)}
+            onEditContact={openEditContact}
+            onDeleteContact={handleDeleteContact}
+            onOpenCrisisDashboard={() => navigation.navigate('CrisisDashboard')}
+            onOpenAlertsHistory={() => navigation.navigate('EmergencyAlertsHistory')}
+          />
+        </View>
+
         <ProfileLogoutButton onLogout={handleLogout} />
       </ScrollView>
+
+      <EmergencyContactsModal
+        visible={showEmergencyContactsModal}
+        onClose={() => setShowEmergencyContactsModal(false)}
+        onSave={handleEmergencyContactsSaved}
+        existingContacts={emergencyContacts}
+      />
+
+      <EditEmergencyContactModal
+        visible={showEditContactModal}
+        onClose={closeEditContact}
+        onSave={handleEmergencyContactsSaved}
+        contact={selectedContact}
+      />
     </SafeAreaView>
   );
 }

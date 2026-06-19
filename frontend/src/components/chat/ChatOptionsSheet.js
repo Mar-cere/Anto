@@ -33,6 +33,7 @@ export default function ChatOptionsSheet({
   onOpenCustomization,
   onOpenPrivacy,
   onOpenAiInfo,
+  onOpenCrisisResources,
   onRequestClearConversation,
   immersiveMode = false,
   onToggleImmersiveMode,
@@ -218,6 +219,25 @@ export default function ChatOptionsSheet({
               </View>
               <Text style={styles.rowLabel}>{TEXTS.CHAT_OPTIONS_AI_INFO}</Text>
             </TouchableOpacity>
+
+            {onOpenCrisisResources ? (
+              <TouchableOpacity
+                style={styles.row}
+                onPress={wrap(onOpenCrisisResources)}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={TEXTS.CHAT_OPTIONS_CRISIS_RESOURCES}
+              >
+                <View style={[styles.rowIcon, { backgroundColor: colors.warningSoft || colors.accentLineSoft }]}>
+                  <MaterialCommunityIcons
+                    name="lifebuoy"
+                    size={22}
+                    color={colors.warning || chatColors.PRIMARY}
+                  />
+                </View>
+                <Text style={styles.rowLabel}>{TEXTS.CHAT_OPTIONS_CRISIS_RESOURCES}</Text>
+              </TouchableOpacity>
+            ) : null}
 
             <View style={styles.separator} />
 

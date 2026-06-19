@@ -31,6 +31,7 @@ import ChatMessageItem from '../components/chat/ChatMessageItem';
 import SessionIntentionBanner from '../components/chat/SessionIntentionBanner';
 import TccContinuityStrip from '../components/chat/TccContinuityStrip';
 import TccLiteAtHandoffStrip from '../components/chat/TccLiteAtHandoffStrip';
+import CrisisResourcesStrip from '../components/chat/CrisisResourcesStrip';
 import ChatTypingIndicator from '../components/chat/ChatTypingIndicator';
 import ChatOptionsSheet from '../components/chat/ChatOptionsSheet';
 import ClearConversationModal from '../components/chat/ClearConversationModal';
@@ -324,6 +325,10 @@ const ChatScreen = () => {
     tccLiteAtHandoff,
     handleOpenTccLiteAtHandoff,
     handleDismissTccLiteAtHandoff,
+    crisisResourcesPanel,
+    dismissCrisisResourcesPanel,
+    openCrisisResourcesPanel,
+    openEmergencyContactsFromChat,
     historyHasMore,
     loadingOlderMessages,
     loadOlderMessages,
@@ -533,6 +538,7 @@ const ChatScreen = () => {
         onOpenCustomization={handleOpenChatCustomization}
         onOpenPrivacy={handleOpenAIDetails}
         onOpenAiInfo={() => setShowAIDisclosure(true)}
+        onOpenCrisisResources={openCrisisResourcesPanel}
         onRequestClearConversation={() => setShowClearModal(true)}
         immersiveMode={immersiveMode}
         onToggleImmersiveMode={toggleImmersiveMode}
@@ -646,6 +652,16 @@ const ChatScreen = () => {
           items={visibleTccContinuityItems}
           onOpen={handleOpenTccContinuityItem}
           onDismiss={handleDismissTccContinuityItem}
+        />
+      ) : null}
+
+      {!immersiveMode && crisisResourcesPanel ? (
+        <CrisisResourcesStrip
+          resources={crisisResourcesPanel}
+          onDismiss={dismissCrisisResourcesPanel}
+          onOpenEmergencyContacts={
+            guestQuota === null ? openEmergencyContactsFromChat : null
+          }
         />
       ) : null}
 

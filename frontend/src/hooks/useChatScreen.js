@@ -58,11 +58,15 @@ import {
 } from '../utils/chatWelcomeGreeting';
 import { getAppLanguage } from '../config/api';
 import {
+  findLatestCrisisContextFromMessages,
+  normalizeCrisisResourcesPayload,
+} from '../utils/crisisResources';
+import { fetchCrisisResources } from '../services/crisisResourcesService';
+import {
   clearPendingTccLiteResume,
   peekPendingTccLiteResume,
   setPendingTccLiteResume,
 } from '../utils/chatTccLiteResume';
-import { countNonemptyUserTurns } from '../utils/chatTurnUtils';
 import {
   buildAssistantMetadataFromTurnPayload,
   resolveTccLiteAtHandoffFromPayload,
@@ -139,12 +143,8 @@ export function useChatScreen() {
   const [dismissedContinuityIds, setDismissedContinuityIds] = useState([]);
   const dismissedContinuityIdsRef = useRef([]);
   const [tccLiteAtHandoff, setTccLiteAtHandoff] = useState(null);
-  const resolveActiveConversationId = useCallback(async () => {
-    if (await chatService.isGuestChatMode()) {
-      return AsyncStorage.getItem(STORAGE_KEYS.GUEST_CONVERSATION_ID);
-    }
-    return AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
-  }, []);
+  const [crisisResourcesPanel, setCrisisResourcesPanel] = useState(null);
+  const crisisResourcesDismissedRef = useRef(false);
   const pendingTccLiteResumeRef = useRef(null);
   const handleSendRef = useRef(null);
   /** Evita doble POST / doble respuesta del asistente si el usuario envía dos veces muy rápido. */
@@ -166,9 +166,6 @@ export function useChatScreen() {
   /** Ref sincronizado con `messages` para programar resumen al salir / background sin cierre obsoleto. */
   const messagesRef = useRef(messages);
   const lastSessionSummaryScheduleAtRef = useRef(0);
-  /** Turnos de usuario al abrir el chat en esta visita (no todo el historial). */
-  const userTurnBaselineRef = useRef(0);
-  const captureVisitBaselineRef = useRef(true);
 
   const flatListRef = useRef(null);
   const inputRef = useRef(null);
@@ -248,21 +245,16 @@ export function useChatScreen() {
   }, [messages]);
 
   /** Best-effort: programa continuidad del último chat en servidor (#4 + #47). */
-  const captureUserTurnBaseline = useCallback((messageList) => {
-    userTurnBaselineRef.current = countNonemptyUserTurns(messageList);
-    captureVisitBaselineRef.current = false;
-  }, []);
-
   const scheduleLastSessionSummaryDeferred = useCallback(async () => {
     const DEBOUNCE_MS = 20000;
     if (Date.now() - lastSessionSummaryScheduleAtRef.current < DEBOUNCE_MS) return;
     try {
       if (await chatService.isGuestChatMode()) return;
-      const newUserTurns = Math.max(
-        0,
-        countNonemptyUserTurns(messagesRef.current) - userTurnBaselineRef.current,
+      const hasUserTurn = messagesRef.current.some(
+        (m) =>
+          m.role === MESSAGE_ROLES.USER && String(m.content || '').trim().length > 0
       );
-      if (newUserTurns < 1) return;
+      if (!hasUserTurn) return;
       const cid = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
       if (!cid || !isValidMongoObjectId24(cid)) return;
       lastSessionSummaryScheduleAtRef.current = Date.now();
@@ -321,6 +313,52 @@ export function useChatScreen() {
     setTrialBannerDismissed(true);
   }, []);
 
+  const applyCrisisResourcesFromTurn = useCallback((payload) => {
+    const normalized = normalizeCrisisResourcesPayload(payload?.crisisResources);
+    if (!normalized) return;
+    crisisResourcesDismissedRef.current = false;
+    setCrisisResourcesPanel(normalized);
+  }, []);
+
+  const hydrateCrisisResourcesFromMessages = useCallback(async (messageList) => {
+    if (crisisResourcesDismissedRef.current) return;
+    const ctx = findLatestCrisisContextFromMessages(messageList);
+    if (!ctx) {
+      setCrisisResourcesPanel(null);
+      return;
+    }
+    try {
+      const fetched = await fetchCrisisResources();
+      if (!fetched) return;
+      setCrisisResourcesPanel({
+        ...fetched,
+        riskLevel: ctx.riskLevel || fetched.riskLevel,
+        hardStop: ctx.hardStop === true,
+      });
+    } catch (_) {
+      /* sin panel si falla la red */
+    }
+  }, []);
+
+  const openCrisisResourcesPanel = useCallback(async () => {
+    crisisResourcesDismissedRef.current = false;
+    try {
+      const fetched = await fetchCrisisResources();
+      if (fetched) setCrisisResourcesPanel(fetched);
+    } catch (_) {
+      /* el usuario puede reintentar desde el menú */
+    }
+  }, []);
+
+  const dismissCrisisResourcesPanel = useCallback(() => {
+    crisisResourcesDismissedRef.current = true;
+    setCrisisResourcesPanel(null);
+  }, []);
+
+  const openEmergencyContactsFromChat = useCallback(() => {
+    navigation.navigate('MainTabs', { screen: 'Perfil' });
+  }, [navigation]);
+
   const initializeConversation = useCallback(async () => {
     const texts = textsRef.current;
     const appLanguage = await getAppLanguage();
@@ -343,10 +381,8 @@ export function useChatScreen() {
         return timeA - timeB;
       });
       setMessages(finalizeLoadedChatMessages(uniqueMessages, appLanguage));
-      if (flags?.captureVisitBaseline) {
-        captureUserTurnBaseline(uniqueMessages);
-      }
       if (flags?.pagination) applyMessagePagination(flags.pagination);
+      void hydrateCrisisResourcesFromMessages(uniqueMessages);
       if (isRegistered) {
         const userCount = uniqueMessages.filter((m) => m.type !== 'quickReplies' && m.role === MESSAGE_ROLES.USER).length;
         setShowSessionIntentionPrompt(userCount === 0 && !sessionIntentionMeta);
@@ -383,7 +419,6 @@ export function useChatScreen() {
             dedupeAndSetMessages(pack.messages, pack.sessionIntention, {
               isRegistered: true,
               pagination: pack.pagination,
-              captureVisitBaseline: captureVisitBaselineRef.current,
             })
           )
             return;
@@ -398,11 +433,7 @@ export function useChatScreen() {
               dedupeAndSetMessages(
                 retryPack.messages,
                 retryPack.sessionIntention,
-                {
-                  isRegistered: true,
-                  pagination: retryPack.pagination,
-                  captureVisitBaseline: captureVisitBaselineRef.current,
-                },
+                { isRegistered: true, pagination: retryPack.pagination },
               )
             )
               return;
@@ -416,14 +447,69 @@ export function useChatScreen() {
           metadata: { timestamp: new Date().toISOString(), type: MESSAGE_TYPES.WELCOME },
         };
         setMessages([welcomeMessage]);
-        if (captureVisitBaselineRef.current) captureUserTurnBaseline([]);
         setShowSessionIntentionPrompt(true);
         await chatService.saveMessages([welcomeMessage]);
         return;
       }
 
-      navigation.reset({ index: 0, routes: [{ name: ROUTES.SIGN_IN }] });
-      return;
+      const startGuest = route.params?.startGuest === true;
+      let hasGuestToken = await AsyncStorage.getItem(STORAGE_KEYS.GUEST_TOKEN);
+      if (!hasGuestToken && startGuest) {
+        try {
+          const data = await chatService.startGuestChatSession();
+          setGuestQuota({
+            max: data.maxUserMessages ?? GUEST_MAX_USER_MESSAGES,
+            remaining: Math.max(
+              0,
+              (data.maxUserMessages ?? GUEST_MAX_USER_MESSAGES) - (data.userMessagesUsed ?? 0)
+            ),
+          });
+        } catch (e) {
+          if (extractErrorCode(e) === 'RATE_LIMIT') {
+            Alert.alert(texts.GUEST_RATE_LIMIT_TITLE, texts.GUEST_RATE_LIMIT_MESSAGE, [
+              {
+                text: texts.COMMON_OK,
+                onPress: () => navigation.reset({ index: 0, routes: [{ name: 'Home' }] }),
+              },
+            ]);
+            setGuestQuota(null);
+            setMessages([]);
+            setShowSessionIntentionPrompt(false);
+            return;
+          }
+          throw e;
+        }
+        hasGuestToken = await AsyncStorage.getItem(STORAGE_KEYS.GUEST_TOKEN);
+        navigation.setParams({ startGuest: undefined });
+      }
+
+      if (await chatService.isGuestChatMode()) {
+        const convId = await AsyncStorage.getItem(STORAGE_KEYS.GUEST_CONVERSATION_ID);
+        if (convId) {
+          const serverMessages = await chatService.getGuestMessages(convId);
+          const used = serverMessages.filter((m) => m.role === 'user').length;
+          setGuestQuota({
+            max: GUEST_MAX_USER_MESSAGES,
+            remaining: Math.max(0, GUEST_MAX_USER_MESSAGES - used),
+          });
+          if (dedupeAndSetMessages(serverMessages, null, { isRegistered: false })) return;
+        }
+        setGuestQuota({ max: GUEST_MAX_USER_MESSAGES, remaining: GUEST_MAX_USER_MESSAGES });
+        const welcomeMessage = {
+          id: `${MESSAGE_ID_PREFIXES.WELCOME}-${Date.now()}`,
+          content: pickChatWelcomeGreeting(appLanguage),
+          role: MESSAGE_ROLES.ASSISTANT,
+          type: MESSAGE_TYPES.TEXT,
+          metadata: { timestamp: new Date().toISOString(), type: MESSAGE_TYPES.WELCOME },
+        };
+        setMessages([welcomeMessage]);
+        setShowSessionIntentionPrompt(false);
+        return;
+      }
+
+      setGuestQuota(null);
+      setMessages([]);
+      setShowSessionIntentionPrompt(false);
     } catch (err) {
       if (err.guestAuthFailed) {
         setError(null);
@@ -459,12 +545,7 @@ export function useChatScreen() {
         scrollToBottomStableRef.current?.(false, { force: true });
       });
     }
-  }, [
-    navigation,
-    route.params?.openConversationId,
-    applyMessagePagination,
-    captureUserTurnBaseline,
-  ]);
+  }, [navigation, route.params?.startGuest, route.params?.openConversationId, applyMessagePagination, hydrateCrisisResourcesFromMessages]);
 
   const loadOlderMessages = useCallback(async () => {
     if (loadingOlderMessages || !historyHasMore) return;
@@ -840,6 +921,7 @@ export function useChatScreen() {
           }
         },
         onDone(payload) {
+          applyCrisisResourcesFromTurn(payload);
           // Asegurar que no se pierdan chunks pendientes.
           if (flushTimer) {
             clearTimeout(flushTimer);
@@ -1262,8 +1344,8 @@ export function useChatScreen() {
       dismissedContinuityIdsRef.current = [];
       setDismissedContinuityIds([]);
       setTccLiteAtHandoff(null);
-      userTurnBaselineRef.current = 0;
-      captureVisitBaselineRef.current = true;
+      crisisResourcesDismissedRef.current = false;
+      setCrisisResourcesPanel(null);
       pendingTccLiteResumeRef.current = null;
       void clearPendingTccLiteResume();
       await chatService.clearMessages();
@@ -1305,6 +1387,7 @@ export function useChatScreen() {
               return timeA - timeB;
             });
             setMessages(finalizeLoadedChatMessages(uniqueMessages, refreshLang));
+            void hydrateCrisisResourcesFromMessages(uniqueMessages);
           }
         }
         return;
@@ -1327,6 +1410,7 @@ export function useChatScreen() {
             return timeA - timeB;
           });
           setMessages(finalizeLoadedChatMessages(uniqueMessages, refreshLang));
+          void hydrateCrisisResourcesFromMessages(uniqueMessages);
           const uc = uniqueMessages.filter((m) => m.role === 'user').length;
           setShowSessionIntentionPrompt(uc === 0 && !pack.sessionIntention);
         }
@@ -1336,7 +1420,7 @@ export function useChatScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [hydrateCrisisResourcesFromMessages]);
 
   const handleBack = useCallback(async () => {
     try {
@@ -1350,12 +1434,11 @@ export function useChatScreen() {
         return;
       }
 
-      const newUserTurns = Math.max(
-        0,
-        countNonemptyUserTurns(messagesRef.current) - userTurnBaselineRef.current,
-      );
+      const userTurnCount = messagesRef.current.filter(
+        (m) => m.role === MESSAGE_ROLES.USER && String(m.content || '').trim().length > 0,
+      ).length;
 
-      if (newUserTurns >= 1 && !(await chatService.isGuestChatMode())) {
+      if (userTurnCount >= 2 && !(await chatService.isGuestChatMode())) {
         const cid = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
         if (cid && isValidMongoObjectId24(cid)) {
           const parentNav = navigation.getParent?.() || navigation;
@@ -1498,11 +1581,24 @@ export function useChatScreen() {
       if (!typing && sendRequestInFlightRef.current) return;
       setIsTyping(Boolean(typing));
     });
+    const unsubscribeAlert = websocketService.on('emergency:alert:sent', (data) => {
+      const texts = textsRef.current;
+      if (data && !data.isTest) {
+        Alert.alert(
+          `🚨 ${texts.EMERGENCY_ALERT_SENT_TITLE}`,
+          texts.EMERGENCY_ALERT_SENT_BODY
+            .replace('{successful}', String(data.successfulSends))
+            .replace('{total}', String(data.totalContacts)),
+          [{ text: texts.COMMON_OK }]
+        );
+      }
+    });
     const unsubscribeError = websocketService.on('error', (err) => {
       console.error('[ChatScreen] Error en WebSocket:', err);
     });
     return () => {
       unsubscribeTyping();
+      unsubscribeAlert();
       unsubscribeError();
       websocketService.disconnect();
     };
@@ -1514,9 +1610,8 @@ export function useChatScreen() {
       try {
         const token = await AsyncStorage.getItem('userToken');
         if (token) return;
-        if (await chatService.isGuestChatMode()) {
-          await chatService.clearGuestChat();
-        }
+        if (route.params?.startGuest === true) return;
+        if (await chatService.isGuestChatMode()) return;
         navigation.reset({ index: 0, routes: [{ name: ROUTES.SIGN_IN }] });
       } catch (err) {
         console.error('[ChatScreen] Error verificando autenticación:', err);
@@ -1524,7 +1619,7 @@ export function useChatScreen() {
       }
     };
     checkAuthentication();
-  }, [navigation]);
+  }, [navigation, route.params?.startGuest]);
 
   const loadTccContinuity = useCallback(async () => {
     try {
@@ -1631,7 +1726,6 @@ export function useChatScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      captureVisitBaselineRef.current = true;
       (async () => {
         if (await chatService.isGuestChatMode()) {
           setTrialInfo(null);
@@ -1641,11 +1735,8 @@ export function useChatScreen() {
         }
         const p = await getOfflinePendingMessage();
         setOfflinePendingMessage(p);
-        await initializeConversation();
-        if (captureVisitBaselineRef.current) {
-          captureUserTurnBaseline(messagesRef.current);
-        }
       })();
+      initializeConversation();
       const handoffTimer = setTimeout(() => {
         offerGuestHandoffIfPending();
       }, 650);
@@ -1666,8 +1757,7 @@ export function useChatScreen() {
       offerGuestHandoffIfPending,
       scheduleLastSessionSummaryDeferred,
       cancelActiveStream,
-      captureUserTurnBaseline,
-    ]),
+    ])
   );
 
   return {
@@ -1719,6 +1809,10 @@ export function useChatScreen() {
     tccLiteAtHandoff,
     handleOpenTccLiteAtHandoff,
     handleDismissTccLiteAtHandoff,
+    crisisResourcesPanel,
+    dismissCrisisResourcesPanel,
+    openCrisisResourcesPanel,
+    openEmergencyContactsFromChat,
     historyHasMore,
     loadingOlderMessages,
     loadOlderMessages,
