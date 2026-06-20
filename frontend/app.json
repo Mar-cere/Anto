@@ -78,7 +78,12 @@
         }
       ],
       "expo-health-connect",
-      "@sentry/react-native"
+      [
+        "@sentry/react-native",
+        {
+          "disableAutoUpload": true
+        }
+      ]
     ],
     "runtimeVersion": {
       "policy": "appVersion"

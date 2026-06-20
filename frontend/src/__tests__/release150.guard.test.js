@@ -72,4 +72,15 @@ describe('release 1.5.0 guard', () => {
     expect(social).toMatch(/antoapp\.en/);
     expect(settings).toMatch(/resolveInstagramUrl/);
   });
+
+  it('EAS production desactiva upload de source maps de Sentry sin org/token', () => {
+    const eas = JSON.parse(readRepo('frontend/eas.json'));
+    const app = JSON.parse(readRepo('frontend/app.json'));
+    expect(eas.build.production.env.SENTRY_DISABLE_AUTO_UPLOAD).toBe('true');
+    expect(eas.build.preview.env.SENTRY_DISABLE_AUTO_UPLOAD).toBe('true');
+    const sentryPlugin = app.expo.plugins.find(
+      (p) => Array.isArray(p) && String(p[0]).includes('sentry'),
+    );
+    expect(sentryPlugin?.[1]?.disableAutoUpload).toBe(true);
+  });
 });
