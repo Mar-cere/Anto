@@ -25,6 +25,7 @@ import SummaryExploreLinks from '../components/summary/SummaryExploreLinks';
 import SummaryMetricGrid from '../components/summary/SummaryMetricGrid';
 import SummaryNarrativeCard from '../components/summary/SummaryNarrativeCard';
 import SummaryPeriodHero from '../components/summary/SummaryPeriodHero';
+import SummaryWhatHelpsSection from '../components/summary/SummaryWhatHelpsSection';
 import { api, ENDPOINTS } from '../config/api';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
@@ -941,6 +942,7 @@ export default function SummaryScreen() {
                     sectionTitle={TEXTS.METRICS_SECTION}
                   />
                   <SummaryNarrativeCard narrative={payload?.narrative} texts={TEXTS} />
+                  <SummaryWhatHelpsSection />
                   <AbcMacroPatternsCard
                     startDate={payload?.period?.start}
                     endDate={payload?.period?.end}

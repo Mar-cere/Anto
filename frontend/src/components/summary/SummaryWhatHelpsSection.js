@@ -1,8 +1,11 @@
 /**
  * Conexiones tema → técnica (top N), embebido en Tu resumen.
  */
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useLanguage } from '../../context/LanguageContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
@@ -15,6 +18,8 @@ import {
   filterPublicGraphInterventionEdges,
   resolveGraphInterventionLabel,
 } from '../../utils/graphInterventionLabel';
+import { resolveInterventionScreen } from '../../utils/interventionCatalogResolve';
+import { recordInterventionClicked } from '../../utils/recordInterventionCompleted';
 
 const MAX_ITEMS = 2;
 
@@ -40,6 +45,7 @@ function normalizeInterventionLabel(label, id) {
 export default function SummaryWhatHelpsSection() {
   const { language } = useLanguage();
   const { colors } = useTheme();
+  const navigation = useNavigation();
   const TEXTS = useSectionTranslations('TECHNIQUES');
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([]);
@@ -69,6 +75,13 @@ export default function SummaryWhatHelpsSection() {
           backgroundColor: colors.glassFill || colors.surface,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
+        },
+        cardRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+        },
+        cardBody: {
+          flex: 1,
         },
         title: {
           fontSize: 16,
@@ -142,6 +155,9 @@ export default function SummaryWhatHelpsSection() {
           if (!topic) return null;
           return {
             key: `${topic}:${edge.interventionId}`,
+            interventionId: String(edge.interventionId || '').trim(),
+            topicTag: edge.topicTag || null,
+            topicFree: edge.topicFree || null,
             intervention,
             topic: topic.length > 56 ? `${topic.slice(0, 55)}…` : topic,
             status: formatGraphHumanStatus(graphTexts, edge),
@@ -160,6 +176,20 @@ export default function SummaryWhatHelpsSection() {
     load();
   }, [load]);
 
+  const openIntervention = useCallback(
+    (item) => {
+      const target = resolveInterventionScreen(item?.interventionId);
+      if (!target) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      recordInterventionClicked(item.interventionId, {
+        ...(item.topicTag ? { topicTag: item.topicTag } : {}),
+        ...(item.topicFree ? { topicFree: item.topicFree } : {}),
+      });
+      navigation.navigate(target.screen, target.params);
+    },
+    [navigation],
+  );
+
   if (loading) {
     return (
       <View style={styles.loading}>
@@ -174,13 +204,36 @@ export default function SummaryWhatHelpsSection() {
     <View style={styles.block} accessibilityRole="summary">
       <Text style={styles.kicker}>{sectionTitle}</Text>
       {sectionHint ? <Text style={styles.hint}>{sectionHint}</Text> : null}
-      {items.map((item) => (
-        <View key={item.key} style={styles.card}>
-          <Text style={styles.title}>{item.intervention}</Text>
-          <Text style={styles.context}>{formatGraphRowContext(graphTexts, item.topic)}</Text>
-          {item.status ? <Text style={styles.status}>{item.status}</Text> : null}
-        </View>
-      ))}
+      {items.map((item) => {
+        const canOpen = Boolean(resolveInterventionScreen(item.interventionId));
+        const body = (
+          <View style={styles.cardBody}>
+            <Text style={styles.title}>{item.intervention}</Text>
+            <Text style={styles.context}>{formatGraphRowContext(graphTexts, item.topic)}</Text>
+            {item.status ? <Text style={styles.status}>{item.status}</Text> : null}
+          </View>
+        );
+        if (!canOpen) {
+          return (
+            <View key={item.key} style={styles.card}>
+              {body}
+            </View>
+          );
+        }
+        return (
+          <TouchableOpacity
+            key={item.key}
+            style={[styles.card, styles.cardRow]}
+            onPress={() => openIntervention(item)}
+            accessibilityRole="button"
+            accessibilityLabel={item.intervention}
+            activeOpacity={0.85}
+          >
+            {body}
+            <MaterialCommunityIcons name="chevron-right" size={22} color={colors.textSecondary} />
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }

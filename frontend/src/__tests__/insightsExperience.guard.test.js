@@ -48,6 +48,23 @@ describe('insightsExperience guard', () => {
     expect(src).not.toMatch(/await websocketService\.connect/);
   });
 
+  it('SummaryScreen monta "lo que te ayuda" con navegación a la técnica', () => {
+    const screen = readSrc('screens/SummaryScreen.js');
+    expect(screen).toMatch(/import SummaryWhatHelpsSection/);
+    expect(screen).toMatch(/<SummaryWhatHelpsSection \/>/);
+    const section = readSrc('components/summary/SummaryWhatHelpsSection.js');
+    expect(section).toMatch(/resolveInterventionScreen/);
+    expect(section).toMatch(/recordInterventionClicked/);
+    expect(section).toMatch(/navigation\.navigate/);
+  });
+
+  it('no quedan componentes de insights huérfanos sin montar', () => {
+    expect(fs.existsSync(path.join(FRONTEND_SRC, 'components/summary/SummaryPatternsSection.js'))).toBe(
+      false,
+    );
+    expect(fs.existsSync(path.join(FRONTEND_SRC, 'components/InsightsQuickCard.js'))).toBe(false);
+  });
+
   it('WeeklyInsightSettingsSection mantiene panel compacto colapsable', () => {
     const src = readSrc('components/weeklyInsight/WeeklyInsightSettingsSection.js');
     expect(src).toMatch(/SignalConsentPanel compact/);
