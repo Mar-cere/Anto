@@ -43,6 +43,11 @@ await jest.unstable_mockModule('../../../services/personalPatternRagService.js',
   buildPersonalPatternRagSnippet: jest.fn().mockResolvedValue(null),
 }));
 
+const mockMessageUpdateOne = jest.fn().mockResolvedValue({ acknowledged: true });
+await jest.unstable_mockModule('../../../models/Message.js', () => ({
+  default: { updateOne: mockMessageUpdateOne },
+}));
+
 const {
   planChatTurnEnhancements,
   buildClientTurnPayload,
@@ -210,5 +215,49 @@ describe('chatTurnEnhancementsService', () => {
     expect(mockRecordShown).toHaveBeenCalledWith(
       expect.objectContaining({ source: 'chat_suggestions_v1' }),
     );
+  });
+
+  it('finalizeChatTurnEnhancements persiste las sugerencias mostradas en el mensaje', async () => {
+    await finalizeChatTurnEnhancements({
+      conversationId: '507f1f77bcf86cd799439012',
+      userId: '507f1f77bcf86cd799439011',
+      assistantMessageId: '507f1f77bcf86cd799439013',
+      tccLitePlan: { active: false },
+      suggestionPlan: {
+        shouldShow: true,
+        formatted: [{ id: 'breathing_exercise', screen: 'BreathingExercise' }],
+        rankingPersonalized: true,
+      },
+      emotionalAnalysis: {},
+      contextualAnalysis: {},
+      userContent: 'estoy nervioso',
+      riskLevel: 'LOW',
+    });
+
+    expect(mockMessageUpdateOne).toHaveBeenCalledWith(
+      { _id: '507f1f77bcf86cd799439013' },
+      expect.objectContaining({
+        $set: expect.objectContaining({
+          'metadata.suggestions': [{ id: 'breathing_exercise', screen: 'BreathingExercise' }],
+          'metadata.suggestionsPersonalized': true,
+        }),
+      }),
+    );
+  });
+
+  it('finalizeChatTurnEnhancements no persiste sugerencias si no se mostraron', async () => {
+    await finalizeChatTurnEnhancements({
+      conversationId: '507f1f77bcf86cd799439012',
+      userId: '507f1f77bcf86cd799439011',
+      assistantMessageId: '507f1f77bcf86cd799439013',
+      tccLitePlan: { active: false },
+      suggestionPlan: { shouldShow: false, formatted: [{ id: 'grief_roadmap' }] },
+      emotionalAnalysis: {},
+      contextualAnalysis: {},
+      userContent: 'duelo',
+      riskLevel: 'LOW',
+    });
+
+    expect(mockMessageUpdateOne).not.toHaveBeenCalled();
   });
 });

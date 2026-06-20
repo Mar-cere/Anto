@@ -21,6 +21,7 @@ import {
   isLlmCrisisTherapeuticExtrasBlocked,
 } from '../utils/chatObservationalContext.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
+import Message from '../models/Message.js';
 
 const CHAT_CONTEXT_SNIPPET_TIMEOUT_MS = 2500;
 
@@ -226,8 +227,9 @@ export async function finalizeChatTurnEnhancements({
   await saveTccLiteStateToConversation(conversationId, tccLitePlan).catch(() => {});
 
   const formatted = suggestionPlan?.formatted;
+  const crisisBlocked = isLlmCrisisTherapeuticExtrasBlocked({ riskLevel, userMessage: userContent });
   if (
-    !isLlmCrisisTherapeuticExtrasBlocked({ riskLevel, userMessage: userContent }) &&
+    !crisisBlocked &&
     Array.isArray(formatted) &&
     formatted.length > 0 &&
     userId &&
@@ -246,6 +248,24 @@ export async function finalizeChatTurnEnhancements({
         source: 'chat_suggestions_v1',
       })
       .catch(() => {});
+  }
+
+  // Persistir las sugerencias mostradas en el mensaje del asistente para que
+  // las tarjetas se reconstruyan al reabrir la conversación (continuidad de UX).
+  // Solo cuando realmente se mostraron (shouldShow), igual que buildClientTurnPayload.
+  const shownSuggestions = suggestionPlan?.shouldShow && !crisisBlocked
+    ? suggestionPlan.formatted || []
+    : [];
+  if (assistantMessageId && shownSuggestions.length > 0) {
+    await Message.updateOne(
+      { _id: assistantMessageId },
+      {
+        $set: {
+          'metadata.suggestions': shownSuggestions,
+          'metadata.suggestionsPersonalized': suggestionPlan?.rankingPersonalized === true,
+        },
+      },
+    ).catch(() => {});
   }
 }
 

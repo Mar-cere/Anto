@@ -1,8 +1,10 @@
 import {
+  finalizeLoadedChatMessages,
   getChatWelcomeTimePeriod,
   isChatWelcomeMessage,
   localizeChatWelcomeMessages,
   pickChatWelcomeGreeting,
+  reconstructPersistedSuggestions,
 } from '../chatWelcomeGreeting';
 
 describe('chatWelcomeGreeting', () => {
@@ -44,5 +46,59 @@ describe('chatWelcomeGreeting', () => {
     );
     expect(out[0].content).toMatch(/Good (morning|afternoon|evening)|^Hi!/i);
     expect(out[0].content).not.toMatch(/¿Cómo va tu día/i);
+  });
+
+  describe('reconstructPersistedSuggestions', () => {
+    it('reconstruye la tarjeta del último turno con metadata.suggestions', () => {
+      const out = reconstructPersistedSuggestions([
+        { _id: 'u1', role: 'user', content: 'tengo ansiedad' },
+        {
+          _id: 'a1',
+          role: 'assistant',
+          content: 'Te acompaño',
+          metadata: {
+            timestamp: '2026-06-19T10:00:00.000Z',
+            suggestions: [{ id: 'breathing_exercise', screen: 'BreathingExercise' }],
+            suggestionsPersonalized: true,
+          },
+        },
+      ]);
+      expect(out).toHaveLength(3);
+      const block = out[2];
+      expect(block.type).toBe('suggestions');
+      expect(block.id).toBe('suggestions-loaded-a1');
+      expect(block.suggestions).toHaveLength(1);
+      expect(block.metadata.rankingPersonalized).toBe(true);
+    });
+
+    it('no duplica si ya hay un bloque de sugerencias en vivo', () => {
+      const input = [
+        { _id: 'a1', role: 'assistant', metadata: { suggestions: [{ id: 'x' }] } },
+        { id: 'live', role: 'suggestions', type: 'suggestions', suggestions: [{ id: 'x' }] },
+      ];
+      expect(reconstructPersistedSuggestions(input)).toHaveLength(2);
+    });
+
+    it('no inserta nada si ningún mensaje tiene sugerencias', () => {
+      const input = [{ _id: 'a1', role: 'assistant', content: 'hola', metadata: {} }];
+      expect(reconstructPersistedSuggestions(input)).toHaveLength(1);
+    });
+
+    it('finalizeLoadedChatMessages integra filtrado + reconstrucción', () => {
+      const out = finalizeLoadedChatMessages(
+        [
+          { _id: 'q', type: 'quickReplies', role: 'assistant' },
+          {
+            _id: 'a1',
+            role: 'assistant',
+            content: 'Hola',
+            metadata: { suggestions: [{ id: 'grounding_technique' }] },
+          },
+        ],
+        'es',
+      );
+      expect(out.some((m) => m.type === 'quickReplies')).toBe(false);
+      expect(out.some((m) => m.type === 'suggestions')).toBe(true);
+    });
   });
 });
