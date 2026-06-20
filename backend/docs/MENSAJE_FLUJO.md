@@ -787,25 +787,15 @@ Este documento describe el viaje completo que realiza un mensaje desde que se en
 4. ✅ Temas recurrentes: Del historial
 5. ✅ Última interacción: Del historial
 
-### **FILTROS DE PATRONES COGNITIVOS:**
-**Servicio:** `userProfileService.analizarPatronesCognitivos()`  
-**Archivo:** `backend/services/userProfileService.js` (líneas 601-636)
+### **DISTORSIONES COGNITIVAS:**
+**Servicio real (conectado al chat):** `cognitiveDistortionDetector.detectDistortions()`
+**Archivo:** `backend/services/cognitiveDistortionDetector.js`
 
-1. ✅ **Patrón: `distorsiones`**
-   - Patrón: `/(?:siempre|nunca|todo|nada|debería|tengo que)/i`
-   - Detecta: Pensamiento todo-o-nada, generalización excesiva, deberías
-
-2. ✅ **Patrón: `autocritica`**
-   - Patrón: `/(?:mi culpa|soy un|no sirvo|no puedo)/i`
-   - Detecta: Autocrítica negativa, culpa excesiva
-
-3. ✅ **Patrón: `catastrofizacion`**
-   - Patrón: `/(?:terrible|horrible|desastre|lo peor)/i`
-   - Detecta: Pensamiento catastrófico, exageración negativa
-
-4. ✅ **Patrón: `generalizacion`**
-   - Patrón: `/(?:todos|nadie|siempre|jamás|típico)/i`
-   - Detecta: Generalizaciones excesivas
+La detección de distorsiones que alimenta el prompt, el TCC lite y los reportes
+se hace en `contextAnalyzer.analizarMensaje()` usando `cognitiveDistortionDetector`
+(catálogo Beck/Burns con gating de confianza por fase). El antiguo detector de
+regex simples en `userProfileService` fue eliminado por estar muerto y duplicar
+esta función.
 
 ### **FILTROS DE ESTRATEGIAS DE AFRONTAMIENTO:**
 **Servicio:** `userProfileService.identificarEstrategiasAfrontamiento()`  

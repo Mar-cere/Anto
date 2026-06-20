@@ -679,46 +679,6 @@ class UserProfileService {
   }
 
   /**
-   * Actualiza los patrones cognitivos del usuario basado en un mensaje
-   * @param {string} userId - ID del usuario
-   * @param {Object} mensaje - Mensaje a analizar
-   * @returns {Promise<Object|null>} Perfil actualizado o null si hay error
-   */
-  async actualizarPatronesCognitivos(userId, mensaje) {
-    try {
-      const patrones = await this.analizarPatronesCognitivos(mensaje);
-      
-      const update = {
-        $push: {
-          'patrones.cognitivos.historial': {
-            patrones,
-            timestamp: new Date()
-          }
-        }
-      };
-
-      // Actualizar frecuencias de patrones cognitivos
-      Object.entries(patrones).forEach(([tipo, presencia]) => {
-        if (presencia) {
-          update.$inc = {
-            ...update.$inc,
-            [`patrones.cognitivos.frecuencias.${tipo}`]: 1
-          };
-        }
-      });
-
-      return await UserProfile.findOneAndUpdate(
-        { userId },
-        update,
-        { new: true }
-      );
-    } catch (error) {
-      console.error('[UserProfileService] Error en patrones cognitivos:', error);
-      return null;
-    }
-  }
-
-  /**
    * Actualiza las estrategias de afrontamiento del usuario
    * @param {string} userId - ID del usuario
    * @param {Object} mensaje - Mensaje a analizar
@@ -837,29 +797,6 @@ class UserProfileService {
     if (intensidad >= INTENSITY_HIGH) return 'alta';
     if (intensidad >= INTENSITY_MEDIUM) return 'media';
     return 'baja';
-  }
-
-  /**
-   * Analiza patrones cognitivos en un mensaje
-   * @param {Object} mensaje - Mensaje a analizar (debe tener propiedad 'content')
-   * @returns {Promise<Object>} Objeto con patrones detectados (distorsiones, autocritica, etc.)
-   */
-  async analizarPatronesCognitivos(mensaje) {
-    if (!mensaje || typeof mensaje.content !== 'string') {
-      return {};
-    }
-    
-    const patrones = {
-      distorsiones: /(?:siempre|nunca|todo|nada|debería|tengo que)/i,
-      autocritica: /(?:mi culpa|soy un|no sirvo|no puedo)/i,
-      catastrofizacion: /(?:terrible|horrible|desastre|lo peor)/i,
-      generalizacion: /(?:todos|nadie|siempre|jamás|típico)/i
-    };
-
-    return Object.entries(patrones).reduce((acc, [tipo, patron]) => {
-      acc[tipo] = patron.test(mensaje.content);
-      return acc;
-    }, {});
   }
 
   /**
