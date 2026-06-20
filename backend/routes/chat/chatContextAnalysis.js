@@ -198,9 +198,17 @@ export function shouldSuppressLowRelevanceSuggestions(userContent = '') {
     /(?:ansiedad|tristeza|depresi[oó]n|p[aá]nico|desesper|suicid|no\s+puedo\s+m[aá]s|me\s+siento\s+muy\s+mal)/i.test(
       text,
     );
+  const positiveCheckout =
+    /(?:me\s+siento\s+bien|(?:estoy|anda|va)\s+bien|todo\s+bien|(?:hoy|ahora)\s+bien|bien\s+gracias)/i.test(
+      text,
+    ) &&
+    !/(?:ansiedad|triste|mal|agobi|estres|preocup|planific|organiz|tarea|h[aá]bito|ordenar|estudiar)/i.test(
+      text,
+    );
 
   if (mundanePhysical && !distress) return true;
   if (minimizing && !distress && text.length < 140) return true;
+  if (positiveCheckout && text.length < 120) return true;
   return false;
 }
 

@@ -54,6 +54,21 @@ const STUDY_CONTEXT_CUES =
 const NO_PRODUCT_ACTION_INTENT =
   /\b(no\s+me\s+sugieras?\s+tareas?|sin\s+tareas?|solo\s+escuchar|solo\s+desahogar|no\s+quiero\s+planificar|no\s+quiero\s+tareas?)\b/i;
 
+/** Check-in positivo sin pedido accionable (p. ej. «hoy bien, me siento bien»). */
+const POSITIVE_EMOTIONAL_CHECKOUT =
+  /(?:me\s+siento\s+(?:bien|tranquil[oa]|calm[oa]|content[oa]|feliz|mejor|genial)|(?:estoy|anda|va)\s+bien|todo\s+(?:bien|tranquilo|en\s+orden)|(?:hoy|ahora)\s+(?:bien|mejor|tranquil[oa])|(?:muy\s+)?bien\s+gracias|sin\s+novedad)/i;
+
+export function isLowValueEmotionalCheckout(content) {
+  const text = String(content || '').trim();
+  if (!text || text.length > 160) return false;
+  if (!POSITIVE_EMOTIONAL_CHECKOUT.test(text)) return false;
+  if (hasConcreteActionAnchor(text)) return false;
+  if (EXPLICIT_TASK_TO_APP.test(text) || EXPLICIT_HABIT_TO_APP.test(text)) return false;
+  if (OVERLOAD_CUES.test(text) || STUDY_CONTEXT_CUES.test(text)) return false;
+  if (NATURAL_PRODUCT_LEXICON.test(text) && proposalConfidenceScore(text) >= 2) return false;
+  return true;
+}
+
 function hasConcreteActionAnchor(content) {
   return CONCRETE_ACTION_ANCHORS.test(content);
 }
@@ -92,9 +107,19 @@ export function getProductActionNeedLevel(content) {
 function sessionAllowsProductDraft(intention, content) {
   if (EXPLICIT_TASK_TO_APP.test(content) || EXPLICIT_HABIT_TO_APP.test(content)) return true;
   if (NO_PRODUCT_ACTION_INTENT.test(content)) return false;
+  if (isLowValueEmotionalCheckout(content)) return false;
   if (isAbstractWithoutAction(content)) return false;
   const score = proposalConfidenceScore(content);
-  if (intention === 'plan' || intention === 'organize') return score >= 1;
+  if (intention === 'plan' || intention === 'organize') {
+    if (score >= 3) return true;
+    if (score >= 2 && (hasConcreteActionAnchor(content) || NATURAL_PRODUCT_LEXICON.test(content))) {
+      return true;
+    }
+    if (score >= 1 && HABIT_HINTS.test(content) && NATURAL_PRODUCT_LEXICON.test(content)) {
+      return true;
+    }
+    return false;
+  }
   if (intention === 'technique' && NATURAL_PRODUCT_LEXICON.test(content)) return score >= 2;
   if (
     intention === 'vent' &&
@@ -586,6 +611,9 @@ export function buildProposedProductActions(input) {
   if (content.length < 8 && !confirmationContext) {
     return [];
   }
+  if (isLowValueEmotionalCheckout(content)) {
+    return [];
+  }
 
   const intention = normalizeSessionIntention(sessionIntention);
   const allowsDraft =
@@ -649,6 +677,7 @@ export default {
   shouldOfferProductActions,
   isExplicitProductActionRequest,
   isAffirmativeProductActionConfirmation,
+  isLowValueEmotionalCheckout,
   resolveProductActionSourceFromHistory,
   resolveProductActionEnrichmentContext,
   getProductActionNeedLevel,

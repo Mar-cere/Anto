@@ -2,10 +2,8 @@
  * Tokens visuales de la pantalla de bienvenida según tema claro/oscuro.
  */
 
-const APP_LOGO = {
-  light: require('../../assets/icon.png'),
-  dark: require('../images/Anto.png'),
-};
+/** Anto.png es el orbe de marca; icon.png tiene fondo blanco cuadrado y rompe contenedores circulares. */
+const APP_LOGO = require('../images/Anto.png');
 
 export function getWelcomeScreenTheme(resolvedScheme, colors = {}) {
   const dark = resolvedScheme === 'dark';
@@ -26,6 +24,6 @@ export function getWelcomeScreenTheme(resolvedScheme, colors = {}) {
     gradientStart: colors.primary || '#1E83D3',
     gradientEnd: dark ? '#5B4BD4' : '#24234F',
     logoGlow: dark ? 'rgba(68, 215, 251, 0.18)' : 'rgba(30, 131, 211, 0.14)',
-    logo: APP_LOGO[dark ? 'dark' : 'light'],
+    logo: APP_LOGO,
   };
 }

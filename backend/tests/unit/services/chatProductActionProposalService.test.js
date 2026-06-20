@@ -3,6 +3,7 @@ import {
   shouldOfferProductActions,
   isExplicitProductActionRequest,
   isAffirmativeProductActionConfirmation,
+  isLowValueEmotionalCheckout,
   resolveProductActionSourceFromHistory,
   resolveProductActionEnrichmentContext,
   getProductActionNeedLevel,
@@ -83,6 +84,18 @@ describe('chatProductActionProposalService', () => {
     expect(actions).toHaveLength(1);
     expect(actions[0].type).toBe('propose_habit');
     expect(actions[0].draft.icon).toBe('meditation');
+  });
+
+  it('buildProposedProductActions no propone tarea en check-in positivo sin ancla', () => {
+    expect(isLowValueEmotionalCheckout('Hoy bien, me siento bien')).toBe(true);
+    const actions = buildProposedProductActions({
+      ...base,
+      userContent: 'Hoy bien, me siento bien',
+      sessionIntention: 'plan',
+      riskLevel: 'LOW',
+      isCrisis: false,
+    });
+    expect(actions).toEqual([]);
   });
 
   it('buildProposedProductActions vacío en vent si no hay señal accionable', () => {

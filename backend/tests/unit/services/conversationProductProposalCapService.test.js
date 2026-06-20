@@ -102,6 +102,45 @@ describe('conversationProductProposalCapService', () => {
     expect(out).toEqual([]);
   });
 
+  it('bloqueo por tope devuelve status silencioso (sin aviso en chat)', async () => {
+    findByIdMock.mockReturnValue({
+      select: () => ({
+        lean: jest.fn().mockResolvedValue({ nonExplicitProductProposalCount: 2 })
+      })
+    });
+    const { evaluateProposedProductActionsState } = await import(
+      '../../../services/conversationProductProposalCapService.js'
+    );
+    const result = await evaluateProposedProductActionsState(
+      'quiero ordenar mi día',
+      convId,
+      actions
+    );
+    expect(result.actions).toEqual([]);
+    expect(result.status).toEqual({ paused: false, reason: null, askFirst: false });
+  });
+
+  it('bloqueo por cooldown devuelve status silencioso', async () => {
+    findByIdMock.mockReturnValue({
+      select: () => ({
+        lean: jest.fn().mockResolvedValue({
+          nonExplicitProductProposalCount: 1,
+          lastNonExplicitProductProposalAt: new Date(Date.now() - 30 * 1000).toISOString()
+        })
+      })
+    });
+    const { evaluateProposedProductActionsState } = await import(
+      '../../../services/conversationProductProposalCapService.js'
+    );
+    const result = await evaluateProposedProductActionsState(
+      'quiero ordenar mi día',
+      convId,
+      actions
+    );
+    expect(result.actions).toEqual([]);
+    expect(result.status).toEqual({ paused: false, reason: null, askFirst: false });
+  });
+
   it('permite una oferta no explícita con count 1 cuando la necesidad es alta', async () => {
     findByIdMock.mockReturnValue({
       select: () => ({

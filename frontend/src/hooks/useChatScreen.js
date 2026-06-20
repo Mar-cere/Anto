@@ -957,15 +957,6 @@ export function useChatScreen() {
                 metadata: { timestamp: new Date().toISOString() }
               });
             }
-            if (payload.productActionStatus?.paused && payload.productActionStatus?.reason) {
-              next.push({
-                id: `product-actions-status-${Date.now()}`,
-                role: 'system',
-                type: 'product_action_status',
-                status: payload.productActionStatus,
-                metadata: { timestamp: new Date().toISOString() }
-              });
-            }
             const handoff = resolveTccLiteAtHandoffFromPayload(payload);
             if (handoff) setTccLiteAtHandoff(handoff);
             else if (shouldClearTccLiteHandoff(payload)) setTccLiteAtHandoff(null);

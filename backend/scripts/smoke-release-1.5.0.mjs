@@ -142,6 +142,12 @@ const capService = fs.readFileSync(
   path.join(root, 'backend/services/conversationProductProposalCapService.js'),
   'utf8',
 );
+if (capService.includes('SILENT_PRODUCT_ACTION_STATUS')) {
+  pass('product actions cap/cooldown silencioso (sin aviso en chat)');
+} else {
+  fail('product actions cap/cooldown silencioso (sin aviso en chat)');
+}
+
 if (capService.includes('askFirst: false') && !capService.includes('askFirst: true')) {
   pass('product actions sin askFirst activo');
 } else {

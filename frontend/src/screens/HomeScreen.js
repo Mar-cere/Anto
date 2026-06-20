@@ -130,6 +130,7 @@ const HomeScreen = () => {
         logo: {
           width: 48,
           height: 48,
+          borderRadius: 24,
         },
         brandName: {
           fontSize: 28,
@@ -275,7 +276,7 @@ const HomeScreen = () => {
             <Image
               source={theme.logo}
               style={styles.logo}
-              resizeMode="contain"
+              resizeMode="cover"
               accessibilityIgnoresInvertColors
             />
             <Text style={styles.brandName} accessibilityRole="header">

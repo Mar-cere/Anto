@@ -90,7 +90,9 @@ describe('welcomeAuth guard', () => {
     const loadingSrc = readSrc('components/common/BrandLoadingView.js');
     const themeSrc = readSrc('utils/welcomeScreenTheme.js');
     expect(loadingSrc).toMatch(/getWelcomeScreenTheme/);
-    expect(themeSrc).toMatch(/icon\.png/);
     expect(themeSrc).toMatch(/Anto\.png/);
+    expect(themeSrc).not.toMatch(/require\(['"].*icon\.png['"]\)/);
+    expect(loadingSrc).toMatch(/logoShell/);
+    expect(loadingSrc).toMatch(/borderRadius/);
   });
 });

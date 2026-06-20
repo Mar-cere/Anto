@@ -66,21 +66,28 @@ function BrandLoadingView({ variant = 'dashboard', testID = 'brand-loading-view'
           backgroundColor: colors.background,
         },
         logoWrap: {
-          width: 92,
-          height: 92,
+          width: 96,
+          height: 96,
           alignItems: 'center',
           justifyContent: 'center',
         },
         glow: {
           position: 'absolute',
-          width: 92,
-          height: 92,
-          borderRadius: 46,
+          width: 96,
+          height: 96,
+          borderRadius: 48,
           backgroundColor: welcomeTheme.logoGlow,
         },
+        logoShell: {
+          width: 72,
+          height: 72,
+          borderRadius: 36,
+          overflow: 'hidden',
+        },
         logo: {
-          width: 64,
-          height: 64,
+          width: 72,
+          height: 72,
+          borderRadius: 36,
         },
       }),
     [colors.background, variant, welcomeTheme.logoGlow],
@@ -94,11 +101,11 @@ function BrandLoadingView({ variant = 'dashboard', testID = 'brand-loading-view'
       <ParticleBackground />
       <View style={styles.logoWrap}>
         <Animated.View style={[styles.glow, { opacity: glow }]} />
-        <Animated.View style={{ transform: [{ scale: pulse }] }}>
+        <Animated.View style={[styles.logoShell, { transform: [{ scale: pulse }] }]}>
           <Image
             source={logoSource}
             style={styles.logo}
-            resizeMode="contain"
+            resizeMode="cover"
             accessibilityIgnoresInvertColors
           />
         </Animated.View>

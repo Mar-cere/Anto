@@ -172,6 +172,11 @@ describe('shouldShowChatActionSuggestions', () => {
     expect(mockHasShown).toHaveBeenCalled();
   });
 
+  it('suprime check-in positivo breve sin señal accionable', () => {
+    expect(shouldSuppressLowRelevanceSuggestions('Hoy bien, me siento bien')).toBe(true);
+    expect(shouldSuppressLowRelevanceSuggestions('Todo bien, gracias')).toBe(true);
+  });
+
   it('muestra en 1.er turno con distorsión sin señal ABC explícita (#89 dispositivo)', async () => {
     const userContent =
       'Me siento ansioso, 6/10. Sé que van a pensar mal de mí y nunca va a salir bien';

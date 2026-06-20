@@ -24,6 +24,9 @@ export const COOLDOWN_MS_BY_NEED_LEVEL = {
   high: 5 * 60 * 1000
 };
 
+/** Cuando el tope/cooldown bloquea, no avisamos en el chat (evita ruido al usuario). */
+const SILENT_PRODUCT_ACTION_STATUS = { paused: false, reason: null, askFirst: false };
+
 /**
  * @param {string} userContent
  * @param {unknown} conversationId
@@ -89,13 +92,13 @@ export async function evaluateProposedProductActionsState(
   if (rejectStreak >= 3 && needLevel !== 'high') {
     return {
       actions: [],
-      status: { paused: true, reason: 'user_reject_streak', askFirst: false }
+      status: SILENT_PRODUCT_ACTION_STATUS,
     };
   }
   if (n >= dynamicCap) {
     return {
       actions: [],
-      status: { paused: true, reason: 'cap', askFirst: false }
+      status: SILENT_PRODUCT_ACTION_STATUS,
     };
   }
   const lastAt = conv?.lastNonExplicitProductProposalAt
@@ -107,12 +110,7 @@ export async function evaluateProposedProductActionsState(
     if (remaining > 0) {
       return {
         actions: [],
-        status: {
-          paused: true,
-          reason: 'cooldown',
-          askFirst: false,
-          cooldownSecondsRemaining: Math.ceil(remaining / 1000)
-        }
+        status: SILENT_PRODUCT_ACTION_STATUS,
       };
     }
   }
