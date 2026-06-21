@@ -37,11 +37,26 @@ export function notifySessionInvalidated() {
   onSessionInvalidated?.();
 }
 
+const TOKEN_EXPIRED_MARKERS = [
+  'token expirado',
+  'token inválido',
+  'token invalid',
+  'invalid or expired token',
+  'token inválido o expirado',
+];
+
+const TOKEN_MISSING_MARKERS = ['token no proporcionado', 'not authenticated'];
+
 export function isTokenExpiredError(error) {
-  const status = error?.response?.status;
-  if (status === HTTP_STATUS.UNAUTHORIZED) return true;
   const message = String(error?.message || '').toLowerCase();
-  return message.includes('token expirado') || message.includes('token invalid');
+  if (TOKEN_MISSING_MARKERS.some((marker) => message.includes(marker))) {
+    return false;
+  }
+  if (TOKEN_EXPIRED_MARKERS.some((marker) => message.includes(marker))) {
+    return true;
+  }
+  const status = error?.response?.status;
+  return status === HTTP_STATUS.UNAUTHORIZED;
 }
 
 export async function clearAuthSession() {

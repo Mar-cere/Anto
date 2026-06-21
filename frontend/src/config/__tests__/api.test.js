@@ -10,12 +10,27 @@ import {
   API_URL,
   handleApiError,
   getApiErrorMessage,
+  api,
 } from '../api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_ERROR_MESSAGES } from '../../utils/apiErrorHandler';
+import { AUTH_STORAGE_KEYS } from '../../utils/authTokenRefresh';
 
 // Mock fetch global
 global.fetch = jest.fn();
+
+const jsonResponse = (data, { ok = true, status = 200 } = {}) => ({
+  ok,
+  status,
+  text: async () => JSON.stringify(data),
+  json: async () => data,
+});
+
+const errorResponse = (status, message) => ({
+  ok: false,
+  status,
+  json: async () => ({ message }),
+});
 
 describe('api config', () => {
   beforeEach(() => {
@@ -26,6 +41,7 @@ describe('api config', () => {
   describe('ENDPOINTS', () => {
     it('debe tener todos los endpoints definidos', () => {
       expect(ENDPOINTS.LOGIN).toBe('/api/auth/login');
+      expect(ENDPOINTS.REFRESH).toBe('/api/auth/refresh');
       expect(ENDPOINTS.REGISTER).toBe('/api/auth/register');
       expect(ENDPOINTS.HEALTH).toBe('/health');
       expect(ENDPOINTS.ME).toBe('/api/users/me');
@@ -101,6 +117,41 @@ describe('api config', () => {
     it('getApiErrorMessage con isOffline debe devolver mensaje de red', () => {
       const err = new Error('Any');
       expect(getApiErrorMessage(err, { isOffline: true })).toBe(API_ERROR_MESSAGES.NETWORK);
+    });
+  });
+
+  describe('refresh automático en peticiones autenticadas', () => {
+    it('reintenta GET tras renovar token cuando expiró', async () => {
+      await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_TOKEN, 'expired-access');
+      await AsyncStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, 'valid-refresh');
+
+      fetch
+        .mockResolvedValueOnce(errorResponse(401, 'Token expirado'))
+        .mockResolvedValueOnce(
+          jsonResponse({ accessToken: 'new-access', user: { _id: 'u1' } }),
+        )
+        .mockResolvedValueOnce(jsonResponse({ _id: 'u1', email: 'a@b.com' }));
+
+      const me = await api.get(ENDPOINTS.ME);
+
+      expect(me).toEqual({ _id: 'u1', email: 'a@b.com' });
+      expect(await AsyncStorage.getItem(AUTH_STORAGE_KEYS.USER_TOKEN)).toBe('new-access');
+      expect(fetch).toHaveBeenCalledTimes(3);
+      expect(String(fetch.mock.calls[1][0])).toContain('/api/auth/refresh');
+    });
+
+    it('limpia sesión si el refresh falla', async () => {
+      await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_TOKEN, 'expired-access');
+      await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_DATA, '{"_id":"u1"}');
+      await AsyncStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, 'expired-refresh');
+
+      fetch
+        .mockResolvedValueOnce(errorResponse(401, 'Token expirado'))
+        .mockResolvedValueOnce(errorResponse(401, 'Token inválido o expirado'));
+
+      await expect(api.get(ENDPOINTS.TASKS)).rejects.toThrow('Token expirado');
+      expect(await AsyncStorage.getItem(AUTH_STORAGE_KEYS.USER_TOKEN)).toBeNull();
+      expect(await AsyncStorage.getItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN)).toBeNull();
     });
   });
 });
