@@ -83,4 +83,12 @@ describe('release 1.5.0 guard', () => {
     );
     expect(sentryPlugin?.[1]?.disableAutoUpload).toBe(true);
   });
+
+  it('Android minSdk 26 por Health Connect (connect-client >= 26)', () => {
+    const app = JSON.parse(readRepo('frontend/app.json'));
+    const buildProps = app.expo.plugins.find(
+      (p) => Array.isArray(p) && p[0] === 'expo-build-properties',
+    );
+    expect(buildProps?.[1]?.android?.minSdkVersion).toBeGreaterThanOrEqual(26);
+  });
 });

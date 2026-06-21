@@ -67,6 +67,9 @@
           "ios": {
             "useFrameworks": "static",
             "deploymentTarget": "16.0"
+          },
+          "android": {
+            "minSdkVersion": 26
           }
         }
       ],
