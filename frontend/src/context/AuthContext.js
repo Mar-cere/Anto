@@ -2,29 +2,24 @@
  * Contexto de autenticación y sesión persistente.
  *
  * Flujo de sesión:
- * 1. Inicio (mount): Se lee AsyncStorage (userToken, userData). Si existen ambos,
- *    se restaura user en estado → sesión persistente. Si no, user = null.
- * 2. Login: Se llama a api.login (config/api), que guarda token y user en AsyncStorage.
- *    On success se hace setUser(data.user). Las pantallas que hacen login por su cuenta
- *    (ej. SignIn con api.post + saveAuthData) deben llamar refreshSession() después
- *    para sincronizar el contexto.
+ * 1. Inicio (mount): Se lee AsyncStorage (userToken, userData). Si existen, se valida
+ *    contra /api/users/me (con refresh automático si el access token expiró).
+ * 2. Login: Se llama a api.login (config/api), que guarda token, refreshToken y user.
  * 3. Logout: Se llama a api.logout (limpia AsyncStorage) y setUser(null).
- * 4. refreshSession(): Lee userData de AsyncStorage y actualiza user. Útil tras
- *    login/register hechos fuera del contexto (ej. SignInScreen, RegisterScreen).
- *
- * Persistencia: userToken y userData en AsyncStorage (mismas claves que config/api y
- * pantallas de auth). Una sola fuente de verdad en memoria (user) y en disco (AsyncStorage).
+ * 4. refreshSession(): Valida sesión remota o lee userData tras login/register externo.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { login as apiLogin, logout as apiLogout } from '../config/api';
+import { api, ENDPOINTS, login as apiLogin, logout as apiLogout } from '../config/api';
 import { updateUser as updateUserService } from '../services/userService';
+import {
+  AUTH_STORAGE_KEYS,
+  clearAuthSession,
+  registerOnSessionInvalidated,
+} from '../utils/authTokenRefresh';
 
-const STORAGE_KEYS = {
-  USER_TOKEN: 'userToken',
-  USER_DATA: 'userData',
-};
+const STORAGE_KEYS = AUTH_STORAGE_KEYS;
 
 const AuthContext = createContext(null);
 
@@ -33,23 +28,32 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   /**
-   * Restaura el usuario desde AsyncStorage (userData).
-   * Se usa en el init y cuando otra pantalla ha guardado sesión (login/register).
+   * Valida la sesión remota (con refresh automático) y sincroniza user en contexto.
    */
   const refreshSession = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
-      const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
-      if (token && userData) {
-        const parsed = JSON.parse(userData);
-        setUser(parsed);
-      } else {
+      if (!token) {
         setUser(null);
+        return;
       }
+      const me = await api.get(ENDPOINTS.ME);
+      if (me && typeof me === 'object' && (me._id || me.id)) {
+        await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(me));
+        setUser(me);
+        return;
+      }
+      const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
+      setUser(userData ? JSON.parse(userData) : null);
     } catch (e) {
       console.warn('[AuthContext] Error restaurando sesión:', e);
+      await clearAuthSession();
       setUser(null);
     }
+  }, []);
+
+  useEffect(() => {
+    registerOnSessionInvalidated(() => setUser(null));
   }, []);
 
   useEffect(() => {
@@ -57,18 +61,23 @@ export const AuthProvider = ({ children }) => {
     const loadSession = async () => {
       try {
         const token = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
-        const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
-        if (!cancelled) {
-          if (token && userData) {
-            const parsed = JSON.parse(userData);
-            setUser(parsed);
-          } else {
-            setUser(null);
-          }
+        if (!token) {
+          if (!cancelled) setUser(null);
+          return;
+        }
+        const me = await api.get(ENDPOINTS.ME);
+        if (cancelled) return;
+        if (me && typeof me === 'object' && (me._id || me.id)) {
+          await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(me));
+          setUser(me);
+        } else {
+          const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
+          setUser(userData ? JSON.parse(userData) : null);
         }
       } catch (e) {
         if (!cancelled) {
           console.warn('[AuthContext] Error cargando sesión al iniciar:', e);
+          await clearAuthSession();
           setUser(null);
         }
       } finally {

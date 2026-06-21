@@ -14,6 +14,13 @@ import type {
   ApiGetResponse,
 } from '../types/api.types';
 import { getAppLanguage } from '../utils/appLanguage';
+import {
+  AUTH_STORAGE_KEYS,
+  clearAuthSession,
+  isTokenExpiredError,
+  notifySessionInvalidated,
+  refreshAccessToken,
+} from '../utils/authTokenRefresh';
 
 const getApiUrl = (): string => {
   if (process.env.EXPO_PUBLIC_API_URL) {
@@ -41,6 +48,7 @@ if (typeof __DEV__ !== 'undefined' && __DEV__) {
 /** Endpoints del API (paths). Funciones para rutas con :id reciben string. */
 export const ENDPOINTS = {
   LOGIN: '/api/auth/login',
+  REFRESH: '/api/auth/refresh',
   REGISTER: '/api/auth/register',
   VERIFY_EMAIL: '/api/auth/verify-email',
   RESEND_VERIFICATION_CODE: '/api/auth/resend-verification-code',
@@ -160,8 +168,45 @@ export const ENDPOINTS = {
 
 export { getAppLanguage };
 
+const AUTH_ENDPOINTS_WITHOUT_REFRESH = new Set<string>([
+  ENDPOINTS.LOGIN,
+  ENDPOINTS.REGISTER,
+  ENDPOINTS.REFRESH,
+  ENDPOINTS.VERIFY_EMAIL,
+  ENDPOINTS.RESEND_VERIFICATION_CODE,
+  ENDPOINTS.RECOVER_PASSWORD,
+  ENDPOINTS.VERIFY_CODE,
+  ENDPOINTS.RESET_PASSWORD,
+]);
+
+async function withAuthRetry<T>(
+  endpoint: string,
+  fn: () => Promise<T>,
+  retried = false
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (error) {
+    const apiError = error as ApiError;
+    if (
+      retried ||
+      AUTH_ENDPOINTS_WITHOUT_REFRESH.has(endpoint) ||
+      !isTokenExpiredError(apiError)
+    ) {
+      throw error;
+    }
+    const refreshed = await refreshAccessToken();
+    if (!refreshed) {
+      await clearAuthSession();
+      notifySessionInvalidated();
+      throw error;
+    }
+    return withAuthRetry(endpoint, fn, true);
+  }
+}
+
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
-  const token = await AsyncStorage.getItem('userToken');
+  const token = await AsyncStorage.getItem(AUTH_STORAGE_KEYS.USER_TOKEN);
   const appLanguage = await getAppLanguage();
   if (typeof __DEV__ !== 'undefined' && __DEV__) {
     console.log('Token de autenticación:', token ? 'Presente' : 'No presente');
@@ -257,99 +302,104 @@ async function parseJsonResponse<T>(response: Response, endpoint: string): Promi
 }
 
 export const api = {
-  post: async <T = unknown>(endpoint: string, data: unknown): Promise<T> => {
-    try {
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[API] POST ${endpoint}`);
+  post: async <T = unknown>(endpoint: string, data: unknown): Promise<T> =>
+    withAuthRetry(endpoint, async () => {
+      try {
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
+          console.log(`[API] POST ${endpoint}`);
+        }
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${API_URL}${endpoint}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(data),
+        });
+        const responseData = await parseJsonResponse<T>(response, endpoint);
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
+          console.log(`[API] POST ${endpoint} - Success`);
+        }
+        return responseData;
+      } catch (error) {
+        console.error(`[API] POST ${endpoint} - Error:`, (error as Error).message);
+        throw error;
       }
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(data),
-      });
-      const responseData = await parseJsonResponse<T>(response, endpoint);
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[API] POST ${endpoint} - Success`);
-      }
-      return responseData;
-    } catch (error) {
-      console.error(`[API] POST ${endpoint} - Error:`, (error as Error).message);
-      throw error;
-    }
-  },
+    }),
 
   get: async <T = unknown>(
     endpoint: string,
     params: Record<string, string> = {},
     options?: { signal?: AbortSignal }
-  ): Promise<ApiGetResponse<T>> => {
-    try {
-      const headers = await getAuthHeaders();
-      const queryString = new URLSearchParams(params).toString();
-      const url = queryString ? `${API_URL}${endpoint}?${queryString}` : `${API_URL}${endpoint}`;
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[API] GET ${endpoint}`);
+  ): Promise<ApiGetResponse<T>> =>
+    withAuthRetry(endpoint, async () => {
+      try {
+        const headers = await getAuthHeaders();
+        const queryString = new URLSearchParams(params).toString();
+        const url = queryString ? `${API_URL}${endpoint}?${queryString}` : `${API_URL}${endpoint}`;
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
+          console.log(`[API] GET ${endpoint}`);
+        }
+        const response = await fetch(url, { method: 'GET', headers, signal: options?.signal });
+        const data = await handleResponse<ApiGetResponse<T>>(response, endpoint);
+        if (typeof __DEV__ !== 'undefined' && __DEV__) {
+          console.log(`[API] GET ${endpoint} - Success`);
+        }
+        return data;
+      } catch (error) {
+        const err = error as Error;
+        if (err?.name === 'AbortError') {
+          throw err;
+        }
+        console.error(`[API] GET ${endpoint} - Error:`, err.message);
+        throw error;
       }
-      const response = await fetch(url, { method: 'GET', headers, signal: options?.signal });
-      const data = await handleResponse<ApiGetResponse<T>>(response, endpoint);
-      if (typeof __DEV__ !== 'undefined' && __DEV__) {
-        console.log(`[API] GET ${endpoint} - Success`);
+    }),
+
+  put: async <T = unknown>(endpoint: string, data: unknown): Promise<T> =>
+    withAuthRetry(endpoint, async () => {
+      try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${API_URL}${endpoint}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(data),
+        });
+        return parseJsonResponse<T>(response, endpoint);
+      } catch (error) {
+        console.error(`[API] PUT ${endpoint} - Error:`, (error as Error).message);
+        throw error;
       }
-      return data;
-    } catch (error) {
-      const err = error as Error;
-      if (err?.name === 'AbortError') {
-        throw err;
+    }),
+
+  delete: async <T = unknown>(endpoint: string): Promise<T> =>
+    withAuthRetry(endpoint, async () => {
+      try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${API_URL}${endpoint}`, {
+          method: 'DELETE',
+          headers,
+        });
+        return parseJsonResponse<T>(response, endpoint);
+      } catch (error) {
+        console.error(`[API] DELETE ${endpoint} - Error:`, (error as Error).message);
+        throw error;
       }
-      console.error(`[API] GET ${endpoint} - Error:`, err.message);
-      throw error;
-    }
-  },
+    }),
 
-  put: async <T = unknown>(endpoint: string, data: unknown): Promise<T> => {
-    try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(data),
-      });
-      return parseJsonResponse<T>(response, endpoint);
-    } catch (error) {
-      console.error(`[API] PUT ${endpoint} - Error:`, (error as Error).message);
-      throw error;
-    }
-  },
-
-  delete: async <T = unknown>(endpoint: string): Promise<T> => {
-    try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        method: 'DELETE',
-        headers,
-      });
-      return parseJsonResponse<T>(response, endpoint);
-    } catch (error) {
-      console.error(`[API] DELETE ${endpoint} - Error:`, (error as Error).message);
-      throw error;
-    }
-  },
-
-  patch: async <T = unknown>(endpoint: string, data: unknown): Promise<T> => {
-    try {
-      const headers = await getAuthHeaders();
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        method: 'PATCH',
-        headers,
-        body: JSON.stringify(data),
-      });
-      return parseJsonResponse<T>(response, endpoint);
-    } catch (error) {
-      console.error(`[API] PATCH ${endpoint} - Error:`, (error as Error).message);
-      throw error;
-    }
-  },
+  patch: async <T = unknown>(endpoint: string, data: unknown): Promise<T> =>
+    withAuthRetry(endpoint, async () => {
+      try {
+        const headers = await getAuthHeaders();
+        const response = await fetch(`${API_URL}${endpoint}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify(data),
+        });
+        return parseJsonResponse<T>(response, endpoint);
+      } catch (error) {
+        console.error(`[API] PATCH ${endpoint} - Error:`, (error as Error).message);
+        throw error;
+      }
+    }),
 };
 
 export const checkServerConnection = async (): Promise<boolean> => {
@@ -368,15 +418,20 @@ export const login = async (credentials: LoginCredentials): Promise<LoginResultT
     if (typeof __DEV__ !== 'undefined' && __DEV__) {
       console.log('[Auth] Iniciando login');
     }
-    const data = await api.post<{ token?: string; accessToken?: string; user: User }>(
-      ENDPOINTS.LOGIN,
-      credentials
-    );
+    const data = await api.post<{
+      token?: string;
+      accessToken?: string;
+      refreshToken?: string;
+      user: User;
+    }>(ENDPOINTS.LOGIN, credentials);
     const token = data.token ?? data.accessToken;
     if (token && data.user) {
       await clearPersistedChatSession();
-      await AsyncStorage.setItem('userToken', token);
-      await AsyncStorage.setItem('userData', JSON.stringify(data.user));
+      await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_TOKEN, token);
+      await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_DATA, JSON.stringify(data.user));
+      if (data.refreshToken) {
+        await AsyncStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);
+      }
       if (typeof __DEV__ !== 'undefined' && __DEV__) {
         console.log('[Auth] Login exitoso');
       }
@@ -398,8 +453,7 @@ export const login = async (credentials: LoginCredentials): Promise<LoginResultT
 export const logout = async (): Promise<{ success: boolean; error?: string }> => {
   try {
     await clearPersistedChatSession();
-    await AsyncStorage.removeItem('userToken');
-    await AsyncStorage.removeItem('userData');
+    await clearAuthSession();
     return { success: true };
   } catch (error) {
     console.error('Error en logout:', error);
@@ -409,8 +463,8 @@ export const logout = async (): Promise<{ success: boolean; error?: string }> =>
 
 export const checkAuthStatus = async (): Promise<CheckAuthResult> => {
   try {
-    const token = await AsyncStorage.getItem('userToken');
-    const userData = await AsyncStorage.getItem('userData');
+    const token = await AsyncStorage.getItem(AUTH_STORAGE_KEYS.USER_TOKEN);
+    const userData = await AsyncStorage.getItem(AUTH_STORAGE_KEYS.USER_DATA);
     if (typeof __DEV__ !== 'undefined' && __DEV__) {
       console.log('[Auth] Verificando autenticación:', token ? 'Token presente' : 'Sin token');
     }
