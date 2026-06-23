@@ -22,4 +22,12 @@ describe('factualQueryDetector', () => {
     });
     expect(result).toBe(false);
   });
+
+  it('no activa modo factual cuando "cuando" es narrativa emocional', () => {
+    expect(
+      detectFactualModeFromMessage({
+        currentMessage: 'lo que me hace daño es mi cara y cuando mencionan mi cara',
+      })
+    ).toBe(false);
+  });
 });

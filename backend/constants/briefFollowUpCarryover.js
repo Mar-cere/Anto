@@ -19,8 +19,19 @@ export const RELATIONSHIP_THREAD_PATTERN =
 export const RUMINATION_THREAD_PATTERN =
   /(?:mi\s+mente|la\s+cabeza|pensamientos?|rumiar|dar\s+vueltas|no\s+para)/i;
 
+export const LONELINESS_THREAD_PATTERN =
+  /(?:me\s+siento\s+solo|me\s+siento\s+sola|soledad|siento\s+soledad)/i;
+
+export const BODY_IMAGE_THREAD_PATTERN =
+  /(?:acn[eé]|mi\s+cara|rostro|me\s+escondo|arruin(?:e|ó|aron|an)\s+mi\s+cara|destruy.*cara|mencionan\s+mi\s+cara)/i;
+
+export const BULLYING_THREAD_PATTERN =
+  /(?:arruin(?:e|ó|aron|an)|destruy|critican|insultan|se\s+burlan|hablan\s+mal|hacen\s+da[nñ]o)/i;
+
+export const SESSION_THREAD_CARRYOVER_MAX_CHARS = 120;
+
 const FOLLOW_UP_CUE_PATTERN =
-  /(?:pastillas?|medicaci[oó]n|medicinas?|dosis|lorazepam|citalopram|escitalopram|ansiol[ií]tico|benzodiazep|mi\s+mente|la\s+cabeza|pensamientos?|(?:^|\s)ex(?:\s|$)|relaci[oó]n|pareja|desamor|desamorar|dormir|sueño|noche)/i;
+  /(?:pastillas?|medicaci[oó]n|medicinas?|dosis|lorazepam|citalopram|escitalopram|ansiol[ií]tico|benzodiazep|mi\s+mente|la\s+cabeza|pensamientos?|(?:^|\s)ex(?:\s|$)|relaci[oó]n|pareja|desamor|desamorar|dormir|sueño|noche|mi\s+cara|acn[eé]|arruin(?:e|ó|aron|an)|mencionan|familia|amigos)/i;
 
 const DEICTIC_FOLLOW_UP_PATTERN = /^(?:eso|esto|esa|ese)\.?$/i;
 
@@ -74,7 +85,7 @@ export function findCarryoverAnchor(patterns) {
 /**
  * @param {Array} patterns
  * @param {string} currentContent
- * @returns {{ active: boolean, sleep: boolean, relationship: boolean, rumination: boolean }}
+ * @returns {{ active: boolean, sleep: boolean, relationship: boolean, rumination: boolean, loneliness: boolean, bodyImage: boolean, bullying: boolean }}
  */
 export function detectSustainedThread(patterns, currentContent = '') {
   const topics = patterns.map((p) => p.topic).filter(Boolean);
@@ -83,12 +94,19 @@ export function detectSustainedThread(patterns, currentContent = '') {
   const sleep = topics.includes('SALUD') || SLEEP_THREAD_PATTERN.test(textBlob);
   const relationship = topics.includes('RELACIONES') || RELATIONSHIP_THREAD_PATTERN.test(textBlob);
   const rumination = RUMINATION_THREAD_PATTERN.test(textBlob);
+  const loneliness =
+    topics.includes('EMOCIONAL') || LONELINESS_THREAD_PATTERN.test(textBlob);
+  const bodyImage = BODY_IMAGE_THREAD_PATTERN.test(textBlob);
+  const bullying = BULLYING_THREAD_PATTERN.test(textBlob);
 
   return {
     sleep,
     relationship,
     rumination,
-    active: sleep || relationship || rumination,
+    loneliness,
+    bodyImage,
+    bullying,
+    active: sleep || relationship || rumination || loneliness || bodyImage || bullying,
   };
 }
 
@@ -217,6 +235,61 @@ export function resolveBriefFollowUpCarryover(
   if (!carriedEmotionData) return null;
 
   const tier = shouldCarryHigh ? 'high' : 'moderate';
+
+  return {
+    emotion: {
+      name: anchor.mainEmotion,
+      category: carriedEmotionData.category,
+      baseIntensity: carriedEmotionData.intensity,
+    },
+    intensity: resolveCarriedIntensity(anchor.intensity, tier),
+  };
+}
+
+/**
+ * Mantiene continuidad en mensajes algo más largos cuando el hilo emocional sigue activo.
+ * @param {string} content
+ * @param {object} currentEmotion
+ * @param {number} currentIntensity
+ * @param {Array} recentPatterns
+ * @param {{ emotionPatterns: object, emotionNeutral: string, hasDistressHint?: (s: string) => boolean }} deps
+ * @returns {{ emotion: object, intensity: number }|null}
+ */
+export function resolveSessionThreadCarryover(
+  content,
+  currentEmotion,
+  currentIntensity,
+  recentPatterns,
+  { emotionPatterns, emotionNeutral, hasDistressHint = () => false }
+) {
+  if (!content || content.length > SESSION_THREAD_CARRYOVER_MAX_CHARS) return null;
+
+  const normalized = recentPatterns.map(normalizeHistoryPattern).filter(Boolean);
+  if (!normalized.length) return null;
+
+  if (shouldBlockCarryoverForExplicitEmotion(currentEmotion, currentIntensity, emotionNeutral)) {
+    return null;
+  }
+
+  const anchor = findCarryoverAnchor(normalized);
+  if (!anchor) return null;
+
+  const peakIntensity = getPeakNegativeIntensity(normalized);
+  const thread = detectSustainedThread(normalized, content);
+  const collapsedNow =
+    currentEmotion?.name === emotionNeutral || currentIntensity <= 5;
+
+  if (!collapsedNow || peakIntensity < BRIEF_FOLLOWUP_MODERATE_INTENSITY_THRESHOLD) {
+    return null;
+  }
+
+  if (!thread.active || !hasDistressHint(content)) return null;
+
+  const carriedEmotionData = emotionPatterns[anchor.mainEmotion];
+  if (!carriedEmotionData) return null;
+
+  const tier =
+    peakIntensity >= BRIEF_FOLLOWUP_HIGH_INTENSITY_THRESHOLD ? 'high' : 'moderate';
 
   return {
     emotion: {

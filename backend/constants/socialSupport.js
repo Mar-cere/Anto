@@ -129,11 +129,27 @@ export const assessSocialSupport = (messageContent) => {
   }
 
   const content = messageContent.toLowerCase();
-  
-  // Patrones de alto apoyo social
+
+  const hostileSocialPatterns = [
+    /(?:arruin|destruy|critican|insultan|se\s+burlan|hablan\s+mal|hacen\s+da[nñ]o|mencionan).*?(?:cara|mi\s+cara)/i,
+    /(?:amigos?|familia|t[ií]os?).*?(?:arruin|destruy|critican|insultan)/i,
+  ];
+
+  for (const pattern of hostileSocialPatterns) {
+    if (pattern.test(content)) {
+      return { level: 'low', confidence: 0.75, needsIntervention: true };
+    }
+  }
+
+  const positiveSupportIndicator =
+    /(?:tengo.*apoyo|me\s+ayudan|me\s+apoyan|puedo\s+contar\s+con|me\s+escuchan|me\s+entienden)/i.test(
+      content
+    );
+
+  // Patrones de alto apoyo social (requieren señal positiva, no solo mencionar familia/amigos)
   const highSupportPatterns = [
-    /(?:tengo.*apoyo|mi.*familia|mis.*amigos|me.*ayudan)/i,
-    /(?:tengo.*con.*quién.*hablar|tengo.*personas)/i
+    /(?:tengo.*apoyo|me\s+ayudan|me\s+apoyan|puedo\s+contar\s+con)/i,
+    /(?:tengo.*con.*quién.*hablar|tengo.*personas.*(?:que\s+me\s+)?(?:apoyan|entienden))/i,
   ];
   
   // Patrones de bajo apoyo social
@@ -159,7 +175,13 @@ export const assessSocialSupport = (messageContent) => {
   
   if (lowCount > highCount) {
     return { level: 'low', confidence: 0.7, needsIntervention: true };
-  } else if (highCount > lowCount) {
+  }
+
+  if (highCount > 0 && !positiveSupportIndicator) {
+    return { level: 'medium', confidence: 0.55, needsIntervention: true };
+  }
+
+  if (highCount > lowCount) {
     return { level: 'high', confidence: 0.7, needsIntervention: false };
   }
   

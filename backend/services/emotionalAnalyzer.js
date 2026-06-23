@@ -4,7 +4,11 @@ import {
   isDismissiveEmotionalPhrase,
   isPositiveEmotionKeywordNegated,
 } from '../constants/emotionNegation.js';
-import { resolveBriefFollowUpCarryover } from '../constants/briefFollowUpCarryover.js';
+import { resolveBriefFollowUpCarryover, resolveSessionThreadCarryover } from '../constants/briefFollowUpCarryover.js';
+import {
+  detectPrimaryDistressSignal,
+  hasDistressThreadHint,
+} from '../constants/emotionalDistressSignals.js';
 
 /**
  * Analizador Emocional - Detecta emociones principales y secundarias en mensajes del usuario
@@ -409,6 +413,15 @@ class EmotionalAnalyzer {
     const explicitEmotion = this.detectExplicitSelfReportedEmotion(content);
     if (explicitEmotion) {
       return explicitEmotion;
+    }
+
+    const distressSignal = detectPrimaryDistressSignal(content);
+    if (distressSignal) {
+      return {
+        name: distressSignal.name,
+        category: distressSignal.category,
+        baseIntensity: distressSignal.baseIntensity,
+      };
     }
     
     // IMPORTANTE: Verificar indicadores negativos ANTES de buscar emociones positivas
@@ -990,6 +1003,21 @@ class EmotionalAnalyzer {
     );
     if (carryover) {
       return carryover;
+    }
+
+    const sessionCarryover = resolveSessionThreadCarryover(
+      content,
+      currentEmotion,
+      currentIntensity,
+      recentPatterns,
+      {
+        emotionPatterns: this.emotionPatterns,
+        emotionNeutral: this.EMOTION_NEUTRAL,
+        hasDistressHint: hasDistressThreadHint,
+      }
+    );
+    if (sessionCarryover) {
+      return sessionCarryover;
     }
     const emotionalTrend = this.analyzeEmotionalTrend(recentPatterns);
     

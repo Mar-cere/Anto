@@ -23,7 +23,11 @@ const NON_FACTUAL_PATTERNS = [
   /\bestoy\s+triste\b/i,
   /\bansiedad\b/i,
   /\bme\s+duele\b/i,
-  /\bno\s+s[eé]\s+qu[eé]\s+hacer\b/i
+  /\bno\s+s[eé]\s+qu[eé]\s+hacer\b/i,
+  /\bcuando\s+(?:me|mencionan|hablan|dicen|ven|miran)\b/i,
+  /\bme\s+(?:hace|ase)\s+da[nñ]o\b/i,
+  /\bmi\s+cara\b/i,
+  /\bacn[eé]\b/i,
 ];
 
 function normalizeText(value) {
