@@ -2,19 +2,21 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { resolveOnboardingBrandAccent } from '../../utils/onboardingBrand';
 
 /**
- * Lista compacta de beneficios / características (onboarding).
+ * Bullets del paso actual — llena el slide con contenido útil.
  */
-export default function OnboardingBenefitList({ items = [], heading }) {
+export default function OnboardingStepHighlights({ items = [], heading }) {
   const { colors } = useTheme();
+  const accent = resolveOnboardingBrandAccent(colors);
   const styles = useMemo(
     () =>
       StyleSheet.create({
         wrap: {
           width: '100%',
           marginTop: 16,
-          gap: 10,
+          gap: 8,
         },
         heading: {
           fontSize: 12,
@@ -27,21 +29,22 @@ export default function OnboardingBenefitList({ items = [], heading }) {
         row: {
           flexDirection: 'row',
           alignItems: 'flex-start',
-          gap: 12,
-          paddingVertical: 12,
-          paddingHorizontal: 14,
-          borderRadius: 16,
+          gap: 10,
+          paddingVertical: 11,
+          paddingHorizontal: 12,
+          borderRadius: 14,
           backgroundColor: colors.glassFillStrong ?? colors.glassFill,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
         },
-        iconWrap: {
-          width: 32,
-          height: 32,
-          borderRadius: 10,
+        bullet: {
+          width: 22,
+          height: 22,
+          borderRadius: 11,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: colors.accentLineSoft,
+          marginTop: 1,
         },
         text: {
           flex: 1,
@@ -54,8 +57,6 @@ export default function OnboardingBenefitList({ items = [], heading }) {
     [colors],
   );
 
-  const icons = ['message-text-outline', 'brain', 'chart-timeline-variant'];
-
   if (!items.length) return null;
 
   return (
@@ -63,12 +64,8 @@ export default function OnboardingBenefitList({ items = [], heading }) {
       {heading ? <Text style={styles.heading}>{heading}</Text> : null}
       {items.map((line, index) => (
         <View key={`${index}-${line}`} style={styles.row}>
-          <View style={styles.iconWrap}>
-            <MaterialCommunityIcons
-              name={icons[index % icons.length]}
-              size={16}
-              color={colors.primary}
-            />
+          <View style={styles.bullet}>
+            <MaterialCommunityIcons name="check" size={13} color={accent} />
           </View>
           <Text style={styles.text}>{line}</Text>
         </View>

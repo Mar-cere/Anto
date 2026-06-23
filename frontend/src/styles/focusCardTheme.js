@@ -2,6 +2,7 @@
  * Bloque "foco" del dashboard: tokens y estilos compartidos según tema (claro / oscuro).
  */
 import { StyleSheet } from 'react-native';
+import { SPACING } from '../constants/ui';
 import { lightColors } from './themePalettes';
 import { getDashboardTheme } from './dashboardTheme';
 
@@ -61,6 +62,7 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
     },
     card: {
       ...t.FOCUS_PANEL,
+      paddingBottom: 20,
     },
     groupLabel: {
       ...dash.SECTION_TITLE,
@@ -68,7 +70,6 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
     },
     groupedList: {
       ...dash.GROUPED_SURFACE,
-      marginBottom: 0,
     },
     actionRow: {
       ...t.FOCUS_INNER_ROW,
@@ -227,6 +228,7 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       alignItems: 'center',
       justifyContent: 'center',
       alignSelf: 'stretch',
+      marginTop: SPACING.md,
       paddingVertical: 11,
       paddingHorizontal: 16,
       borderRadius: 999,

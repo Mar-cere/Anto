@@ -103,23 +103,48 @@ export const ONBOARDING = {
   SWIPE_TO_SKIP: 'Desliza hacia abajo para omitir',
   ARROW_HINT: 'Mira abajo',
   ARROW_HINT_UP: 'Mira arriba',
+  STEP_HIGHLIGHTS_HEADING: 'Qué puedes hacer aquí',
+  STEP_1_LABEL: 'Paso 1 · Chat',
   STEP_1_TITLE: 'Habla cuando lo necesites',
   STEP_1_DESCRIPTION:
     'El chat es el corazón de Anto: comparte lo que te pasa y recibe apoyo práctico, sin juicios.',
   STEP_1_BENEFIT: 'Respuestas adaptadas a tu ánimo del día y a tu foco inicial.',
+  STEP_1_HIGHLIGHTS: [
+    'Comparte cómo te sientes, a tu ritmo',
+    'Recibe apoyo práctico sin juicios',
+    'Anto recuerda tu foco y tu ánimo del día',
+  ],
+  STEP_2_LABEL: 'Paso 2 · Técnicas',
   STEP_2_TITLE: 'Herramientas con respaldo',
   STEP_2_DESCRIPTION:
     'Practica ejercicios de TCC (ABC, exposición, activación conductual), psicoeducación y técnicas de enfoque.',
   STEP_2_BENEFIT:
     'Basado en métodos con evidencia; Anto te sugiere ejercicios desde el chat.',
+  STEP_2_HIGHLIGHTS: [
+    'Ejercicios de TCC: ABC, exposición, activación',
+    'Psicoeducación y técnicas de enfoque',
+    'Sugerencias desde el chat según lo que necesites',
+  ],
+  STEP_3_LABEL: 'Paso 3 · Tu inicio',
   STEP_3_TITLE: 'Tu día en un vistazo',
   STEP_3_DESCRIPTION:
     'Check-in emocional, foco del día, tareas y hábitos con recordatorios suaves.',
   STEP_3_BENEFIT: 'Conecta lo que haces en la app con tu bienestar semanal.',
+  STEP_3_HIGHLIGHTS: [
+    'Check-in emocional y foco del día',
+    'Tareas y hábitos con recordatorios',
+    'Todo conectado con tu resumen semanal',
+  ],
+  STEP_4_LABEL: 'Paso 4 · Seguimiento',
   STEP_4_TITLE: 'Progreso y seguridad',
   STEP_4_DESCRIPTION:
     'Revisa tu resumen, patrones y contactos de confianza en Perfil y Ajustes.',
   STEP_4_BENEFIT: 'Detección de crisis con recursos inmediatos si los necesitas.',
+  STEP_4_HIGHLIGHTS: [
+    'Resumen e informes de tu proceso',
+    'Contactos de confianza en un solo lugar',
+    'Recursos de crisis si los necesitas',
+  ],
   QUESTIONS_TITLE: '¿En qué quieres enfocarte primero?',
   QUESTIONS_SUBTITLE:
     'Anto adaptará el chat y las sugerencias a tu prioridad. Puedes cambiarla cuando quieras.',

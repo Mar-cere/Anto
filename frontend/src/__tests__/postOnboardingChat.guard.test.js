@@ -22,10 +22,14 @@ describe('postOnboardingChat guard', () => {
     expect(backend).toMatch(/req\.path === '\/tcc-continuity'/);
   });
 
-  it('onboarding paso inicio usa accentSecondary, no warning', () => {
+  it('onboarding usa acento único de marca (primary), no warning ni success', () => {
     const steps = readSrc('utils/onboardingSteps.js');
-    expect(steps).toMatch(/accentSecondary/);
-    expect(steps).not.toMatch(/color: colors\.warning/);
+    const brand = readSrc('utils/onboardingBrand.js');
+    expect(steps).toMatch(/resolveOnboardingBrandAccent/);
+    expect(brand).toMatch(/colors\.primary/);
+    expect(steps).not.toMatch(/accentSecondary/);
+    expect(steps).not.toMatch(/colors\.warning/);
+    expect(steps).not.toMatch(/colors\.success/);
   });
 
   it('DashScreen no abre chat al cerrar preguntas; valida antes de navegar', () => {

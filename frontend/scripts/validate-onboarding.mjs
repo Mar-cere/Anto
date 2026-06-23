@@ -83,10 +83,56 @@ if (dash.includes('canAttemptChatAccess') && dash.includes("navigate('Subscripti
 }
 
 const steps = read('src/utils/onboardingSteps.js');
-if (steps.includes('accentSecondary') && !steps.includes('color: colors.warning')) {
-  pass('onboarding paso 3 sin warning');
+const brand = read('src/utils/onboardingBrand.js');
+if (
+  steps.includes('resolveOnboardingBrandAccent') &&
+  brand.includes('colors.primary') &&
+  !steps.includes('accentSecondary') &&
+  !steps.includes('colors.success')
+) {
+  pass('onboarding: acento único de marca');
 } else {
-  fail('onboarding paso 3 sin warning');
+  fail('onboarding: acento único de marca');
+}
+
+const tutorial = read('src/components/OnboardingTutorial.js');
+if (
+  tutorial.includes('OnboardingBrandOrb') &&
+  tutorial.includes('OnboardingBenefitCard') &&
+  tutorial.includes('OnboardingGradientButton')
+) {
+  pass('onboarding: orb, tarjeta beneficio y CTA gradiente');
+} else {
+  fail('onboarding: orb, tarjeta beneficio y CTA gradiente');
+}
+
+const orb = read('src/components/onboarding/OnboardingBrandOrb.js');
+if (
+  orb.includes('resolveOnboardingGradient') &&
+  orb.includes('stroke={`url(#${gradId})`}') &&
+  !orb.includes('styles.chip')
+) {
+  pass('onboarding: orb con anillo gradiente');
+} else {
+  fail('onboarding: orb con anillo gradiente');
+}
+
+if (
+  tutorial.includes('TEXTS.BENEFITS_HEADING') &&
+  tutorial.includes('OnboardingBenefitCard text={currentStepData.benefit}') &&
+  !tutorial.includes('OnboardingStepHighlights') &&
+  !tutorial.includes('colors.warning') &&
+  !tutorial.includes('colors.success')
+) {
+  pass('onboarding: eyebrow unificado y beneficio único por paso');
+} else {
+  fail('onboarding: eyebrow unificado y beneficio único por paso');
+}
+
+if (brand.includes('resolveOnboardingGradient')) {
+  pass('onboarding: gradientes centralizados en onboardingBrand');
+} else {
+  fail('onboarding: gradientes centralizados en onboardingBrand');
 }
 
 const backendSub = fs.readFileSync(

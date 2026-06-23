@@ -13,6 +13,12 @@ import {
 
 const FRONTEND_SRC = path.resolve(__dirname, '..', '..');
 
+const COLORS = {
+  primary: '#1E83D3',
+  primaryBright: '#44D7FB',
+  accentSecondary: '#5B4BD4',
+};
+
 function readSrc(relativePath) {
   return fs.readFileSync(path.join(FRONTEND_SRC, relativePath), 'utf8');
 }
@@ -34,8 +40,14 @@ describe('onboarding guard', () => {
 
     const tutorial = readSrc('components/OnboardingTutorial.js');
     expect(tutorial).toMatch(/OnboardingBrandShell/);
+    expect(tutorial).toMatch(/OnboardingBrandOrb/);
+    expect(tutorial).toMatch(/OnboardingBenefitCard/);
+    expect(tutorial).toMatch(/OnboardingGradientButton/);
     expect(tutorial).toMatch(/OnboardingBenefitList/);
     expect(tutorial).toMatch(/buildOnboardingTutorialSteps/);
+    expect(tutorial).toMatch(/resolveOnboardingBrandAccent/);
+    expect(tutorial).not.toMatch(/OnboardingStepHighlights/);
+    expect(tutorial).not.toMatch(/iconBadge/);
     expect(tutorial).toMatch(/TEXTS\.DISCLAIMER/);
     expect(tutorial).not.toMatch(/highlightElement: 'tasks-habits'/);
     expect(tutorial).not.toMatch(/Dashboard Principal/);
@@ -166,5 +178,48 @@ describe('onboarding guard', () => {
     expect(tutorial).not.toMatch(/AsyncStorage\.setItem/);
     const dash = readSrc('screens/DashScreen.js');
     expect(dash).toMatch(/markTutorialCompleted/);
+  });
+
+  it('componentes visuales del recorrido usan gradiente y tarjeta única de beneficio', () => {
+    const orb = readSrc('components/onboarding/OnboardingBrandOrb.js');
+    expect(orb).toMatch(/resolveOnboardingGradient/);
+    expect(orb).toMatch(/stroke=\{`url\(#\$\{gradId\}\)`\}/);
+    expect(orb).toMatch(/stepIcon \?/);
+    expect(orb).not.toMatch(/styles\.chip/);
+
+    const cta = readSrc('components/onboarding/OnboardingGradientButton.js');
+    expect(cta).toMatch(/resolveOnboardingGradient/);
+    expect(cta).toMatch(/LinearGradient/);
+
+    const card = readSrc('components/onboarding/OnboardingBenefitCard.js');
+    expect(card).toMatch(/name="check"/);
+    expect(card).toMatch(/resolveOnboardingBrandAccent/);
+
+    const tutorial = readSrc('components/OnboardingTutorial.js');
+    expect(tutorial).toMatch(/TEXTS\.BENEFITS_HEADING/);
+    expect(tutorial).not.toMatch(/currentStepData\.stepLabel/);
+    expect(tutorial).toMatch(/OnboardingBenefitCard text=\{currentStepData\.benefit\}/);
+    expect(tutorial).toMatch(/primaryBright \|\| brandAccent/);
+    expect(tutorial).toMatch(/styles\.backButton/);
+    expect(tutorial).not.toMatch(/styles\.dot/);
+    expect(tutorial).not.toMatch(/colors\.warning/);
+    expect(tutorial).not.toMatch(/colors\.success/);
+  });
+
+  it('OnboardingBrandShell mantiene glow ambiental en modo oscuro', () => {
+    const shell = readSrc('components/onboarding/OnboardingBrandShell.js');
+    expect(shell).toMatch(/ambientGlow/);
+    expect(shell).toMatch(/\{dark \? <View style=\{styles\.ambientGlow\}/);
+  });
+
+  it('todos los pasos comparten el mismo acento de marca', () => {
+    const { buildOnboardingTutorialSteps } = require('../../utils/onboardingSteps');
+    const steps = buildOnboardingTutorialSteps(
+      require('../../constants/translations/es').ONBOARDING,
+      COLORS,
+    );
+    const accents = new Set(steps.map((step) => step.color));
+    expect(accents.size).toBe(1);
+    expect([...accents][0]).toBe('#1E83D3');
   });
 });

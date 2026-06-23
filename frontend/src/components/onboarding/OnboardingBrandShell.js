@@ -41,6 +41,17 @@ export default function OnboardingBrandShell({ children, footer, scroll = false 
           borderColor: dark ? colors.glassOutline : 'rgba(36, 35, 79, 0.1)',
           backgroundColor: dark ? colors.chromeCard : colors.surface,
         },
+        ambientGlow: {
+          position: 'absolute',
+          left: '12%',
+          right: '12%',
+          bottom: -40,
+          height: 120,
+          borderRadius: 60,
+          backgroundColor: dark
+            ? 'rgba(68, 215, 251, 0.08)'
+            : 'rgba(30, 131, 211, 0.06)',
+        },
         inner: {
           flex: scroll ? undefined : 1,
           padding: 20,
@@ -61,6 +72,7 @@ export default function OnboardingBrandShell({ children, footer, scroll = false 
             topColor={heroGradient.top}
             bottomColor={heroGradient.bottom}
           />
+          {dark ? <View style={styles.ambientGlow} pointerEvents="none" /> : null}
           <View style={styles.inner}>{children}</View>
         </View>
         {footer ? <View style={styles.footer}>{footer}</View> : null}

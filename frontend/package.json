@@ -30,7 +30,7 @@
     "validate:welcome-auth": "npm run check && npm run test:welcome-auth",
     "test:engagement-streak": "jest --testPathPattern='engagementStreak\\.guard|dashboardHomeUtils' --coverage=false",
     "validate:engagement-streak": "npm run check && npm run test:engagement-streak",
-    "test:onboarding": "jest --testPathPattern='onboarding\\.guard|onboardingValidation|onboardingSteps|onboardingFocusParity|OnboardingQuestions|postOnboardingChat\\.guard|themeVisual\\.guard|chatAccessGate|themePalettes' --coverage=false",
+    "test:onboarding": "jest --testPathPattern='onboarding\\.guard|onboardingValidation|onboardingSteps|onboardingBrand|onboardingFocusParity|OnboardingQuestions|postOnboardingChat\\.guard|themeVisual\\.guard|chatAccessGate|themePalettes' --coverage=false",
     "validate:onboarding": "npm run check && npm run test:onboarding && node scripts/validate-onboarding.mjs",
     "test:e2e:maestro": "maestro test e2e/maestro/chat-roundtrip-from-tabs.yaml",
     "test:e2e:maestro:login-chat": "maestro test e2e/maestro/login-chat-send.yaml",

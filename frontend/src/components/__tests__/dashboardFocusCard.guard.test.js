@@ -60,6 +60,11 @@ describe('dashboardFocusCard guard', () => {
     expect(src).toMatch(/stripFocusTaskTitlePrefix/);
   });
 
+  it('ctaSecondary separa el botón Ir al chat del bloque superior', () => {
+    const src = readSrc('styles/focusCardTheme.js');
+    expect(src).toMatch(/ctaSecondary:[\s\S]*marginTop:\s*SPACING\.md/);
+  });
+
   it('DashboardFocusCard resuelve próxima tarea con useMemo', () => {
     const src = readSrc('components/DashboardFocusCard.js');
     expect(src).toMatch(/resolveFocusNextTask\(data\)/);

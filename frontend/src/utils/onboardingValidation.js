@@ -31,15 +31,20 @@ export const ONBOARDING_REQUIRED_TRANSLATION_KEYS = [
   'PREVIOUS',
   'GET_STARTED',
   'FINISH',
+  'STEP_HIGHLIGHTS_HEADING',
+  'STEP_1_LABEL',
   'STEP_1_TITLE',
   'STEP_1_DESCRIPTION',
   'STEP_1_BENEFIT',
+  'STEP_2_LABEL',
   'STEP_2_TITLE',
   'STEP_2_DESCRIPTION',
   'STEP_2_BENEFIT',
+  'STEP_3_LABEL',
   'STEP_3_TITLE',
   'STEP_3_DESCRIPTION',
   'STEP_3_BENEFIT',
+  'STEP_4_LABEL',
   'STEP_4_TITLE',
   'STEP_4_DESCRIPTION',
   'STEP_4_BENEFIT',
@@ -53,6 +58,7 @@ export const ONBOARDING_REQUIRED_TRANSLATION_KEYS = [
 
 const STEP_FIELDS = [
   'id',
+  'stepLabel',
   'title',
   'description',
   'benefit',
@@ -60,6 +66,8 @@ const STEP_FIELDS = [
   'icon',
   'color',
 ];
+
+const STEP_HIGHLIGHT_MIN = 3;
 
 const DISCLAIMER_THERAPY_MARKERS = ['terapia', 'therapy'];
 const DISCLAIMER_EMERGENCY_MARKERS = ['emergencia', 'emergency'];
@@ -101,6 +109,16 @@ export function validateOnboardingTranslations(onboarding = {}) {
     if (!String(benefit || '').trim()) {
       errors.push(`missing:STEP_${step}_BENEFIT`);
     }
+    const label = onboarding[`STEP_${step}_LABEL`];
+    if (!String(label || '').trim()) {
+      errors.push(`missing:STEP_${step}_LABEL`);
+    }
+    const highlights = onboarding[`STEP_${step}_HIGHLIGHTS`];
+    if (!Array.isArray(highlights) || highlights.length < STEP_HIGHLIGHT_MIN) {
+      errors.push(`invalid:STEP_${step}_HIGHLIGHTS`);
+    } else if (highlights.some((line) => !String(line || '').trim())) {
+      errors.push(`empty:STEP_${step}_HIGHLIGHTS`);
+    }
   }
 
   return errors;
@@ -128,6 +146,9 @@ export function validateOnboardingTutorialSteps(steps) {
       !ONBOARDING_HIGHLIGHT_ELEMENTS.includes(step.highlightElement)
     ) {
       errors.push(`step${index}:highlight:${step.highlightElement}`);
+    }
+    if (!Array.isArray(step?.highlights) || step.highlights.length < STEP_HIGHLIGHT_MIN) {
+      errors.push(`step${index}:highlights`);
     }
   });
 

@@ -103,22 +103,47 @@ export const ONBOARDING = {
   SWIPE_TO_SKIP: 'Swipe down to skip',
   ARROW_HINT: 'Look below',
   ARROW_HINT_UP: 'Look above',
+  STEP_HIGHLIGHTS_HEADING: 'What you can do here',
+  STEP_1_LABEL: 'Step 1 · Chat',
   STEP_1_TITLE: 'Talk when you need to',
   STEP_1_DESCRIPTION:
     'Chat is the heart of Anto: share what is going on and get practical, non-judgmental support.',
   STEP_1_BENEFIT: 'Responses tailored to your daily mood and initial focus.',
+  STEP_1_HIGHLIGHTS: [
+    'Share how you feel, at your own pace',
+    'Get practical support without judgment',
+    'Anto remembers your focus and daily mood',
+  ],
+  STEP_2_LABEL: 'Step 2 · Techniques',
   STEP_2_TITLE: 'Tools backed by evidence',
   STEP_2_DESCRIPTION:
     'Practice CBT exercises (ABC, exposure, behavioral activation), psychoeducation, and focus techniques.',
   STEP_2_BENEFIT: 'Evidence-based methods; Anto suggests exercises from chat.',
+  STEP_2_HIGHLIGHTS: [
+    'CBT exercises: ABC, exposure, activation',
+    'Psychoeducation and focus techniques',
+    'Suggestions from chat based on what you need',
+  ],
+  STEP_3_LABEL: 'Step 3 · Home',
   STEP_3_TITLE: 'Your day at a glance',
   STEP_3_DESCRIPTION:
     'Mood check-in, daily focus, tasks and habits with gentle reminders.',
   STEP_3_BENEFIT: 'Connect what you do in the app with your weekly wellbeing.',
+  STEP_3_HIGHLIGHTS: [
+    'Mood check-in and daily focus',
+    'Tasks and habits with reminders',
+    'All linked to your weekly summary',
+  ],
+  STEP_4_LABEL: 'Step 4 · Progress',
   STEP_4_TITLE: 'Progress and safety',
   STEP_4_DESCRIPTION:
     'Review your summary, patterns, and trusted contacts in Profile and Settings.',
   STEP_4_BENEFIT: 'Crisis detection with immediate resources when you need them.',
+  STEP_4_HIGHLIGHTS: [
+    'Summary and progress reports',
+    'Trusted contacts in one place',
+    'Crisis resources when you need them',
+  ],
   QUESTIONS_TITLE: 'What do you want to focus on first?',
   QUESTIONS_SUBTITLE:
     'Anto will adapt chat and suggestions to your priority. You can change it anytime.',

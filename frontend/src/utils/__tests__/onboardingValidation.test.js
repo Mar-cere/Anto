@@ -56,5 +56,7 @@ describe('onboardingValidation', () => {
     const steps = buildOnboardingTutorialSteps(ES_ONBOARDING, COLORS);
     expect(steps).toHaveLength(ONBOARDING_STEP_COUNT);
     expect(validateOnboardingTutorialSteps(steps.slice(0, 3))).toContain('steps:count:3');
+    const colors = steps.map((step) => step.color);
+    expect(new Set(colors).size).toBe(1);
   });
 });

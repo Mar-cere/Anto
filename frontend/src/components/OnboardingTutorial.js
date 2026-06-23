@@ -7,7 +7,6 @@ import React, { useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
-  Image,
   Modal,
   PanResponder,
   ScrollView,
@@ -22,14 +21,17 @@ import { useSectionTranslations } from '../hooks/useTranslations';
 import {
   buildOnboardingBenefits,
   buildOnboardingTutorialSteps,
+  resolveOnboardingBrandAccent,
 } from '../utils/onboardingSteps';
-import { getWelcomeScreenTheme } from '../utils/welcomeScreenTheme';
 import {
   isTutorialCompleted as isTutorialCompletedStorage,
   resetTutorial as resetTutorialStorage,
 } from '../utils/tutorialStorage';
+import OnboardingBenefitCard from './onboarding/OnboardingBenefitCard';
 import OnboardingBenefitList from './onboarding/OnboardingBenefitList';
+import OnboardingBrandOrb from './onboarding/OnboardingBrandOrb';
 import OnboardingBrandShell from './onboarding/OnboardingBrandShell';
+import OnboardingGradientButton from './onboarding/OnboardingGradientButton';
 
 const { width } = Dimensions.get('window');
 
@@ -71,6 +73,31 @@ const DEFAULT_TEXTS = {
   STEP_4_DESCRIPTION:
     'Revisa tu resumen, patrones y contactos de confianza en Perfil y Ajustes.',
   STEP_4_BENEFIT: 'Detección de crisis con recursos inmediatos si los necesitas.',
+  STEP_HIGHLIGHTS_HEADING: 'Qué puedes hacer aquí',
+  STEP_1_LABEL: 'Paso 1 · Chat',
+  STEP_1_HIGHLIGHTS: [
+    'Comparte cómo te sientes, a tu ritmo',
+    'Recibe apoyo práctico sin juicios',
+    'Anto recuerda tu foco y tu ánimo del día',
+  ],
+  STEP_2_LABEL: 'Paso 2 · Técnicas',
+  STEP_2_HIGHLIGHTS: [
+    'Ejercicios de TCC: ABC, exposición, activación',
+    'Psicoeducación y técnicas de enfoque',
+    'Sugerencias desde el chat según lo que necesites',
+  ],
+  STEP_3_LABEL: 'Paso 3 · Tu inicio',
+  STEP_3_HIGHLIGHTS: [
+    'Check-in emocional y foco del día',
+    'Tareas y hábitos con recordatorios',
+    'Todo conectado con tu resumen semanal',
+  ],
+  STEP_4_LABEL: 'Paso 4 · Seguimiento',
+  STEP_4_HIGHLIGHTS: [
+    'Resumen e informes de tu proceso',
+    'Contactos de confianza en un solo lugar',
+    'Recursos de crisis si los necesitas',
+  ],
 };
 
 const OnboardingTutorial = ({
@@ -86,10 +113,7 @@ const OnboardingTutorial = ({
     [translated],
   );
   const { colors, resolvedScheme } = useTheme();
-  const welcomeTheme = useMemo(
-    () => getWelcomeScreenTheme(resolvedScheme, colors),
-    [resolvedScheme, colors],
-  );
+  const dark = resolvedScheme === 'dark';
   const [currentStep, setCurrentStep] = useState(-1);
   const [fadeAnim] = useState(new Animated.Value(1));
   const [scaleAnim] = useState(new Animated.Value(1));
@@ -102,6 +126,10 @@ const OnboardingTutorial = ({
   const welcomeBenefits = useMemo(
     () => buildOnboardingBenefits(TEXTS),
     [TEXTS],
+  );
+  const brandAccent = useMemo(
+    () => resolveOnboardingBrandAccent(colors),
+    [colors],
   );
 
   const styles = useMemo(
@@ -134,55 +162,36 @@ const OnboardingTutorial = ({
         },
         scroll: {
           flexGrow: 1,
+          paddingBottom: 4,
         },
         stepBody: {
+          width: '100%',
           alignItems: 'center',
-          paddingBottom: 8,
-        },
-        logoWrap: {
-          width: 88,
-          height: 88,
-          borderRadius: 44,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 18,
-          backgroundColor: welcomeTheme.logoGlow,
-        },
-        logo: {
-          width: 64,
-          height: 64,
-          resizeMode: 'contain',
-        },
-        iconBadge: {
-          width: 72,
-          height: 72,
-          borderRadius: 36,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 20,
         },
         eyebrow: {
-          fontSize: 12,
+          fontSize: 11,
           fontWeight: '700',
-          letterSpacing: 0.8,
+          letterSpacing: 1.2,
           textTransform: 'uppercase',
-          color: colors.primary,
-          marginBottom: 8,
+          color: dark ? colors.primaryBright || colors.primary : colors.primary,
+          marginBottom: 10,
+          textAlign: 'center',
         },
         title: {
           fontSize: 26,
           fontWeight: '800',
           color: colors.text,
           textAlign: 'center',
-          marginBottom: 10,
+          marginBottom: 12,
           letterSpacing: -0.3,
         },
         subtitle: {
-          fontSize: 17,
-          fontWeight: '700',
-          color: colors.primary,
+          fontSize: 15,
+          fontWeight: '500',
+          color: colors.textSecondary,
           textAlign: 'center',
-          marginBottom: 12,
+          lineHeight: 22,
+          marginBottom: 8,
         },
         description: {
           fontSize: 15,
@@ -190,26 +199,6 @@ const OnboardingTutorial = ({
           textAlign: 'center',
           lineHeight: 22,
           marginBottom: 4,
-        },
-        benefitCallout: {
-          marginTop: 14,
-          width: '100%',
-          paddingVertical: 12,
-          paddingHorizontal: 14,
-          borderRadius: 14,
-          backgroundColor: colors.accentLineSoft,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: colors.border,
-          flexDirection: 'row',
-          alignItems: 'flex-start',
-          gap: 10,
-        },
-        benefitCalloutText: {
-          flex: 1,
-          fontSize: 14,
-          lineHeight: 20,
-          color: colors.text,
-          fontWeight: '600',
         },
         disclaimer: {
           marginTop: 14,
@@ -220,24 +209,23 @@ const OnboardingTutorial = ({
         },
         progressBar: {
           width: '100%',
-          height: 5,
+          height: 4,
           backgroundColor: colors.glassFill,
-          borderRadius: 3,
+          borderRadius: 2,
           overflow: 'hidden',
-          marginBottom: 10,
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: colors.border,
+          marginTop: 4,
+          marginBottom: 8,
         },
         progressFill: {
           height: '100%',
-          borderRadius: 3,
+          borderRadius: 2,
         },
         progressRow: {
           width: '100%',
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: 18,
+          marginBottom: 6,
         },
         progressText: {
           fontSize: 12,
@@ -253,55 +241,26 @@ const OnboardingTutorial = ({
           fontSize: 12,
           fontWeight: '600',
         },
-        dots: {
-          flexDirection: 'row',
-          justifyContent: 'center',
-          gap: 6,
-          marginTop: 18,
-        },
-        dot: {
-          width: 7,
-          height: 7,
-          borderRadius: 4,
-          backgroundColor: colors.glassFill,
-        },
-        dotActive: {
-          width: 22,
-        },
         footer: {
           flexDirection: 'row',
           gap: 10,
+          alignItems: 'stretch',
         },
-        navButton: {
-          flex: 1,
-          flexDirection: 'row',
+        backButton: {
+          width: 52,
+          minHeight: 52,
+          borderRadius: 16,
           alignItems: 'center',
           justifyContent: 'center',
-          paddingVertical: 14,
-          borderRadius: 16,
-          gap: 4,
-        },
-        previousButton: {
           backgroundColor: colors.glassFill,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
         },
-        nextButton: {
-          backgroundColor: colors.primary,
-        },
-        navButtonDisabled: {
-          opacity: 0.45,
-        },
-        navButtonText: {
-          fontSize: 15,
-          fontWeight: '700',
-          color: colors.textOnPrimary,
-        },
-        navButtonTextMuted: {
-          color: colors.text,
+        backButtonDisabled: {
+          opacity: 0.4,
         },
       }),
-    [colors, welcomeTheme.logoGlow],
+    [colors, dark],
   );
 
   const panResponder = useRef(
@@ -444,23 +403,18 @@ const OnboardingTutorial = ({
         { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
       ]}
     >
-      <Animated.View style={[styles.logoWrap, { transform: [{ scale: scaleAnim }] }]}>
-        <Image source={welcomeTheme.logo} style={styles.logo} accessibilityIgnoresInvertColors />
-      </Animated.View>
+      <OnboardingBrandOrb scale={scaleAnim} />
       <Text style={styles.title}>{TEXTS.WELCOME}</Text>
       <Text style={styles.subtitle}>{TEXTS.WELCOME_SUBTITLE}</Text>
       <Text style={styles.description}>{TEXTS.WELCOME_DESCRIPTION}</Text>
-      <OnboardingBenefitList
-        heading={TEXTS.BENEFITS_HEADING}
-        items={welcomeBenefits}
-      />
+      <OnboardingBenefitList items={welcomeBenefits} />
       <Text style={styles.disclaimer}>{TEXTS.DISCLAIMER}</Text>
     </Animated.View>
   );
 
   const renderStep = () => {
     if (!currentStepData) return null;
-    const accent = currentStepData.color;
+    const progressAccent = colors.primaryBright || brandAccent;
     return (
       <Animated.View
         style={[
@@ -468,30 +422,12 @@ const OnboardingTutorial = ({
           { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
         ]}
       >
-        <Animated.View
-          style={[
-            styles.iconBadge,
-            {
-              backgroundColor: `${accent}22`,
-              transform: [{ scale: scaleAnim }],
-            },
-          ]}
-        >
-          <MaterialCommunityIcons
-            name={currentStepData.icon}
-            size={36}
-            color={accent}
-          />
-        </Animated.View>
+        <OnboardingBrandOrb
+          stepIcon={currentStepData.icon}
+          scale={scaleAnim}
+          size="compact"
+        />
 
-        <View style={styles.progressBar}>
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${progress}%`, backgroundColor: accent },
-            ]}
-          />
-        </View>
         <View style={styles.progressRow}>
           <Text style={styles.progressText}>
             {currentStep + 1} / {totalSteps}
@@ -505,9 +441,9 @@ const OnboardingTutorial = ({
                     : 'arrow-down'
                 }
                 size={15}
-                color={accent}
+                color={progressAccent}
               />
-              <Text style={[styles.arrowText, { color: accent }]}>
+              <Text style={[styles.arrowText, { color: progressAccent }]}>
                 {currentStepData.highlightElement === 'home-focus'
                   ? TEXTS.ARROW_HINT_UP
                   : TEXTS.ARROW_HINT}
@@ -515,32 +451,20 @@ const OnboardingTutorial = ({
             </View>
           ) : null}
         </View>
+        <View style={styles.progressBar}>
+          <View
+            style={[
+              styles.progressFill,
+              { width: `${progress}%`, backgroundColor: progressAccent },
+            ]}
+          />
+        </View>
 
         <Text style={styles.eyebrow}>{TEXTS.BENEFITS_HEADING}</Text>
         <Text style={styles.title}>{currentStepData.title}</Text>
         <Text style={styles.description}>{currentStepData.description}</Text>
 
-        {currentStepData.benefit ? (
-          <View style={styles.benefitCallout}>
-            <MaterialCommunityIcons name="check-circle" size={18} color={accent} />
-            <Text style={styles.benefitCalloutText}>{currentStepData.benefit}</Text>
-          </View>
-        ) : null}
-
-        <View style={styles.dots}>
-          {tutorialSteps.map((step, index) => (
-            <View
-              key={step.id}
-              style={[
-                styles.dot,
-                index === currentStep && [
-                  styles.dotActive,
-                  { backgroundColor: accent },
-                ],
-              ]}
-            />
-          ))}
-        </View>
+        <OnboardingBenefitCard text={currentStepData.benefit} />
       </Animated.View>
     );
   };
@@ -551,51 +475,34 @@ const OnboardingTutorial = ({
         <TouchableOpacity
           onPress={handlePrevious}
           style={[
-            styles.navButton,
-            styles.previousButton,
-            currentStep === 0 && styles.navButtonDisabled,
+            styles.backButton,
+            currentStep === 0 && styles.backButtonDisabled,
           ]}
           disabled={currentStep === 0}
           activeOpacity={0.85}
+          accessibilityRole="button"
+          accessibilityLabel={TEXTS.PREVIOUS}
         >
           <MaterialCommunityIcons
             name="chevron-left"
-            size={22}
+            size={24}
             color={colors.text}
           />
-          <Text style={[styles.navButtonText, styles.navButtonTextMuted]}>
-            {TEXTS.PREVIOUS}
-          </Text>
         </TouchableOpacity>
       ) : null}
 
-      <TouchableOpacity
-        onPress={handleNext}
-        style={[
-          styles.navButton,
-          styles.nextButton,
-          !isWelcomeScreen && currentStepData
-            ? { backgroundColor: currentStepData.color }
-            : null,
-          isWelcomeScreen ? { flex: 1 } : null,
-        ]}
-        activeOpacity={0.88}
-      >
-        <Text style={styles.navButtonText}>
-          {isWelcomeScreen
+      <OnboardingGradientButton
+        label={
+          isWelcomeScreen
             ? TEXTS.GET_STARTED
             : currentStep === totalSteps - 1
               ? TEXTS.FINISH
-              : TEXTS.NEXT}
-        </Text>
-        {!isWelcomeScreen && currentStep < totalSteps - 1 ? (
-          <MaterialCommunityIcons
-            name="chevron-right"
-            size={22}
-            color={colors.textOnPrimary}
-          />
-        ) : null}
-      </TouchableOpacity>
+              : TEXTS.NEXT
+        }
+        onPress={handleNext}
+        flex={1}
+        showChevron={!isWelcomeScreen && currentStep < totalSteps - 1}
+      />
     </View>
   );
 
@@ -609,7 +516,7 @@ const OnboardingTutorial = ({
       onRequestClose={handleSkip}
     >
       <View style={styles.root} {...panResponder.panHandlers}>
-        <OnboardingBrandShell footer={footer}>
+        <OnboardingBrandShell footer={footer} scroll>
           <View style={styles.topBar}>
             <TouchableOpacity
               onPress={handleSkip}
