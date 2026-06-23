@@ -51,6 +51,14 @@ export function previousDateKey(dateKey) {
   return dt.toISOString().slice(0, 10);
 }
 
+function resolveStreakTimezone(timezone) {
+  return timezone && String(timezone).trim() ? String(timezone).trim() : 'UTC';
+}
+
+function todayKeyForUser(timezone) {
+  return formatCalendarDateKeyInTz(new Date(), resolveStreakTimezone(timezone));
+}
+
 function isYesterdayQualified(state, todayKey) {
   const yesterdayKey = previousDateKey(todayKey);
   return state.lastQualifiedDateKey === yesterdayKey;
@@ -66,7 +74,10 @@ function rollEngagementDayIfNeeded(state, todayKey) {
     return state;
   }
 
-  if (!isYesterdayQualified(state, todayKey) && state.lastQualifiedDateKey !== todayKey) {
+  if (isYesterdayQualified(state, todayKey)) {
+    // Mantener la racha viva; reparar current en 0 si el estado quedó incompleto en BD.
+    state.current = Math.max(state.current || 0, 1);
+  } else if (state.lastQualifiedDateKey !== todayKey) {
     state.current = 0;
   }
 
@@ -82,10 +93,14 @@ function computeTodayQualified(state) {
 }
 
 function applyQualification(state, todayKey) {
-  if (state.lastQualifiedDateKey === todayKey) return state;
+  if (state.lastQualifiedDateKey === todayKey) {
+    state.current = Math.max(state.current || 0, 1);
+    state.best = Math.max(state.best || 0, state.current);
+    return state;
+  }
 
   if (isYesterdayQualified(state, todayKey)) {
-    state.current = Math.max(1, (state.current || 0) + 1);
+    state.current = (state.current || 0) + 1;
   } else {
     state.current = 1;
   }
@@ -142,7 +157,7 @@ export async function recordEngagementSignal(userId, signal) {
   if (!userId || !mongoose.Types.ObjectId.isValid(String(userId))) return null;
   const uid = new mongoose.Types.ObjectId(String(userId));
   const { timezone, engagementStreak } = await loadUserTimezone(uid);
-  const todayKey = formatCalendarDateKeyInTz(new Date(), timezone);
+  const todayKey = todayKeyForUser(timezone);
   const next = addSignalToState(engagementStreak, signal, todayKey);
   await persistEngagementStreak(uid, next);
   return toClientEngagementStreak(next, todayKey);
@@ -159,13 +174,16 @@ export async function getEngagementStreak(userId, opts = {}) {
 
   const uid = new mongoose.Types.ObjectId(String(userId));
   const { timezone, engagementStreak } = await loadUserTimezone(uid);
-  const todayKey = formatCalendarDateKeyInTz(new Date(), timezone);
+  const todayKey = todayKeyForUser(timezone);
+
+  const rolledToNewDay =
+    Boolean(engagementStreak.todayDateKey) && engagementStreak.todayDateKey !== todayKey;
 
   let state = rollEngagementDayIfNeeded({ ...engagementStreak, todaySignals: [...engagementStreak.todaySignals] }, todayKey);
 
   const needsSync =
     opts.syncToday !== false &&
-    (!state.todaySignals.length || state.todayDateKey !== todayKey);
+    (rolledToNewDay || !state.todaySignals.length);
 
   if (needsSync) {
     state = await syncTodayEngagementFromSources(uid, timezone, todayKey, state);
@@ -192,7 +210,7 @@ function toClientEngagementStreak(state, todayKey) {
 }
 
 async function syncTodayEngagementFromSources(userId, timezone, todayKey, state) {
-  const tz = timezone && String(timezone).trim() ? String(timezone).trim() : 'UTC';
+  const tz = resolveStreakTimezone(timezone);
   const uid = new mongoose.Types.ObjectId(String(userId));
 
   const [hasChat, hasTask, hasHabit, hasTechnique, hasPsychoed, hasMood] = await Promise.all([

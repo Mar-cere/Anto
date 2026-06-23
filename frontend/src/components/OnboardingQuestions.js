@@ -1,13 +1,12 @@
 /**
  * Preferencia inicial de onboarding (una sola elección opcional).
- * Se persiste en UserProfile.onboardingAnswers.whatExpectFromApp y el chat
- * la inyecta en el system prompt (buildOnboardingAnswersSystemSnippet).
  */
 import * as Haptics from 'expo-haptics';
 import React, { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -17,15 +16,22 @@ import { api, ENDPOINTS } from '../config/api';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
-import { SPACING } from '../constants/ui';
+import { buildOnboardingBenefits } from '../utils/onboardingSteps';
+import OnboardingBenefitList from './onboarding/OnboardingBenefitList';
+import OnboardingBrandShell from './onboarding/OnboardingBrandShell';
 
 const DEFAULT_TEXTS = {
-  TITLE: 'Cuéntame en qué enfocarnos',
-  SUBTITLE: 'Opcional. Elige una opción o omite.',
+  TITLE: '¿En qué quieres enfocarte primero?',
+  SUBTITLE:
+    'Anto adaptará el chat y las sugerencias a tu prioridad. Puedes cambiarla cuando quieras.',
+  BENEFITS_HEADING: 'Con Anto tendrás',
+  BENEFIT_1: 'Chat personalizado según cómo te sientes',
+  BENEFIT_2: 'Técnicas de TCC y escalas clínicas (PHQ-9, GAD-7)',
+  BENEFIT_3: 'Resumen semanal, hábitos y recursos de crisis',
   MAIN_LABEL: 'Ahora mismo me interesa más…',
   SKIP: 'Omitir',
-  SUBMIT: 'Continuar',
-  EXPLORE_APP: 'Ver recorrido',
+  SUBMIT: 'Empezar con Anto',
+  EXPLORE_APP: 'Repasar recorrido',
   SAVE_SUCCESS: 'Listo, gracias',
   SAVE_ERROR: 'No se pudo guardar tu elección. Puedes omitir y seguir.',
   TOO_MANY_ATTEMPTS:
@@ -39,10 +45,6 @@ const DEFAULT_TEXTS = {
     'Hábitos y rutinas',
     'Enfoque y organización',
   ],
-};
-
-const UI = {
-  OVERLAY: 'rgba(0,0,0,0.6)',
 };
 
 const resolveOnboardingErrorMessage = (error, texts) => {
@@ -80,6 +82,11 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
       ...DEFAULT_TEXTS,
       TITLE: translated?.QUESTIONS_TITLE || DEFAULT_TEXTS.TITLE,
       SUBTITLE: translated?.QUESTIONS_SUBTITLE || DEFAULT_TEXTS.SUBTITLE,
+      BENEFITS_HEADING:
+        translated?.QUESTIONS_BENEFITS_HEADING || DEFAULT_TEXTS.BENEFITS_HEADING,
+      BENEFIT_1: translated?.BENEFIT_1 || DEFAULT_TEXTS.BENEFIT_1,
+      BENEFIT_2: translated?.BENEFIT_2 || DEFAULT_TEXTS.BENEFIT_2,
+      BENEFIT_3: translated?.BENEFIT_3 || DEFAULT_TEXTS.BENEFIT_3,
       MAIN_LABEL: translated?.QUESTIONS_MAIN_LABEL || DEFAULT_TEXTS.MAIN_LABEL,
       SKIP: translated?.SKIP || DEFAULT_TEXTS.SKIP,
       SUBMIT: translated?.QUESTIONS_SUBMIT || DEFAULT_TEXTS.SUBMIT,
@@ -99,6 +106,7 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
     }),
     [translated],
   );
+  const benefits = useMemo(() => buildOnboardingBenefits(TEXTS), [TEXTS]);
   const { colors } = useTheme();
   const [focusChoice, setFocusChoice] = useState('');
   const [loading, setLoading] = useState(false);
@@ -107,28 +115,16 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        overlay: {
-          flex: 1,
-          backgroundColor: UI.OVERLAY,
-          justifyContent: 'center',
-          padding: SPACING.SCREEN_EDGE_INSET,
-        },
-        card: {
-          backgroundColor: colors.modalSurface ?? colors.chromeCard,
-          borderWidth: 1,
-          borderColor: colors.accentLine,
-          borderRadius: 16,
-          padding: SPACING.SCREEN_EDGE_INSET,
-        },
         header: {
-          marginBottom: 18,
+          marginBottom: 6,
         },
         title: {
-          fontSize: 20,
-          fontWeight: '700',
+          fontSize: 22,
+          fontWeight: '800',
           color: colors.text,
           textAlign: 'center',
-          marginBottom: 6,
+          marginBottom: 8,
+          letterSpacing: -0.2,
         },
         subtitle: {
           fontSize: 14,
@@ -137,9 +133,10 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
           lineHeight: 20,
         },
         label: {
-          color: colors.textSecondary,
+          color: colors.text,
           fontSize: 13,
-          fontWeight: '600',
+          fontWeight: '700',
+          marginTop: 18,
           marginBottom: 10,
         },
         optionList: {
@@ -148,11 +145,11 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
         optionRow: {
           flexDirection: 'row',
           alignItems: 'center',
-          borderRadius: 12,
-          borderWidth: 1,
+          borderRadius: 14,
+          borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
           backgroundColor: colors.glassFill,
-          paddingVertical: 12,
+          paddingVertical: 13,
           paddingHorizontal: 14,
         },
         optionRowSelected: {
@@ -186,7 +183,7 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
         },
         optionTextSelected: {
           color: colors.primary,
-          fontWeight: '600',
+          fontWeight: '700',
         },
         errorText: {
           color: colors.error,
@@ -195,14 +192,13 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
           fontSize: 13,
           lineHeight: 18,
         },
-        actions: {
-          marginTop: 20,
+        footer: {
           gap: 12,
         },
         primaryButton: {
           backgroundColor: colors.primary,
-          borderRadius: 14,
-          paddingVertical: 14,
+          borderRadius: 16,
+          paddingVertical: 15,
           alignItems: 'center',
         },
         primaryButtonText: {
@@ -316,68 +312,73 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
     </View>
   );
 
+  const footer = (
+    <View style={styles.footer}>
+      <TouchableOpacity
+        style={styles.primaryButton}
+        onPress={handleSubmit}
+        disabled={loading}
+        activeOpacity={0.88}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.textOnPrimary} size="small" />
+        ) : (
+          <Text style={styles.primaryButtonText}>{TEXTS.SUBMIT}</Text>
+        )}
+      </TouchableOpacity>
+
+      <View style={styles.footerLinks}>
+        <TouchableOpacity
+          style={styles.footerLink}
+          onPress={handleSkip}
+          disabled={loading}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.footerLinkText}>{TEXTS.SKIP}</Text>
+        </TouchableOpacity>
+        {onExploreApp ? (
+          <>
+            <Text style={styles.footerDivider}>·</Text>
+            <TouchableOpacity
+              style={styles.footerLink}
+              onPress={handleExploreApp}
+              disabled={loading}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.footerLinkText}>{TEXTS.EXPLORE_APP}</Text>
+            </TouchableOpacity>
+          </>
+        ) : null}
+      </View>
+    </View>
+  );
+
   if (!visible) return null;
 
   return (
     <Modal
       visible={visible}
       animationType="fade"
-      transparent
       statusBarTranslucent
       onRequestClose={handleSkip}
     >
-      <View style={styles.overlay}>
-        <View style={styles.card}>
+      <OnboardingBrandShell footer={footer} scroll>
+        <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
           <View style={styles.header}>
             <Text style={styles.title}>{TEXTS.TITLE}</Text>
             <Text style={styles.subtitle}>{TEXTS.SUBTITLE}</Text>
           </View>
 
+          <OnboardingBenefitList
+            heading={TEXTS.BENEFITS_HEADING}
+            items={benefits}
+          />
+
           <Text style={styles.label}>{TEXTS.MAIN_LABEL}</Text>
           {renderOptions()}
-
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
-
-          <View style={styles.actions}>
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={handleSubmit}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color={colors.textOnPrimary} size="small" />
-              ) : (
-                <Text style={styles.primaryButtonText}>{TEXTS.SUBMIT}</Text>
-              )}
-            </TouchableOpacity>
-
-            <View style={styles.footerLinks}>
-              <TouchableOpacity
-                style={styles.footerLink}
-                onPress={handleSkip}
-                disabled={loading}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.footerLinkText}>{TEXTS.SKIP}</Text>
-              </TouchableOpacity>
-              {onExploreApp ? (
-                <>
-                  <Text style={styles.footerDivider}>·</Text>
-                  <TouchableOpacity
-                    style={styles.footerLink}
-                    onPress={handleExploreApp}
-                    disabled={loading}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.footerLinkText}>{TEXTS.EXPLORE_APP}</Text>
-                  </TouchableOpacity>
-                </>
-              ) : null}
-            </View>
-          </View>
-        </View>
-      </View>
+        </ScrollView>
+      </OnboardingBrandShell>
     </Modal>
   );
 };

@@ -1,209 +1,248 @@
 /**
- * Componente de Tutorial/Onboarding
- * 
- * Muestra un tutorial interactivo para usuarios nuevos que explica
- * las funcionalidades principales de la aplicación.
- * 
- * @author AntoApp Team
+ * Recorrido de bienvenida: estilo alineado al home/resumen y mensaje centrado en beneficios.
  */
-
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import React, { useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
+  Image,
   Modal,
   PanResponder,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from 'react-native';
 import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import {
-  getTutorialStorageKey,
+  buildOnboardingBenefits,
+  buildOnboardingTutorialSteps,
+} from '../utils/onboardingSteps';
+import { getWelcomeScreenTheme } from '../utils/welcomeScreenTheme';
+import {
   isTutorialCompleted as isTutorialCompletedStorage,
   resetTutorial as resetTutorialStorage,
 } from '../utils/tutorialStorage';
+import OnboardingBenefitList from './onboarding/OnboardingBenefitList';
+import OnboardingBrandShell from './onboarding/OnboardingBrandShell';
 
 const { width } = Dimensions.get('window');
 
 export const isTutorialCompleted = isTutorialCompletedStorage;
 export const resetTutorial = resetTutorialStorage;
 
-// Constantes de textos
 const DEFAULT_TEXTS = {
-  WELCOME: '¡Bienvenido a Anto!',
-  WELCOME_SUBTITLE: 'Tu compañero de bienestar emocional',
-  WELCOME_DESCRIPTION: 'Te guiaremos por las funcionalidades principales en solo unos segundos.',
+  WELCOME: 'Bienvenido a Anto',
+  WELCOME_SUBTITLE: 'Acompañamiento emocional con evidencia',
+  WELCOME_DESCRIPTION:
+    'Un espacio privado para hablar, practicar técnicas de bienestar y ver tu proceso — a tu ritmo.',
+  BENEFIT_1: 'Chat personalizado según cómo te sientes',
+  BENEFIT_2: 'Técnicas de TCC y escalas clínicas (PHQ-9, GAD-7)',
+  BENEFIT_3: 'Resumen semanal, hábitos y recursos de crisis',
+  BENEFITS_HEADING: 'Lo que obtienes con Anto',
+  DISCLAIMER:
+    'Anto no diagnostica ni sustituye terapia profesional ni atención de emergencia.',
   SKIP: 'Omitir',
   NEXT: 'Siguiente',
   PREVIOUS: 'Anterior',
-  GET_STARTED: 'Comenzar',
-  FINISH: 'Finalizar',
+  GET_STARTED: 'Ver cómo funciona',
+  FINISH: 'Elegir mi foco',
   SWIPE_TO_SKIP: 'Desliza hacia abajo para omitir',
   ARROW_HINT: 'Mira abajo',
   ARROW_HINT_UP: 'Mira arriba',
-  STEP_1_TITLE: 'Tu inicio',
+  STEP_1_TITLE: 'Habla cuando lo necesites',
   STEP_1_DESCRIPTION:
-    'Check-in emocional, foco del día e ideas de Anto según cómo vas.',
-  STEP_2_TITLE: 'Chat con Anto',
+    'El chat es el corazón de Anto: comparte lo que te pasa y recibe apoyo práctico, sin juicios.',
+  STEP_1_BENEFIT: 'Respuestas adaptadas a tu ánimo del día y a tu foco inicial.',
+  STEP_2_TITLE: 'Herramientas con respaldo',
   STEP_2_DESCRIPTION:
-    'Cuéntale cómo estás y recibe apoyo personalizado cuando lo necesites.',
-  STEP_3_TITLE: 'Recordatorios',
+    'Practica ejercicios de TCC (ABC, exposición, activación conductual), psicoeducación y técnicas de enfoque.',
+  STEP_2_BENEFIT: 'Basado en métodos con evidencia; Anto te sugiere ejercicios desde el chat.',
+  STEP_3_TITLE: 'Tu día en un vistazo',
   STEP_3_DESCRIPTION:
-    'Tareas y hábitos en un solo lugar, con avisos cuando los necesites.',
-  STEP_4_TITLE: 'Técnicas',
+    'Check-in emocional, foco del día, tareas y hábitos con recordatorios suaves.',
+  STEP_3_BENEFIT: 'Conecta lo que haces en la app con tu bienestar semanal.',
+  STEP_4_TITLE: 'Progreso y seguridad',
   STEP_4_DESCRIPTION:
-    'Pomodoro, ejercicios guiados y protocolos TCC en un hub para practicar.',
-  STEP_5_TITLE: 'Seguridad y perfil',
-  STEP_5_DESCRIPTION:
-    'Contactos de confianza, tu resumen y ajustes de la app en Perfil y Ajustes.',
+    'Revisa tu resumen, patrones y contactos de confianza en Perfil y Ajustes.',
+  STEP_4_BENEFIT: 'Detección de crisis con recursos inmediatos si los necesitas.',
 };
 
-const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHighlightChange, userId = null }) => {
+const OnboardingTutorial = ({
+  visible,
+  onComplete,
+  highlightElement = null,
+  onHighlightChange,
+  userId = null,
+}) => {
   const translated = useSectionTranslations('ONBOARDING');
   const TEXTS = useMemo(
     () => ({ ...DEFAULT_TEXTS, ...translated }),
     [translated],
   );
-  const { colors } = useTheme();
-  const [currentStep, setCurrentStep] = useState(-1); // -1 = pantalla de bienvenida
+  const { colors, resolvedScheme } = useTheme();
+  const welcomeTheme = useMemo(
+    () => getWelcomeScreenTheme(resolvedScheme, colors),
+    [resolvedScheme, colors],
+  );
+  const [currentStep, setCurrentStep] = useState(-1);
   const [fadeAnim] = useState(new Animated.Value(1));
   const [scaleAnim] = useState(new Animated.Value(1));
   const [slideAnim] = useState(new Animated.Value(0));
 
   const tutorialSteps = useMemo(
-    () => [
-      {
-        id: 1,
-        icon: 'home-heart',
-        title: TEXTS.STEP_1_TITLE,
-        description: TEXTS.STEP_1_DESCRIPTION,
-        color: colors.primary,
-        highlightElement: 'home-focus',
-      },
-      {
-        id: 2,
-        icon: 'message-text',
-        title: TEXTS.STEP_2_TITLE,
-        description: TEXTS.STEP_2_DESCRIPTION,
-        color: colors.secondary ?? colors.accentLine,
-        highlightElement: 'chat',
-      },
-      {
-        id: 3,
-        icon: 'clipboard-list',
-        title: TEXTS.STEP_3_TITLE,
-        description: TEXTS.STEP_3_DESCRIPTION,
-        color: colors.warning,
-        highlightElement: 'reminders',
-      },
-      {
-        id: 4,
-        icon: 'diamond-stone',
-        title: TEXTS.STEP_4_TITLE,
-        description: TEXTS.STEP_4_DESCRIPTION,
-        color: colors.success ?? colors.primary,
-        highlightElement: 'techniques',
-      },
-      {
-        id: 5,
-        icon: 'shield-account',
-        title: TEXTS.STEP_5_TITLE,
-        description: TEXTS.STEP_5_DESCRIPTION,
-        color: colors.error,
-        highlightElement: 'settings',
-      },
-    ],
+    () => buildOnboardingTutorialSteps(TEXTS, colors),
     [TEXTS, colors],
+  );
+  const welcomeBenefits = useMemo(
+    () => buildOnboardingBenefits(TEXTS),
+    [TEXTS],
   );
 
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        container: {
+        root: {
           flex: 1,
-          backgroundColor: colors.backdropStrong ?? 'rgba(0, 0, 0, 0.9)',
-          paddingTop: Platform.OS === 'ios' ? 50 : 20,
         },
-        header: {
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingTop: 10,
-          paddingBottom: 20,
+        topBar: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 8,
         },
         skipButton: {
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingVertical: 8,
+          paddingVertical: 6,
+          paddingHorizontal: 4,
         },
-        skipButtonText: {
-          color: colors.text,
-          fontSize: 16,
-          opacity: 0.75,
+        skipText: {
+          color: colors.textSecondary,
+          fontSize: 15,
+          fontWeight: '600',
         },
         swipeHint: {
-          color: colors.text,
-          fontSize: 12,
-          opacity: 0.55,
-          marginTop: 4,
-          textAlign: 'center',
+          color: colors.textMuted ?? colors.textSecondary,
+          fontSize: 11,
+          textAlign: 'right',
+          flex: 1,
+          marginLeft: 12,
         },
-        content: {
+        scroll: {
           flexGrow: 1,
+        },
+        stepBody: {
+          alignItems: 'center',
+          paddingBottom: 8,
+        },
+        logoWrap: {
+          width: 88,
+          height: 88,
+          borderRadius: 44,
+          alignItems: 'center',
           justifyContent: 'center',
-          alignItems: 'center',
-          paddingHorizontal: 30,
-          paddingBottom: 100,
+          marginBottom: 18,
+          backgroundColor: welcomeTheme.logoGlow,
         },
-        stepContainer: {
-          alignItems: 'center',
-          width: '100%',
+        logo: {
+          width: 64,
+          height: 64,
+          resizeMode: 'contain',
         },
-        iconContainer: {
-          width: 160,
-          height: 160,
-          borderRadius: 80,
+        iconBadge: {
+          width: 72,
+          height: 72,
+          borderRadius: 36,
+          alignItems: 'center',
           justifyContent: 'center',
-          alignItems: 'center',
-          marginBottom: 40,
+          marginBottom: 20,
         },
-        progressContainer: {
+        eyebrow: {
+          fontSize: 12,
+          fontWeight: '700',
+          letterSpacing: 0.8,
+          textTransform: 'uppercase',
+          color: colors.primary,
+          marginBottom: 8,
+        },
+        title: {
+          fontSize: 26,
+          fontWeight: '800',
+          color: colors.text,
+          textAlign: 'center',
+          marginBottom: 10,
+          letterSpacing: -0.3,
+        },
+        subtitle: {
+          fontSize: 17,
+          fontWeight: '700',
+          color: colors.primary,
+          textAlign: 'center',
+          marginBottom: 12,
+        },
+        description: {
+          fontSize: 15,
+          color: colors.textSecondary,
+          textAlign: 'center',
+          lineHeight: 22,
+          marginBottom: 4,
+        },
+        benefitCallout: {
+          marginTop: 14,
           width: '100%',
-          marginBottom: 30,
+          paddingVertical: 12,
+          paddingHorizontal: 14,
+          borderRadius: 14,
+          backgroundColor: colors.accentLineSoft,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          gap: 10,
+        },
+        benefitCalloutText: {
+          flex: 1,
+          fontSize: 14,
+          lineHeight: 20,
+          color: colors.text,
+          fontWeight: '600',
+        },
+        disclaimer: {
+          marginTop: 14,
+          fontSize: 12,
+          lineHeight: 18,
+          color: colors.textMuted ?? colors.textSecondary,
+          textAlign: 'center',
         },
         progressBar: {
           width: '100%',
-          height: 6,
+          height: 5,
           backgroundColor: colors.glassFill,
           borderRadius: 3,
           overflow: 'hidden',
-          marginBottom: 12,
-          borderWidth: 1,
-          borderColor: colors.glassOutline,
+          marginBottom: 10,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
         },
         progressFill: {
           height: '100%',
           borderRadius: 3,
         },
-        progressInfo: {
+        progressRow: {
+          width: '100%',
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          width: '100%',
+          marginBottom: 18,
         },
         progressText: {
-          color: colors.text,
           fontSize: 12,
-          opacity: 0.7,
           fontWeight: '700',
+          color: colors.textSecondary,
         },
         arrowHint: {
           flexDirection: 'row',
@@ -214,529 +253,388 @@ const OnboardingTutorial = ({ visible, onComplete, highlightElement = null, onHi
           fontSize: 12,
           fontWeight: '600',
         },
-        title: {
-          fontSize: 32,
-          fontWeight: 'bold',
-          color: colors.text,
-          textAlign: 'center',
-          marginBottom: 20,
-        },
-        description: {
-          fontSize: 17,
-          color: colors.text,
-          textAlign: 'center',
-          lineHeight: 26,
-          opacity: 0.85,
-          marginBottom: 40,
-          paddingHorizontal: 10,
-        },
-        dotsContainer: {
+        dots: {
           flexDirection: 'row',
           justifyContent: 'center',
-          alignItems: 'center',
-          marginTop: 20,
+          gap: 6,
+          marginTop: 18,
         },
         dot: {
-          width: 8,
-          height: 8,
+          width: 7,
+          height: 7,
           borderRadius: 4,
           backgroundColor: colors.glassFill,
-          borderWidth: 1,
-          borderColor: colors.glassOutline,
-          marginHorizontal: 4,
         },
         dotActive: {
-          width: 24,
-          height: 8,
-          borderRadius: 4,
+          width: 22,
         },
         footer: {
           flexDirection: 'row',
-          justifyContent: 'space-between',
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingBottom: Platform.OS === 'ios' ? 40 : 20,
-          paddingTop: 20,
-          borderTopWidth: 1,
-          borderTopColor: colors.glassOutline,
+          gap: 10,
         },
         navButton: {
+          flex: 1,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           paddingVertical: 14,
-          paddingHorizontal: 24,
-          borderRadius: 25,
-          minWidth: 120,
+          borderRadius: 16,
+          gap: 4,
         },
         previousButton: {
           backgroundColor: colors.glassFill,
-          borderWidth: 1,
-          borderColor: colors.glassOutline,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
         },
         nextButton: {
           backgroundColor: colors.primary,
         },
         navButtonDisabled: {
-          opacity: 0.55,
+          opacity: 0.45,
         },
         navButtonText: {
+          fontSize: 15,
+          fontWeight: '700',
           color: colors.textOnPrimary,
-          fontSize: 16,
-          fontWeight: '700',
-          marginHorizontal: 8,
         },
-        navButtonTextDisabled: {
-          color: colors.textSecondary,
-        },
-        welcomeTitle: {
-          fontSize: 42,
-          fontWeight: 'bold',
+        navButtonTextMuted: {
           color: colors.text,
-          textAlign: 'center',
-          marginBottom: 16,
-          marginTop: 20,
-        },
-        welcomeSubtitle: {
-          fontSize: 24,
-          color: colors.primary,
-          textAlign: 'center',
-          marginBottom: 20,
-          fontWeight: '700',
-        },
-        welcomeDescription: {
-          fontSize: 18,
-          color: colors.text,
-          textAlign: 'center',
-          lineHeight: 28,
-          opacity: 0.9,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-        },
-        welcomeButton: {
-          backgroundColor: colors.primary,
-          width: '100%',
         },
       }),
-    [colors],
+    [colors, welcomeTheme.logoGlow],
   );
+
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (evt, gestureState) => {
-        // Detectar deslizamiento hacia abajo
-        return Math.abs(gestureState.dy) > 10 && gestureState.dy > 0;
-      },
-      onPanResponderRelease: (evt, gestureState) => {
-        // Si se deslizó hacia abajo más de 50px, omitir tutorial
+      onMoveShouldSetPanResponder: (_, gestureState) =>
+        Math.abs(gestureState.dy) > 10 && gestureState.dy > 0,
+      onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dy > 50) {
           handleSkip();
         }
       },
-    })
+    }),
   ).current;
 
   const totalSteps = tutorialSteps.length;
   const isWelcomeScreen = currentStep === -1;
   const currentStepData = currentStep >= 0 ? tutorialSteps[currentStep] : null;
-
-  const handleNext = () => {
-    if (isWelcomeScreen) {
-      // Ir al primer paso del tutorial
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: -width,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        slideAnim.setValue(width);
-        fadeAnim.setValue(1);
-        setCurrentStep(0);
-        // Notificar cambio de highlight
-        if (onHighlightChange && tutorialSteps[0].highlightElement) {
-          onHighlightChange(tutorialSteps[0].highlightElement);
-        }
-        Animated.parallel([
-          Animated.timing(slideAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      });
-      return;
-    }
-
-    if (currentStep < totalSteps - 1) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const nextStep = currentStep + 1;
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: -width,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        slideAnim.setValue(width);
-        fadeAnim.setValue(1);
-        setCurrentStep(nextStep);
-        // Notificar cambio de highlight
-        if (onHighlightChange) {
-          onHighlightChange(tutorialSteps[nextStep]?.highlightElement || null);
-        }
-        Animated.parallel([
-          Animated.timing(slideAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      });
-    } else {
-      handleFinish();
-    }
-  };
-
-  const handlePrevious = () => {
-    if (currentStep > 0) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const prevStep = currentStep - 1;
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: width,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        slideAnim.setValue(-width);
-        fadeAnim.setValue(1);
-        setCurrentStep(prevStep);
-        // Notificar cambio de highlight
-        if (onHighlightChange) {
-          onHighlightChange(tutorialSteps[prevStep]?.highlightElement || null);
-        }
-        Animated.parallel([
-          Animated.timing(slideAnim, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      });
-    } else if (currentStep === 0) {
-      // Volver a la pantalla de bienvenida
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      Animated.parallel([
-        Animated.timing(slideAnim, {
-          toValue: width,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        slideAnim.setValue(0);
-        fadeAnim.setValue(1);
-        setCurrentStep(-1);
-        if (onHighlightChange) {
-          onHighlightChange(null);
-        }
-      });
-    }
-  };
-
-  const handleSkip = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await markTutorialAsCompleted(userId);
-    onComplete?.();
-  };
-
-  const handleFinish = async () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await markTutorialAsCompleted(userId);
-    if (onHighlightChange) {
-      onHighlightChange(null);
-    }
-    onComplete?.();
-  };
-
-  const markTutorialAsCompleted = async (userId) => {
-    try {
-      const key = getTutorialStorageKey(userId);
-      await AsyncStorage.setItem(key, 'true');
-    } catch (error) {
-      console.error('Error guardando estado del tutorial:', error);
-    }
-  };
-
   const progress = isWelcomeScreen ? 0 : ((currentStep + 1) / totalSteps) * 100;
 
-  // Reiniciar el tutorial cuando se muestra
-  React.useEffect(() => {
-    if (visible) {
-      setCurrentStep(-1); // Empezar con la pantalla de bienvenida
+  const animateTransition = (direction, onMid) => {
+    const out = direction === 'forward' ? -width : width;
+    const inFrom = direction === 'forward' ? width : -width;
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: out,
+        duration: 280,
+        useNativeDriver: true,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 280,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      slideAnim.setValue(inFrom);
       fadeAnim.setValue(1);
-      scaleAnim.setValue(1);
-      slideAnim.setValue(0);
-      if (onHighlightChange) {
-        onHighlightChange(null);
-      }
-    }
-  }, [visible, onHighlightChange, fadeAnim, scaleAnim, slideAnim]);
-
-  // Efecto para animar el icono cuando cambia el paso
-  React.useEffect(() => {
-    if (!isWelcomeScreen && currentStepData) {
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 1.2,
-          duration: 200,
+      onMid();
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 280,
           useNativeDriver: true,
         }),
-        Animated.timing(scaleAnim, {
+        Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 200,
+          duration: 280,
           useNativeDriver: true,
         }),
       ]).start();
+    });
+  };
+
+  const setHighlightForStep = (stepIndex) => {
+    if (!onHighlightChange) return;
+    if (stepIndex < 0) {
+      onHighlightChange(null);
+      return;
     }
+    onHighlightChange(tutorialSteps[stepIndex]?.highlightElement || null);
+  };
+
+  const handleNext = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (isWelcomeScreen) {
+      animateTransition('forward', () => {
+        setCurrentStep(0);
+        setHighlightForStep(0);
+      });
+      return;
+    }
+    if (currentStep < totalSteps - 1) {
+      const nextStep = currentStep + 1;
+      animateTransition('forward', () => {
+        setCurrentStep(nextStep);
+        setHighlightForStep(nextStep);
+      });
+      return;
+    }
+    handleFinish();
+  };
+
+  const handlePrevious = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (currentStep > 0) {
+      const prevStep = currentStep - 1;
+      animateTransition('backward', () => {
+        setCurrentStep(prevStep);
+        setHighlightForStep(prevStep);
+      });
+      return;
+    }
+    if (currentStep === 0) {
+      animateTransition('backward', () => {
+        setCurrentStep(-1);
+        setHighlightForStep(-1);
+      });
+    }
+  };
+
+  const handleSkip = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onComplete?.();
+  };
+
+  const handleFinish = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setHighlightForStep(-1);
+    onComplete?.();
+  };
+
+  React.useEffect(() => {
+    if (!visible) return;
+    setCurrentStep(-1);
+    fadeAnim.setValue(1);
+    scaleAnim.setValue(1);
+    slideAnim.setValue(0);
+    setHighlightForStep(-1);
+  }, [visible]);
+
+  React.useEffect(() => {
+    if (isWelcomeScreen || !currentStepData) return;
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 1.08,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, [currentStep, isWelcomeScreen, currentStepData, scaleAnim]);
+
+  const renderWelcome = () => (
+    <Animated.View
+      style={[
+        styles.stepBody,
+        { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
+      ]}
+    >
+      <Animated.View style={[styles.logoWrap, { transform: [{ scale: scaleAnim }] }]}>
+        <Image source={welcomeTheme.logo} style={styles.logo} accessibilityIgnoresInvertColors />
+      </Animated.View>
+      <Text style={styles.title}>{TEXTS.WELCOME}</Text>
+      <Text style={styles.subtitle}>{TEXTS.WELCOME_SUBTITLE}</Text>
+      <Text style={styles.description}>{TEXTS.WELCOME_DESCRIPTION}</Text>
+      <OnboardingBenefitList
+        heading={TEXTS.BENEFITS_HEADING}
+        items={welcomeBenefits}
+      />
+      <Text style={styles.disclaimer}>{TEXTS.DISCLAIMER}</Text>
+    </Animated.View>
+  );
+
+  const renderStep = () => {
+    if (!currentStepData) return null;
+    const accent = currentStepData.color;
+    return (
+      <Animated.View
+        style={[
+          styles.stepBody,
+          { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
+        ]}
+      >
+        <Animated.View
+          style={[
+            styles.iconBadge,
+            {
+              backgroundColor: `${accent}22`,
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
+        >
+          <MaterialCommunityIcons
+            name={currentStepData.icon}
+            size={36}
+            color={accent}
+          />
+        </Animated.View>
+
+        <View style={styles.progressBar}>
+          <View
+            style={[
+              styles.progressFill,
+              { width: `${progress}%`, backgroundColor: accent },
+            ]}
+          />
+        </View>
+        <View style={styles.progressRow}>
+          <Text style={styles.progressText}>
+            {currentStep + 1} / {totalSteps}
+          </Text>
+          {currentStepData.highlightElement ? (
+            <View style={styles.arrowHint}>
+              <MaterialCommunityIcons
+                name={
+                  currentStepData.highlightElement === 'home-focus'
+                    ? 'arrow-up'
+                    : 'arrow-down'
+                }
+                size={15}
+                color={accent}
+              />
+              <Text style={[styles.arrowText, { color: accent }]}>
+                {currentStepData.highlightElement === 'home-focus'
+                  ? TEXTS.ARROW_HINT_UP
+                  : TEXTS.ARROW_HINT}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        <Text style={styles.eyebrow}>{TEXTS.BENEFITS_HEADING}</Text>
+        <Text style={styles.title}>{currentStepData.title}</Text>
+        <Text style={styles.description}>{currentStepData.description}</Text>
+
+        {currentStepData.benefit ? (
+          <View style={styles.benefitCallout}>
+            <MaterialCommunityIcons name="check-circle" size={18} color={accent} />
+            <Text style={styles.benefitCalloutText}>{currentStepData.benefit}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.dots}>
+          {tutorialSteps.map((step, index) => (
+            <View
+              key={step.id}
+              style={[
+                styles.dot,
+                index === currentStep && [
+                  styles.dotActive,
+                  { backgroundColor: accent },
+                ],
+              ]}
+            />
+          ))}
+        </View>
+      </Animated.View>
+    );
+  };
+
+  const footer = (
+    <View style={styles.footer}>
+      {!isWelcomeScreen ? (
+        <TouchableOpacity
+          onPress={handlePrevious}
+          style={[
+            styles.navButton,
+            styles.previousButton,
+            currentStep === 0 && styles.navButtonDisabled,
+          ]}
+          disabled={currentStep === 0}
+          activeOpacity={0.85}
+        >
+          <MaterialCommunityIcons
+            name="chevron-left"
+            size={22}
+            color={colors.text}
+          />
+          <Text style={[styles.navButtonText, styles.navButtonTextMuted]}>
+            {TEXTS.PREVIOUS}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
+
+      <TouchableOpacity
+        onPress={handleNext}
+        style={[
+          styles.navButton,
+          styles.nextButton,
+          !isWelcomeScreen && currentStepData
+            ? { backgroundColor: currentStepData.color }
+            : null,
+          isWelcomeScreen ? { flex: 1 } : null,
+        ]}
+        activeOpacity={0.88}
+      >
+        <Text style={styles.navButtonText}>
+          {isWelcomeScreen
+            ? TEXTS.GET_STARTED
+            : currentStep === totalSteps - 1
+              ? TEXTS.FINISH
+              : TEXTS.NEXT}
+        </Text>
+        {!isWelcomeScreen && currentStep < totalSteps - 1 ? (
+          <MaterialCommunityIcons
+            name="chevron-right"
+            size={22}
+            color={colors.textOnPrimary}
+          />
+        ) : null}
+      </TouchableOpacity>
+    </View>
+  );
+
+  if (!visible) return null;
 
   return (
     <Modal
       visible={visible}
       animationType="fade"
-      transparent={true}
+      statusBarTranslucent
       onRequestClose={handleSkip}
     >
-      <View style={styles.container} {...panResponder.panHandlers}>
-        {/* Header con botón de omitir */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={handleSkip}
-            style={styles.skipButton}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.skipButtonText}>{TEXTS.SKIP}</Text>
-          </TouchableOpacity>
-          {isWelcomeScreen && (
-            <Text style={styles.swipeHint}>{TEXTS.SWIPE_TO_SKIP}</Text>
-          )}
-        </View>
-
-        {/* Contenido principal */}
-        <ScrollView
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-        >
-          {isWelcomeScreen ? (
-            <Animated.View
-              style={[
-                styles.stepContainer,
-                {
-                  opacity: fadeAnim,
-                  transform: [{ translateX: slideAnim }]
-                }
-              ]}
-            >
-              {/* Pantalla de bienvenida */}
-              <Animated.View
-                style={[
-                  styles.iconContainer,
-                  {
-                    backgroundColor: `${colors.primary}20`,
-                    transform: [{ scale: scaleAnim }]
-                  }
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name="heart"
-                  size={100}
-                  color={colors.primary}
-                />
-              </Animated.View>
-
-              <Text style={styles.welcomeTitle}>{TEXTS.WELCOME}</Text>
-              <Text style={styles.welcomeSubtitle}>{TEXTS.WELCOME_SUBTITLE}</Text>
-              <Text style={styles.welcomeDescription}>{TEXTS.WELCOME_DESCRIPTION}</Text>
-            </Animated.View>
-          ) : currentStepData ? (
-            <Animated.View
-              style={[
-                styles.stepContainer,
-                {
-                  opacity: fadeAnim,
-                  transform: [{ translateX: slideAnim }]
-                }
-              ]}
-            >
-              {/* Icono */}
-              <Animated.View
-                style={[
-                  styles.iconContainer,
-                  {
-                    backgroundColor: `${currentStepData.color}20`,
-                    transform: [{ scale: scaleAnim }]
-                  }
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name={currentStepData.icon}
-                  size={80}
-                  color={currentStepData.color}
-                />
-              </Animated.View>
-
-              {/* Indicador de progreso */}
-              <View style={styles.progressContainer}>
-                <View style={styles.progressBar}>
-                  <Animated.View
-                    style={[
-                      styles.progressFill,
-                      {
-                        width: `${progress}%`,
-                        backgroundColor: currentStepData.color
-                      }
-                    ]}
-                  />
-                </View>
-                <View style={styles.progressInfo}>
-                  <Text style={styles.progressText}>
-                    {currentStep + 1} / {totalSteps}
-                  </Text>
-                  {currentStepData.highlightElement && (
-                    <View style={styles.arrowHint}>
-                      <MaterialCommunityIcons
-                        name="arrow-down"
-                        size={16}
-                        color={currentStepData.color}
-                      />
-                      <Text style={[styles.arrowText, { color: currentStepData.color }]}>
-                        {currentStepData.highlightElement === 'home-focus'
-                          ? TEXTS.ARROW_HINT_UP
-                          : TEXTS.ARROW_HINT}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-
-              {/* Título y descripción */}
-              <Text style={styles.title}>{currentStepData.title}</Text>
-              <Text style={styles.description}>{currentStepData.description}</Text>
-
-              {/* Indicadores de pasos */}
-              <View style={styles.dotsContainer}>
-                {tutorialSteps.map((_, index) => (
-                  <View
-                    key={index}
-                    style={[
-                      styles.dot,
-                      index === currentStep && [
-                        styles.dotActive,
-                        { backgroundColor: currentStepData.color }
-                      ]
-                    ]}
-                  />
-                ))}
-              </View>
-            </Animated.View>
-          ) : null}
-        </ScrollView>
-
-        {/* Footer con botones de navegación */}
-        <View style={styles.footer}>
-          {!isWelcomeScreen && (
+      <View style={styles.root} {...panResponder.panHandlers}>
+        <OnboardingBrandShell footer={footer}>
+          <View style={styles.topBar}>
             <TouchableOpacity
-              onPress={handlePrevious}
-              style={[
-                styles.navButton,
-                styles.previousButton,
-                currentStep === 0 && styles.navButtonDisabled
-              ]}
-              disabled={currentStep === 0}
-              activeOpacity={0.7}
+              onPress={handleSkip}
+              style={styles.skipButton}
+              activeOpacity={0.75}
             >
-              <MaterialCommunityIcons
-                name="chevron-left"
-                size={24}
-                color={currentStep === 0 ? colors.textSecondary : colors.textOnPrimary}
-              />
-              <Text
-                style={[
-                  styles.navButtonText,
-                  currentStep === 0 && styles.navButtonTextDisabled
-                ]}
-              >
-                {TEXTS.PREVIOUS}
-              </Text>
+              <Text style={styles.skipText}>{TEXTS.SKIP}</Text>
             </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            onPress={handleNext}
-            style={[
-              styles.navButton,
-              styles.nextButton,
-              isWelcomeScreen && styles.welcomeButton,
-              !isWelcomeScreen && { backgroundColor: currentStepData.color }
-            ]}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.navButtonText}>
-              {isWelcomeScreen
-                ? TEXTS.GET_STARTED
-                : currentStep === totalSteps - 1
-                ? TEXTS.FINISH
-                : TEXTS.NEXT}
-            </Text>
-            {!isWelcomeScreen && currentStep < totalSteps - 1 && (
-              <MaterialCommunityIcons
-                name="chevron-right"
-                size={24}
-                color={colors.textOnPrimary}
-              />
+            {isWelcomeScreen ? (
+              <Text style={styles.swipeHint}>{TEXTS.SWIPE_TO_SKIP}</Text>
+            ) : (
+              <View style={{ flex: 1 }} />
             )}
-          </TouchableOpacity>
-        </View>
+          </View>
+          <ScrollView
+            contentContainerStyle={styles.scroll}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
+            {isWelcomeScreen ? renderWelcome() : renderStep()}
+          </ScrollView>
+        </OnboardingBrandShell>
       </View>
     </Modal>
   );
 };
 
-// `styles` se crea por tema dentro del componente.
-
 export default OnboardingTutorial;
-

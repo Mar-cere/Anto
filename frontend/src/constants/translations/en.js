@@ -85,38 +85,47 @@ export const REGISTER = {
 };
 
 export const ONBOARDING = {
-  WELCOME: 'Welcome to Anto!',
-  WELCOME_SUBTITLE: 'Your emotional wellbeing companion',
+  WELCOME: 'Welcome to Anto',
+  WELCOME_SUBTITLE: 'Evidence-informed emotional support',
   WELCOME_DESCRIPTION:
-    'We will guide you through the main features in just a few seconds.',
+    'A private space to talk, practice wellbeing techniques, and track your progress — at your own pace.',
+  BENEFIT_1: 'Personalized chat based on how you feel',
+  BENEFIT_2: 'CBT techniques and clinical scales (PHQ-9, GAD-7)',
+  BENEFIT_3: 'Weekly summary, habits, and crisis resources',
+  BENEFITS_HEADING: 'What you get with Anto',
+  DISCLAIMER:
+    'Anto does not diagnose and is not a substitute for professional therapy or emergency care.',
   SKIP: 'Skip',
   NEXT: 'Next',
   PREVIOUS: 'Previous',
-  GET_STARTED: 'Get started',
-  FINISH: 'Finish',
+  GET_STARTED: 'See how it works',
+  FINISH: 'Choose my focus',
   SWIPE_TO_SKIP: 'Swipe down to skip',
   ARROW_HINT: 'Look below',
   ARROW_HINT_UP: 'Look above',
-  STEP_1_TITLE: 'Your home',
+  STEP_1_TITLE: 'Talk when you need to',
   STEP_1_DESCRIPTION:
-    'Mood check-in, daily focus, and gentle insights from Anto based on how you are doing.',
-  STEP_2_TITLE: 'Chat with Anto',
+    'Chat is the heart of Anto: share what is going on and get practical, non-judgmental support.',
+  STEP_1_BENEFIT: 'Responses tailored to your daily mood and initial focus.',
+  STEP_2_TITLE: 'Tools backed by evidence',
   STEP_2_DESCRIPTION:
-    'Share how you feel and get personalized support when you need it.',
-  STEP_3_TITLE: 'Reminders',
+    'Practice CBT exercises (ABC, exposure, behavioral activation), psychoeducation, and focus techniques.',
+  STEP_2_BENEFIT: 'Evidence-based methods; Anto suggests exercises from chat.',
+  STEP_3_TITLE: 'Your day at a glance',
   STEP_3_DESCRIPTION:
-    'Tasks and habits in one place, with reminders when you need them.',
-  STEP_4_TITLE: 'Techniques',
+    'Mood check-in, daily focus, tasks and habits with gentle reminders.',
+  STEP_3_BENEFIT: 'Connect what you do in the app with your weekly wellbeing.',
+  STEP_4_TITLE: 'Progress and safety',
   STEP_4_DESCRIPTION:
-    'Pomodoro, guided exercises, and CBT protocols in one practice hub.',
-  STEP_5_TITLE: 'Safety and profile',
-  STEP_5_DESCRIPTION:
-    'Trusted contacts, your summary, and app settings in Profile and Settings.',
-  QUESTIONS_TITLE: 'What should we focus on?',
-  QUESTIONS_SUBTITLE: 'Optional. Pick one option or skip.',
+    'Review your summary, patterns, and trusted contacts in Profile and Settings.',
+  STEP_4_BENEFIT: 'Crisis detection with immediate resources when you need them.',
+  QUESTIONS_TITLE: 'What do you want to focus on first?',
+  QUESTIONS_SUBTITLE:
+    'Anto will adapt chat and suggestions to your priority. You can change it anytime.',
+  QUESTIONS_BENEFITS_HEADING: 'With Anto you will have',
   QUESTIONS_MAIN_LABEL: 'Right now I care most about…',
-  QUESTIONS_SUBMIT: 'Continue',
-  QUESTIONS_EXPLORE_APP: 'View walkthrough',
+  QUESTIONS_SUBMIT: 'Start with Anto',
+  QUESTIONS_EXPLORE_APP: 'Replay walkthrough',
   QUESTIONS_SAVE_SUCCESS: 'Done, thank you',
   QUESTIONS_SAVE_ERROR:
     'Could not save your choice. You can skip and continue.',

@@ -194,5 +194,11 @@ describe('dashboardFocusService', () => {
       expect(src).toMatch(/nextTask:\s*firstTask/);
       expect(src).toMatch(/reminderAt:\s*habitReminder\.nextAt/);
     });
+
+    it('expone engagementStreak con syncToday en foco', () => {
+      const src = fs.readFileSync(servicePath, 'utf8');
+      expect(src).toMatch(/getEngagementStreak\(userId,\s*\{\s*syncToday:\s*true\s*\}/);
+      expect(src).toMatch(/engagementStreak,/);
+    });
   });
 });

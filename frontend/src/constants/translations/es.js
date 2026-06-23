@@ -85,38 +85,48 @@ export const REGISTER = {
 };
 
 export const ONBOARDING = {
-  WELCOME: '¡Bienvenido a Anto!',
-  WELCOME_SUBTITLE: 'Tu compañero de bienestar emocional',
+  WELCOME: 'Bienvenido a Anto',
+  WELCOME_SUBTITLE: 'Acompañamiento emocional con evidencia',
   WELCOME_DESCRIPTION:
-    'Te guiaremos por las funcionalidades principales en solo unos segundos.',
+    'Un espacio privado para hablar, practicar técnicas de bienestar y ver tu proceso — a tu ritmo.',
+  BENEFIT_1: 'Chat personalizado según cómo te sientes',
+  BENEFIT_2: 'Técnicas de TCC y escalas clínicas (PHQ-9, GAD-7)',
+  BENEFIT_3: 'Resumen semanal, hábitos y recursos de crisis',
+  BENEFITS_HEADING: 'Lo que obtienes con Anto',
+  DISCLAIMER:
+    'Anto no diagnostica ni sustituye terapia profesional ni atención de emergencia.',
   SKIP: 'Omitir',
   NEXT: 'Siguiente',
   PREVIOUS: 'Anterior',
-  GET_STARTED: 'Comenzar',
-  FINISH: 'Finalizar',
+  GET_STARTED: 'Ver cómo funciona',
+  FINISH: 'Elegir mi foco',
   SWIPE_TO_SKIP: 'Desliza hacia abajo para omitir',
   ARROW_HINT: 'Mira abajo',
   ARROW_HINT_UP: 'Mira arriba',
-  STEP_1_TITLE: 'Tu inicio',
+  STEP_1_TITLE: 'Habla cuando lo necesites',
   STEP_1_DESCRIPTION:
-    'Check-in emocional, foco del día e ideas de Anto según cómo vas.',
-  STEP_2_TITLE: 'Chat con Anto',
+    'El chat es el corazón de Anto: comparte lo que te pasa y recibe apoyo práctico, sin juicios.',
+  STEP_1_BENEFIT: 'Respuestas adaptadas a tu ánimo del día y a tu foco inicial.',
+  STEP_2_TITLE: 'Herramientas con respaldo',
   STEP_2_DESCRIPTION:
-    'Cuéntale cómo estás y recibe apoyo personalizado cuando lo necesites.',
-  STEP_3_TITLE: 'Recordatorios',
+    'Practica ejercicios de TCC (ABC, exposición, activación conductual), psicoeducación y técnicas de enfoque.',
+  STEP_2_BENEFIT:
+    'Basado en métodos con evidencia; Anto te sugiere ejercicios desde el chat.',
+  STEP_3_TITLE: 'Tu día en un vistazo',
   STEP_3_DESCRIPTION:
-    'Tareas y hábitos en un solo lugar, con avisos cuando los necesites.',
-  STEP_4_TITLE: 'Técnicas',
+    'Check-in emocional, foco del día, tareas y hábitos con recordatorios suaves.',
+  STEP_3_BENEFIT: 'Conecta lo que haces en la app con tu bienestar semanal.',
+  STEP_4_TITLE: 'Progreso y seguridad',
   STEP_4_DESCRIPTION:
-    'Pomodoro, ejercicios guiados y protocolos TCC en un hub para practicar.',
-  STEP_5_TITLE: 'Seguridad y perfil',
-  STEP_5_DESCRIPTION:
-    'Contactos de confianza, tu resumen y ajustes de la app en Perfil y Ajustes.',
-  QUESTIONS_TITLE: 'Cuéntame en qué enfocarnos',
-  QUESTIONS_SUBTITLE: 'Opcional. Elige una opción o omite.',
+    'Revisa tu resumen, patrones y contactos de confianza en Perfil y Ajustes.',
+  STEP_4_BENEFIT: 'Detección de crisis con recursos inmediatos si los necesitas.',
+  QUESTIONS_TITLE: '¿En qué quieres enfocarte primero?',
+  QUESTIONS_SUBTITLE:
+    'Anto adaptará el chat y las sugerencias a tu prioridad. Puedes cambiarla cuando quieras.',
+  QUESTIONS_BENEFITS_HEADING: 'Con Anto tendrás',
   QUESTIONS_MAIN_LABEL: 'Ahora mismo me interesa más…',
-  QUESTIONS_SUBMIT: 'Continuar',
-  QUESTIONS_EXPLORE_APP: 'Ver recorrido',
+  QUESTIONS_SUBMIT: 'Empezar con Anto',
+  QUESTIONS_EXPLORE_APP: 'Repasar recorrido',
   QUESTIONS_SAVE_SUCCESS: 'Listo, gracias',
   QUESTIONS_SAVE_ERROR:
     'No se pudo guardar tu elección. Puedes omitir y seguir.',

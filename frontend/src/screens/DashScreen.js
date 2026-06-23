@@ -355,17 +355,16 @@ const DashScreen = () => {
           console.log('👤 Tiempo desde creación (horas):', hoursSinceCreation);
         }
         
-        // Flujo principal (#16): primero onboarding conversacional.
-        // Si no está completado, mostramos preguntas de acompañamiento y luego llevamos al chat.
+        // Flujo: primero recorrido (qué es Anto), luego preferencia opcional, luego chat.
         if (!tutorialCompleted) {
           if (isNewUser) {
             setIsFirstTimeUser(true);
           }
           setTimeout(() => {
             if (__DEV__) {
-              console.log('🧭 Activando onboarding de acompañamiento...');
+              console.log('🧭 Activando recorrido de bienvenida...');
             }
-            setShowOnboardingQuestions(true);
+            setShowTutorial(true);
           }, 1000);
         } else {
           // Tutorial ya completado: mostrar hint de primera sesión si no lo cerró
@@ -643,16 +642,23 @@ const DashScreen = () => {
     [navigation]
   );
 
-  // Manejar finalización del tutorial
-  const handleTutorialComplete = useCallback(() => {
+  // Tras el recorrido: preferencia opcional o chat (si vino de «Repasar recorrido»).
+  const handleTutorialComplete = useCallback(async () => {
     setShowTutorial(false);
+    const userId = userData?._id || userData?.id || null;
     if (tutorialShouldOpenChatRef.current) {
       tutorialShouldOpenChatRef.current = false;
+      await markTutorialCompleted(userId);
+      if (userId) {
+        await setFirstSessionHintDismissed(userId);
+      }
       setTimeout(() => {
         goToChatFromOnboarding();
       }, 250);
+      return;
     }
-  }, [goToChatFromOnboarding]);
+    setTimeout(() => setShowOnboardingQuestions(true), 400);
+  }, [goToChatFromOnboarding, userData]);
 
   // Al cerrar las preguntas de onboarding (omitir o enviar), mostrar hint "Empezar chat"
   const handleOnboardingQuestionsDismiss = useCallback(async () => {
@@ -662,9 +668,10 @@ const DashScreen = () => {
 
   const handleOnboardingQuestionsCompleted = useCallback(async () => {
     const userId = userData?._id || userData?.id || null;
-    if (!userId) return;
     await markTutorialCompleted(userId);
-    await setFirstSessionHintDismissed(userId);
+    if (userId) {
+      await setFirstSessionHintDismissed(userId);
+    }
   }, [userData]);
 
   const handleExploreAppTutorial = useCallback(() => {
@@ -695,7 +702,7 @@ const DashScreen = () => {
       let cancelled = false;
       (async () => {
         if (cancelled) return;
-        await refreshHomeDataOnFocus();
+        await refreshHomeDataOnFocus({ force: true });
       })();
       return () => {
         cancelled = true;

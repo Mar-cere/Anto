@@ -35,6 +35,22 @@ jest.mock('expo-haptics', () => ({
   ImpactFeedbackStyle: { Light: 'light', Medium: 'medium' }
 }));
 
+jest.mock('../../hooks/useTranslations', () => ({
+  useSectionTranslations: () => ({}),
+}));
+
+jest.mock('../onboarding/OnboardingBrandShell', () => {
+  const React = require('react');
+  return ({ children, footer }) =>
+    React.createElement('View', null, children, footer);
+});
+
+jest.mock('../onboarding/OnboardingBenefitList', () => {
+  const React = require('react');
+  return ({ items }) =>
+    React.createElement('View', null, (items || []).map((item) => React.createElement('Text', { key: item }, item)));
+});
+
 jest.mock('../../context/ThemeContext', () => ({
   useTheme: () => ({
     colors: {
@@ -42,14 +58,18 @@ jest.mock('../../context/ThemeContext', () => ({
       textOnPrimary: '#ffffff',
       text: '#ffffff',
       textSecondary: '#a3b8e8',
+      textMuted: '#8fa8e8',
       error: '#c62828',
       modalSurface: '#122052',
       chromeCard: '#122052',
+      surface: '#122052',
+      background: '#0a1630',
       accentLine: 'rgba(30, 131, 211, 0.25)',
       accentLineSoft: 'rgba(30, 131, 211, 0.12)',
       border: 'rgba(163, 184, 232, 0.25)',
       glassFill: 'rgba(255,255,255,0.03)',
     },
+    resolvedScheme: 'dark',
   }),
 }));
 
@@ -159,7 +179,7 @@ describe('OnboardingQuestions (UI)', () => {
     );
 
     await act(async () => {
-      pressByText(tree.root, 'Ver recorrido');
+      pressByText(tree.root, 'Repasar recorrido');
       await Promise.resolve();
     });
 
@@ -178,7 +198,7 @@ describe('OnboardingQuestions (UI)', () => {
       pressByText(tree.root, 'Apoyo emocional');
     });
     await act(async () => {
-      pressByText(tree.root, 'Continuar');
+      pressByText(tree.root, 'Empezar con Anto');
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -205,7 +225,7 @@ describe('OnboardingQuestions (UI)', () => {
     );
 
     await act(async () => {
-      pressByText(tree.root, 'Continuar');
+      pressByText(tree.root, 'Empezar con Anto');
       await Promise.resolve();
     });
 

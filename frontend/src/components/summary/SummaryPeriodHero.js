@@ -2,11 +2,16 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { resolveInsightsHeroGradient } from '../../utils/insightsHeroGradient';
 import SheetBrandGradient from '../common/SheetBrandGradient';
 
 export default function SummaryPeriodHero({ periodTitle, intro, pulseLine, pulseLabel, pulseEmpty }) {
   const { colors, resolvedScheme } = useTheme();
   const dark = resolvedScheme === 'dark';
+  const heroGradient = useMemo(
+    () => resolveInsightsHeroGradient(colors, dark),
+    [colors, dark],
+  );
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -26,7 +31,7 @@ export default function SummaryPeriodHero({ periodTitle, intro, pulseLine, pulse
           fontWeight: '600',
           letterSpacing: 1.2,
           textTransform: 'uppercase',
-          color: colors.textMuted ?? colors.textSecondary,
+          color: colors.textSecondary,
           marginBottom: 6,
         },
         title: {
@@ -39,7 +44,8 @@ export default function SummaryPeriodHero({ periodTitle, intro, pulseLine, pulse
         intro: {
           fontSize: 15,
           lineHeight: 22,
-          color: colors.textSecondary,
+          fontWeight: '500',
+          color: colors.text,
         },
         pulseRow: {
           flexDirection: 'row',
@@ -82,8 +88,8 @@ export default function SummaryPeriodHero({ periodTitle, intro, pulseLine, pulse
   return (
     <View style={styles.card} accessibilityRole="summary">
       <SheetBrandGradient
-        topColor={dark ? 'rgba(30, 131, 211, 0.18)' : 'rgba(232, 237, 248, 0.95)'}
-        bottomColor={dark ? colors.chromeCard : colors.surface}
+        topColor={heroGradient.top}
+        bottomColor={heroGradient.bottom}
       />
       <View style={styles.inner}>
         <Text style={styles.period}>{periodTitle}</Text>
