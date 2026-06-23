@@ -19,7 +19,7 @@ const STRINGS = {
     defaultUser: 'Usuario',
     footer: {
       weeklyReply:
-        '¿Dudas sobre la ampliación de prueba? Puedes responder a este correo indicando el email con el que inicias sesión en la app. Para otro tipo de consultas, te recomendamos Instagram (enlace arriba).<br>',
+        '¿Dudas sobre la ampliación de prueba? Puedes responder a este correo indicando la dirección con la que inicias sesión en la app. Para otro tipo de consultas, te recomendamos Instagram (enlace arriba).<br>',
       noReply: 'Este es un correo automático, por favor no respondas a este mensaje.<br>',
       instagramHint: 'Feedback rápido, novedades y soporte.',
       rights: 'Todos los derechos reservados.',
@@ -198,12 +198,12 @@ const STRINGS = {
       ],
     },
     weeklySummary: {
-      header: 'Resumen semanal',
-      greeting: (name) => (name ? `Hola, <strong>${name}</strong>.` : 'Hola.'),
+      header: 'Te escribimos desde Anto',
+      greeting: (name) => (name ? `Hola, <strong>${name}</strong> 👋` : 'Hola 👋'),
       greetingPlain: 'Hola',
-      highlight: 'Destacado esta semana',
+      highlight: 'Versión 1.5.0',
       linkFallback:
-        'Si el enlace no abre la app: inicia sesión y ve a <strong>Perfil</strong> → «Resumen semanal y mensual».',
+        'Si el enlace no abre la app, inicia sesión manualmente. En <strong>Perfil</strong> encontrarás tu resumen semanal y mensual, si quieres consultarlo.',
       appStore: 'Descargar en App Store',
     },
     subscription: {
@@ -444,12 +444,12 @@ const STRINGS = {
       ],
     },
     weeklySummary: {
-      header: 'Weekly summary',
-      greeting: (name) => (name ? `Hello, <strong>${name}</strong>.` : 'Hello.'),
+      header: 'A note from Anto',
+      greeting: (name) => (name ? `Hi, <strong>${name}</strong> 👋` : 'Hi there 👋'),
       greetingPlain: 'Hello',
-      highlight: 'Highlighted this week',
+      highlight: 'Version 1.5.0',
       linkFallback:
-        'If the link does not open the app: sign in and go to <strong>Profile</strong> → “Weekly and monthly summary”.',
+        'If the link does not open the app, sign in manually. In <strong>Profile</strong> you will find your weekly and monthly summaries if you want to look back.',
       appStore: 'Download on the App Store',
     },
     subscription: {

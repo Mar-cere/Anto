@@ -212,6 +212,16 @@ const userSchema = new mongoose.Schema({
     lastWeeklyTipsEmailAt: {
       type: Date,
       default: null
+    },
+    /** Clave de campaña promocional (p. ej. `1.5.0`) para no reenviar la misma campaña de novedades. */
+    lastProductUpdateCampaignKey: {
+      type: String,
+      default: null,
+      trim: true
+    },
+    lastProductUpdateCampaignAt: {
+      type: Date,
+      default: null
     }
   },
   // Recuperación de contraseña (no se incluye en consultas por defecto)

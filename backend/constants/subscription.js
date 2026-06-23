@@ -120,10 +120,10 @@ export function buildWeeklySummaryGiftCopy({ giftDays, isPremium, appName, local
       giftTitle: en ? 'Your Premium plan' : 'Tu plan Premium',
       giftPrimary: en
         ? `You have an active paid subscription: the extra ${count} trial gift does not change your plan or create charges. Thank you for staying with ${appName}.`
-        : `Tienes suscripción de pago activa: el regalo de ${count} extra de prueba no modifica tu plan ni genera cargos. Gracias por seguir en ${appName}.`,
+        : `Tienes suscripción de pago activa: el regalo extra de ${count} de prueba Premium no modifica tu plan ni genera cargos. Gracias por seguir en ${appName}.`,
       giftSecondary: en
-        ? 'Product updates are just below; open them in the app with your session signed in.'
-        : 'Las novedades del producto van justo debajo; ábrelas en la app con tu sesión iniciada.',
+        ? 'If you have not tried them yet, the updates are a little above; open them in the app with your session signed in.'
+        : 'Si aún no las has probado, las novedades están un poco más arriba; ábrelas en la app con tu sesión iniciada.',
     };
   }
 
@@ -132,10 +132,10 @@ export function buildWeeklySummaryGiftCopy({ giftDays, isPremium, appName, local
     giftTitle: en ? `Gift: ${plus} Premium trial` : `Regalo: ${plus} de prueba Premium`,
     giftPrimary: en
       ? `If your account qualifies, we add ${count} of Premium trial when this email is sent from our system. You do not need to click a link to “activate” it: it applies when the message is dispatched.`
-      : `Si tu cuenta califica, sumamos ${count} de prueba Premium al procesar el envío de este correo desde nuestro sistema. No hace falta pulsar ningún enlace para “activarlo”: se aplica al despachar el mensaje.`,
+      : `Si aplica a tu cuenta, sumamos ${count} de prueba Premium al enviarte este correo. No necesitas hacer clic en ningún enlace: se aplica de forma automática.`,
     giftSecondary: en
       ? 'Check in the app (Profile or subscription) whether the extended trial is visible; stores sometimes take a few minutes to reflect it.'
-      : 'Revisa en la app (Perfil o suscripción) si ya ves la prueba ampliada; a veces la tienda tarda unos minutos en reflejarlo.',
+      : 'Revisa en Perfil o en Suscripción si ya ves la prueba ampliada; a veces la tienda tarda unos minutos en reflejarlo.',
   };
 }
 

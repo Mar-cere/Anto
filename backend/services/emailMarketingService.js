@@ -226,6 +226,34 @@ export function buildWeeklySummaryCandidateFilter(yearWeekKey, requireMinSession
   return filter;
 }
 
+/**
+ * Filtro para campaña puntual de novedades (dedupe por `campaignId`, no por semana ISO).
+ * Permite reenviar a quien ya recibió el resumen semanal de esta semana con copy antiguo.
+ *
+ * @param {string} campaignId
+ * @param {boolean} [requireMinSessions=false]
+ */
+export function buildProductUpdateCampaignFilter(campaignId, requireMinSessions = false) {
+  const id = String(campaignId || '').trim();
+  if (!id) {
+    throw new Error('campaignId requerido');
+  }
+  /** @type {Record<string, unknown>} */
+  const filter = {
+    emailVerified: true,
+    isActive: true,
+    $or: [
+      { 'stats.lastProductUpdateCampaignKey': { $exists: false } },
+      { 'stats.lastProductUpdateCampaignKey': null },
+      { 'stats.lastProductUpdateCampaignKey': { $ne: id } }
+    ]
+  };
+  if (requireMinSessions) {
+    filter['stats.totalSessions'] = { $gte: 1 };
+  }
+  return filter;
+}
+
 /** Horas tras el inicio del trial para enviar el correo de retención (default: ~mitad de APP_TRIAL_DAYS). */
 function getTrialRetentionAfterHours() {
   const fallback = getDefaultTrialRetentionAfterHours();
@@ -413,6 +441,134 @@ class EmailMarketingService {
         processed: 0,
         sent: 0,
         failed: 0,
+        trialGiftDays: getWeeklySummaryTrialGiftDays(),
+        trialGiftApplied: 0,
+        trialGiftSkipped: 0,
+        trialGiftErrors: 0
+      };
+    }
+  }
+
+  /**
+   * Campaña puntual de novedades + regalo trial (misma plantilla que resumen semanal).
+   * Dedupe por `campaignId` (`stats.lastProductUpdateCampaignKey`); también marca la semana ISO
+   * para no duplicar si el job semanal corre después.
+   *
+   * @param {{ campaignId: string, requireMinSessions?: boolean }} options
+   */
+  async sendProductUpdateCampaignEmails(options = {}) {
+    const campaignId = String(options.campaignId || process.env.PRODUCT_UPDATE_CAMPAIGN_ID || '1.5.0').trim();
+    if (!campaignId) {
+      throw new Error('campaignId vacío');
+    }
+    const requireMinSessions = options.requireMinSessions === true;
+    const { yearWeekKey } = getUtcIsoWeekParts();
+
+    const maxIterations = parseInt(process.env.PRODUCT_UPDATE_CAMPAIGN_MAX_PER_RUN || '10000', 10);
+    const cap = Number.isFinite(maxIterations) && maxIterations > 0 ? maxIterations : 10000;
+
+    const results = {
+      campaignId,
+      yearWeekKey,
+      processed: 0,
+      sent: 0,
+      failed: 0,
+      requireMinSessions,
+      trialGiftDays: getWeeklySummaryTrialGiftDays(),
+      trialGiftApplied: 0,
+      trialGiftSkipped: 0,
+      trialGiftErrors: 0
+    };
+
+    const candidateFilter = buildProductUpdateCampaignFilter(campaignId, requireMinSessions);
+
+    try {
+      for (let i = 0; i < cap; i += 1) {
+        const user = await User.findOneAndUpdate(
+          candidateFilter,
+          {
+            $set: {
+              'stats.lastProductUpdateCampaignKey': campaignId,
+              'stats.lastProductUpdateCampaignAt': new Date(),
+              'stats.lastWeeklyTipsEmailYearWeek': yearWeekKey,
+              'stats.lastWeeklyTipsEmailAt': new Date()
+            }
+          },
+          {
+            new: true,
+            sort: { _id: 1 },
+            select:
+              'email username name createdAt preferences.language stats.tasksCompleted stats.habitsStreak stats.totalSessions stats.lastActive subscription.status subscription.trialStartDate subscription.trialEndDate subscription.trialGrantedAt'
+          }
+        );
+
+        if (!user) {
+          break;
+        }
+
+        results.processed += 1;
+
+        const releaseClaim = async () => {
+          await User.updateOne(
+            { _id: user._id, 'stats.lastProductUpdateCampaignKey': campaignId },
+            {
+              $unset: {
+                'stats.lastProductUpdateCampaignKey': '',
+                'stats.lastProductUpdateCampaignAt': ''
+              }
+            }
+          );
+        };
+
+        try {
+          const ok = await mailer.sendWeeklySummaryEmail(user.email, user);
+          if (!ok) {
+            await releaseClaim();
+            results.failed += 1;
+            logger.warn(
+              `[EmailMarketing] Campaña ${campaignId}: correo no enviado (mailer false) a ${user.email}`
+            );
+          } else {
+            results.sent += 1;
+            logger.info(`[EmailMarketing] Campaña ${campaignId}: enviado a ${user.email}`);
+            try {
+              const gift = await applyWeeklySummaryTrialGift(user._id);
+              if (gift.applied) {
+                results.trialGiftApplied += 1;
+              } else {
+                results.trialGiftSkipped += 1;
+              }
+            } catch (giftErr) {
+              results.trialGiftErrors += 1;
+              logger.error(
+                `[EmailMarketing] Campaña ${campaignId}: regalo trial falló (${user.email}):`,
+                giftErr.message
+              );
+            }
+          }
+        } catch (error) {
+          await releaseClaim();
+          results.failed += 1;
+          logger.error(
+            `[EmailMarketing] Campaña ${campaignId}: error usuario ${user._id}:`,
+            error.message
+          );
+        }
+      }
+
+      logger.info(
+        `[EmailMarketing] Campaña ${campaignId}: enviados ${results.sent} (procesados ${results.processed}, fallos ${results.failed})`
+      );
+      return results;
+    } catch (error) {
+      logger.error('[EmailMarketing] Error en sendProductUpdateCampaignEmails:', error);
+      return {
+        campaignId,
+        yearWeekKey,
+        processed: 0,
+        sent: 0,
+        failed: 0,
+        requireMinSessions,
         trialGiftDays: getWeeklySummaryTrialGiftDays(),
         trialGiftApplied: 0,
         trialGiftSkipped: 0,

@@ -15,15 +15,15 @@ describe('escapeHtmlText', () => {
 });
 
 describe('weeklyEmailSubjectIndex / buildWeeklySummarySubjectLine', () => {
-  it('rota asunto según semana ISO sin datos personales', () => {
+  it('rota asunto humano sin datos personales ni semana al inicio', () => {
     const w = 'Semana 16 · 2026';
     const i = weeklyEmailSubjectIndex(2026, 16);
     expect(i).toBeGreaterThanOrEqual(0);
     expect(i).toBeLessThan(getWeeklySummarySubjectVariantCount());
     const s = buildWeeklySummarySubjectLine(w, 2026, 16);
-    expect(s.startsWith(w)).toBe(true);
     expect(s).toContain('Anto');
     expect(s).not.toMatch(/\d+ mensajes|\d+ tareas/i);
+    expect(s).not.toMatch(/^Semana \d+/);
   });
 
   it('buildWeeklySummaryEmailContext en inglés usa weekLabel y asunto EN', () => {
@@ -33,16 +33,15 @@ describe('weeklyEmailSubjectIndex / buildWeeklySummarySubjectLine', () => {
       'en',
     );
     expect(ctx.weekLabel).toBe('Week 16 · 2026');
-    expect(ctx.updatesSectionTitle).toBe('What is new in the app');
-    expect(ctx.subjectLine).toMatch(/Week 16 · 2026/);
-    expect(ctx.subjectLine).toMatch(/Anto/);
+    expect(ctx.updatesSectionTitle).toBe('What we improved');
+    expect(ctx.subjectLine).toMatch(/Anto/i);
+    expect(ctx.subjectLine).not.toMatch(/^Week \d+/);
   });
 
   it('algunas rotaciones mencionan el regalo con condición (sin prometer a todos)', () => {
-    const w = 'Semana 9 · 2026';
     expect(weeklyEmailSubjectIndex(2026, 9)).toBe(7);
-    const s = buildWeeklySummarySubjectLine(w, 2026, 9);
-    expect(s).toMatch(/califica|\+1|prueba/i);
+    const s = buildWeeklySummarySubjectLine('Semana 9 · 2026', 2026, 9);
+    expect(s).toMatch(/aplica|\+1|prueba|posible|requisitos/i);
     expect(s).not.toMatch(/\+2 d[ií]a/i);
   });
 });
@@ -63,22 +62,21 @@ describe('buildWeeklySummaryEmailContext', () => {
     expect(ctx.weekLabel).toBe('Semana 16 · 2026');
     expect(ctx.preheaderText.length).toBeGreaterThan(10);
     expect(ctx.benefitLines).toHaveLength(2);
-    expect(ctx.updatesSectionTitle).toBe('Novedades en la app');
+    expect(ctx.updatesSectionTitle).toBe('Lo que hemos mejorado');
     expect(ctx.updatesIntro.length).toBeGreaterThan(20);
-    expect(ctx.benefitSectionTitle).toBe('En tu resumen');
-    expect(ctx.updatesLines).toHaveLength(6);
+    expect(ctx.benefitSectionTitle).toBe('Si quieres mirar atrás más adelante');
+    expect(ctx.warmBridgeLine.length).toBeGreaterThan(10);
+    expect(ctx.inviteLine).toMatch(/Anto|quieras|clic/i);
+    expect(ctx.updatesLines).toHaveLength(5);
     expect(ctx.updatesLines.join(' ')).toMatch(
-      /chat|psicoeducación|ABC|exposición|activación|pensamientos automáticos|técnicas guiadas/i
+      /crisis|recursos|conversaciones|chat|inglés|ajustes/i
     );
+    expect(ctx.giftPrimary).toMatch(/enviarte este correo|enviar este correo|automática/i);
     expect(ctx.giftBadgeLabel).toBe('Regalo');
     expect(ctx.giftTitle).toMatch(/1 día|Premium/i);
-    expect(ctx.giftPrimary).toMatch(/1 día|prueba|Premium/i);
-    expect(ctx.giftPrimary).not.toMatch(/2 días/);
-    expect(ctx.closingLine).toMatch(/Anto|acompañarte/i);
+    expect(ctx.closingLine).toMatch(/Anto|abrazo|ritmo/i);
     expect(ctx.subjectLine).not.toContain('99');
-    expect(ctx.leadParagraph).toMatch(/ritmo|semana/i);
-    expect(ctx.openingBenefitLine.length).toBeGreaterThan(40);
-    expect(ctx.openingBenefitLine).toMatch(/actividad registrada|perspectiva/i);
+    expect(ctx.leadParagraph).toMatch(/Anto|presión|calma|novedades|confiar|conocido/i);
   });
 
   it('usa username si no hay nombre', () => {
@@ -87,7 +85,7 @@ describe('buildWeeklySummaryEmailContext', () => {
       { isoWeekYear: 2026, isoWeek: 1, yearWeekKey: '2026-W01' }
     );
     expect(ctx.displayName).toBe('solo_user');
-    expect(ctx.openingBenefitLine).toMatch(/poco tiempo|perspectiva/i);
+    expect(ctx.warmBridgeLine.length).toBeGreaterThan(5);
   });
 
   it('bloque de regalo distinto para cuentas premium', () => {
@@ -100,7 +98,7 @@ describe('buildWeeklySummaryEmailContext', () => {
     expect(ctx.giftPrimary).toMatch(/suscripción|Premium|plan/i);
   });
 
-  it('incluye línea de acción tras novedades (Perfil o responder)', () => {
+  it('incluye línea de acción tras regalo (Perfil o responder)', () => {
     const ctx = buildWeeklySummaryEmailContext(
       { username: 'ana', stats: { totalSessions: 1 }, subscription: { status: 'trial' } },
       { isoWeekYear: 2026, isoWeek: 3, yearWeekKey: '2026-W03' }

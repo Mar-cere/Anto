@@ -1,7 +1,8 @@
 /**
- * Weekly summary email context (English).
+ * Weekly summary / campaign email context (English).
  */
 import { APP_NAME } from '../constants/app.js';
+import { WEEKLY_PRODUCT_NEWS_LINES_EN } from '../constants/weeklyProductNews.js';
 import {
   buildWeeklySummaryGiftCopy,
   formatTrialGiftDaysCount,
@@ -15,134 +16,127 @@ import {
 } from './weeklySummaryEmailContext.js';
 
 const SUBJECT_BUILDERS_EN = [
-  (weekLabel) => `${weekLabel} — Your summary is waiting in ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — A moment to review your week in ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Your weekly summary, one tap away, in ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Close the week with calm in ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Check your week whenever you want in ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Your week, with perspective, in ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — App updates and your summary in ${APP_NAME}`,
-  (weekLabel) => {
+  () => `${APP_NAME} — we wanted to share what's new`,
+  () => `What's new in ${APP_NAME}, no rush`,
+  () => `A note from ${APP_NAME} for you`,
+  () => `${APP_NAME} got better: here's what changed`,
+  () => `Hello again from ${APP_NAME}`,
+  () => `${APP_NAME} — version 1.5.0 updates`,
+  () => {
     const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'en');
-    return `${weekLabel} — Summary, updates, and possible ${plus} trial (if your account qualifies) in ${APP_NAME}`;
+    return `${APP_NAME} — updates and, if you qualify, ${plus} trial`;
   },
-  (weekLabel) => {
+  () => {
     const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'en');
-    return `${weekLabel} — ${plus} extra trial if your account qualifies: summary and updates in ${APP_NAME}`;
+    return `What's new in ${APP_NAME} (+ possible ${plus} trial)`;
   },
-  (weekLabel) => {
-    const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'en');
-    return `${weekLabel} — A small gift (${plus} if eligible), updates, and summary in ${APP_NAME}`;
-  },
+  () => `${APP_NAME} — 1.5.0 update`,
+  () => `Thanks for staying — news from ${APP_NAME}`,
 ];
 
 const PREHEADER_VARIANTS_EN = [
+  () =>
+    'A calm note: app updates and a small extra if your account qualifies. No rush.',
   (name) =>
-    `A private minute to look at your week calmly in ${name}. Full details are in the app, with your session signed in.`,
+    `A hello from ${name}. Below is what we improved; the rest is in the app whenever you want.`,
   (name) =>
-    `We invite you to open ${name}: you do not need a perfect week; looking back gently can change the day.`,
+    `Not a task reminder or a report — just a hello and what's new in ${name}.`,
   (name) =>
-    `One tap and you are back in your space in ${name}. No judgment or numbers in this email—just a reminder to pick up your summary.`,
+    `If you have not opened ${name} in a while, we still wanted to reach out. Here are the updates.`,
   (name) =>
-    `If the week was intense, ${name} helps you sort head and heart. Your weekly and monthly summary is there when you can.`,
-  (name) =>
-    `Giving yourself a breather and reviewing the week is self-care too. In ${name} you see it privately, inside the app.`,
-  (name) =>
-    `Has it been a while since you checked in? ${name} offers a clear view, without rush. You choose when to open it.`,
+    `Version 1.5.0 with chat and experience improvements. Everything else, at your pace.`,
   (name) => {
     const count = formatTrialGiftDaysCount(getWeeklySummaryTrialGiftDays(), 'en');
-    return `${count} of Premium trial when this email is processed (if your account qualifies) and app updates. Open ${name} and review your summary.`;
+    return `Updates in ${name} and, if you qualify, ${count} extra Premium trial.`;
   },
 ];
 
 const LEAD_PARAGRAPH_VARIANTS_EN = [
   (name) =>
-    `This week we invite you to pause for a moment and look at your process with more perspective: sometimes seeing the full path helps you notice what you are holding and the small steps that go unnoticed day to day. If you have not opened ${name} in a while, it is also a good time to reconnect, without hurry or guilt.`,
+    `We wanted to write with calm. You do not need a perfect week — ${name} is here whenever you feel like coming back.`,
   (name) =>
-    `Closing the week is not only checking off tasks: it is making space to acknowledge what you lived, what was hard, and what held you up. In ${name} you can do that with a wider, kinder view. If the pace was fast, a minute with your summary can change how you rest.`,
+    `We have been thinking about people who use ${name} at different paces. This email is a hello and a quick look at what we improved — nothing more.`,
   (name) =>
-    `You do not need everything solved to return to ${name}. Sometimes it is enough to look at the weekly summary with curiosity instead of pressure: the map helps you locate yourself and choose the next step with less weight.`,
+    `Thank you for trusting ${name}. Nothing urgent — we just wanted to say hi and share the updates.`,
   (name) =>
-    `We invite you to a simple gesture: open ${name} and greet your week as you would greet a tired friend, with respect. There you will find a summary meant to organize without overload and to celebrate what is subtle too.`,
+    `Life gets busy and the app can wait. That is fine. ${name} welcomes you back the same whenever you are ready.`,
   (name) =>
-    `If you feel the week got away from you, you are not alone: ${name} gathers what you logged in one place so you do not have to carry it all in memory. Coming back is care, not obligation.`,
+    `Think of this as a message from someone who respects your rhythm and hopes ${name} still helps.`,
   (name) =>
-    `A short pause can align what you feel with what you did. In ${name}, the weekly and monthly summary is for that: so the week is not only noise and becomes a story you can honor.`,
+    `If it has been a while since you opened ${name}, we still wanted to say hello. Below is the heart of this update.`,
+];
+
+const WARM_BRIDGE_VARIANTS_EN = [
+  () => 'Take your time reading — none of this expires today.',
+  () => 'We kept only the essentials so you do not have to hunt for them.',
+  () => 'Grouped by theme so you can skim quickly.',
+];
+
+const INVITE_LINE_VARIANTS_EN = [
   (name) =>
-    `Maybe this week was quiet progress rather than big headlines. ${name} helps you see it: open your summary when you feel ready, without performance pressure.`,
+    `Whenever you feel like it, open ${name} and take a look. We will be there.`,
+  (name) =>
+    `If now works, one tap opens ${name}. If not, this will wait for you.`,
+  (name) =>
+    `One tap back to ${name}. No rush, no judgment.`,
+  (name) =>
+    `Try the updates when you can — ${name} is not chasing you.`,
 ];
 
 const REFLECTION_PARAGRAPH_VARIANTS_EN = [
   (name) =>
-    `Inside ${name} you will find your weekly and monthly summary in a simple view, designed so coming back is easy: organize what matters without overload, at your pace, and move forward with more clarity.`,
+    `Beyond chat, ${name} has an optional weekly and monthly summary if you want perspective later — no obligation.`,
   (name) =>
-    `Your summary in ${name} is built so you do not have to “catch up” with effort: it is a guided read of your week and month, focused on what you choose to care for.`,
+    `If you ever want to sort the week, ${name} has a summary view for that: go in, take a look, and leave at your pace.`,
   (name) =>
-    `In ${name}, the summary is not a footnote: it is space to reflect with more context. You can enter, look, and leave; each visit counts, without a rigid agenda.`,
+    `For later: in Profile you can see an activity summary in ${name}, always inside the app when signed in.`,
   (name) =>
-    `The summary view in ${name} connects what you did, felt, and practiced so it does not stay scattered. That makes it easier to decide what you want to keep next week.`,
-  (name) =>
-    `If you prefer to go slowly, ${name} still supports you: the weekly and monthly summary waits until you have coffee and five minutes. There is no clock running inside.`,
-  (name) =>
-    `Beyond chat, ${name} offers this wider view so everyday life is not lost. It is an invitation to trust the process, even when the day to day is not enough to process everything.`,
+    `The summary in ${name} is optional space to reflect with yourself when you have five minutes and a coffee.`,
 ];
 
 const BENEFIT_BUNDLES_EN = [
   [
-    `A clear read of your weekly and monthly activity inside ${APP_NAME}, to understand how you are doing.`,
-    'A supportive space to review your process calmly, without pressure and focused on what helps you.',
+    `A clear read of your week and month, only inside ${APP_NAME}.`,
+    'A place to review your process calmly, without pressure.',
   ],
   [
-    'A picture of your week that does not depend on memory or judgment in the moment: aggregated, human data, without exposing conversations in email.',
-    `Signals for habits, emotions, and techniques in one place, so in ${APP_NAME} you can choose more clearly what to prioritize.`,
+    'What you logged, organized in one place — without exposing conversations in email.',
+    `Signals for habits, emotions, and techniques to decide what to care for in ${APP_NAME}.`,
   ],
   [
-    `Seeing several days in a row in ${APP_NAME} often shows patterns the day hides: information for you, not to compare with anyone else.`,
-    'A gentle reminder that what you added—even a little—counts and deserves to be seen.',
+    `Patterns the day hides, visible when you look at several days in a row in ${APP_NAME}.`,
+    'A reminder that small steps count too.',
   ],
   [
-    'Less “how was last week?” and more “here it is, organized”: that reduces mental load and opens room to rest better.',
-    `From the summary you can return to chat or your logs in ${APP_NAME} with clearer intent, without starting from zero each time.`,
+    'Less mental load: the week is written down, not only in memory.',
+    `From the summary you can return to chat in ${APP_NAME} with more clarity.`,
   ],
   [
-    `If you are in a delicate moment, the summary in ${APP_NAME} lets you review with limits: you decide how much to look and when to stop.`,
-    'A way to honor your process without having to explain it out loud if you are not ready yet.',
+    `Review with limits: you choose how much to look and when to stop in ${APP_NAME}.`,
+    'Honor your process without explaining it all if you are not ready.',
   ],
 ];
 
-const WEEKLY_PRODUCT_NEWS_LINES_EN = [
-  `Guided techniques from chat: when you share how you feel, Anto can suggest specific exercises and open them with helpful details already filled in.`,
-  `Psychoeducation library: short modules on anxiety, stress, sleep, and more, ready when you want to read.`,
-  `ABC record: note the situation, thought, and consequence in a simple step-by-step flow.`,
-  `Exposure hierarchy: build steps from easier to harder and log your anxiety (SUDS) as you practice.`,
-  `Behavioral activation: pick a small activity and log how you felt before and after.`,
-  `Automatic thought record: identify difficult thoughts and common patterns in clear, accessible language.`,
-];
+const WEEKLY_PRODUCT_NEWS_LINES = [...WEEKLY_PRODUCT_NEWS_LINES_EN];
 
 const CLOSING_LINE_VARIANTS_EN = [
   () =>
-    `Thank you for being part of ${APP_NAME}. We are here when you want to return: we would love to see you again.`,
+    `Thank you for being part of ${APP_NAME}. We are glad you are here.`,
   () =>
-    `Thank you for trusting ${APP_NAME}. If this week was hard, we hope the next summary gives you a little air. We are here to support you.`,
+    `A hug from the ${APP_NAME} team. May your week treat you gently.`,
   () =>
-    `A digital hug from the ${APP_NAME} team. May rest find you, and when you return the app welcomes you with the same calm as always.`,
+    `We are still here, building ${APP_NAME} with listening. Open the app whenever you want.`,
   () =>
-    `We are still here, building ${APP_NAME} with listening. When you want to look at your week, open the app: it will be a good moment.`,
+    `Thank you for trusting ${APP_NAME}. Always at your pace.`,
   () =>
-    `Thank you for spending time on your wellbeing with ${APP_NAME}. It does not matter if it was a little or a lot: what matters is that it is yours.`,
-  () =>
-    `We wish you a good week transition. ${APP_NAME} waits without rush, with your summary ready when you need it.`,
+    `Wishing you a good week. ${APP_NAME} is here when you need it.`,
 ];
 
-export function buildWeeklySummarySubjectLineEn(weekLabel, isoWeekYear, isoWeek) {
+export function buildWeeklySummarySubjectLineEn(_weekLabel, isoWeekYear, isoWeek) {
   const i = weeklyEmailSubjectIndex(isoWeekYear, isoWeek);
-  return SUBJECT_BUILDERS_EN[i](weekLabel);
+  return SUBJECT_BUILDERS_EN[i]();
 }
 
-/**
- * @param {object} user
- * @param {{ isoWeekYear: number, isoWeek: number, yearWeekKey: string }} isoParts
- */
 export function buildWeeklySummaryEmailContextEn(user, isoParts) {
   const rawName = user?.name && String(user.name).trim();
   const rawUser = user?.username && String(user.username).trim();
@@ -160,22 +154,23 @@ export function buildWeeklySummaryEmailContextEn(user, isoParts) {
     weeklyContentVariantIndex(isoWeekYear, isoWeek, LEAD_PARAGRAPH_VARIANTS_EN.length, 2)
   ](APP_NAME);
 
-  const totalSessionsRaw = user?.stats?.totalSessions;
-  const totalSessionsN = Number(totalSessionsRaw);
-  const hasSomeActivity = Number.isFinite(totalSessionsN) && totalSessionsN >= 1;
-  const openingBenefitLine = hasSomeActivity
-    ? `You already have activity logged in ${APP_NAME}: this email only shares the invitation; the value is opening the app and seeing your week with perspective. Here is a glimpse before the details.`
-    : `Even if you have been with ${APP_NAME} for a short time, the summary helps you organize head and routine when you want to look back. Here is a glimpse before the details in the app.`;
+  const warmBridgeLine = WARM_BRIDGE_VARIANTS_EN[
+    weeklyContentVariantIndex(isoWeekYear, isoWeek, WARM_BRIDGE_VARIANTS_EN.length, 5)
+  ]();
+
+  const inviteLine = INVITE_LINE_VARIANTS_EN[
+    weeklyContentVariantIndex(isoWeekYear, isoWeek, INVITE_LINE_VARIANTS_EN.length, 6)
+  ](APP_NAME);
 
   const reflectionParagraph = REFLECTION_PARAGRAPH_VARIANTS_EN[
     weeklyContentVariantIndex(isoWeekYear, isoWeek, REFLECTION_PARAGRAPH_VARIANTS_EN.length, 3)
   ](APP_NAME);
 
-  const privacyParagraph = `To protect your privacy, this email does not include sensitive numbers or conversation content. Detailed summary information (habits, conversations, emotions, techniques, and other logs) is shown only inside ${APP_NAME} when you sign in.`;
+  const privacyParagraph = `This email does not include sensitive numbers or conversation content. Details (habits, emotions, techniques, and logs) appear only in ${APP_NAME} when you sign in.`;
 
-  const whereParagraph = `From here you can open ${APP_NAME} directly. If the link does not work on your device, you will also find the path to reach the summary manually below.`;
+  const whereParagraph = `You can open ${APP_NAME} from the button above. If the link does not work on your device, open the app manually with your account.`;
 
-  const benefitSectionTitle = 'In your summary';
+  const benefitSectionTitle = 'If you want to look back later';
   const benefitLines = BENEFIT_BUNDLES_EN[
     weeklyContentVariantIndex(isoWeekYear, isoWeek, BENEFIT_BUNDLES_EN.length, 4)
   ];
@@ -197,19 +192,21 @@ export function buildWeeklySummaryEmailContextEn(user, isoParts) {
     locale: 'en',
   });
 
-  const updatesSectionTitle = 'What is new in the app';
+  const updatesSectionTitle = 'What we improved';
   const updatesIntro =
-    'This is what changed or improved recently; full details are in the app when you sign in.';
+    'In version 1.5.0 we focused especially on safer chat in difficult moments and small experience details. The highlights:';
 
-  const updatesLines = [...WEEKLY_PRODUCT_NEWS_LINES_EN];
+  const updatesLines = [...WEEKLY_PRODUCT_NEWS_LINES];
 
-  const postUpdatesActionLine = `If you already use the app, open Profile to check whether your trial was extended. If you do not see the change and believe it should apply, you can reply to this email and request it; include the same email you use to sign in to ${APP_NAME}.`;
+  const postUpdatesActionLine = `If you already use the app, check Profile to see whether your trial was extended. If you believe it should apply and do not see it, reply to this email with the address you use to sign in to ${APP_NAME}.`;
 
-  const downloadPrompt = `If you do not have the app installed yet, you can download it and start using ${APP_NAME} today.`;
+  const downloadPrompt = `If you do not have the app yet, you can download it whenever you like.`;
 
   const closingLine = CLOSING_LINE_VARIANTS_EN[
-    weeklyContentVariantIndex(isoWeekYear, isoWeek, CLOSING_LINE_VARIANTS_EN.length, 6)
+    weeklyContentVariantIndex(isoWeekYear, isoWeek, CLOSING_LINE_VARIANTS_EN.length, 7)
   ]();
+
+  const openingBenefitLine = warmBridgeLine;
 
   return {
     displayName,
@@ -217,6 +214,8 @@ export function buildWeeklySummaryEmailContextEn(user, isoParts) {
     subjectLine,
     preheaderText,
     leadParagraph,
+    warmBridgeLine,
+    inviteLine,
     openingBenefitLine,
     reflectionParagraph,
     privacyParagraph,

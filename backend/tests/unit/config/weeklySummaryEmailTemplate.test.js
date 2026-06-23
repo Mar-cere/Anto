@@ -14,8 +14,8 @@ describe('weeklySummaryEmail plantilla', () => {
     const t = mailer.emailTemplates.weeklySummaryEmail(context, 'es');
 
     expect(t.subject).toBe(context.subjectLine);
-    expect(t.html).toMatch(/Resumen semanal|resumen/i);
-    expect(t.html).toContain('Abrir mi resumen');
+    expect(t.html).toMatch(/Te escribimos|escribimos desde|Anto/i);
+    expect(t.html).toContain('Abrir Anto');
     expect(t.html).toContain(context.updatesSectionTitle);
   });
 
@@ -28,11 +28,12 @@ describe('weeklySummaryEmail plantilla', () => {
       );
       const t = mailer.emailTemplates.weeklySummaryEmail(context, 'en');
 
-      expect(t.subject).toMatch(/Week 16 · 2026/);
+      expect(t.subject).toMatch(/Anto/i);
       expect(t.html).toContain('Week 16 · 2026');
-      expect(t.html).toContain('Weekly summary');
-      expect(t.html).toContain('What is new in the app');
-      expect(t.html).toContain('Open my summary in the app');
+      expect(t.html).toContain('Week 16 · 2026');
+      expect(t.html).toContain('A note from Anto');
+      expect(t.html).toContain('What we improved');
+      expect(t.html).toContain('Open Anto');
       expect(t.html).toContain('Download on the App Store');
       expect(t.html).not.toContain('Resumen semanal');
     });

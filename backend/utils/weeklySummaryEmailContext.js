@@ -1,11 +1,11 @@
 /**
- * Contexto del correo de aviso de resumen semanal: impulso a abrir la app.
- * Puede incluir saludo con nombre; no se envían cifras ni métricas sensibles (crisis reportadas, etc.)
- * ni contenido de conversaciones: eso queda solo en la app, tras iniciar sesión.
+ * Contexto del correo de aviso / campaña: tono humano primero, novedades después, resumen al final.
+ * No incluye cifras sensibles ni contenido de conversaciones en el cuerpo del correo.
  *
- * Tono: español neutro y natural (sin voseo ni marcas fuertemente regionales).
+ * Tono: español neutro y natural (tú estándar; sin voseo).
  */
 import { APP_NAME } from '../constants/app.js';
+import { WEEKLY_PRODUCT_NEWS_LINES_ES } from '../constants/weeklyProductNews.js';
 import {
   buildWeeklySummaryGiftCopy,
   formatTrialGiftDaysCount,
@@ -28,7 +28,6 @@ export function escapeHtmlText(value) {
 }
 
 /**
- * Índice 0..modulo-1 estable por semana ISO (sal distinta por bloque para que no coincidan todos los textos).
  * @param {number} isoWeekYear
  * @param {number} isoWeek
  * @param {number} modulo
@@ -40,188 +39,137 @@ export function weeklyContentVariantIndex(isoWeekYear, isoWeek, modulo, salt = 0
   return ((n % modulo) + modulo) % modulo;
 }
 
-/**
- * Asuntos rotativos (etiqueta de semana ISO + marca; sin cifras ni métricas de uso).
- * Todos cierran con "en ${APP_NAME}" para mantener el mismo ritmo.
- */
+/** Asuntos: humanos primero; el resumen no lidera. */
 const SUBJECT_BUILDERS = [
-  (weekLabel) => `${weekLabel} — Tu resumen te espera en ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Un momento para revisar tu semana en ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Tu resumen semanal, en un clic, en ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Cierra la semana con calma en ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Mira tu semana cuando quieras en ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Tu semana, con perspectiva, en ${APP_NAME}`,
-  (weekLabel) => `${weekLabel} — Novedades en la app y tu resumen en ${APP_NAME}`,
-  (weekLabel) => {
+  () => `${APP_NAME} — queríamos contarte las novedades`,
+  () => `Lo nuevo en ${APP_NAME}, sin prisa`,
+  () => `Un mensaje de ${APP_NAME} para ti`,
+  () => `${APP_NAME} mejoró: te contamos qué cambió`,
+  () => `Hola de nuevo desde ${APP_NAME}`,
+  () => `${APP_NAME} — novedades de la versión 1.5.0`,
+  () => {
     const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'es');
-    return `${weekLabel} — Resumen, novedades y posible ${plus} de prueba (si tu cuenta califica) en ${APP_NAME}`;
+    return `${APP_NAME} — novedades y, si aplica a tu cuenta, ${plus} de prueba`;
   },
-  (weekLabel) => {
+  () => {
     const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'es');
-    return `${weekLabel} — ${plus} de prueba extra si aplica tu cuenta: resumen y novedades en ${APP_NAME}`;
+    return `Lo nuevo en ${APP_NAME} (+ posible ${plus} de prueba)`;
   },
-  (weekLabel) => {
-    const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'es');
-    return `${weekLabel} — Regalo puntual (${plus} si procede), novedades y resumen en ${APP_NAME}`;
-  },
+  () => `${APP_NAME} te escribe — actualización 1.5.0`,
+  () => `Gracias por seguir aquí — novedades en ${APP_NAME}`,
 ];
 
-/**
- * Índice estable por semana ISO (evita repetir siempre el mismo asunto).
- * @param {number} isoWeekYear
- * @param {number} isoWeek
- */
 export function weeklyEmailSubjectIndex(isoWeekYear, isoWeek) {
   return weeklyContentVariantIndex(isoWeekYear, isoWeek, SUBJECT_BUILDERS.length, 0);
 }
 
-/** Número de variantes de asunto del resumen semanal (para tests y rotación). */
 export function getWeeklySummarySubjectVariantCount() {
   return SUBJECT_BUILDERS.length;
 }
 
-export function buildWeeklySummarySubjectLine(weekLabel, isoWeekYear, isoWeek) {
+export function buildWeeklySummarySubjectLine(_weekLabel, isoWeekYear, isoWeek) {
   const i = weeklyEmailSubjectIndex(isoWeekYear, isoWeek);
-  return SUBJECT_BUILDERS[i](weekLabel);
+  return SUBJECT_BUILDERS[i]();
 }
 
-/** Preheaders: tono invitación sin datos sensibles (longitud moderada para vista previa en móvil). */
 const PREHEADER_VARIANTS = [
+  () =>
+    'Te escribimos con calma: novedades de la app y un detalle especial si aplica a tu cuenta. Sin prisa.',
   (name) =>
-    `Un minuto privado para mirar tu semana con calma en ${name}. El detalle completo está en la app, con tu sesión iniciada.`,
+    `Un saludo desde ${name}. A continuación, lo que mejoramos; el resto lo ves en la app cuando quieras.`,
   (name) =>
-    `Te invitamos a abrir ${name}: no hace falta una semana perfecta; mirar atrás con gentileza a veces cambia el día.`,
+    `No es un recordatorio de tareas ni un informe: solo queríamos saludarte y contarte lo nuevo en ${name}.`,
   (name) =>
-    `Un clic y vuelves a tu espacio en ${name}. Sin juicios ni números en el correo: solo un recordatorio para retomar tu resumen.`,
+    `Si hace días que no abres ${name}, también queríamos acercarnos. Aquí tienes las novedades.`,
   (name) =>
-    `Si la semana fue intensa, ${name} ayuda a ordenar cabeza y corazón. Tu resumen semanal y mensual sigue ahí cuando puedas.`,
-  (name) =>
-    `Regalarte un respiro y revisar la semana también es autocuidado. En ${name} lo ves con privacidad, dentro de la app.`,
-  (name) =>
-    `¿Hace rato que no miras cómo vienes? ${name} ofrece una vista clara, sin apuro. Tú eliges cuándo entrar.`,
+    `Versión 1.5.0 con mejoras en el chat y en la experiencia. Lo demás, a tu ritmo.`,
   (name) => {
     const count = formatTrialGiftDaysCount(getWeeklySummaryTrialGiftDays(), 'es');
-    return `${count} de prueba Premium al procesar este envío (si tu cuenta califica) y novedades de la app. Abre ${name} y revisa tu resumen.`;
+    return `Novedades en ${name} y, si aplica a tu cuenta, ${count} extra de prueba Premium.`;
   },
 ];
 
-/** Párrafos de apertura (invitación + perspectiva). */
 const LEAD_PARAGRAPH_VARIANTS = [
   (name) =>
-    `Esta semana te invitamos a frenar un instante y mirar tu proceso con más perspectiva: a veces, ver el recorrido completo ayuda a reconocer lo que estás sosteniendo y los pequeños avances que en el día a día pasan desapercibidos. Si hace días que no abres ${name}, también es un buen momento para reencontrarte, sin prisa ni culpas.`,
+    `Queríamos escribirte con calma. No hace falta que hayas tenido una semana perfecta: ${name} sigue aquí cuando te venga bien retomar.`,
   (name) =>
-    `Cerrar la semana no es solo tachar pendientes: es darte espacio para reconocer lo que viviste, lo que costó y lo que te sostuvo. En ${name} puedes hacerlo con una mirada más amplia y amable. Si el ritmo fue acelerado, un minuto con tu resumen puede cambiar el tono del descanso.`,
+    `Hace unos días pensamos en quienes usan ${name} a distintos ritmos. Este correo es un saludo y un repaso de lo que hemos mejorado — nada más.`,
   (name) =>
-    `No necesitas tener todo resuelto para volver a ${name}. A veces alcanza con mirar el resumen semanal con curiosidad en lugar de exigencia: ver el mapa ayuda a ubicarte y a elegir el próximo paso con menos peso.`,
+    `Gracias por seguir confiando en ${name}. No te pedimos nada urgente; solo queríamos acercarnos y contarte las novedades.`,
   (name) =>
-    `Te invitamos a un gesto simple: abrir ${name} y saludar a tu semana como quien saluda a un amigo cansado, con respeto. Ahí verás tu resumen pensado para ordenar sin sobrecargarte y para celebrar lo sutil que también cuenta.`,
+    `A veces la vida va acelerada y ${name} queda en pausa. Si te pasa, no pasa nada. Puedes volver cuando quieras; ${name} sigue ahí para ti.`,
   (name) =>
-    `Si sientes que la semana se te fue de las manos, no estás sola ni solo: ${name} reúne en un solo lugar lo que registraste para que no tengas que cargar todo en la memoria. Retomar es un acto de cuidado, no de obligación.`,
+    `Te escribimos como quien manda un mensaje a un conocido: con respeto, sin presión y con ganas de que ${name} te siga sirviendo.`,
   (name) =>
-    `Una pausa breve puede alinear lo que sientes con lo que hiciste. En ${name}, el resumen semanal y mensual está para eso: para que la semana deje de ser solo ruido y pase a ser historia que puedes honrar.`,
+    `Si llevas tiempo sin abrir ${name}, también queríamos saludarte. Más abajo está lo más importante de esta actualización.`,
+];
+
+const WARM_BRIDGE_VARIANTS = [
+  () => 'Tómate lo que necesites para leerlo; nada de esto caduca hoy.',
+  () => 'Resumimos lo esencial para que no tengas que buscarlo tú.',
+  () => 'Lo ordenamos por temas para que puedas leer lo esencial con rapidez.',
+];
+
+const INVITE_LINE_VARIANTS = [
   (name) =>
-    `Quizá esta semana fue de avances silenciosos más que de grandes titulares. ${name} te ayuda a verlos: abre tu resumen cuando te animes, sin presión de rendimiento.`
+    `Cuando quieras, abre ${name} y mira con calma. Estaremos ahí.`,
+  (name) =>
+    `Si te viene bien ahora, puedes abrir ${name} con un clic. Si no, guardamos esto para cuando quieras.`,
+  (name) =>
+    `Un clic y vuelves a ${name}. Sin prisa, sin juicios.`,
+  (name) =>
+    `Prueba las novedades cuando puedas: ${name} no te presiona.`,
 ];
 
 const REFLECTION_PARAGRAPH_VARIANTS = [
   (name) =>
-    `Dentro de ${name} encontrarás tu resumen semanal y mensual en una vista sencilla, pensada para que retomar sea fácil: ordenar lo importante sin sobrecarga, a tu ritmo, y seguir adelante con más claridad.`,
+    `Además del chat, en ${name} tienes un resumen semanal y mensual para mirar atrás con perspectiva — solo si quieres, sin obligación.`,
   (name) =>
-    `Tu resumen en ${name} está armado para que no tengas que “ponerte al día” con esfuerzo: es una lectura guiada de tu semana y tu mes, con foco en lo que decidas cuidar.`,
+    `Si en algún momento quieres ordenar la semana, en ${name} hay una vista de resumen pensada para eso: entras, miras y sales a tu ritmo.`,
   (name) =>
-    `En ${name}, el resumen no es una nota al pie: es un espacio para reflexionar contigo con más contexto. Puedes entrar, mirar y salir; cada visita suma, sin agenda rígida.`,
+    `Por si te sirve más adelante: en Perfil puedes ver un resumen de tu actividad en ${name}, siempre dentro de la app y con tu sesión iniciada.`,
   (name) =>
-    `La vista de resumen en ${name} une lo que hiciste, lo que sentiste y lo que practicaste, para que no quede disperso. Así es más fácil decidir qué quieres sostener la semana que viene.`,
-  (name) =>
-    `Si prefieres ir despacio, ${name} te acompaña igual: el resumen semanal y mensual espera hasta que tengas un café y cinco minutos. No hay reloj corriendo ahí adentro.`,
-  (name) =>
-    `Además del chat, ${name} te ofrece esta mirada de conjunto para que lo cotidiano no se pierda. Es una invitación a confiar en el proceso, incluso cuando el día a día no alcanza para procesarlo todo.`
+    `El resumen en ${name} no es una nota al pie: es un espacio opcional para reflexionar contigo, cuando tengas un café y cinco minutos.`,
 ];
 
-/** Dos líneas cada una: beneficios al abrir el resumen. */
 const BENEFIT_BUNDLES = [
   [
-    `Una lectura clara de tu actividad semanal y mensual dentro de ${APP_NAME}, para entender mejor cómo vienes.`,
-    'Un espacio de acompañamiento para revisar tu proceso con calma, sin presión y con foco en lo que te hace bien.'
+    `Una lectura clara de tu semana y de tu mes, solo dentro de ${APP_NAME}.`,
+    'Un lugar para revisar tu proceso con calma, sin presión.',
   ],
   [
-    'Una foto de tu semana que no depende de la memoria ni del juicio del momento: datos agregados y humanos, sin exponer conversaciones en el correo.',
-    `Señales de hábitos, emociones y técnicas en un solo lugar, para que en ${APP_NAME} elijas con más claridad qué priorizar.`
+    'Lo que registraste, ordenado en un solo lugar — sin exponer conversaciones en el correo.',
+    `Señales de hábitos, emociones y técnicas para decidir qué cuidar en ${APP_NAME}.`,
   ],
   [
-    `Ver el arco de varios días seguidos en ${APP_NAME} suele mostrar patrones que el día a día esconde: es información para ti, no para compararte con nadie.`,
-    'Un recordatorio amable de que lo que sumaste —aunque sea poco— también cuenta y merece ser visto.'
+    `Patrones que el día a día esconde, visibles cuando miras varios días seguidos en ${APP_NAME}.`,
+    'Un recordatorio de que lo pequeño que sumaste también cuenta.',
   ],
   [
-    'Menos “¿cómo estaba la semana pasada?” y más “aquí está, ordenado”: eso reduce carga mental y abre espacio para descansar mejor.',
-    `Desde el resumen puedes volver al chat o a tus registros en ${APP_NAME} con una intención más clara, sin empezar de cero cada vez.`
+    'Menos carga mental: la semana queda escrita, no solo en la memoria.',
+    `Desde el resumen puedes volver al chat en ${APP_NAME} con más claridad.`,
   ],
   [
-    `Si estás en un momento delicado, el resumen en ${APP_NAME} te permite revisar con límites: tú decides cuánto mirar y cuándo parar.`,
-    'Una forma de honrar tu proceso sin tener que explicarlo entero en voz alta si todavía no quieres.'
-  ]
+    `Revisar con límites: tú eliges cuánto mirar y cuándo parar en ${APP_NAME}.`,
+    'Valorar tu proceso sin tener que explicarlo entero si no quieres.',
+  ],
 ];
 
-/**
- * Novedades recientes visibles en la app (actualizar este bloque cuando cambie el producto).
- * Redacción orientada a persona usuaria; sin métricas ni datos de la cuenta.
- */
-const WEEKLY_PRODUCT_NEWS_LINES = [
-  `Técnicas guiadas desde el chat: si compartes cómo te sientes, Anto puede sugerirte ejercicios concretos y abrirlos con partes ya completadas para empezar más rápido.`,
-  `Biblioteca de psicoeducación: módulos breves sobre ansiedad, estrés, sueño y más, listos para leer cuando quieras.`,
-  `Autorregistro ABC: anota situación, pensamiento y consecuencia en un flujo paso a paso.`,
-  `Jerarquía de exposición: arma pasos de menor a mayor dificultad y registra tu ansiedad (SUDS) mientras practicas.`,
-  `Activación conductual: elige una actividad pequeña y registra cómo te sentiste antes y después.`,
-  `Registro de pensamientos automáticos: identifica pensamientos difíciles y patrones habituales con un lenguaje claro.`,
-];
+const WEEKLY_PRODUCT_NEWS_LINES = [...WEEKLY_PRODUCT_NEWS_LINES_ES];
 
 const CLOSING_LINE_VARIANTS = [
   () =>
-    `Gracias por ser parte de ${APP_NAME}. Te esperamos cuando quieras retomar: aquí seguimos, con ganas de verte de nuevo.`,
+    `Gracias por ser parte de ${APP_NAME}. Te recibimos con cariño cuando quieras volver.`,
   () =>
-    `Gracias por confiar en ${APP_NAME}. Si esta semana fue dura, ojalá el próximo resumen te devuelva un poco de aire. Estamos para acompañarte.`,
+    `Un abrazo desde el equipo de ${APP_NAME}. Que la semana te trate con gentileza.`,
   () =>
-    `Un abrazo digital desde el equipo de ${APP_NAME}. Que el descanso te encuentre, y que cuando vuelvas la app te reciba con la misma calma de siempre.`,
+    `Seguimos aquí, mejorando ${APP_NAME} paso a paso. Cuando quieras, abre la app.`,
   () =>
-    `Seguimos aquí, construyendo ${APP_NAME} con escucha. Cuando quieras mirar tu semana, abre la app: será un buen momento.`,
+    `Gracias por confiar en ${APP_NAME}. Sin prisa: a tu ritmo siempre.`,
   () =>
-    `Gracias por dedicarle tiempo a tu bienestar con ${APP_NAME}. No importa si fue poco o mucho: lo que importa es que sea tuyo.`,
-  () =>
-    `Te deseamos una buena transición de semana. ${APP_NAME} te espera sin prisa, con tu resumen listo cuando lo necesites.`
+    `Te deseamos una buena semana. ${APP_NAME} te espera cuando lo necesites.`,
 ];
 
-/**
- * @param {object} user — documento User (parcial) desde Mongo
- * @param {{ isoWeekYear: number, isoWeek: number, yearWeekKey: string }} isoParts
- * @returns {{
- *   displayName: string,
- *   weekLabel: string,
- *   subjectLine: string,
- *   preheaderText: string,
- *   leadParagraph: string,
- *   openingBenefitLine: string,
- *   reflectionParagraph: string,
- *   privacyParagraph: string,
- *   whereParagraph: string,
- *   benefitSectionTitle: string,
- *   benefitLines: string[],
- *   giftBadgeLabel: string,
- *   giftTitle: string,
- *   giftPrimary: string,
- *   giftSecondary: string,
- *   updatesSectionTitle: string,
- *   updatesIntro: string,
- *   updatesLines: string[],
- *   postUpdatesActionLine: string,
- *   downloadPrompt: string,
- *   closingLine: string,
- * }}
- */
-/**
- * @param {object} user
- * @param {{ isoWeekYear: number, isoWeek: number, yearWeekKey: string }} isoParts
- * @param {string} [language='es']
- */
 export function buildWeeklySummaryEmailContext(user, isoParts, language = 'es') {
   if (normalizeEmailLanguage(language) === 'en') {
     return buildWeeklySummaryEmailContextEn(user, isoParts);
@@ -235,34 +183,34 @@ export function buildWeeklySummaryEmailContext(user, isoParts, language = 'es') 
   const weekLabel = `Semana ${isoWeek} · ${isoWeekYear}`;
   const subjectLine = buildWeeklySummarySubjectLine(weekLabel, isoWeekYear, isoWeek);
 
-  const preheaderIndex = weeklyContentVariantIndex(
-    isoWeekYear,
-    isoWeek,
-    PREHEADER_VARIANTS.length,
-    1
-  );
-  const preheaderText = PREHEADER_VARIANTS[preheaderIndex](APP_NAME);
+  const preheaderText = PREHEADER_VARIANTS[
+    weeklyContentVariantIndex(isoWeekYear, isoWeek, PREHEADER_VARIANTS.length, 1)
+  ](APP_NAME);
 
-  const leadParagraph = LEAD_PARAGRAPH_VARIANTS[weeklyContentVariantIndex(isoWeekYear, isoWeek, LEAD_PARAGRAPH_VARIANTS.length, 2)](APP_NAME);
+  const leadParagraph = LEAD_PARAGRAPH_VARIANTS[
+    weeklyContentVariantIndex(isoWeekYear, isoWeek, LEAD_PARAGRAPH_VARIANTS.length, 2)
+  ](APP_NAME);
 
-  const totalSessionsRaw = user?.stats?.totalSessions;
-  const totalSessionsN = Number(totalSessionsRaw);
-  const hasSomeActivity =
-    Number.isFinite(totalSessionsN) && totalSessionsN >= 1;
-  const openingBenefitLine = hasSomeActivity
-    ? `Ya tienes actividad registrada en ${APP_NAME}: este correo solo resume la invitación; el valor está en abrir la app y ver tu semana con perspectiva. Aquí va un vistazo antes de los detalles.`
-    : `Aunque lleves poco tiempo con ${APP_NAME}, el resumen sirve para ordenar cabeza y rutina cuando quieras mirar atrás. Aquí va un vistazo antes de los detalles en la app.`;
+  const warmBridgeLine = WARM_BRIDGE_VARIANTS[
+    weeklyContentVariantIndex(isoWeekYear, isoWeek, WARM_BRIDGE_VARIANTS.length, 5)
+  ]();
+
+  const inviteLine = INVITE_LINE_VARIANTS[
+    weeklyContentVariantIndex(isoWeekYear, isoWeek, INVITE_LINE_VARIANTS.length, 6)
+  ](APP_NAME);
 
   const reflectionParagraph = REFLECTION_PARAGRAPH_VARIANTS[
     weeklyContentVariantIndex(isoWeekYear, isoWeek, REFLECTION_PARAGRAPH_VARIANTS.length, 3)
   ](APP_NAME);
 
-  const privacyParagraph = `Para cuidar tu privacidad, este correo no incluye números sensibles ni contenido de tus conversaciones. La información detallada de tu resumen (hábitos, conversaciones, emociones, técnicas y otros registros) se muestra únicamente dentro de ${APP_NAME} cuando inicias sesión.`;
+  const privacyParagraph = `Este correo no incluye cifras sensibles ni contenido de tus conversaciones. Los detalles (hábitos, emociones, técnicas y registros) se ven solo en ${APP_NAME} cuando inicias sesión.`;
 
-  const whereParagraph = `Desde aquí puedes abrir ${APP_NAME} directamente. Si el enlace no funciona en tu dispositivo, también encontrarás debajo la ruta para llegar al resumen manualmente.`;
+  const whereParagraph = `Puedes abrir ${APP_NAME} desde el botón de arriba. Si el enlace no funciona en tu dispositivo, abre la app manualmente con tu cuenta.`;
 
-  const benefitSectionTitle = 'En tu resumen';
-  const benefitLines = BENEFIT_BUNDLES[weeklyContentVariantIndex(isoWeekYear, isoWeek, BENEFIT_BUNDLES.length, 4)];
+  const benefitSectionTitle = 'Si quieres mirar atrás más adelante';
+  const benefitLines = BENEFIT_BUNDLES[
+    weeklyContentVariantIndex(isoWeekYear, isoWeek, BENEFIT_BUNDLES.length, 4)
+  ];
 
   const rawSubStatus = user?.subscription?.status;
   const subStatus = typeof rawSubStatus === 'string' ? rawSubStatus.trim() : '';
@@ -281,17 +229,22 @@ export function buildWeeklySummaryEmailContext(user, isoParts, language = 'es') 
     locale: 'es',
   });
 
-  const updatesSectionTitle = 'Novedades en la app';
+  const updatesSectionTitle = 'Lo que hemos mejorado';
   const updatesIntro =
-    'Esto es lo que cambió o mejoró recientemente; el detalle completo está en la app cuando inicias sesión.';
+    'En la versión 1.5.0 mejoramos, sobre todo, el chat en momentos difíciles y algunos detalles de la experiencia. Esto es lo más visible:';
 
   const updatesLines = [...WEEKLY_PRODUCT_NEWS_LINES];
 
-  const postUpdatesActionLine = `Si ya usas la app, abre Perfil para comprobar si tu prueba se amplió. Si no ves el cambio y crees que debería aplicarse, puedes responder a este correo solicitándolo; indica en el mensaje el mismo email con el que inicias sesión en ${APP_NAME}.`;
+  const postUpdatesActionLine = `Si ya usas la app, revisa en Perfil si tu prueba se amplió. Si crees que debería aplicarse y no lo ves, responde a este correo con la dirección con la que inicias sesión en ${APP_NAME}.`;
 
-  const downloadPrompt = `Si todavía no tienes la app instalada, puedes descargarla y empezar a usar ${APP_NAME} hoy mismo.`;
+  const downloadPrompt = `Si aún no tienes la app, puedes descargarla e instalarla cuando quieras.`;
 
-  const closingLine = CLOSING_LINE_VARIANTS[weeklyContentVariantIndex(isoWeekYear, isoWeek, CLOSING_LINE_VARIANTS.length, 6)]();
+  const closingLine = CLOSING_LINE_VARIANTS[
+    weeklyContentVariantIndex(isoWeekYear, isoWeek, CLOSING_LINE_VARIANTS.length, 7)
+  ]();
+
+  /** @deprecated Mantener por compatibilidad con tests/scripts antiguos */
+  const openingBenefitLine = warmBridgeLine;
 
   return {
     displayName,
@@ -299,6 +252,8 @@ export function buildWeeklySummaryEmailContext(user, isoParts, language = 'es') 
     subjectLine,
     preheaderText,
     leadParagraph,
+    warmBridgeLine,
+    inviteLine,
     openingBenefitLine,
     reflectionParagraph,
     privacyParagraph,
@@ -314,6 +269,6 @@ export function buildWeeklySummaryEmailContext(user, isoParts, language = 'es') 
     updatesLines,
     postUpdatesActionLine,
     downloadPrompt,
-    closingLine
+    closingLine,
   };
 }

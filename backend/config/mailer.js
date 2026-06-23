@@ -15,6 +15,7 @@ import { APP_NAME, APP_NAME_FULL, EMAIL_FROM_NAME, LOGO_URL, resolveInstagramUrl
 import {
   CODE_EXPIRATION_MINUTES,
   EMAIL_COLORS,
+  EMAIL_FONT_STACK,
   FRONTEND_URL,
   RESET_PASSWORD_PATH,
   RESET_TOKEN_EXPIRATION_HOURS
@@ -140,9 +141,26 @@ const logMailerBootstrap = () => {
 };
 logMailerBootstrap();
 
-const EMAIL_LAYOUT_OUTER = `font-family:'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;padding:16px 12px;background:${EMAIL_COLORS.BACKGROUND};`;
-const EMAIL_LAYOUT_CARD = `background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;padding:28px 24px;margin:0 auto;max-width:560px;box-shadow:0 2px 12px rgba(29,43,95,0.06);`;
+const EMAIL_LAYOUT_OUTER = `font-family:${EMAIL_FONT_STACK};max-width:600px;margin:0 auto;padding:20px 16px 28px;background:linear-gradient(180deg,${EMAIL_COLORS.GRADIENT_TOP} 0%,${EMAIL_COLORS.GRADIENT_BOTTOM} 55%,${EMAIL_COLORS.BACKGROUND} 100%);`;
+const EMAIL_LAYOUT_CARD = `background:${EMAIL_COLORS.SURFACE};border:1px solid ${EMAIL_COLORS.BORDER};border-radius:20px;padding:28px 24px;margin:0 auto;max-width:560px;box-shadow:0 8px 32px ${EMAIL_COLORS.SHADOW};overflow:hidden;`;
 const EMAIL_PREHEADER_HIDDEN = `display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:transparent;width:0;height:0;opacity:0;`;
+
+function emailPrimaryButtonStyle() {
+  return `background-color:${EMAIL_COLORS.PRIMARY_MEDIUM};color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 28px;text-decoration:none;border-radius:999px;display:inline-block;font-weight:600;font-size:15px;box-shadow:0 4px 16px rgba(30,131,211,0.28);`;
+}
+
+function emailCodeFrameOuterStyle() {
+  return `background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);padding:2px;border-radius:16px;margin:0 0 22px 0;`;
+}
+
+function emailSectionPanelStyle(options = {}) {
+  const accent = options.accentBorder ? `border-left:4px solid ${EMAIL_COLORS.PRIMARY_MEDIUM};` : '';
+  return `background:${EMAIL_COLORS.CHROME_FILL};border:1px solid ${EMAIL_COLORS.BORDER};border-radius:16px;padding:20px 18px;${accent}`;
+}
+
+function emailGiftPanelStyle() {
+  return `background:linear-gradient(145deg,${EMAIL_COLORS.PRIMARY_SOFT} 0%,${EMAIL_COLORS.ACCENT_SOFT} 100%);border:1px solid ${EMAIL_COLORS.BORDER_STRONG};border-radius:16px;padding:22px 20px;margin:0 0 18px 0;text-align:left;`;
+}
 
 function emailPreheaderHtml(escapedText) {
   return `<div style="${EMAIL_PREHEADER_HIDDEN}">${escapedText}</div>`;
@@ -210,25 +228,25 @@ function buildSubscriptionReceiptHtmlBlock(receipt, planNameRaw, periodEndSafe, 
   const productLineSafe = escapeHtmlText(sub.productLine(planNameRaw));
 
   const dateRow = purchaseDateSafe
-    ? `<tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};width:38%;"><strong>${tbl.date}</strong></td><td style="padding:10px 0;">${purchaseDateSafe}</td></tr>`
+    ? `<tr style="border-bottom:1px solid ${EMAIL_COLORS.BORDER};"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.TEXT_LIGHT};width:38%;"><strong>${tbl.date}</strong></td><td style="padding:10px 0;">${purchaseDateSafe}</td></tr>`
     : '';
   const amountRow = amountSafe
-    ? `<tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>${tbl.amount}</strong></td><td style="padding:10px 0;"><strong style="color:${EMAIL_COLORS.PRIMARY_DARK};">${amountSafe}</strong></td></tr>`
+    ? `<tr style="border-bottom:1px solid ${EMAIL_COLORS.BORDER};"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.TEXT_LIGHT};"><strong>${tbl.amount}</strong></td><td style="padding:10px 0;"><strong style="color:${EMAIL_COLORS.PRIMARY_DARK};">${amountSafe}</strong></td></tr>`
     : '';
 
   return `
-            <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM}10 0%,${EMAIL_COLORS.ACCENT}08 100%);padding:24px 18px 26px;border-radius:14px;margin:0 0 24px 0;text-align:left;border:1px solid rgba(29,43,95,0.12);border-left:4px solid ${EMAIL_COLORS.ACCENT};">
+            <div style="${emailGiftPanelStyle()}margin-bottom:24px;border-left:4px solid ${EMAIL_COLORS.PRIMARY_MEDIUM};">
               <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 16px 0;text-align:center;">
                 ${title}
               </p>
-              <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;padding:18px 14px 20px;">
+              <div style="background:${EMAIL_COLORS.SURFACE};border:1px solid ${EMAIL_COLORS.BORDER};border-radius:14px;padding:18px 14px 20px;">
                 <table style="width:100%;border-collapse:collapse;color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.5;">
                   ${dateRow}
-                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>${tbl.product}</strong></td><td style="padding:10px 0;">${productLineSafe}</td></tr>
+                  <tr style="border-bottom:1px solid ${EMAIL_COLORS.BORDER};"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.TEXT_LIGHT};"><strong>${tbl.product}</strong></td><td style="padding:10px 0;">${productLineSafe}</td></tr>
                   ${amountRow}
-                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>${tbl.provider}</strong></td><td style="padding:10px 0;">${providerSafe}</td></tr>
-                  <tr style="border-bottom:1px solid rgba(29,43,95,0.08);"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>${tbl.reference}</strong></td><td style="padding:10px 0;word-break:break-word;font-family:'Segoe UI Mono','Menlo','Monaco',monospace;font-size:12px;line-height:1.45;">${referenceSafe}</td></tr>
-                  <tr><td style="padding:12px 10px 0 0;vertical-align:top;color:${EMAIL_COLORS.PRIMARY_MEDIUM};"><strong>${tbl.validUntil}</strong></td><td style="padding:12px 0 0 0;">${periodEndSafe}</td></tr>
+                  <tr style="border-bottom:1px solid ${EMAIL_COLORS.BORDER};"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.TEXT_LIGHT};"><strong>${tbl.provider}</strong></td><td style="padding:10px 0;">${providerSafe}</td></tr>
+                  <tr style="border-bottom:1px solid ${EMAIL_COLORS.BORDER};"><td style="padding:10px 10px 10px 0;vertical-align:top;color:${EMAIL_COLORS.TEXT_LIGHT};"><strong>${tbl.reference}</strong></td><td style="padding:10px 0;word-break:break-word;font-family:'Segoe UI Mono','Menlo','Monaco',monospace;font-size:12px;line-height:1.45;">${referenceSafe}</td></tr>
+                  <tr><td style="padding:12px 10px 0 0;vertical-align:top;color:${EMAIL_COLORS.TEXT_LIGHT};"><strong>${tbl.validUntil}</strong></td><td style="padding:12px 0 0 0;">${periodEndSafe}</td></tr>
                 </table>
               </div>
               <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:12px;margin:16px 0 0 0;text-align:center;line-height:1.55;">
@@ -287,13 +305,13 @@ const getEmailFooter = (options = {}) => {
   const weeklyReply = options.weeklySummaryAllowReply === true;
   const replyHtml = weeklyReply ? s.weeklyReply : s.noReply;
   return `
-    <div style="text-align: center; margin: 0 24px 24px 24px;">
+    <div style="text-align: center; margin: 0 20px 24px 20px; padding-top: 8px;">
       <div style="margin: 10px 0 14px 0;">
         <a
           href="${instagramUrl}"
           target="_blank"
           rel="noopener noreferrer"
-          style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_MEDIUM} 0%, ${EMAIL_COLORS.ACCENT} 100%); color: ${EMAIL_COLORS.TEXT_WHITE}; padding: 10px 16px; text-decoration: none; border-radius: 10px; display: inline-block; font-weight: 700; font-size: 0.95rem;"
+          style="${emailPrimaryButtonStyle()}"
         >
           ${
             INSTAGRAM_ICON_DATA_URI
@@ -302,13 +320,13 @@ const getEmailFooter = (options = {}) => {
           }
           Instagram
         </a>
-        <div style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.9rem; margin-top: 8px;">
+        <div style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.9rem; margin-top: 10px; line-height: 1.5;">
           ${s.instagramHint}
         </div>
       </div>
-      <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.95rem; margin: 0;">
+      <p style="color: ${EMAIL_COLORS.TEXT_LIGHT}; font-size: 0.9rem; margin: 0; line-height: 1.55;">
         ${replyHtml}
-        © ${currentYear} <span style="color: ${EMAIL_COLORS.ACCENT};">${APP_NAME}</span>. ${s.rights}
+        © ${currentYear} <span style="color: ${EMAIL_COLORS.PRIMARY_MEDIUM}; font-weight: 600;">${APP_NAME}</span>. ${s.rights}
       </p>
     </div>
   `;
@@ -401,11 +419,12 @@ function getWeeklySummaryAppStoreHref() {
 
 const getEmailHeader = (title, logoAlt = `${APP_NAME} Logo`) => {
   return `
-    <div style="background: linear-gradient(135deg, ${EMAIL_COLORS.PRIMARY_DARK} 0%, ${EMAIL_COLORS.PRIMARY_MEDIUM} 60%, ${EMAIL_COLORS.ACCENT} 100%); padding: 36px 0 24px 0; border-radius: 0 0 32px 32px; box-shadow: 0 4px 24px rgba(0,0,0,0.10); text-align: center;">
-      <img src="${LOGO_URL}" alt="${logoAlt}" style="width: 64px; height: 64px; margin-bottom: 12px; border-radius: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.10);" />
-      <h1 style="color: ${EMAIL_COLORS.TEXT_WHITE}; margin: 0; font-size: 2.2rem; font-weight: 700; letter-spacing: 1px; text-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+    <div style="text-align:center;padding:28px 24px 22px;border-bottom:1px solid ${EMAIL_COLORS.BORDER};">
+      <img src="${LOGO_URL}" alt="${logoAlt}" style="width:56px;height:56px;margin-bottom:14px;border-radius:18px;box-shadow:0 6px 20px ${EMAIL_COLORS.SHADOW};" />
+      <h1 style="color:${EMAIL_COLORS.TEXT_DARK};margin:0;font-family:${EMAIL_FONT_STACK};font-size:1.55rem;font-weight:700;letter-spacing:-0.02em;line-height:1.25;">
         ${title}
       </h1>
+      <div style="width:44px;height:4px;background:linear-gradient(90deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);border-radius:999px;margin:14px auto 0;"></div>
     </div>
   `;
 };
@@ -427,8 +446,8 @@ const emailTemplates = {
           <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 20px 0;text-align:center;">
             ${s.intro}
           </p>
-          <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);padding:3px;border-radius:12px;margin:0 0 22px 0;">
-            <div style="background:#ffffff;padding:20px 0;border-radius:10px;">
+          <div style="${emailCodeFrameOuterStyle()}">
+            <div style="background:${EMAIL_COLORS.SURFACE};padding:20px 0;border-radius:14px;">
               <span style="display:block;color:${EMAIL_COLORS.TEXT_DARK};font-size:2rem;text-align:center;letter-spacing:10px;font-weight:700;font-family:'Segoe UI Mono','Menlo','Monaco',monospace;">
                 ${code}
               </span>
@@ -464,8 +483,8 @@ const emailTemplates = {
             ${escapeHtmlText(s.intro(String(username ?? '').trim() || getMailerStrings(language).defaultUser))}
           </p>
 
-          <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);padding:3px;border-radius:12px;margin:0 0 22px 0;">
-            <div style="background:#ffffff;padding:20px 0;border-radius:10px;">
+          <div style="${emailCodeFrameOuterStyle()}">
+            <div style="background:${EMAIL_COLORS.SURFACE};padding:20px 0;border-radius:14px;">
               <span style="display:block;color:${EMAIL_COLORS.TEXT_DARK};font-size:2rem;text-align:center;letter-spacing:10px;font-weight:700;font-family:'Segoe UI Mono','Menlo','Monaco',monospace;">
                 ${code}
               </span>
@@ -504,7 +523,7 @@ const emailTemplates = {
           </p>
           <div style="text-align:center;margin:0 0 22px 0;">
             <a href="${FRONTEND_URL}${RESET_PASSWORD_PATH}?token=${token}"
-               style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
+               style="${emailPrimaryButtonStyle()}">
               ${escapeHtmlText(cta.resetPassword())}
             </a>
           </div>
@@ -560,7 +579,7 @@ const emailTemplates = {
 
           <div style="text-align:center;margin:8px 0 14px 0;">
             <a href="${appHref}"
-               style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
+               style="${emailPrimaryButtonStyle()}">
               ${escapeHtmlText(cta.openApp())}
             </a>
           </div>
@@ -615,7 +634,7 @@ const emailTemplates = {
               ${r.noChargeNote}
             </p>
 
-            <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM}12 0%,${EMAIL_COLORS.ACCENT}12 100%);padding:22px 18px;border-radius:12px;margin:0 0 22px 0;border-left:4px solid ${EMAIL_COLORS.ACCENT};">
+            <div style="${emailSectionPanelStyle({ accentBorder: true })}margin:0 0 22px 0;">
               <p style="${sectionTitle}margin-bottom:4px;">${r.tipsTitle}</p>
               <p style="${small}margin-bottom:10px;font-size:12px;line-height:1.45;">
                 ${r.tipsHint}
@@ -632,7 +651,7 @@ const emailTemplates = {
 
             <div style="text-align:center;margin:8px 0 14px 0;">
               <a href="${appHref}"
-                 style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
+                 style="${emailPrimaryButtonStyle()}">
                 ${escapeHtmlText(cta.openApp())}
               </a>
             </div>
@@ -720,7 +739,7 @@ const emailTemplates = {
 
             <div style="text-align:center;margin:10px 0 10px 0;">
               <a href="${premiumHref}"
-                 style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
+                 style="${emailPrimaryButtonStyle()}">
                 ${escapeHtmlText(cta.trialPremium())}
               </a>
             </div>
@@ -768,7 +787,7 @@ const emailTemplates = {
               ${escapeHtmlText(wt.intro(safeTipUser))}
             </p>
 
-            <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM}12 0%,${EMAIL_COLORS.ACCENT}12 100%);padding:22px 18px;border-radius:12px;margin:0 0 22px 0;border-left:4px solid ${EMAIL_COLORS.ACCENT};">
+            <div style="${emailSectionPanelStyle({ accentBorder: true })}margin:0 0 22px 0;">
               <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:16px;font-weight:700;margin:0 0 12px 0;text-align:center;">
                 ${tip.title}
               </p>
@@ -793,7 +812,7 @@ const emailTemplates = {
 
             <div style="text-align:center;margin:0 0 12px 0;">
               <a href="${tipsAppHref}"
-                 style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
+                 style="${emailPrimaryButtonStyle()}">
                 ${escapeHtmlText(cta.openApp())}
               </a>
             </div>
@@ -833,10 +852,10 @@ const emailTemplates = {
           `<li style="margin:0 0 8px 0;padding-left:2px;">${escapeHtmlText(line)}</li>`
       )
       .join('');
-    const sectionTitle = `color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 12px 0;line-height:1.3;`;
+    const sectionTitle = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;font-weight:700;margin:0 0 12px 0;line-height:1.3;`;
     const body = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 14px 0;text-align:left;`;
     const small = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0 0 12px 0;text-align:left;`;
-    const hr = `border:0;border-top:1px solid #e8edf4;margin:22px 0;height:0;`;
+    const hr = `border:0;border-top:1px solid ${EMAIL_COLORS.BORDER};margin:22px 0;height:0;`;
 
     return {
       subject: context.subjectLine,
@@ -845,18 +864,34 @@ const emailTemplates = {
           ${emailPreheaderHtml(escapeHtmlText(context.preheaderText))}
           ${getEmailHeader(ws.header)}
           <div style="${EMAIL_LAYOUT_CARD}">
-            <p style="color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;font-weight:600;margin:0 0 6px 0;text-align:left;letter-spacing:0.02em;">
-              ${escapeHtmlText(context.weekLabel)}
-            </p>
-            <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:18px;font-weight:600;margin:0 0 16px 0;text-align:left;line-height:1.35;">
+            <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:19px;font-weight:600;margin:0 0 14px 0;text-align:left;line-height:1.4;">
               ${greeting}
             </p>
 
-            <div style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM}16 0%,${EMAIL_COLORS.ACCENT}14 100%);border:2px solid ${EMAIL_COLORS.ACCENT};border-radius:14px;padding:22px 20px 20px;margin:0 0 18px 0;text-align:left;box-shadow:0 4px 18px rgba(29,43,95,0.08);">
-              <p style="color:${EMAIL_COLORS.ACCENT};font-size:12px;font-weight:800;margin:0 0 10px 0;letter-spacing:0.1em;text-transform:uppercase;">
+            <p style="${body}margin-bottom:14px;">
+              ${escapeHtmlText(context.leadParagraph)}
+            </p>
+            <p style="${body}margin-bottom:22px;color:${EMAIL_COLORS.TEXT_GRAY};">
+              ${escapeHtmlText(context.warmBridgeLine)}
+            </p>
+
+            <div style="${emailSectionPanelStyle({ accentBorder: true })}margin-bottom:22px;">
+              <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:16px;font-weight:700;margin:0 0 10px 0;line-height:1.3;">
+                ${escapeHtmlText(context.updatesSectionTitle)}
+              </p>
+              <p style="${body}margin-bottom:14px;">
+                ${escapeHtmlText(context.updatesIntro)}
+              </p>
+              <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.65;margin:0;padding-left:20px;text-align:left;">
+                ${updatesListHtml}
+              </ul>
+            </div>
+
+            <div style="${emailGiftPanelStyle()}">
+              <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:11px;font-weight:700;margin:0 0 10px 0;letter-spacing:0.06em;text-transform:uppercase;">
                 ${escapeHtmlText(context.giftBadgeLabel)}
               </p>
-              <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:20px;font-weight:800;margin:0 0 12px 0;line-height:1.25;">
+              <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:18px;font-weight:700;margin:0 0 12px 0;line-height:1.3;">
                 ${escapeHtmlText(context.giftTitle)}
               </p>
               <p style="${body}margin-bottom:10px;">
@@ -865,39 +900,18 @@ const emailTemplates = {
               <p style="${small}margin-bottom:0;line-height:1.55;">
                 ${escapeHtmlText(context.giftSecondary)}
               </p>
-            </div>
-
-            <div style="background:#f4f7fb;border:1px solid #dbe4f0;border-radius:14px;padding:20px 18px 18px;margin:0 0 22px 0;border-left:5px solid ${EMAIL_COLORS.PRIMARY_MEDIUM};">
-              <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:16px;font-weight:800;margin:0 0 6px 0;line-height:1.25;">
-                ${escapeHtmlText(context.updatesSectionTitle)}
-              </p>
-              <p style="color:${EMAIL_COLORS.ACCENT};font-size:11px;font-weight:700;margin:0 0 12px 0;letter-spacing:0.08em;text-transform:uppercase;">
-                ${ws.highlight}
-              </p>
-              <p style="${body}margin-bottom:12px;">
-                ${escapeHtmlText(context.updatesIntro)}
-              </p>
-              <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.6;margin:0;padding-left:20px;text-align:left;">
-                ${updatesListHtml}
-              </ul>
-              <p style="${small}margin-top:14px;margin-bottom:0;padding-top:14px;border-top:1px solid #dbe4f0;line-height:1.55;">
+              <p style="${small}margin-top:14px;margin-bottom:0;padding-top:14px;border-top:1px solid ${EMAIL_COLORS.BORDER};line-height:1.55;">
                 ${escapeHtmlText(context.postUpdatesActionLine)}
               </p>
             </div>
 
-            <hr style="${hr}" />
-            <p style="${body}margin-bottom:12px;">
-              ${escapeHtmlText(context.openingBenefitLine)}
+            <p style="${body}margin:22px 0 16px 0;text-align:center;">
+              ${escapeHtmlText(context.inviteLine)}
             </p>
-            <hr style="${hr}" />
-            <p style="${body}">
-              ${escapeHtmlText(context.leadParagraph)}
-            </p>
-
-            <div style="text-align:center;margin:22px 0 8px 0;">
+            <div style="text-align:center;margin:0 0 10px 0;">
               <a href="${appHref}"
-                 style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
-                ${escapeHtmlText(cta.weeklySummary())}
+                 style="${emailPrimaryButtonStyle()}">
+                ${escapeHtmlText(cta.openApp())}
               </a>
             </div>
             <p style="${small}text-align:center;margin-top:10px;">
@@ -906,10 +920,18 @@ const emailTemplates = {
 
             <hr style="${hr}" />
 
+            <p style="color:${EMAIL_COLORS.TEXT_MUTED};font-size:12px;margin:0 0 16px 0;text-align:left;">
+              ${escapeHtmlText(context.weekLabel)}
+            </p>
             <p style="${sectionTitle}">${escapeHtmlText(context.benefitSectionTitle)}</p>
+            <p style="${small}margin-bottom:12px;">${escapeHtmlText(context.reflectionParagraph)}</p>
             <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.55;margin:0;padding-left:20px;text-align:left;">
               ${benefitListHtml}
             </ul>
+
+            <p style="${body}margin-top:22px;margin-bottom:0;text-align:center;font-style:italic;">
+              ${escapeHtmlText(context.closingLine)}
+            </p>
 
             <hr style="${hr}" />
 
@@ -925,9 +947,6 @@ const emailTemplates = {
                 ${ws.appStore}
               </a>
             </div>
-            <p style="${small}text-align:center;font-style:italic;margin-top:18px;margin-bottom:0;">
-              ${escapeHtmlText(context.closingLine)}
-            </p>
             <hr style="${hr}" />
             <p style="${small}text-align:center;margin:0;">
               ${disclaimerEscaped(language)}
@@ -1021,7 +1040,7 @@ const emailTemplates = {
 
             <div style="text-align:center;margin:8px 0 14px 0;">
               <a href="${appOpenHref}"
-                 style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
+                 style="${emailPrimaryButtonStyle()}">
                 ${escapeHtmlText(cta.openApp())}
               </a>
             </div>
@@ -1110,7 +1129,7 @@ const emailTemplates = {
 
             <div style="text-align:center;margin:8px 0 14px 0;">
               <a href="${appOpenHref}"
-                 style="background:linear-gradient(135deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 26px;text-decoration:none;border-radius:10px;display:inline-block;font-weight:700;font-size:15px;">
+                 style="${emailPrimaryButtonStyle()}">
                 ${escapeHtmlText(cta.openApp())}
               </a>
             </div>
