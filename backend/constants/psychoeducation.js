@@ -14,6 +14,7 @@ import {
 } from './psychoeducationTopics.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import { normalizePsychoeducationTopic } from './psychoeducationTopicNormalize.js';
+import { getPsychoeducationWebsiteSource } from './psychoeducationWebsiteResources.js';
 
 export { normalizePsychoeducationTopic, isValidPsychoeducationTopic } from './psychoeducationTopicNormalize.js';
 
@@ -438,8 +439,14 @@ export const getPsychoeducationModule = (topic, language = 'es') => {
   if (!body) return null;
   const meta = getTopicMeta(normalizedTopic);
   const lang = normalizeApiLanguage(language);
+  const websiteSource = getPsychoeducationWebsiteSource(normalizedTopic, lang);
+  const catalogSources = Array.isArray(body.sources) ? body.sources : [];
+  const sources = websiteSource
+    ? [websiteSource, ...catalogSources.filter((src) => src?.url !== websiteSource.url)]
+    : catalogSources;
   return {
     ...body,
+    sources,
     topic: normalizedTopic,
     title: lang === 'en' ? meta?.titleEn : meta?.titleEs,
     version: PSYCHOEDUCATION_VERSION,
