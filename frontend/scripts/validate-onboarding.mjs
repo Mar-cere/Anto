@@ -66,6 +66,39 @@ if (shell.includes('DashboardBrandBackdrop') && shell.includes('resolveInsightsH
   fail('shell visual alineado al dashboard');
 }
 
+const dismiss = dash.slice(
+  dash.indexOf('const handleOnboardingQuestionsDismiss'),
+  dash.indexOf('const handleOnboardingQuestionsCompleted'),
+);
+if (dismiss.includes('setShowFirstSessionHint(true)') && !dismiss.includes('goToChatFromOnboarding')) {
+  pass('post-onboarding: hint en lugar de chat directo');
+} else {
+  fail('post-onboarding: hint en lugar de chat directo');
+}
+
+if (dash.includes('canAttemptChatAccess') && dash.includes("navigate('Subscription')")) {
+  pass('chat: valida acceso antes de navegar');
+} else {
+  fail('chat: valida acceso antes de navegar');
+}
+
+const steps = read('src/utils/onboardingSteps.js');
+if (steps.includes('accentSecondary') && !steps.includes('color: colors.warning')) {
+  pass('onboarding paso 3 sin warning');
+} else {
+  fail('onboarding paso 3 sin warning');
+}
+
+const backendSub = fs.readFileSync(
+  path.resolve(root, '../backend/middleware/checkSubscription.js'),
+  'utf8',
+);
+if (backendSub.includes("req.path === '/tcc-continuity'")) {
+  pass('backend: gracia en tcc-continuity');
+} else {
+  fail('backend: gracia en tcc-continuity');
+}
+
 const failed = checks.filter((c) => !c.ok);
 for (const check of checks) {
   const mark = check.ok ? '✓' : '✗';

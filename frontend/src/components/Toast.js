@@ -45,8 +45,8 @@ const Toast = () => {
       warning: {
         backgroundColor: colors.warning,
         icon: 'warning',
-        messageColor: colors.text,
-        iconColor: colors.text,
+        messageColor: colors.warningForeground ?? colors.textOnPrimary,
+        iconColor: colors.warningForeground ?? colors.textOnPrimary,
       },
       info: {
         backgroundColor: colors.info,

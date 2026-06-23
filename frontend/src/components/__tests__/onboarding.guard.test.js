@@ -109,6 +109,23 @@ describe('onboarding guard', () => {
     expect(tutorialCompleteBlock).toMatch(/setShowOnboardingQuestions\(true\)/);
   });
 
+  it('DashScreen muestra hint tras preguntas, no abre chat sin acceso', () => {
+    const src = readSrc('screens/DashScreen.js');
+    const dismissBlock = src.slice(
+      src.indexOf('const handleOnboardingQuestionsDismiss'),
+      src.indexOf('const handleOnboardingQuestionsCompleted'),
+    );
+    expect(dismissBlock).toMatch(/setShowFirstSessionHint\(true\)/);
+    expect(dismissBlock).not.toMatch(/goToChatFromOnboarding\(\)/);
+
+    const completedBlock = src.slice(
+      src.indexOf('const handleOnboardingQuestionsCompleted'),
+      src.indexOf('const handleExploreAppTutorial'),
+    );
+    expect(completedBlock).not.toMatch(/setFirstSessionHintDismissed/);
+    expect(src).toMatch(/canAttemptChatAccess/);
+  });
+
   it('DashScreen persiste tutorial completado aunque falte userId', () => {
     const src = readSrc('screens/DashScreen.js');
     const completedBlock = src.slice(

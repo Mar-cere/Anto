@@ -64,6 +64,7 @@ import {
   shouldShowNotificationsPrompt,
 } from '../utils/notificationsPromptPolicy';
 import { setChatEntryBackTarget } from '../utils/chatEntryContext';
+import { canAttemptChatAccess } from '../utils/chatAccessGate';
 import { STORAGE_KEYS as CHAT_STORAGE_KEYS } from './chat/chatScreenConstants';
 import { setFirstSessionHintDismissed } from '../utils/firstSessionHintStorage';
 import { markTutorialCompleted } from '../utils/tutorialStorage';
@@ -79,6 +80,7 @@ const STORAGE_KEYS = {
 
 const DashScreen = () => {
   const DASH = useSectionTranslations('DASH');
+  const CHAT = useSectionTranslations('CHAT');
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { colors, statusBarStyle, resolvedScheme } = useTheme();
@@ -559,6 +561,22 @@ const DashScreen = () => {
   }, []);
 
   const goToChatFromOnboarding = useCallback(async () => {
+    const canChat = await canAttemptChatAccess(userData);
+    if (!canChat) {
+      Alert.alert(
+        CHAT.SUBSCRIPTION_REQUIRED_TITLE || 'Suscripción requerida',
+        CHAT.SUBSCRIPTION_REQUIRED_DEFAULT ||
+          'Necesitas una suscripción activa o trial válido para usar el chat.',
+        [
+          { text: CHAT.COMMON_CANCEL || 'Cancelar', style: 'cancel' },
+          {
+            text: CHAT.SUBSCRIPTION_VIEW_PLANS || 'Ver planes',
+            onPress: () => navigation.navigate('Subscription'),
+          },
+        ],
+      );
+      return;
+    }
     await setChatEntryBackTarget('dash');
     const state = navigation.getState?.();
     if (state?.type === 'tab') {
@@ -566,7 +584,7 @@ const DashScreen = () => {
       return;
     }
     navigation.navigate('MainTabs', { screen: 'Chat' });
-  }, [navigation]);
+  }, [navigation, userData, CHAT]);
 
   const openBehavioralActivationFromFocus = useCallback((slotId) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -663,15 +681,16 @@ const DashScreen = () => {
   // Al cerrar las preguntas de onboarding (omitir o enviar), mostrar hint "Empezar chat"
   const handleOnboardingQuestionsDismiss = useCallback(async () => {
     setShowOnboardingQuestions(false);
-    await goToChatFromOnboarding();
-  }, [goToChatFromOnboarding]);
+    const userId = userData?._id || userData?.id || null;
+    const hintDismissed = await isFirstSessionHintDismissed(userId);
+    if (!hintDismissed) {
+      setTimeout(() => setShowFirstSessionHint(true), 300);
+    }
+  }, [userData]);
 
   const handleOnboardingQuestionsCompleted = useCallback(async () => {
     const userId = userData?._id || userData?.id || null;
     await markTutorialCompleted(userId);
-    if (userId) {
-      await setFirstSessionHintDismissed(userId);
-    }
   }, [userData]);
 
   const handleExploreAppTutorial = useCallback(() => {
@@ -883,6 +902,7 @@ const DashScreen = () => {
         visible={showFirstSessionHint}
         onDismiss={() => setShowFirstSessionHint(false)}
         userId={userData?._id || userData?.id || null}
+        userCreatedAt={userData?.createdAt || null}
       />
 
       <EmergencyContactsModal

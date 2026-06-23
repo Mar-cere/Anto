@@ -10,6 +10,7 @@ import * as Haptics from 'expo-haptics';
 import React, { useMemo, useEffect, useRef } from 'react';
 import {
   Animated,
+  Alert,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -18,6 +19,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { CHAT_BACK_TARGET } from '../navigation/navigationHelpers';
 import { setChatEntryBackTarget } from '../utils/chatEntryContext';
+import { canAttemptChatAccess } from '../utils/chatAccessGate';
 import {
   getFirstSessionHintDismissedKey,
   isFirstSessionHintDismissed,
@@ -37,8 +39,9 @@ const DEFAULT_TEXTS = {
   GOT_IT: 'Entendido',
 };
 
-const FirstSessionHint = ({ visible, onDismiss, userId = null }) => {
+const FirstSessionHint = ({ visible, onDismiss, userId = null, userCreatedAt = null }) => {
   const translated = useSectionTranslations('DASH');
+  const chatTexts = useSectionTranslations('CHAT');
   const TEXTS = useMemo(
     () => ({
       ...DEFAULT_TEXTS,
@@ -154,6 +157,26 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null }) => {
 
   const handleGoToChat = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const canChat = await canAttemptChatAccess(
+      userCreatedAt ? { createdAt: userCreatedAt } : null,
+    );
+    if (!canChat) {
+      Alert.alert(
+        chatTexts.SUBSCRIPTION_REQUIRED_TITLE || 'Suscripción requerida',
+        chatTexts.SUBSCRIPTION_REQUIRED_DEFAULT ||
+          'Necesitas una suscripción activa o trial válido para usar el chat.',
+        [
+          { text: chatTexts.COMMON_CANCEL || 'Cancelar', style: 'cancel' },
+          {
+            text: chatTexts.SUBSCRIPTION_VIEW_PLANS || 'Ver planes',
+            onPress: () => {
+              navigation.navigate('Subscription');
+            },
+          },
+        ],
+      );
+      return;
+    }
     await setFirstSessionHintDismissed(userId);
     onDismiss?.();
 

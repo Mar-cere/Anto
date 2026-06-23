@@ -7,6 +7,8 @@ export const lightColors = {
   primary: '#1E83D3',
   primaryBright: '#44D7FB',
   accentWarm: '#E89BB8',
+  /** Acento índigo de marca (onboarding, chips, variación sin amarillo alerta). */
+  accentSecondary: '#5B4BD4',
 
   background: '#E8EDF8',
   gradientTop: '#FCF6F9',
@@ -68,7 +70,11 @@ export const lightColors = {
   dangerBorder: 'rgba(255, 107, 107, 0.32)',
   success: '#4CAF50',
   successSoft: 'rgba(76, 175, 80, 0.15)',
-  warning: '#FFD93D',
+  /** Ámbar legible sobre fondos claros (no amarillo limón). */
+  warning: '#B8750A',
+  warningForeground: '#FFFFFF',
+  warningSoft: 'rgba(184, 117, 10, 0.14)',
+  warningBorder: 'rgba(184, 117, 10, 0.32)',
   info: '#6BCB77',
 
   accent: '#1E83D3',
@@ -83,6 +89,8 @@ export const darkColors = {
   primary: '#1E83D3',
   primaryBright: '#44D7FB',
   accentWarm: '#E89BB8',
+  /** Acento índigo de marca (onboarding, chips, variación sin amarillo alerta). */
+  accentSecondary: '#8B7FE8',
 
   background: '#030A24',
   gradientTop: '#081229',
@@ -135,7 +143,10 @@ export const darkColors = {
   dangerBorder: 'rgba(255, 107, 107, 0.42)',
   success: '#4CAF50',
   successSoft: 'rgba(76, 175, 80, 0.22)',
-  warning: '#FFD93D',
+  warning: '#F0C14A',
+  warningForeground: '#1A1400',
+  warningSoft: 'rgba(240, 193, 74, 0.18)',
+  warningBorder: 'rgba(240, 193, 74, 0.38)',
   info: '#6BCB77',
 
   accent: '#44D7FB',

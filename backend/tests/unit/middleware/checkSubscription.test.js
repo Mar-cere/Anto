@@ -128,6 +128,34 @@ describe('CheckSubscription Middleware', () => {
       expect(Message.exists).toHaveBeenCalled();
     });
 
+    it('debe permitir primera sesión en GET /tcc-continuity sin mensajes previos', async () => {
+      mockUserFindByIdResult({
+        email: 'new@anto.app',
+        createdAt: new Date(Date.now() - 60 * 60 * 1000),
+        subscription: {
+          status: 'free',
+          plan: null,
+          trialEndDate: null,
+          subscriptionEndDate: null,
+        },
+      });
+      jest.spyOn(Message, 'exists').mockResolvedValue(false);
+
+      const middleware = requireActiveSubscription(true);
+      const req = makeReq({ path: '/tcc-continuity' });
+      const res = makeRes();
+      const next = jest.fn();
+
+      await middleware(req, res, next);
+
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(req.subscription).toEqual(
+        expect.objectContaining({
+          firstSessionGrace: true,
+        }),
+      );
+    });
+
     it('debe bloquear cuando no hay suscripción y ya existe historial del usuario', async () => {
       mockUserFindByIdResult({
         email: 'old@anto.app',

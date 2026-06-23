@@ -27,7 +27,7 @@ export function buildOnboardingTutorialSteps(texts, colors) {
       title: texts.STEP_3_TITLE,
       description: texts.STEP_3_DESCRIPTION,
       benefit: texts.STEP_3_BENEFIT,
-      color: colors.warning,
+      color: colors.accentSecondary ?? colors.navy,
       highlightElement: 'home-focus',
     },
     {

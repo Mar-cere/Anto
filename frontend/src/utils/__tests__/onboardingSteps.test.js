@@ -22,7 +22,7 @@ describe('onboardingSteps', () => {
   const colors = {
     primary: '#1E83D3',
     primaryBright: '#44D7FB',
-    warning: '#F5A623',
+    accentSecondary: '#5B4BD4',
     success: '#2ECC71',
   };
 

@@ -128,7 +128,7 @@ export function createProfileColors(colors) {
     /** Icono hábitos: primary legible sobre tarjeta clara en tema light. */
     STAT_ICON_HABITS: colors.primary,
     /** Icono racha actual (fuego). */
-    STAT_ICON_STREAK: colors.warning,
+    STAT_ICON_STREAK: colors.accentWarm,
     ERROR: colors.error,
     HEADER_BACKGROUND: colors.chromeHeader ?? colors.background,
     HEADER_BORDER: colors.chromeHeaderBorder ?? colors.border,

@@ -19,7 +19,11 @@ const FIRST_SESSION_GRACE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 const canApplyFirstSessionGrace = (req) => {
   if (!req?.path) return false;
-  return req.path === '/conversations' || req.path === '/messages';
+  return (
+    req.path === '/conversations' ||
+    req.path === '/messages' ||
+    req.path === '/tcc-continuity'
+  );
 };
 
 /**

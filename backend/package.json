@@ -63,6 +63,8 @@
     "test:dashboard-suite": "npm run test:dashboard && npm run smoke:dashboard && npm run validate:engagement-streak",
     "test:engagement-streak": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit/services/engagementStreakService.test.js tests/unit/services/dashboardFocusService.test.js --coverage=false --forceExit",
     "validate:engagement-streak": "npm run smoke:engagement-streak && npm run test:engagement-streak",
+    "test:subscription-grace": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit/middleware/checkSubscription.grace.guard.test.js tests/unit/middleware/checkSubscription.test.js --testNamePattern='primera sesión|gracia' --coverage=false --forceExit",
+    "validate:subscription-grace": "npm run test:subscription-grace",
     "test:session-wai": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit/services/sessionAllianceFeedbackService.test.js --coverage=false --forceExit",
     "test:session-wai-suite": "npm run test:session-wai && NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit/services/sessionInsightService.test.js tests/unit/routes/chatRoutes.i18n.test.js --testNamePattern='userChars|session WAI' --coverage=false --forceExit && node scripts/smoke-session-wai-device.mjs",
     "test:tcc-lite": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit/services/chatTccLiteService.test.js --coverage=false --forceExit",
