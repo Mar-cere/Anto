@@ -13,4 +13,5 @@ export const emailCtaLabelEn = {
   trialPremium: () => 'View plans or continue',
   trialWeeklySummary: () => 'Open my weekly summary',
   resetPassword: () => 'Reset password',
+  finishSignup: () => 'Finish my signup',
 };

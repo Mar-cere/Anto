@@ -99,6 +99,7 @@ export function auditRenderedEnTemplates(templates, buildWeeklySummaryEmailConte
   const cases = [
     ['verificationCode', () => templates.verificationCode('123456', 'en')],
     ['emailVerificationCode', () => templates.emailVerificationCode('123456', 'ana', 'en')],
+    ['emailVerificationReminderEmail', () => templates.emailVerificationReminderEmail('ana', 'en')],
     ['resetPassword', () => templates.resetPassword('reset-token-abc', 'en')],
     ['welcomeEmail', () => templates.welcomeEmail('ana', 'en')],
     ['reEngagementEmail', () => templates.reEngagementEmail('ana', 7, 'en')],
@@ -137,6 +138,8 @@ export function auditRenderedEnTemplates(templates, buildWeeklySummaryEmailConte
           return templates.verificationCode('123456', 'es');
         case 'emailVerificationCode':
           return templates.emailVerificationCode('123456', 'ana', 'es');
+        case 'emailVerificationReminderEmail':
+          return templates.emailVerificationReminderEmail('ana', 'es');
         case 'resetPassword':
           return templates.resetPassword('reset-token-abc', 'es');
         case 'welcomeEmail':

@@ -21,4 +21,6 @@ export const emailCtaLabel = {
   trialWeeklySummary: () => 'Abrir mi resumen semanal',
   /** Post contraseña */
   resetPassword: () => 'Restablecer contraseña',
+  /** Recordatorio verificación email */
+  finishSignup: () => 'Finalizar mi registro',
 };

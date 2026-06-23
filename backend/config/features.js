@@ -13,6 +13,7 @@
  * | notificationScheduler      | ENABLE_NOTIFICATION_SCHEDULER  | activo  | cola de notificaciones; tunear espaciado con `NOTIFICATION_*` en `notificationScheduler.js` |
  * | openaiDailyCostReport      | ENABLE_OPENAI_DAILY_COST_REPORT | activo | correo diario uso OpenAI |
  * | trialRetentionEmail        | ENABLE_TRIAL_RETENTION_EMAIL   | activo | correo ~12 h tras inicio de trial corto (1 día) |
+ * | emailVerificationReminder  | ENABLE_EMAIL_VERIFICATION_REMINDER | activo | recordatorio ~24 h tras registro sin verificar (valor + invitación, sin código) |
  * | weeklySummaryEmail         | ENABLE_WEEKLY_SUMMARY_EMAIL o ENABLE_WEEKLY_TIPS_EMAIL | off | aviso resumen semanal (neutro); slot `WEEKLY_TIPS_EMAIL_SLOT`; regalo trial +N días tras envío: `WEEKLY_SUMMARY_TRIAL_GIFT_DAYS` (default: 1 si APP_TRIAL_DAYS≤1, si no min(2, APP_TRIAL_DAYS)), desactivar con `WEEKLY_SUMMARY_TRIAL_GIFT_ENABLED=false` |
  * | lastSessionSummaryWorker   | ENABLE_LAST_SESSION_SUMMARY    | activo salvo `false` | worker continuidad último chat (#4+#47); tick `LAST_SESSION_SUMMARY_TICK_MS`; reencola `processing` viejos con `LAST_SESSION_SUMMARY_STALE_MS` (default 15 min); reintentos LLM `LAST_SESSION_SUMMARY_MAX_ATTEMPTS` (default 2, máx 5) |
  * | personalPatternRag         | PERSONAL_PATTERN_RAG_ENABLED   | off     | RAG patrones personales cross-sesión (#203); requiere embeddings |
@@ -53,6 +54,8 @@ export const features = Object.freeze({
   notificationScheduler: envIsNotFalse(process.env.ENABLE_NOTIFICATION_SCHEDULER),
   openaiDailyCostReport: envIsNotFalse(process.env.ENABLE_OPENAI_DAILY_COST_REPORT),
   trialRetentionEmail: envIsNotFalse(process.env.ENABLE_TRIAL_RETENTION_EMAIL),
+  /** Recordatorio verificación email (~24 h tras registro). Default activo salvo `false`. */
+  emailVerificationReminder: envIsNotFalse(process.env.ENABLE_EMAIL_VERIFICATION_REMINDER),
   /** Monitor SLO p95 de chat (Sentry + logs). Default: activo salvo 'false'. */
   chatLatencySloMonitor: envIsNotFalse(process.env.ENABLE_CHAT_LATENCY_SLO_MONITOR),
   /** Monitor SLO enrutamiento crisis (Mongo + Sentry). Default: activo salvo 'false'. */

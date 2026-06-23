@@ -520,6 +520,23 @@ if (process.env.NODE_ENV !== 'test') {
     logger.info('✅ Retención trial por correo programada (primer run ~2 min, luego cada 24 horas)');
   }
 
+  // Recordatorio verificación email (~24 h tras registro sin confirmar) — cada 6 h, NO en test
+  if (features.emailVerificationReminder && process.env.NODE_ENV !== 'test') {
+    const VERIFICATION_REMINDER_INTERVAL_MS = 6 * 60 * 60 * 1000;
+    const runVerificationReminder = async () => {
+      try {
+        const emailMarketingService = (await import('./services/emailMarketingService.js')).default;
+        logger.info('📧 Ejecutando recordatorios de verificación de email...');
+        await emailMarketingService.sendEmailVerificationReminderEmails();
+      } catch (error) {
+        logger.error('❌ Error en recordatorios de verificación de email', { error: error.message });
+      }
+    };
+    setTimeout(() => void runVerificationReminder(), 150000);
+    setInterval(() => void runVerificationReminder(), VERIFICATION_REMINDER_INTERVAL_MS);
+    logger.info('✅ Recordatorio verificación email programado (primer run ~2,5 min, luego cada 6 horas)');
+  }
+
   // Tips semanales por correo (ventana UTC; solo producción salvo WEEKLY_TIPS_EMAIL_ALLOW_NON_PRODUCTION=true)
   if (features.weeklySummaryEmail && process.env.NODE_ENV !== 'test') {
     setTimeout(async () => {

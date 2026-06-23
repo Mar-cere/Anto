@@ -40,6 +40,36 @@ const STRINGS = {
       intro: (user) => `Hola, ${user}. Para completar el registro, introduce este código:`,
       ignore: 'Si no creaste esta cuenta, puedes ignorar este correo.',
     },
+    emailVerificationReminder: {
+      subject: (app) => `${app} — por si lo que buscabas sigue siendo importante para ti`,
+      preheader: () => 'Un espacio para retomar cuando quieras, a tu ritmo.',
+      header: (name) => `Hola, ${name}`,
+      body1: () =>
+        'En su momento llegaste hasta aquí. Solo tú sabes qué te hacía falta entonces: desahogarte, ordenar ideas, retomar hábitos o tener un espacio sin juicios. Ese motivo sigue siendo válido.',
+      body2: () =>
+        'Es un espacio para conversar con calma, con apoyo de inteligencia artificial orientada al bienestar emocional. No sustituye la atención de un profesional de la salud mental; te acompaña cuando lo necesitas.',
+      featuresTitle: () => 'Qué puedes hacer aquí',
+      featureLines: [
+        'Chat con calma cuando lo necesites, a tu ritmo y sin horarios fijos.',
+        'Tareas, hábitos y recordatorios desde la conversación, si te son útiles.',
+        'Resumen de tu actividad en Perfil para mirar atrás con perspectiva, cuando quieras.',
+        'Recursos de apoyo en momentos difíciles, según tu país.',
+      ],
+      newsTitle: 'Lo que hemos mejorado',
+      newsLines: [
+        'Respuestas más cuidadosas cuando el malestar es intenso.',
+        'Recursos de crisis accesibles desde el chat.',
+        'Tareas y hábitos desde el chat, con menos pasos.',
+      ],
+      inviteLine: () =>
+        'Si te sigue haciendo sentido, puedes volver para terminar tu registro o descargar la app otra vez. Sin prisa.',
+      downloadPrompt: 'Si aún no tienes la app en tu teléfono:',
+      linkFallback:
+        'Si el enlace no abre la app, descárgala o ábrela manualmente e inicia sesión con la dirección con la que te registraste.',
+      ignore: 'Si no creaste esta cuenta, puedes ignorar este correo.',
+      closing: () =>
+        'Gracias por acercarte. Seguimos aquí cuando quieras continuar.',
+    },
     resetPassword: {
       subject: `Restablecer Contraseña - ${APP_NAME_FULL}`,
       preheader: `Enlace para restablecer contraseña en ${APP_NAME}.`,
@@ -286,6 +316,36 @@ const STRINGS = {
       header: 'Verify your email',
       intro: (user) => `Hello, ${user}. To complete registration, enter this code:`,
       ignore: 'If you did not create this account, you can ignore this email.',
+    },
+    emailVerificationReminder: {
+      subject: (app) => `${app} — in case what you were looking for still matters`,
+      preheader: () => 'A space to come back whenever you want, at your pace.',
+      header: (name) => `Hi, ${name}`,
+      body1: () =>
+        'At some point you made it here. Only you know what you needed then: to vent, sort your thoughts, pick up habits again, or have a space without judgment. That reason still holds.',
+      body2: () =>
+        'It is a place to talk calmly, with AI support focused on emotional wellbeing. It does not replace care from a mental health professional; it accompanies you when you need it.',
+      featuresTitle: () => 'What you can do here',
+      featureLines: [
+        'Chat calmly when you need it, at your pace and without fixed schedules.',
+        'Tasks, habits, and reminders from the conversation, if they are useful to you.',
+        'An activity summary in Profile to look back with perspective, when you want.',
+        'Support resources in difficult moments, for your country.',
+      ],
+      newsTitle: 'What we have improved',
+      newsLines: [
+        'More careful responses when distress is intense.',
+        'Crisis resources available from chat.',
+        'Tasks and habits from chat, with fewer steps.',
+      ],
+      inviteLine: () =>
+        'If it still makes sense for you, you can come back to finish signup or download the app again. No rush.',
+      downloadPrompt: 'If you do not have the app on your phone yet:',
+      linkFallback:
+        'If the link does not open the app, download it or open it manually and sign in with the address you used to register.',
+      ignore: 'If you did not create this account, you can ignore this email.',
+      closing: () =>
+        'Thanks for stopping by. We are still here whenever you want to continue.',
     },
     resetPassword: {
       subject: `Reset Password - ${APP_NAME_FULL}`,

@@ -18,6 +18,9 @@ import {
   getDefaultTrialRetentionMaxTrialHours,
   getWeeklySummaryTrialGiftDays,
 } from '../constants/subscription.js';
+import {
+  getEmailVerificationReminderAfterHours,
+} from '../constants/email.js';
 
 const MS_PER_DAY = 86400000;
 
@@ -199,6 +202,46 @@ export function validateUserForTrialRetentionSend(user, now = new Date()) {
     return { ok: false, reason: 'trial_already_ended' };
   }
   return { ok: true, email, username, trialEndDate: end };
+}
+
+/**
+ * Filtro Mongo para recordatorio de registro sin verificar (~24 h tras registro, un envío).
+ *
+ * @param {Date} now
+ * @param {number} [afterHours]
+ */
+export function buildEmailVerificationReminderBaseFilter(now, afterHours) {
+  const hours =
+    Number.isFinite(Number(afterHours)) && Number(afterHours) > 0
+      ? Number(afterHours)
+      : getEmailVerificationReminderAfterHours();
+  const registeredBefore = new Date(now.getTime() - hours * 60 * 60 * 1000);
+  return {
+    emailVerified: false,
+    isActive: true,
+    createdAt: { $exists: true, $ne: null, $lte: registeredBefore },
+    $or: [
+      { emailVerificationReminderSentAt: null },
+      { emailVerificationReminderSentAt: { $exists: false } },
+    ],
+  };
+}
+
+/**
+ * @param {object} user
+ * @returns {{ ok: true, email: string, username: string } | { ok: false, reason: string }}
+ */
+export function validateUserForEmailVerificationReminderSend(user) {
+  const email = user?.email != null ? String(user.email).trim() : '';
+  if (!email || !email.includes('@')) {
+    return { ok: false, reason: 'invalid_email' };
+  }
+  if (user?.emailVerified === true) {
+    return { ok: false, reason: 'already_verified' };
+  }
+  const rawUser = user?.username != null ? String(user.username).trim() : '';
+  const username = rawUser || 'Usuario';
+  return { ok: true, email, username };
 }
 
 /**
@@ -679,6 +722,97 @@ class EmailMarketingService {
     } catch (error) {
       logger.error('[EmailMarketing] Error en sendTrialRetentionEmails:', error);
       return { processed: 0, sent: 0, failed: 0, skippedLongTrial: 0, skippedInvalid: 0 };
+    }
+  }
+
+  /**
+   * Recordatorio para usuarios registrados sin verificar email (~24 h tras registro, un envío).
+   * Sin código: valor de producto e invitación a retomar registro o descargar la app.
+   * @returns {Promise<{ processed: number, sent: number, failed: number, skippedInvalid: number }>}
+   */
+  async sendEmailVerificationReminderEmails() {
+    const afterHours = getEmailVerificationReminderAfterHours();
+    const now = new Date();
+
+    const results = {
+      processed: 0,
+      sent: 0,
+      failed: 0,
+      skippedInvalid: 0,
+    };
+
+    const baseFilter = buildEmailVerificationReminderBaseFilter(now, afterHours);
+
+    try {
+      const safetyCap = parseInt(process.env.EMAIL_VERIFICATION_REMINDER_MAX_PER_RUN || '300', 10);
+      const maxIterations = Number.isFinite(safetyCap) && safetyCap > 0 ? safetyCap : 300;
+
+      for (let i = 0; i < maxIterations; i += 1) {
+        const user = await User.findOneAndUpdate(
+          baseFilter,
+          {
+            $set: {
+              emailVerificationReminderSentAt: new Date(),
+            },
+          },
+          {
+            new: true,
+            sort: { createdAt: 1 },
+            select: 'email username emailVerified preferences.language',
+          },
+        );
+
+        if (!user) break;
+
+        results.processed += 1;
+
+        const releaseClaim = async () => {
+          await User.updateOne(
+            { _id: user._id },
+            { $unset: { emailVerificationReminderSentAt: '' } },
+          );
+        };
+
+        const validated = validateUserForEmailVerificationReminderSend(user);
+        if (!validated.ok) {
+          await releaseClaim();
+          results.skippedInvalid += 1;
+          logger.warn(
+            `[EmailMarketing] Recordatorio verificación omitido (${user._id}): ${validated.reason}`,
+          );
+          continue;
+        }
+
+        try {
+          const ok = await mailer.sendEmailVerificationReminderEmail(
+            validated.email,
+            validated.username,
+            { user },
+          );
+          if (!ok) {
+            await releaseClaim();
+            results.failed += 1;
+          } else {
+            results.sent += 1;
+            logger.info(`[EmailMarketing] Recordatorio verificación enviado a ${validated.email}`);
+          }
+        } catch (error) {
+          await releaseClaim();
+          results.failed += 1;
+          logger.error(
+            `[EmailMarketing] Error recordatorio verificación usuario ${user._id}:`,
+            error.message,
+          );
+        }
+      }
+
+      logger.info(
+        `[EmailMarketing] Recordatorio verificación: enviados ${results.sent} (procesados ${results.processed}, fallos ${results.failed}, inválidos ${results.skippedInvalid})`,
+      );
+      return results;
+    } catch (error) {
+      logger.error('[EmailMarketing] Error en sendEmailVerificationReminderEmails:', error);
+      return { processed: 0, sent: 0, failed: 0, skippedInvalid: 0 };
     }
   }
 

@@ -28,6 +28,7 @@ import {
 } from '../constants/emailMailerStrings.js';
 import { getUtcIsoWeekParts } from '../utils/isoWeek.js';
 import { emailDateLocale, normalizeEmailLanguage, resolveUserEmailLanguage } from '../utils/emailLanguage.js';
+import { isFullEmailHtmlDocument, wrapEmailHtmlDocument } from '../utils/emailHtmlDocument.js';
 import logger from '../utils/logger.js';
 import {
   buildWeeklySummaryEmailContext,
@@ -141,12 +142,22 @@ const logMailerBootstrap = () => {
 };
 logMailerBootstrap();
 
-const EMAIL_LAYOUT_OUTER = `font-family:${EMAIL_FONT_STACK};max-width:600px;margin:0 auto;padding:20px 16px 28px;background:linear-gradient(180deg,${EMAIL_COLORS.GRADIENT_TOP} 0%,${EMAIL_COLORS.GRADIENT_BOTTOM} 55%,${EMAIL_COLORS.BACKGROUND} 100%);`;
-const EMAIL_LAYOUT_CARD = `background:${EMAIL_COLORS.SURFACE};border:1px solid ${EMAIL_COLORS.BORDER};border-radius:20px;padding:28px 24px;margin:0 auto;max-width:560px;box-shadow:0 8px 32px ${EMAIL_COLORS.SHADOW};overflow:hidden;`;
+const EMAIL_LAYOUT_OUTER = `font-family:${EMAIL_FONT_STACK};max-width:600px;margin:0 auto;padding:20px 16px 28px;background-color:${EMAIL_COLORS.BACKGROUND};background:linear-gradient(180deg,${EMAIL_COLORS.GRADIENT_TOP} 0%,${EMAIL_COLORS.GRADIENT_BOTTOM} 55%,${EMAIL_COLORS.BACKGROUND} 100%);color:${EMAIL_COLORS.TEXT_DARK};`;
+const EMAIL_LAYOUT_OUTER_CLASS = 'email-outer email-text';
+const EMAIL_LAYOUT_CARD = `background-color:${EMAIL_COLORS.SURFACE};background:${EMAIL_COLORS.SURFACE};border:1px solid ${EMAIL_COLORS.BORDER};border-radius:20px;padding:28px 24px;margin:0 auto;max-width:560px;box-shadow:0 8px 32px ${EMAIL_COLORS.SHADOW};overflow:hidden;color:${EMAIL_COLORS.TEXT_DARK};`;
+const EMAIL_LAYOUT_CARD_CLASS = 'email-card email-text';
 const EMAIL_PREHEADER_HIDDEN = `display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:transparent;width:0;height:0;opacity:0;`;
 
 function emailPrimaryButtonStyle() {
-  return `background-color:${EMAIL_COLORS.PRIMARY_MEDIUM};color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 28px;text-decoration:none;border-radius:999px;display:inline-block;font-weight:600;font-size:15px;box-shadow:0 4px 16px rgba(30,131,211,0.28);`;
+  return `background-color:${EMAIL_COLORS.PRIMARY_MEDIUM};color:${EMAIL_COLORS.TEXT_WHITE};padding:14px 28px;text-decoration:none;border-radius:999px;display:inline-block;font-weight:600;font-size:15px;box-shadow:0 4px 16px rgba(30,131,211,0.28);border:1px solid ${EMAIL_COLORS.PRIMARY_MEDIUM};`;
+}
+
+function emailPrimaryButtonAttrs() {
+  return `class="email-btn" style="${emailPrimaryButtonStyle()}"`;
+}
+
+function emailLinkAttrs() {
+  return `class="email-link" style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:14px;font-weight:600;text-decoration:underline;"`;
 }
 
 function emailCodeFrameOuterStyle() {
@@ -155,11 +166,19 @@ function emailCodeFrameOuterStyle() {
 
 function emailSectionPanelStyle(options = {}) {
   const accent = options.accentBorder ? `border-left:4px solid ${EMAIL_COLORS.PRIMARY_MEDIUM};` : '';
-  return `background:${EMAIL_COLORS.CHROME_FILL};border:1px solid ${EMAIL_COLORS.BORDER};border-radius:16px;padding:20px 18px;${accent}`;
+  return `background-color:${EMAIL_COLORS.CHROME_FILL};background:${EMAIL_COLORS.CHROME_FILL};border:1px solid ${EMAIL_COLORS.BORDER};border-radius:16px;padding:20px 18px;color:${EMAIL_COLORS.TEXT_DARK};${accent}`;
+}
+
+function emailSectionPanelClass() {
+  return 'email-panel email-text';
 }
 
 function emailGiftPanelStyle() {
-  return `background:linear-gradient(145deg,${EMAIL_COLORS.PRIMARY_SOFT} 0%,${EMAIL_COLORS.ACCENT_SOFT} 100%);border:1px solid ${EMAIL_COLORS.BORDER_STRONG};border-radius:16px;padding:22px 20px;margin:0 0 18px 0;text-align:left;`;
+  return `background-color:#E8F4FC;background:linear-gradient(145deg,${EMAIL_COLORS.PRIMARY_SOFT} 0%,${EMAIL_COLORS.ACCENT_SOFT} 100%);border:1px solid ${EMAIL_COLORS.BORDER_STRONG};border-radius:16px;padding:22px 20px;margin:0 0 18px 0;text-align:left;color:${EMAIL_COLORS.TEXT_DARK};`;
+}
+
+function emailGiftPanelClass() {
+  return 'email-gift-panel email-text';
 }
 
 function emailPreheaderHtml(escapedText) {
@@ -235,7 +254,7 @@ function buildSubscriptionReceiptHtmlBlock(receipt, planNameRaw, periodEndSafe, 
     : '';
 
   return `
-            <div style="${emailGiftPanelStyle()}margin-bottom:24px;border-left:4px solid ${EMAIL_COLORS.PRIMARY_MEDIUM};">
+            <div class="${emailGiftPanelClass()}" style="${emailGiftPanelStyle()}margin-bottom:24px;border-left:4px solid ${EMAIL_COLORS.PRIMARY_MEDIUM};">
               <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:15px;font-weight:700;margin:0 0 16px 0;text-align:center;">
                 ${title}
               </p>
@@ -305,13 +324,13 @@ const getEmailFooter = (options = {}) => {
   const weeklyReply = options.weeklySummaryAllowReply === true;
   const replyHtml = weeklyReply ? s.weeklyReply : s.noReply;
   return `
-    <div style="text-align: center; margin: 0 20px 24px 20px; padding-top: 8px;">
+    <div class="email-footer" style="text-align: center; margin: 0 20px 24px 20px; padding-top: 8px; color: ${EMAIL_COLORS.TEXT_LIGHT};">
       <div style="margin: 10px 0 14px 0;">
         <a
           href="${instagramUrl}"
           target="_blank"
           rel="noopener noreferrer"
-          style="${emailPrimaryButtonStyle()}"
+          ${emailPrimaryButtonAttrs()}
         >
           ${
             INSTAGRAM_ICON_DATA_URI
@@ -419,9 +438,9 @@ function getWeeklySummaryAppStoreHref() {
 
 const getEmailHeader = (title, logoAlt = `${APP_NAME} Logo`) => {
   return `
-    <div style="text-align:center;padding:28px 24px 22px;border-bottom:1px solid ${EMAIL_COLORS.BORDER};">
+    <div class="email-header" style="text-align:center;padding:28px 24px 22px;border-bottom:1px solid ${EMAIL_COLORS.BORDER};background-color:transparent;color:${EMAIL_COLORS.TEXT_DARK};">
       <img src="${LOGO_URL}" alt="${logoAlt}" style="width:56px;height:56px;margin-bottom:14px;border-radius:18px;box-shadow:0 6px 20px ${EMAIL_COLORS.SHADOW};" />
-      <h1 style="color:${EMAIL_COLORS.TEXT_DARK};margin:0;font-family:${EMAIL_FONT_STACK};font-size:1.55rem;font-weight:700;letter-spacing:-0.02em;line-height:1.25;">
+      <h1 class="email-text" style="color:${EMAIL_COLORS.TEXT_DARK};margin:0;font-family:${EMAIL_FONT_STACK};font-size:1.55rem;font-weight:700;letter-spacing:-0.02em;line-height:1.25;">
         ${title}
       </h1>
       <div style="width:44px;height:4px;background:linear-gradient(90deg,${EMAIL_COLORS.PRIMARY_MEDIUM} 0%,${EMAIL_COLORS.ACCENT} 100%);border-radius:999px;margin:14px auto 0;"></div>
@@ -439,15 +458,15 @@ const emailTemplates = {
     return {
     subject: s.subject,
     html: `
-      <div style="${EMAIL_LAYOUT_OUTER}">
+      <div class="${EMAIL_LAYOUT_OUTER_CLASS}" style="${EMAIL_LAYOUT_OUTER}">
         ${emailPreheaderHtml(escapeHtmlText(s.preheader))}
         ${getEmailHeader(s.header)}
-        <div style="${EMAIL_LAYOUT_CARD}">
+        <div class="${EMAIL_LAYOUT_CARD_CLASS}" style="${EMAIL_LAYOUT_CARD}">
           <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 20px 0;text-align:center;">
             ${s.intro}
           </p>
           <div style="${emailCodeFrameOuterStyle()}">
-            <div style="background:${EMAIL_COLORS.SURFACE};padding:20px 0;border-radius:14px;">
+            <div class="email-code-inner" style="background-color:${EMAIL_COLORS.SURFACE};background:${EMAIL_COLORS.SURFACE};padding:20px 0;border-radius:14px;color:${EMAIL_COLORS.TEXT_DARK};">
               <span style="display:block;color:${EMAIL_COLORS.TEXT_DARK};font-size:2rem;text-align:center;letter-spacing:10px;font-weight:700;font-family:'Segoe UI Mono','Menlo','Monaco',monospace;">
                 ${code}
               </span>
@@ -475,16 +494,16 @@ const emailTemplates = {
     return {
     subject: s.subject,
     html: `
-      <div style="${EMAIL_LAYOUT_OUTER}">
+      <div class="${EMAIL_LAYOUT_OUTER_CLASS}" style="${EMAIL_LAYOUT_OUTER}">
         ${emailPreheaderHtml(escapeHtmlText(s.preheader))}
         ${getEmailHeader(s.header)}
-        <div style="${EMAIL_LAYOUT_CARD}">
+        <div class="${EMAIL_LAYOUT_CARD_CLASS}" style="${EMAIL_LAYOUT_CARD}">
           <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 20px 0;text-align:center;">
             ${escapeHtmlText(s.intro(String(username ?? '').trim() || getMailerStrings(language).defaultUser))}
           </p>
 
           <div style="${emailCodeFrameOuterStyle()}">
-            <div style="background:${EMAIL_COLORS.SURFACE};padding:20px 0;border-radius:14px;">
+            <div class="email-code-inner" style="background-color:${EMAIL_COLORS.SURFACE};background:${EMAIL_COLORS.SURFACE};padding:20px 0;border-radius:14px;color:${EMAIL_COLORS.TEXT_DARK};">
               <span style="display:block;color:${EMAIL_COLORS.TEXT_DARK};font-size:2rem;text-align:center;letter-spacing:10px;font-weight:700;font-family:'Segoe UI Mono','Menlo','Monaco',monospace;">
                 ${code}
               </span>
@@ -506,6 +525,112 @@ const emailTemplates = {
   },
 
   /**
+   * Recordatorio para quienes se registraron sin verificar: valor de Anto, sin código.
+   */
+  emailVerificationReminderEmail: (username, language = 'es') => {
+    const s = getMailerStrings(language).emailVerificationReminder;
+    const ws = getMailerStrings(language).weeklySummary;
+    const cta = emailCtaFor(language);
+    const rawUser = String(username ?? '').trim();
+    const displayName = escapeHtmlText(rawUser);
+    const greeting = rawUser ? ws.greeting(displayName) : `${ws.greetingPlain} 👋`;
+    const appHref = buildEmailAppOpenHref(process.env);
+    const appStoreHref = getWeeklySummaryAppStoreHref();
+    const sectionTitleLg = `color:${EMAIL_COLORS.TEXT_DARK};font-size:16px;font-weight:700;margin:0 0 10px 0;line-height:1.3;`;
+    const body = `color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 14px 0;text-align:left;`;
+    const small = `color:${EMAIL_COLORS.TEXT_GRAY};font-size:13px;line-height:1.55;margin:0 0 12px 0;text-align:left;`;
+    const hr = `border:0;border-top:1px solid ${EMAIL_COLORS.BORDER};margin:22px 0;height:0;`;
+    const featuresHtml = (s.featureLines || [])
+      .map(
+        (line) =>
+          `<li style="margin:0 0 8px 0;padding-left:2px;">${escapeHtmlText(line)}</li>`,
+      )
+      .join('');
+    const newsHtml = (s.newsLines || [])
+      .map(
+        (line) =>
+          `<li style="margin:0 0 8px 0;padding-left:2px;">${escapeHtmlText(line)}</li>`,
+      )
+      .join('');
+    const featuresTitle =
+      typeof s.featuresTitle === 'function' ? s.featuresTitle(APP_NAME) : s.featuresTitle;
+
+    return {
+      subject: s.subject(APP_NAME),
+      html: `
+        <div class="${EMAIL_LAYOUT_OUTER_CLASS}" style="${EMAIL_LAYOUT_OUTER}">
+          ${emailPreheaderHtml(escapeHtmlText(s.preheader(APP_NAME)))}
+          ${getEmailHeader(ws.header)}
+          <div class="${EMAIL_LAYOUT_CARD_CLASS}" style="${EMAIL_LAYOUT_CARD}">
+            <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:19px;font-weight:600;margin:0 0 14px 0;text-align:left;line-height:1.4;">
+              ${greeting}
+            </p>
+
+            <p style="${body}margin-bottom:14px;">
+              ${escapeHtmlText(s.body1(APP_NAME))}
+            </p>
+            <p style="${body}margin-bottom:22px;color:${EMAIL_COLORS.TEXT_GRAY};">
+              ${s.body2(APP_NAME)}
+            </p>
+
+            <p style="${small}margin-bottom:22px;">
+              ${disclaimerEscaped(language)}
+            </p>
+
+            <div class="${emailSectionPanelClass()}" style="${emailSectionPanelStyle({ accentBorder: true })}margin-bottom:22px;">
+              <p style="${sectionTitleLg}">${escapeHtmlText(featuresTitle)}</p>
+              <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.65;margin:0;padding-left:20px;text-align:left;">
+                ${featuresHtml}
+              </ul>
+            </div>
+
+            <div class="${emailSectionPanelClass()}" style="${emailSectionPanelStyle({ accentBorder: true })}margin-bottom:22px;">
+              <p style="${sectionTitleLg}">${escapeHtmlText(s.newsTitle)}</p>
+              <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.65;margin:0;padding-left:20px;text-align:left;">
+                ${newsHtml}
+              </ul>
+            </div>
+
+            <div class="${emailGiftPanelClass()}" style="${emailGiftPanelStyle()}">
+              <p style="${body}margin-bottom:16px;text-align:center;">
+                ${s.inviteLine(APP_NAME)}
+              </p>
+              <div style="text-align:center;margin:0 0 10px 0;">
+                <a href="${appHref}"
+                   ${emailPrimaryButtonAttrs()}>
+                  ${escapeHtmlText(cta.finishSignup())}
+                </a>
+              </div>
+              <p style="${small}text-align:center;margin:0;line-height:1.55;">
+                ${escapeHtmlText(s.linkFallback)}
+              </p>
+            </div>
+
+            <p style="${body}margin-top:22px;margin-bottom:0;text-align:center;font-style:italic;">
+              ${escapeHtmlText(s.closing(APP_NAME))}
+            </p>
+
+            <hr style="${hr}" />
+
+            <p style="${small}margin-bottom:10px;">${escapeHtmlText(s.ignore)}</p>
+
+            <p style="${body}margin-top:8px;margin-bottom:8px;text-align:center;font-size:14px;">
+              ${escapeHtmlText(s.downloadPrompt)}
+            </p>
+            <div style="text-align:center;margin:0 0 8px 0;">
+              <a href="${appStoreHref}"
+                 ${emailLinkAttrs()}>
+                ${ws.appStore}
+              </a>
+            </div>
+          </div>
+          ${getEmailFooter({ language })}
+        </div>
+      `,
+    };
+  },
+
+  /**
    * Plantilla para restablecimiento de contraseña
    */
   resetPassword: (token, language = 'es') => {
@@ -514,16 +639,16 @@ const emailTemplates = {
     return {
     subject: s.subject,
     html: `
-      <div style="${EMAIL_LAYOUT_OUTER}">
+      <div class="${EMAIL_LAYOUT_OUTER_CLASS}" style="${EMAIL_LAYOUT_OUTER}">
         ${emailPreheaderHtml(escapeHtmlText(s.preheader))}
         ${getEmailHeader(s.header)}
-        <div style="${EMAIL_LAYOUT_CARD}">
+        <div class="${EMAIL_LAYOUT_CARD_CLASS}" style="${EMAIL_LAYOUT_CARD}">
           <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 22px 0;text-align:center;">
             ${s.intro}
           </p>
           <div style="text-align:center;margin:0 0 22px 0;">
             <a href="${FRONTEND_URL}${RESET_PASSWORD_PATH}?token=${token}"
-               style="${emailPrimaryButtonStyle()}">
+               ${emailPrimaryButtonAttrs()}>
               ${escapeHtmlText(cta.resetPassword())}
             </a>
           </div>
@@ -555,11 +680,11 @@ const emailTemplates = {
     return {
       subject: w.subject,
       html: `
-      <div style="${EMAIL_LAYOUT_OUTER}">
+      <div class="${EMAIL_LAYOUT_OUTER_CLASS}" style="${EMAIL_LAYOUT_OUTER}">
         ${emailPreheaderHtml(preheaderText)}
         ${getEmailHeader(w.header(safeName))}
 
-        <div style="${EMAIL_LAYOUT_CARD}">
+        <div class="${EMAIL_LAYOUT_CARD_CLASS}" style="${EMAIL_LAYOUT_CARD}">
           <p style="${body}">
             ${w.body1(APP_NAME)}
           </p>
@@ -579,7 +704,7 @@ const emailTemplates = {
 
           <div style="text-align:center;margin:8px 0 14px 0;">
             <a href="${appHref}"
-               style="${emailPrimaryButtonStyle()}">
+               ${emailPrimaryButtonAttrs()}>
               ${escapeHtmlText(cta.openApp())}
             </a>
           </div>
@@ -619,11 +744,11 @@ const emailTemplates = {
     return {
       subject: r.subject(APP_NAME),
       html: `
-        <div style="${EMAIL_LAYOUT_OUTER}">
+        <div class="${EMAIL_LAYOUT_OUTER_CLASS}" style="${EMAIL_LAYOUT_OUTER}">
           ${emailPreheaderHtml(preheaderText)}
           ${getEmailHeader(r.header(safeName))}
 
-          <div style="${EMAIL_LAYOUT_CARD}">
+          <div class="${EMAIL_LAYOUT_CARD_CLASS}" style="${EMAIL_LAYOUT_CARD}">
             <p style="${body}">
               ${r.body(d, APP_NAME)}
             </p>
@@ -634,7 +759,7 @@ const emailTemplates = {
               ${r.noChargeNote}
             </p>
 
-            <div style="${emailSectionPanelStyle({ accentBorder: true })}margin:0 0 22px 0;">
+            <div class="${emailSectionPanelClass()}" style="${emailSectionPanelStyle({ accentBorder: true })}margin:0 0 22px 0;">
               <p style="${sectionTitle}margin-bottom:4px;">${r.tipsTitle}</p>
               <p style="${small}margin-bottom:10px;font-size:12px;line-height:1.45;">
                 ${r.tipsHint}
@@ -651,7 +776,7 @@ const emailTemplates = {
 
             <div style="text-align:center;margin:8px 0 14px 0;">
               <a href="${appHref}"
-                 style="${emailPrimaryButtonStyle()}">
+                 ${emailPrimaryButtonAttrs()}>
                 ${escapeHtmlText(cta.openApp())}
               </a>
             </div>
@@ -709,11 +834,11 @@ const emailTemplates = {
     return {
       subject: tr.subject(APP_NAME),
       html: `
-        <div style="${EMAIL_LAYOUT_OUTER}">
+        <div class="${EMAIL_LAYOUT_OUTER_CLASS}" style="${EMAIL_LAYOUT_OUTER}">
           ${emailPreheaderHtml(preheaderText)}
           ${getEmailHeader(tr.header(safeName))}
 
-          <div style="${EMAIL_LAYOUT_CARD}">
+          <div class="${EMAIL_LAYOUT_CARD_CLASS}" style="${EMAIL_LAYOUT_CARD}">
             <p style="${sectionTitle}margin-bottom:12px;">${tr.sectionEnding}</p>
             <p style="${body}">
               ${tr.bodyIntro(APP_NAME)}
@@ -739,7 +864,7 @@ const emailTemplates = {
 
             <div style="text-align:center;margin:10px 0 10px 0;">
               <a href="${premiumHref}"
-                 style="${emailPrimaryButtonStyle()}">
+                 ${emailPrimaryButtonAttrs()}>
                 ${escapeHtmlText(cta.trialPremium())}
               </a>
             </div>
@@ -748,7 +873,7 @@ const emailTemplates = {
             </p>
             <p style="text-align:center;margin:0;">
               <a href="${summaryHref}"
-                 style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:14px;font-weight:600;text-decoration:underline;">
+                 ${emailLinkAttrs()}>
                 ${escapeHtmlText(cta.trialWeeklySummary())}
               </a>
             </p>
@@ -779,15 +904,15 @@ const emailTemplates = {
     return {
       subject: wt.subject(APP_NAME, weekNumber),
       html: `
-        <div style="${EMAIL_LAYOUT_OUTER}">
+        <div class="${EMAIL_LAYOUT_OUTER_CLASS}" style="${EMAIL_LAYOUT_OUTER}">
           ${emailPreheaderHtml(escapeHtmlText(wt.preheader(APP_NAME, weekNumber)))}
           ${getEmailHeader(wt.header(weekNumber))}
-          <div style="${EMAIL_LAYOUT_CARD}">
+          <div class="${EMAIL_LAYOUT_CARD_CLASS}" style="${EMAIL_LAYOUT_CARD}">
             <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:15px;line-height:1.65;margin:0 0 20px 0;text-align:center;">
               ${escapeHtmlText(wt.intro(safeTipUser))}
             </p>
 
-            <div style="${emailSectionPanelStyle({ accentBorder: true })}margin:0 0 22px 0;">
+            <div class="${emailSectionPanelClass()}" style="${emailSectionPanelStyle({ accentBorder: true })}margin:0 0 22px 0;">
               <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:16px;font-weight:700;margin:0 0 12px 0;text-align:center;">
                 ${tip.title}
               </p>
@@ -812,7 +937,7 @@ const emailTemplates = {
 
             <div style="text-align:center;margin:0 0 12px 0;">
               <a href="${tipsAppHref}"
-                 style="${emailPrimaryButtonStyle()}">
+                 ${emailPrimaryButtonAttrs()}>
                 ${escapeHtmlText(cta.openApp())}
               </a>
             </div>
@@ -860,10 +985,10 @@ const emailTemplates = {
     return {
       subject: context.subjectLine,
       html: `
-        <div style="${EMAIL_LAYOUT_OUTER}">
+        <div class="${EMAIL_LAYOUT_OUTER_CLASS}" style="${EMAIL_LAYOUT_OUTER}">
           ${emailPreheaderHtml(escapeHtmlText(context.preheaderText))}
           ${getEmailHeader(ws.header)}
-          <div style="${EMAIL_LAYOUT_CARD}">
+          <div class="${EMAIL_LAYOUT_CARD_CLASS}" style="${EMAIL_LAYOUT_CARD}">
             <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:19px;font-weight:600;margin:0 0 14px 0;text-align:left;line-height:1.4;">
               ${greeting}
             </p>
@@ -875,7 +1000,7 @@ const emailTemplates = {
               ${escapeHtmlText(context.warmBridgeLine)}
             </p>
 
-            <div style="${emailSectionPanelStyle({ accentBorder: true })}margin-bottom:22px;">
+            <div class="${emailSectionPanelClass()}" style="${emailSectionPanelStyle({ accentBorder: true })}margin-bottom:22px;">
               <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:16px;font-weight:700;margin:0 0 10px 0;line-height:1.3;">
                 ${escapeHtmlText(context.updatesSectionTitle)}
               </p>
@@ -887,7 +1012,7 @@ const emailTemplates = {
               </ul>
             </div>
 
-            <div style="${emailGiftPanelStyle()}">
+            <div class="${emailGiftPanelClass()}" style="${emailGiftPanelStyle()}">
               <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:11px;font-weight:700;margin:0 0 10px 0;letter-spacing:0.06em;text-transform:uppercase;">
                 ${escapeHtmlText(context.giftBadgeLabel)}
               </p>
@@ -910,7 +1035,7 @@ const emailTemplates = {
             </p>
             <div style="text-align:center;margin:0 0 10px 0;">
               <a href="${appHref}"
-                 style="${emailPrimaryButtonStyle()}">
+                 ${emailPrimaryButtonAttrs()}>
                 ${escapeHtmlText(cta.openApp())}
               </a>
             </div>
@@ -943,7 +1068,7 @@ const emailTemplates = {
             </p>
             <div style="text-align:center;margin:0 0 8px 0;">
               <a href="${appStoreHref}"
-                 style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:14px;font-weight:600;text-decoration:underline;">
+                 ${emailLinkAttrs()}>
                 ${ws.appStore}
               </a>
             </div>
@@ -1011,11 +1136,11 @@ const emailTemplates = {
         ? sub.thankYouSubjectReceipt(APP_NAME, planNameRaw)
         : sub.thankYouSubject(APP_NAME, planNameRaw),
       html: `
-        <div style="${EMAIL_LAYOUT_OUTER}">
+        <div class="${EMAIL_LAYOUT_OUTER_CLASS}" style="${EMAIL_LAYOUT_OUTER}">
           ${emailPreheaderHtml(preheaderText)}
           ${getEmailHeader(sub.thankYouHeader(safeName))}
 
-          <div style="${EMAIL_LAYOUT_CARD}">
+          <div class="${EMAIL_LAYOUT_CARD_CLASS}" style="${EMAIL_LAYOUT_CARD}">
             <p style="${body}">
               ${sub.thankYouBody(APP_NAME, planName)}
             </p>
@@ -1040,7 +1165,7 @@ const emailTemplates = {
 
             <div style="text-align:center;margin:8px 0 14px 0;">
               <a href="${appOpenHref}"
-                 style="${emailPrimaryButtonStyle()}">
+                 ${emailPrimaryButtonAttrs()}>
                 ${escapeHtmlText(cta.openApp())}
               </a>
             </div>
@@ -1105,11 +1230,11 @@ const emailTemplates = {
     return {
       subject: sub.renewalSubject(APP_NAME, planNameRaw),
       html: `
-        <div style="${EMAIL_LAYOUT_OUTER}">
+        <div class="${EMAIL_LAYOUT_OUTER_CLASS}" style="${EMAIL_LAYOUT_OUTER}">
           ${emailPreheaderHtml(preheaderText)}
           ${getEmailHeader(sub.renewalHeader(safeName))}
 
-          <div style="${EMAIL_LAYOUT_CARD}">
+          <div class="${EMAIL_LAYOUT_CARD_CLASS}" style="${EMAIL_LAYOUT_CARD}">
             <p style="${body}">
               ${sub.renewalBody(APP_NAME, planName)}
             </p>
@@ -1129,7 +1254,7 @@ const emailTemplates = {
 
             <div style="text-align:center;margin:8px 0 14px 0;">
               <a href="${appOpenHref}"
-                 style="${emailPrimaryButtonStyle()}">
+                 ${emailPrimaryButtonAttrs()}>
                 ${escapeHtmlText(cta.openApp())}
               </a>
             </div>
@@ -1381,11 +1506,22 @@ const sendEmailWithGmail = async (email, template, emailType) => {
 };
 
 // Helper: enviar correo genérico (prioridad: Gmail API > SendGrid > Gmail SMTP)
+function prepareEmailTemplateForSend(template) {
+  if (!template?.html || isFullEmailHtmlDocument(template.html)) {
+    return template;
+  }
+  return {
+    ...template,
+    html: wrapEmailHtmlDocument(template.html),
+  };
+}
+
 const sendEmail = async (email, template, emailType) => {
+  const outbound = prepareEmailTemplateForSend(template);
   // Intentar primero con Gmail API si está configurado (Google Workspace)
   if (USE_GMAIL_API && gmailClient) {
     try {
-      return await sendEmailWithGmailAPI(email, template, emailType);
+      return await sendEmailWithGmailAPI(email, outbound, emailType);
     } catch (gmailAPIError) {
       console.error('[Mailer] ⚠️ Gmail API falló, intentando con otros proveedores...');
       // Continuar con otros proveedores
@@ -1394,7 +1530,7 @@ const sendEmail = async (email, template, emailType) => {
 
   if (SENDGRID_CONFIGURED) {
     try {
-      return await sendEmailWithSendGrid(email, template, emailType);
+      return await sendEmailWithSendGrid(email, outbound, emailType);
     } catch (sendGridError) {
       console.error('[Mailer] ⚠️ SendGrid falló, intentando con Gmail SMTP como fallback...');
     }
@@ -1402,7 +1538,7 @@ const sendEmail = async (email, template, emailType) => {
 
   // Fallback a Gmail SMTP
   try {
-    return await sendEmailWithGmail(email, template, emailType);
+    return await sendEmailWithGmail(email, outbound, emailType);
   } catch (gmailError) {
     // Log de errores de Gmail
     if (gmailError.message.includes('Variables de entorno')) {
@@ -1455,6 +1591,31 @@ const mailer = {
       return await sendEmail(email, template, 'Código de verificación de email');
     } catch (error) {
       throw new Error('Error al enviar el correo de verificación de email');
+    }
+  },
+
+  /**
+   * Recordatorio de valor para completar registro (sin código).
+   * @param {string} email
+   * @param {string} username
+   * @param {{ user?: object, language?: string }} [options]
+   */
+  sendEmailVerificationReminderEmail: async (email, username, options = {}) => {
+    const em = email != null ? String(email).trim() : '';
+    if (!em || !em.includes('@')) {
+      logger.warn('[Mailer] sendEmailVerificationReminderEmail: destinatario inválido');
+      return false;
+    }
+    try {
+      const language = resolveUserEmailLanguage(
+        typeof options.user === 'object' ? options.user : null,
+        options.language,
+      );
+      const template = emailTemplates.emailVerificationReminderEmail(username, language);
+      return await sendEmail(em, template, 'Recordatorio registro Anto');
+    } catch (error) {
+      console.error('[Mailer] ❌ Error al enviar recordatorio de registro (no crítico):', error.message);
+      return false;
     }
   },
 

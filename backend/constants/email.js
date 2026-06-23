@@ -8,6 +8,12 @@
 export const CODE_EXPIRATION_MINUTES = 10;
 export const RESET_TOKEN_EXPIRATION_HOURS = 1;
 
+/** Horas tras el registro antes del recordatorio de verificación (default: 24). */
+export function getEmailVerificationReminderAfterHours() {
+  const raw = parseInt(process.env.EMAIL_VERIFICATION_REMINDER_AFTER_HOURS, 10);
+  return Number.isFinite(raw) && raw > 0 ? raw : 24;
+}
+
 // Constantes de URLs
 export const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 export const RESET_PASSWORD_PATH = '/reset-password';

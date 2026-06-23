@@ -63,6 +63,11 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null
   },
+  /** Se setea al enviar el recordatorio de verificación (usuarios sin confirmar email); evita reenvíos. */
+  emailVerificationReminderSentAt: {
+    type: Date,
+    default: null
+  },
   // Seguridad: contraseña hasheada y salt para encriptación
   password: {
     type: String,
@@ -450,6 +455,11 @@ const userSchema = new mongoose.Schema({
 // Índices adicionales para optimizar consultas (email y username ya tienen índice en el schema)
 userSchema.index({ 'stats.lastActive': -1 });
 userSchema.index({ createdAt: -1 });
+userSchema.index({
+  emailVerified: 1,
+  emailVerificationReminderSentAt: 1,
+  createdAt: 1,
+});
 // Índices compuestos para consultas frecuentes
 userSchema.index({ 'subscription.status': 1, 'subscription.trialEndDate': 1 });
 userSchema.index({
