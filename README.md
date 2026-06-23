@@ -1,15 +1,18 @@
 # 🧠 Anto App — Asistente de bienestar emocional con IA
 
-**Versión de la app (Expo): 1.5.0** · Evaluación con escalas clínicas y protocolos estructurados
+**Versión de la app (Expo): 1.5.0** · Home unificado, chat más seguro y experiencia accionable
 
 **Anto** es una aplicación móvil de salud mental que utiliza inteligencia artificial para ofrecer **apoyo emocional personalizado**, análisis de estado de ánimo, detección de crisis y herramientas de bienestar. **No sustituye** la atención de un profesional de la salud mental ni proporciona diagnóstico clínico.
 
-**Destacado (v1.1+):** Escalas validadas (PHQ-9, GAD-7), detección de distorsiones cognitivas y protocolos estructurados basados en evidencia. **v1.2.x:** Mejoras de experiencia en chat, preferencias de tono/respuesta del asistente y documentación de privacidad en conversación.
+**Destacado (v1.5.0):** Home consolidado con insight rotativo, hub de técnicas, resumen e informe observacional accionables, sesión persistente con refresh de JWT, chat con recursos de crisis y acciones de producto (tareas/hábitos), onboarding rediseñado y paywall con memoria del día.
+
+**Versiones anteriores:** v1.4.x — TCC lite en chat, grafo semántico, salud digital (HealthKit / Health Connect), informes con narrativa LLM y patrones ABC. v1.1+ — Escalas PHQ-9/GAD-7, distorsiones cognitivas y protocolos estructurados.
 
 ---
 
 ## 📋 Tabla de Contenidos
 
+- [Novedades v1.5.0](#-novedades-v150)
 - [Beneficios](#-beneficios)
 - [Características](#-características)
 - [Casos de Uso](#-casos-de-uso)
@@ -17,6 +20,43 @@
 - [Estructura del Proyecto](#-estructura-del-proyecto)
 - [Documentación](#-documentación)
 - [Estado del Proyecto](#-estado-del-proyecto)
+- [Historial de versiones](#-historial-de-versiones)
+
+---
+
+## 🚀 Novedades v1.5.0
+
+### Experiencia y navegación
+
+- **Home unificado:** Dashboard consolidado con foco del día, insight rotativo humanizado (LLM), racha de engagement, tareas/hábitos en una sola pantalla y refresh optimizado al volver a la app.
+- **Hub de técnicas:** Nueva pestaña que reemplaza Pomodoro; catálogo completo con acceso rápido, acordeón y filas compactas. Pomodoro se inicia al enfocar una tarea.
+- **Resumen e informe observacional:** Rediseño con UX accionable, «lo que te ayuda» navegable hacia técnicas concretas y progreso de perfil movido a **Perfil**.
+- **Grafo semántico:** Estados vacío y error con panel centrado y CTAs; conexión directa desde nodos e insights hacia la técnica concreta (no solo el hub).
+- **Onboarding y bienvenida:** Flujo con tarjetas de beneficios, validación guiada, soporte claro/oscuro, bootstrap sin parpadeos y carga de marca unificada.
+- **Sesión persistente:** La app restaura la sesión al abrir sin pedir contraseña en cada arranque; renovación automática del JWT con refresh token y blindaje con tests de sesión.
+- **Paywall renovado:** Memoria del día, plan anual destacado y precio mensual equivalente.
+
+### Chat y acompañamiento
+
+- **Crisis y seguridad:** Recursos de crisis en el chat (panel y menú ⋮); hard-stop ante riesgo elevado con tono de contención y recursos concretos en lugar de ejercicios genéricos.
+- **Acciones desde el chat:** Crear tareas o hábitos desde la conversación con confirmación en UI (`proposedProductActions`); tarjeta de tarea al confirmar con «Sí».
+- **Continuidad mejorada:** Sugerencias del chat persistidas al reabrir la conversación; memoria de temas recurrentes conectada al prompt; resumen breve tras hilos intensos.
+- **Análisis emocional ampliado:** Detección de anhedonia adolescente, imagen corporal y bullying; mejor manejo de pensamientos intrusivos, negación emocional idiomática y mensajes breves truncados.
+
+### Plataforma e internacionalización
+
+- **Salud digital (Android):** `minSdk` 26 para compatibilidad con Health Connect (iOS HealthKit ya disponible desde v1.4.4).
+- **Idiomas ES/EN:** Interfaz bilingüe en Ajustes; enlaces de Instagram y copy de correos según idioma del usuario.
+- **Correos de producto:** Campaña 1.5.0 con copy humano y diseño alineado a la app.
+
+### Validación de release
+
+Scripts de blindaje en backend y frontend:
+
+```bash
+cd backend && npm run validate:release-1.5.0
+cd frontend && npm run validate:release-1.5.0
+```
 
 ---
 
@@ -50,34 +90,53 @@
 
 ## 🌟 Características
 
+### 🏠 Home y foco del día (v1.5.0)
+
+- **Dashboard consolidado:** Foco del día, insight rotativo, racha, estadísticas y tareas/hábitos en una sola pantalla.
+- **Insight humanizado:** Texto generado con LLM a partir de actividad reciente, con tono de bienestar y fallback determinístico.
+- **Refresh inteligente:** Throttle al volver a la app; la UI no bloquea por WebSocket.
+- **Navegación accionable:** Tareas, hábitos y conversaciones abiertas desde el foco con un toque.
+
 ### 🤖 Asistente de IA (bienestar emocional)
 
 - **Chat conversacional**: Respuestas con IA (OpenAI GPT-5 Mini), con tono **profesional y práctico** por defecto (orientación, micro-pasos y preguntas concretas; no rol de terapeuta clínico en el texto del asistente).
 - **Preferencias de conversación**: El usuario puede ajustar aspectos del estilo de respuesta cuando la app lo ofrece (p. ej. directo vs. más conversado), alineado con el perfil y la API de usuario.
-- **Análisis emocional en tiempo real**: Detección de emociones e intensidad para contextualizar respuestas
-- **Respuestas personalizadas**: Historial y situación actual
-- **Técnicas basadas en evidencia**: Enfoques tipo CBT, mindfulness, respiración y similares cuando encajan (sin jerga innecesaria)
-- **Memoria contextual**: Continuidad dentro de la conversación y contexto guardado según diseño del producto
-- **Personalización de género**: Pronombres y tratamiento acordes al perfil
-- **Referencias contextuales**: Menciones naturales a mensajes anteriores cuando aportan
+- **Análisis emocional en tiempo real**: Detección de emociones e intensidad para contextualizar respuestas; señales ampliadas (anhedonia adolescente, imagen corporal, bullying).
+- **Respuestas personalizadas**: Historial, temas recurrentes y situación actual conectados al prompt.
+- **Técnicas basadas en evidencia**: Enfoques tipo CBT, mindfulness, respiración y similares cuando encajan (sin jerga innecesaria).
+- **Memoria contextual**: Continuidad dentro de la conversación; sugerencias persistidas al reabrir el hilo.
+- **Acciones de producto**: Propuesta de tareas/hábitos desde el chat con confirmación explícita del usuario.
+- **Personalización de género**: Pronombres y tratamiento acordes al perfil.
+- **Referencias contextuales**: Menciones naturales a mensajes anteriores cuando aportan.
 
 ### 🚨 Sistema de Detección de Crisis
 
-- **Detección Automática**: Identifica señales de crisis emocional en tiempo real
-- **Alertas de Emergencia**: Notifica a contactos de confianza cuando es necesario
-- **Seguimiento Post-Crisis**: Acompañamiento automatizado después de eventos críticos
-- **Análisis de Tendencias**: Identifica patrones emocionales a lo largo del tiempo
-- **Prevención Proactiva**: Alertas tempranas antes de que una situación se agrave
+- **Detección Automática**: Identifica señales de crisis emocional en tiempo real.
+- **Hard-stop (v1.5.0)**: Ante riesgo elevado, prioriza recursos concretos y tono de contención sin invocar ejercicios terapéuticos genéricos.
+- **Recursos en el chat**: Panel `CrisisResourcesStrip` y menú ⋮ con números de emergencia y líneas de apoyo según país (`GET /api/health/crisis-resources`).
+- **Alertas de Emergencia**: Notifica a contactos de confianza cuando es necesario.
+- **Seguimiento Post-Crisis**: Acompañamiento automatizado después de eventos críticos; resumen breve tras conversaciones intensas.
+- **Análisis de Tendencias**: Identifica patrones emocionales a lo largo del tiempo.
+- **Prevención Proactiva**: Alertas tempranas antes de que una situación se agrave.
 
 ### 📊 Herramientas de Bienestar
 
-- **Sistema de Tareas**: Organiza tus actividades y establece recordatorios
-- **Seguimiento de Hábitos**: Monitorea hábitos saludables y construye rutinas positivas
-- **Técnicas Terapéuticas Interactivas**: Ejercicios guiados de relajación y mindfulness
-- **Dashboard de Progreso**: Visualiza tu evolución emocional y logros
-- **Estadísticas Personales**: Métricas detalladas de tu bienestar mental
+- **Tareas y hábitos unificados**: Pantalla única con tono conversacional de bienestar; Pomodoro al enfocar una tarea.
+- **Hub de técnicas**: Catálogo completo con acceso rápido, acordeón y navegación directa desde el grafo y el resumen.
+- **Seguimiento de Hábitos**: Monitorea hábitos saludables y construye rutinas positivas.
+- **Técnicas Terapéuticas Interactivas**: Ejercicios guiados de relajación, TCC lite inline y micro-guías.
+- **Resumen e informe observacional**: Patrones, «lo que te ayuda» navegable y correlaciones con salud digital (opt-in).
+- **Grafo semántico**: Visualización de temas, intervenciones y conceptos con búsqueda vectorial (Atlas).
+- **Dashboard de Progreso**: Racha, métricas y progreso de perfil en **Perfil**.
+- **Estadísticas Personales**: Métricas detalladas de tu bienestar mental.
 
-### 🏥 Evaluación Clínica Profesional (Nuevo en v1.1)
+### 📱 Salud digital (v1.4.4+)
+
+- **HealthKit (iOS) y Health Connect (Android):** Sueño, pasos, actividad y tiempo en pantalla bajo consentimiento explícito.
+- **Correlaciones observacionales:** Informes semanal y mensual con narrativa LLM y guardrails clínicos (sin diagnóstico).
+- **Opt-in:** Toggle «Conectar salud digital»; Anto solo lee agregados diarios, no sensores en bruto.
+
+### 🏥 Evaluación Clínica Profesional (v1.1+)
 
 - **Escalas Validadas Automáticas**: 
   - **PHQ-9** (Depresión): Evaluación automática de síntomas depresivos
@@ -107,10 +166,17 @@
 
 ### 💳 Sistema de Suscripciones
 
-- **Planes Flexibles**: Opciones adaptadas a diferentes necesidades
-- **Período de Prueba**: 1 día gratis para explorar todas las funcionalidades
-- **Pagos Seguros**: Integración con Mercado Pago para transacciones seguras
-- **Gestión Transparente**: Control total sobre tu suscripción y facturación
+- **Planes Flexibles**: Opciones adaptadas a diferentes necesidades; plan anual destacado con precio mensual equivalente.
+- **Paywall con contexto (v1.5.0)**: Memoria del día para personalizar la propuesta de valor.
+- **Período de Prueba**: 1 día gratis para explorar todas las funcionalidades.
+- **Pagos Seguros**: Integración con Mercado Pago (web) y StoreKit (iOS) para transacciones seguras.
+- **Gestión Transparente**: Control total sobre tu suscripción y facturación.
+
+### 🔐 Autenticación y sesión (v1.5.0)
+
+- **Sesión persistente**: Restauración automática al abrir la app.
+- **Refresh token**: Renovación transparente del JWT expirado con guards y tests de sesión.
+- **Onboarding validado**: Flujo de registro con beneficios claros y corrección de autofill en web.
 
 ### 🔔 Notificaciones Inteligentes
 
@@ -217,10 +283,11 @@
 
 ### Frontend
 - **React Native** - Framework móvil multiplataforma
-- **Expo** - Herramientas y servicios para desarrollo React Native
+- **Expo** - Herramientas y servicios para desarrollo React Native (SDK 54)
 - **React Navigation** - Navegación entre pantallas
 - **AsyncStorage** - Almacenamiento local seguro
 - **Socket.IO Client** - Comunicación en tiempo real
+- **react-native-health / expo-health-connect** - Salud digital (iOS / Android)
 
 ### Backend
 - **Node.js** - Runtime de JavaScript
@@ -239,7 +306,7 @@
 - **Helmet** - Headers de seguridad HTTP
 - **CORS** - Control de acceso por origen
 - **Rate Limiting** - Protección contra abuso
-- **JWT** - Autenticación segura con tokens
+- **JWT + Refresh Token** - Autenticación segura con renovación automática (v1.5.0)
 - **bcrypt** - Hasheo seguro de contraseñas
 - **Joi** - Validación robusta de datos
 - **DOMPurify** - Sanitización de inputs
@@ -290,6 +357,9 @@ Anto/
 ### Documentos en `docs/`
 - **[docs/FLUJOS.md](./docs/FLUJOS.md)** — Flujos principales (auth, chat, pagos, crisis).
 - **[docs/CONTRATOS_API.md](./docs/CONTRATOS_API.md)** — Alineación frontend–backend y contratos de la API.
+- **[docs/RELEASE_1.4.3.md](./docs/RELEASE_1.4.3.md)** — Release 1.4.3 (TCC lite, grafo semántico, topicFree).
+- **[docs/RELEASE_1.4.4.md](./docs/RELEASE_1.4.4.md)** — Release 1.4.4 (salud digital, informes LLM, ABC macro).
+- **[docs/CONTRATO_CHAT_ACCIONES_V1.md](./docs/CONTRATO_CHAT_ACCIONES_V1.md)** — Acciones de producto desde el chat.
 - **[docs/REVISION_STOREKIT_COMPRAS.md](./docs/REVISION_STOREKIT_COMPRAS.md)** — StoreKit (iOS) y validación de recibos.
 
 ### Backend
@@ -303,19 +373,22 @@ Anto/
 
 ### APIs y endpoints
 
-- **Health Checks**: `/health`, `/api/health`
-- **Autenticación**: `/api/auth/register`, `/api/auth/login`
-- **Usuario**: `/api/users/me` (perfil y preferencias, p. ej. estilo de comunicación y preferencias de chat cuando apliquen)
-- **Chat**: `/api/chat/conversations`, `/api/chat/messages`
-- **Crisis**: `/api/crisis/summary`, `/api/crisis/history`
+- **Health Checks**: `/health`, `/api/health` (incluye `APP_VERSION`)
+- **Autenticación**: `/api/auth/register`, `/api/auth/login`, refresh token
+- **Usuario**: `/api/users/me` (perfil, preferencias e idioma)
+- **Chat**: `/api/chat/conversations`, `/api/chat/messages` (acciones propuestas, sugerencias)
+- **Crisis**: `/api/crisis/summary`, `/api/crisis/history`, `/api/health/crisis-resources`
+- **Foco / Home**: `/api/summary/focus`, insight rotativo
 - **Tareas y Hábitos**: `/api/tasks`, `/api/habits`
+- **Técnicas y grafo**: hub de técnicas, grafo semántico, ABC macro
+- **Señales / Salud digital**: `/api/signals` (consentimiento, sync, informes)
 - **Pagos**: `/api/payments/plans`, `/api/payments/subscription-status`
-- **Escalas Clínicas** (Nuevo): 
+- **Escalas Clínicas**:
   - `/api/clinical-scales/available` - Escalas disponibles
   - `/api/clinical-scales/:scaleType/submit` - Enviar resultados
   - `/api/clinical-scales/:scaleType/progress` - Ver progreso
   - `/api/clinical-scales/summary` - Resumen completo
-- **Distorsiones Cognitivas** (Nuevo):
+- **Distorsiones Cognitivas**:
   - `/api/cognitive-distortions/types` - Tipos disponibles
   - `/api/cognitive-distortions/reports` - Reportes de detecciones
   - `/api/cognitive-distortions/statistics` - Estadísticas
@@ -329,36 +402,45 @@ Anto/
 
 ### Estado General: **Listo para Producción** ✅
 
-**Última actualización del README:** 2026-06-17  
+**Última actualización del README:** 2026-06-23  
 **Versión publicada (app):** 1.5.0 (ver `frontend/app.json`, iOS build 39, Android versionCode 25)
 
 ### Completado ✅
 
 - ✅ Asistente de IA para bienestar emocional (chat, personalización, límites de seguridad)
-- ✅ Sistema de detección de crisis implementado
-- ✅ Herramientas de bienestar completas
-- ✅ Sistema de suscripciones integrado
+- ✅ Sistema de detección de crisis con hard-stop y recursos en chat (v1.5.0)
+- ✅ Acciones de producto desde el chat (tareas/hábitos con confirmación)
+- ✅ Home unificado con insight rotativo y refresh optimizado (v1.5.0)
+- ✅ Hub de técnicas, resumen accionable y grafo conectado a intervenciones (v1.5.0)
+- ✅ Onboarding, bienvenida y paywall rediseñados (v1.5.0)
+- ✅ Sesión persistente con refresh automático de JWT (v1.5.0)
+- ✅ Salud digital opt-in: HealthKit + Health Connect (v1.4.4)
+- ✅ Informes semanal/mensual con narrativa LLM y guardrails clínicos (v1.4.4)
+- ✅ TCC lite inline, grafo semántico y ranking topicFree (v1.4.3)
+- ✅ Sistema de suscripciones integrado (Mercado Pago + StoreKit)
 - ✅ Notificaciones push configuradas
+- ✅ Internacionalización ES/EN en app, correos y checkout
 - ✅ Seguridad y privacidad garantizadas
-- ✅ Tests automatizados (97%+ pasando)
-- ✅ Optimizaciones de performance
-- ✅ Logging y monitoreo configurados
+- ✅ Tests automatizados con blindaje de release (`validate:release-1.5.0`)
+- ✅ Optimizaciones de performance del home
+- ✅ Logging y monitoreo configurados (Sentry)
 - ✅ SSL/HTTPS y medidas de seguridad activas
-- ✅ **Escalas clínicas validadas (PHQ-9, GAD-7)** - Completado automático
-- ✅ **Detección avanzada de distorsiones cognitivas** - 15 tipos detectados
-- ✅ **Protocolos terapéuticos estructurados** - 8 protocolos basados en evidencia
-- ✅ **Reportes y estadísticas profesionales** - Análisis detallado de progreso
+- ✅ **Escalas clínicas validadas (PHQ-9, GAD-7)** — Completado automático
+- ✅ **Detección avanzada de distorsiones cognitivas** — 15 tipos detectados
+- ✅ **Protocolos terapéuticos estructurados** — 8 protocolos basados en evidencia
+- ✅ **Reportes y estadísticas profesionales** — Análisis detallado de progreso
 
 ### Funcionalidades Clave
 
 - ✅ Chat conversacional con IA (GPT-5 Mini) y tono orientado a utilidad práctica
-- ✅ Análisis emocional en tiempo real
-- ✅ Detección automática de crisis
-- ✅ Alertas de emergencia
-- ✅ Sistema de tareas y hábitos
-- ✅ Técnicas terapéuticas interactivas
-- ✅ Dashboard de métricas y progreso
-- ✅ Integración con Mercado Pago
+- ✅ Análisis emocional en tiempo real con señales ampliadas (v1.5.0)
+- ✅ Detección automática de crisis y recursos por país en el chat
+- ✅ Alertas de emergencia y contactos de confianza
+- ✅ Tareas, hábitos y Pomodoro integrados en el foco
+- ✅ Hub de técnicas con catálogo completo y micro-guías
+- ✅ Resumen observacional, grafo semántico e informes con salud digital
+- ✅ Dashboard de métricas, racha y progreso en Perfil
+- ✅ Integración con Mercado Pago y StoreKit
 - ✅ Notificaciones personalizadas
 - ✅ **Escalas clínicas automáticas (PHQ-9, GAD-7)**
 - ✅ **Detección de distorsiones cognitivas (15 tipos)**
@@ -372,12 +454,13 @@ Anto/
 ### Medidas de Seguridad Implementadas
 
 - ✅ **Encriptación End-to-End**: Todas las comunicaciones están encriptadas
-- ✅ **Autenticación Segura**: JWT con tokens de acceso y refresh
+- ✅ **Autenticación Segura**: JWT con tokens de acceso y refresh; renovación automática (v1.5.0)
 - ✅ **Protección de Datos**: Sanitización y validación de todos los inputs
 - ✅ **Rate Limiting**: Protección contra abuso y ataques
 - ✅ **Headers de Seguridad**: Helmet con HSTS y CSP
 - ✅ **Logging Seguro**: Datos sensibles nunca se registran
 - ✅ **Backups Automáticos**: Protección de datos del usuario
+- ✅ **Crisis hard-stop**: Sin LLM ante riesgo elevado; respuesta estructurada con recursos
 
 ### Privacidad
 
@@ -431,6 +514,19 @@ Para soporte técnico o preguntas:
 
 ---
 
+## 📦 Historial de versiones
+
+| Versión | Enfoque principal |
+|---------|-------------------|
+| **1.5.0** | Home unificado, hub de técnicas, chat más seguro (crisis hard-stop, acciones de producto), onboarding/bienvenida, sesión persistente con JWT refresh, paywall con memoria del día, resumen e informe accionables, grafo conectado a técnicas. |
+| **1.4.4** | Salud digital (HealthKit / Health Connect), informes con narrativa LLM, grafo semántico en producción (Atlas), ciclo ABC macro. |
+| **1.4.3** | TCC lite inline, psicoeducación, ranking topicFree, grafo visual, micro-guías, patrones mensuales, motor multimodal. |
+| **1.1+** | Escalas PHQ-9/GAD-7, distorsiones cognitivas (15 tipos), protocolos terapéuticos estructurados (8 protocolos). |
+
+Documentación detallada de releases recientes: [RELEASE_1.4.3](./docs/RELEASE_1.4.3.md) · [RELEASE_1.4.4](./docs/RELEASE_1.4.4.md)
+
+---
+
 ## 🎯 Roadmap
 
 ### Próximas Funcionalidades
@@ -440,7 +536,10 @@ Para soporte técnico o preguntas:
 - [ ] Dashboard avanzado de distorsiones cognitivas
 - [ ] Modo offline para uso sin conexión
 - [x] Internacionalización (multi-idioma) — ES/EN en app, correos, push y checkout Mercado Pago
-- [ ] Integración con wearables (Apple Watch, Fitbit)
+- [x] Integración con wearables / salud digital — HealthKit (iOS) y Health Connect (Android) opt-in (v1.4.4)
+- [x] Acciones desde el chat (tareas/hábitos) — v1.5.0
+- [x] Crisis hard-stop y recursos en chat — v1.5.0
+- [ ] RAG memoria evolutiva completa (#203)
 - [ ] Sistema de referidos
 - [ ] Programa de fidelización
 - [ ] Integración con profesionales de la salud mental
@@ -450,4 +549,4 @@ Para soporte técnico o preguntas:
 
 **Desarrollado con ❤️ por el equipo de Anto App**
 
-*Mejorando la salud mental, una conversación a la vez.*
+*Versión 1.5.0 — Mejorando la salud mental, una conversación a la vez.*
