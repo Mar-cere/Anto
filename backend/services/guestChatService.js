@@ -15,6 +15,11 @@ import {
   shouldIncludeCrisisInOpenaiContext,
 } from '../constants/crisis.js';
 import {
+  resolveHarmIntrusiveDistressContext,
+  clampEmotionalIntensity,
+  HARM_INTRUSIVE_DISTRESS_THEME
+} from '../constants/harmIntrusiveThoughts.js';
+import {
   buildHardStopCrisisAssistantContent,
   shouldHardStopCrisisLlm,
 } from './crisisHardStopService.js';
@@ -320,10 +325,60 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     conversationContext
   });
 
+  const conversationRoll = await Conversation.findById(conversationId)
+    .select('rollingSummary sessionIntention sessionEmotionalState')
+    .lean();
+
+  const historyPeakIntensity = conversationHistory.reduce(
+    (max, message) =>
+      Math.max(
+        max,
+        message.metadata?.session?.peakIntensity ||
+          message.metadata?.context?.emotional?.intensity ||
+          0
+      ),
+    0
+  );
+  const sessionPeakIntensity = clampEmotionalIntensity(
+    Math.max(
+      historyPeakIntensity,
+      emotionalAnalysis.intensity || 0,
+      conversationRoll?.sessionEmotionalState?.peakIntensity || 0
+    )
+  );
+  const harmDistressContext = resolveHarmIntrusiveDistressContext({
+    content,
+    persistedDistressTheme: conversationRoll?.sessionEmotionalState?.distressTheme || null,
+    riskLevel,
+    persistedDistress:
+      conversationRoll?.sessionEmotionalState?.distressTheme === HARM_INTRUSIVE_DISTRESS_THEME
+        ? { level: 'moderate', rejectedIntent: true }
+        : null
+  });
+
+  Conversation.updateOne(
+    { _id: conversationId },
+    {
+      $set: {
+        sessionEmotionalState: {
+          peakIntensity: sessionPeakIntensity,
+          peakIntensityAt: new Date(),
+          dominantEmotion: emotionalAnalysis.mainEmotion || null,
+          distressTheme: harmDistressContext.active ? HARM_INTRUSIVE_DISTRESS_THEME : null
+        }
+      }
+    }
+  ).catch(() => {});
+
   try {
     userMessage.metadata = {
       ...(userMessage.metadata?.toObject?.() || userMessage.metadata || {}),
-      crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) }
+      crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
+      session: {
+        peakIntensity: sessionPeakIntensity,
+        emotionalIntensity: clampEmotionalIntensity(emotionalAnalysis.intensity || 0)
+      },
+      ...(harmDistressContext.distress ? { distress: harmDistressContext.distress } : {})
     };
     userMessage.markModified('metadata');
     await userMessage.save();
@@ -373,10 +428,6 @@ export async function sendGuestMessage(guestSession, contentRaw) {
   });
   const forceFactualMode = detectFactualModeFromMessage({ currentMessage: content });
 
-  const conversationRoll = await Conversation.findById(conversationId)
-    .select('rollingSummary sessionIntention')
-    .lean();
-
   const sessionPhase = inferChatSessionPhase({
     riskLevel,
     contextualAnalysis,
@@ -415,6 +466,9 @@ export async function sendGuestMessage(guestSession, contentRaw) {
     preferredResponseLength: engagement?.preferredResponseLength,
     forceShortMode,
     forceFactualMode,
+    sessionEmotionalIntensity: sessionPeakIntensity,
+    userMessage: content.trim(),
+    distress: harmDistressContext.distress,
     _promptTelemetry: {
       userId: null,
       conversationId,

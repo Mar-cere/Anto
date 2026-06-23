@@ -79,6 +79,10 @@ class SessionEmotionalMemory {
     // Agregar timestamp si no existe
     const analysisWithTimestamp = {
       ...emotionalAnalysis,
+      intensity: Math.min(
+        10,
+        Math.max(0, Number(emotionalAnalysis.intensity ?? 0) || 0)
+      ),
       timestamp: emotionalAnalysis.timestamp || new Date()
     };
 
@@ -119,6 +123,7 @@ class SessionEmotionalMemory {
         recentTopics: [],
         emotionalVolatility: 0,
         averageIntensity: 0,
+        peakIntensity: 0,
         dominantEmotion: null,
         trend: 'stable'
       };
@@ -179,6 +184,7 @@ class SessionEmotionalMemory {
 
     // Calcular intensidad promedio
     const averageIntensity = buffer.reduce((sum, a) => sum + (a.intensity || 0), 0) / buffer.length;
+    const peakIntensity = buffer.reduce((max, a) => Math.max(max, a.intensity || 0), 0);
 
     // Emoción dominante (más frecuente)
     const emotionCounts = {};
@@ -210,10 +216,22 @@ class SessionEmotionalMemory {
       recentTopics: [...new Set(recentTopics)], // Únicos
       emotionalVolatility,
       averageIntensity,
+      peakIntensity,
       dominantEmotion,
       trend,
       messageCount: buffer.length
     };
+  }
+
+  /**
+   * Intensidad máxima registrada en la sesión actual del usuario.
+   * @param {string} userId
+   * @returns {number}
+   */
+  getPeakIntensity(userId) {
+    const buffer = this.getBuffer(userId);
+    if (!buffer.length) return 0;
+    return buffer.reduce((max, analysis) => Math.max(max, analysis.intensity || 0), 0);
   }
 
   /**

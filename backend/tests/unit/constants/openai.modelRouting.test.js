@@ -68,4 +68,18 @@ describe('resolveModelRoutingForContext', () => {
     expect(routing.route).toBe('base');
     expect(routing.reason).toBe('default_base');
   });
+
+  it('escala con carga emocional de sesión aunque el mensaje sea corto', () => {
+    const routing = resolveModelRoutingForContext({
+      content: 'si que?',
+      emotional: { intensity: 9, requiresAttention: true },
+      contextual: {
+        intencion: { tipo: 'CONVERSACION_GENERAL', confianza: 0.5 },
+        tema: { categoria: 'GENERAL' }
+      },
+      sessionEmotionalIntensity: 9
+    });
+    expect(routing.model).toBe(OPENAI_COMPLEX_MODEL);
+    expect(routing.reason).toBe('session_high_emotional_load');
+  });
 });

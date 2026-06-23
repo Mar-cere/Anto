@@ -77,6 +77,7 @@ import {
   detectOffScopeUserMessage,
   sanitizeOffScopeAssistantReply,
 } from './chat/chatScopeGuardrails.js';
+import { resolveResponseLengthLimits } from './chat/responseLengthPreference.js';
 import {
   shouldOrientSessionClosure,
   stripPrematureSessionClosurePhrases,
@@ -388,7 +389,11 @@ class OpenAIService {
         content: contenidoNormalizado,
         emotional: analisisEmocional,
         contextual: analisisContextual,
-        crisis: contexto?.crisis
+        crisis: contexto?.crisis,
+        sessionEmotionalIntensity: Math.max(
+          Number(contexto?.sessionEmotionalIntensity ?? 0),
+          Number(analisisEmocional?.intensity ?? 5)
+        )
       });
 
       const skipResponseCacheForCrisis = shouldApplyCrisisResponseSafety({
@@ -584,7 +589,7 @@ class OpenAIService {
         // Verificar si se debe iniciar un protocolo
         const protocolToStart = therapeuticProtocolService.shouldStartProtocol(
           analisisEmocional,
-          analisisContextual
+          { ...analisisContextual, content: contenidoNormalizado }
         );
         if (protocolToStart) {
           activeProtocol = therapeuticProtocolService.startProtocol(mensaje.userId, protocolToStart);
@@ -674,7 +679,9 @@ class OpenAIService {
           forceFactualMode: contexto.forceFactualMode,
           crisis: contexto.crisis,
           sessionRetention: contexto.sessionRetention,
-          conversationPattern: contexto.conversationPattern
+          conversationPattern: contexto.conversationPattern,
+          sessionEmotionalIntensity: contexto.sessionEmotionalIntensity,
+          distress: contexto.distress
         }
       );
 
@@ -709,12 +716,22 @@ class OpenAIService {
 
       // 13. Agregar técnica terapéutica a la respuesta SOLO si el usuario la solicita explícitamente (y no hay protocolo)
       let respuestaFinal = respuestaConElecciones;
+      const lengthLimitsForTechnique = this.resolveLengthLimitsFromContext({
+        forceShortMode: contexto.forceShortMode,
+        forceFactualMode: contexto.forceFactualMode,
+        crisis: contexto.crisis,
+        emotional: analisisEmocional,
+        contextual: analisisContextual,
+        userMessage: contenidoNormalizado,
+        sessionEmotionalIntensity: contexto.sessionEmotionalIntensity,
+        distress: contexto.distress
+      });
       if (selectedTechnique && !activeProtocol && this.shouldIncludeTechnique(analisisEmocional, analisisContextual, mensaje, {
         crisis: contexto.crisis,
         userMessage: contenidoNormalizado,
       })) {
         // Calcular espacio disponible para la técnica
-        const espacioDisponible = THRESHOLDS.MAX_CHARACTERS_RESPONSE - respuestaConElecciones.length;
+        const espacioDisponible = lengthLimitsForTechnique.maxChars - respuestaConElecciones.length;
         const necesitaFormatoCompacto = espacioDisponible < 300; // Menos de 300 caracteres disponibles
         
         // Formatear técnica (compacta si hay poco espacio)
@@ -727,7 +744,7 @@ class OpenAIService {
         respuestaFinal = `${respuestaConElecciones}${techniqueText}`;
         
         // Si aún es demasiado larga, usar formato muy compacto
-        if (respuestaFinal.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
+        if (respuestaFinal.length > lengthLimitsForTechnique.maxChars) {
           const veryCompactText = formatTechniqueForResponse(selectedTechnique, {
             compact: true,
             maxSteps: 1,
@@ -736,7 +753,7 @@ class OpenAIService {
           respuestaFinal = `${respuestaConElecciones}${veryCompactText}`;
           
           // Si aún es muy larga, solo nombre y descripción breve
-          if (respuestaFinal.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
+          if (respuestaFinal.length > lengthLimitsForTechnique.maxChars) {
             respuestaFinal = respuestaConElecciones + 
               `\n\n💡 ${selectedTechnique.name}\n` +
               `${selectedTechnique.description ? selectedTechnique.description.substring(0, 150) + '...' : ''}\n\n` +
@@ -872,7 +889,11 @@ class OpenAIService {
       content: contenidoNormalizado,
       emotional: analisisEmocional,
       contextual: analisisContextual,
-      crisis: contexto?.crisis
+      crisis: contexto?.crisis,
+      sessionEmotionalIntensity: Math.max(
+        Number(contexto?.sessionEmotionalIntensity ?? 0),
+        Number(analisisEmocional?.intensity ?? 5)
+      )
     });
     const selectedModel = modelRouting.model;
 
@@ -907,6 +928,8 @@ class OpenAIService {
           forceFactualMode: contexto.forceFactualMode,
           sessionRetention: contexto.sessionRetention,
           conversationPattern: contexto.conversationPattern,
+          sessionEmotionalIntensity: contexto.sessionEmotionalIntensity,
+          distress: contexto.distress,
           crisisMetricTransport: this.resolveCrisisMetricTransport(contexto),
         });
         yield {
@@ -982,6 +1005,8 @@ class OpenAIService {
       forceFactualMode: contexto.forceFactualMode,
       sessionRetention: contexto.sessionRetention,
       conversationPattern: contexto.conversationPattern,
+      sessionEmotionalIntensity: contexto.sessionEmotionalIntensity,
+      distress: contexto.distress,
       crisisMetricTransport: this.resolveCrisisMetricTransport(contexto),
     });
     yield { type: 'done', content: result.content, context: { ...result.context, modelRouting } };
@@ -1004,6 +1029,8 @@ class OpenAIService {
     forceFactualMode = false,
     sessionRetention = null,
     conversationPattern = null,
+    sessionEmotionalIntensity = null,
+    distress = null,
     crisisMetricTransport = 'unknown',
   }) {
     let activeProtocol = therapeuticProtocolService.getActiveProtocol(mensaje.userId);
@@ -1015,7 +1042,10 @@ class OpenAIService {
     });
 
     if (!activeProtocol && !crisisTherapeuticExtrasBlocked) {
-      const protocolToStart = therapeuticProtocolService.shouldStartProtocol(analisisEmocional, analisisContextual);
+      const protocolToStart = therapeuticProtocolService.shouldStartProtocol(
+        analisisEmocional,
+        { ...analisisContextual, content: contenidoNormalizado }
+      );
       if (protocolToStart) {
         activeProtocol = therapeuticProtocolService.startProtocol(mensaje.userId, protocolToStart);
         currentIntervention = therapeuticProtocolService.getCurrentIntervention(mensaje.userId);
@@ -1072,7 +1102,9 @@ class OpenAIService {
       forceFactualMode,
       crisis,
       sessionRetention,
-      conversationPattern
+      conversationPattern,
+      sessionEmotionalIntensity,
+      distress
     });
 
     const respuestaConSeguridad = this.applyCrisisResponseSafety(respuestaValidada, {
@@ -1094,18 +1126,28 @@ class OpenAIService {
     }
 
     let respuestaFinal = respuestaConElecciones;
+    const lengthLimitsForTechnique = this.resolveLengthLimitsFromContext({
+      forceShortMode,
+      forceFactualMode,
+      crisis,
+      emotional: analisisEmocional,
+      contextual: analisisContextual,
+      userMessage: contenidoNormalizado,
+      sessionEmotionalIntensity,
+      distress
+    });
     if (selectedTechnique && !activeProtocol && this.shouldIncludeTechnique(analisisEmocional, analisisContextual, mensaje, {
       crisis,
       userMessage: contenidoNormalizado,
     })) {
-      const espacioDisponible = THRESHOLDS.MAX_CHARACTERS_RESPONSE - respuestaConElecciones.length;
+      const espacioDisponible = lengthLimitsForTechnique.maxChars - respuestaConElecciones.length;
       const techniqueText = formatTechniqueForResponse(selectedTechnique, {
         compact: espacioDisponible < 300,
         maxSteps: espacioDisponible < 300 ? 2 : 4,
         language: appLanguage,
       });
       respuestaFinal = `${respuestaConElecciones}${techniqueText}`;
-      if (respuestaFinal.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
+      if (respuestaFinal.length > lengthLimitsForTechnique.maxChars) {
         const veryCompact = formatTechniqueForResponse(selectedTechnique, {
           compact: true,
           maxSteps: 1,
@@ -1504,6 +1546,18 @@ class OpenAIService {
     return true;
   }
 
+  resolveLengthLimitsFromContext(contexto = {}) {
+    return resolveResponseLengthLimits({
+      forceShortMode: contexto?.forceShortMode,
+      crisis: contexto?.crisis,
+      emotional: contexto?.emotional,
+      contextual: contexto?.contextual,
+      userMessage: contexto?.userMessage || '',
+      sessionEmotionalIntensity: contexto?.sessionEmotionalIntensity,
+      distressTheme: contexto?.distress?.theme || null
+    });
+  }
+
   /**
    * Valida y mejora la respuesta generada por OpenAI
    * @param {string} respuesta - Respuesta generada
@@ -1514,6 +1568,8 @@ class OpenAIService {
     if (!respuesta || typeof respuesta !== 'string') {
       return ERROR_MESSAGES.DEFAULT_FALLBACK;
     }
+
+    const lengthLimits = this.resolveLengthLimitsFromContext(contexto);
 
     let respuestaMejorada = respuesta.trim();
 
@@ -1533,9 +1589,9 @@ class OpenAIService {
     const caracteres = respuestaMejorada.length;
     const palabras = respuestaMejorada.split(/\s+/).filter(w => w.length > 0).length;
     
-    if (caracteres > THRESHOLDS.MAX_CHARACTERS_RESPONSE || palabras > THRESHOLDS.MAX_WORDS_RESPONSE) {
+    if (caracteres > lengthLimits.maxChars || palabras > lengthLimits.maxWords) {
       console.log(`📏 Respuesta demasiado larga (${caracteres} caracteres, ${palabras} palabras). Reduciendo...`);
-      respuestaMejorada = this.reducirRespuesta(respuestaMejorada);
+      respuestaMejorada = this.reducirRespuesta(respuestaMejorada, lengthLimits);
     }
 
     // Validar si es genérica (solo si es muy genérica, no sobre-ajustar)
@@ -1567,9 +1623,9 @@ class OpenAIService {
     const caracteresFinal = respuestaMejorada.length;
     const palabrasFinal = respuestaMejorada.split(/\s+/).filter(w => w.length > 0).length;
     
-    if (caracteresFinal > THRESHOLDS.MAX_CHARACTERS_RESPONSE || palabrasFinal > THRESHOLDS.MAX_WORDS_RESPONSE) {
+    if (caracteresFinal > lengthLimits.maxChars || palabrasFinal > lengthLimits.maxWords) {
       console.log(`📏 Respuesta aún demasiado larga después de ajustes (${caracteresFinal} caracteres, ${palabrasFinal} palabras). Reduciendo nuevamente...`);
-      respuestaMejorada = this.reducirRespuesta(respuestaMejorada);
+      respuestaMejorada = this.reducirRespuesta(respuestaMejorada, lengthLimits);
     }
 
     // Guardrail de calidad: evitar más de una pregunta por turno.
@@ -1605,7 +1661,7 @@ class OpenAIService {
     if (!respuestaMejorada || respuestaMejorada.trim().length < 5) {
       const truncado = (respuesta || '').trim();
       if (truncado.length > 0) {
-        const maxC = THRESHOLDS.MAX_CHARACTERS_RESPONSE - 3;
+        const maxC = lengthLimits.maxChars - 3;
         respuestaMejorada = truncado.length <= maxC ? truncado : truncado.substring(0, maxC).trim() + '…';
       }
     }
@@ -1913,43 +1969,49 @@ class OpenAIService {
    * Reduce respuestas muy largas manteniendo las primeras oraciones más importantes.
    * NUNCA reemplaza con mensaje genérico: siempre devuelve contenido de la respuesta original.
    * @param {string} respuesta - Respuesta original
+   * @param {Object} [limits] - Límites dinámicos de longitud
    * @returns {string} Respuesta reducida (siempre basada en el contenido original)
    */
-  reducirRespuesta(respuesta) {
+  reducirRespuesta(respuesta, limits = null) {
     if (!respuesta) return ERROR_MESSAGES.DEFAULT_FALLBACK;
 
-    const maxChars = THRESHOLDS.MAX_CHARACTERS_RESPONSE - PROMPT_CONFIG.TRUNCATE_BUFFER;
+    const maxCharsLimit = limits?.maxChars ?? THRESHOLDS.MAX_CHARACTERS_RESPONSE;
+    const maxSentences = limits?.maxSentencesReduce ?? VALIDATION_LIMITS.MAX_SENTENCES_REDUCE;
+    const maxChars = maxCharsLimit - PROMPT_CONFIG.TRUNCATE_BUFFER;
 
     // Dividir en oraciones
     const oraciones = respuesta.split(/[.!?]+/).filter(s => s.trim());
 
-    // Si tiene 2 o menos oraciones y está dentro del límite, retornar tal cual
-    if (oraciones.length <= VALIDATION_LIMITS.MAX_SENTENCES_REDUCE && respuesta.length <= THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
+    // Si tiene pocas oraciones y está dentro del límite, retornar tal cual
+    if (oraciones.length <= maxSentences && respuesta.length <= maxCharsLimit) {
       return respuesta;
     }
 
     // Tomar las primeras oraciones para conservar información relevante
-    const oracionesReducidas = oraciones.slice(0, VALIDATION_LIMITS.MAX_SENTENCES_REDUCE);
+    const oracionesReducidas = oraciones.slice(0, maxSentences);
     let respuestaReducida = oracionesReducidas.join('. ').trim();
+    respuestaReducida = this.trimDanglingResponseTail(respuestaReducida);
 
     // Si al unir oraciones quedó vacío (ej. solo puntuación), truncar desde el original
     if (!respuestaReducida || respuestaReducida.length < 20) {
       const truncado = respuesta.substring(0, maxChars);
       const ultimoEspacio = truncado.lastIndexOf(' ');
       respuestaReducida = ultimoEspacio > 0 ? truncado.substring(0, ultimoEspacio).trim() : truncado.trim();
+      respuestaReducida = this.trimDanglingResponseTail(respuestaReducida);
       if (!respuestaReducida.endsWith('.') && !respuestaReducida.endsWith('!') && !respuestaReducida.endsWith('?')) {
         respuestaReducida += PROMPT_CONFIG.TRUNCATE_ELLIPSIS;
       }
-      return respuestaReducida || respuesta.substring(0, THRESHOLDS.MAX_CHARACTERS_RESPONSE).trim();
+      return respuestaReducida || respuesta.substring(0, maxCharsLimit).trim();
     }
 
     // Si aún es muy larga, truncar por caracteres de forma inteligente
-    if (respuestaReducida.length > THRESHOLDS.MAX_CHARACTERS_RESPONSE) {
+    if (respuestaReducida.length > maxCharsLimit) {
       const truncado = respuestaReducida.substring(0, maxChars);
       const ultimoEspacio = truncado.lastIndexOf(' ');
       respuestaReducida = ultimoEspacio > 0
         ? truncado.substring(0, ultimoEspacio).trim()
         : truncado.trim();
+      respuestaReducida = this.trimDanglingResponseTail(respuestaReducida);
 
       if (!respuestaReducida.endsWith('.') && !respuestaReducida.endsWith('!') && !respuestaReducida.endsWith('?')) {
         respuestaReducida += PROMPT_CONFIG.TRUNCATE_ELLIPSIS;
@@ -1961,6 +2023,38 @@ class OpenAIService {
     }
 
     return respuestaReducida;
+  }
+
+  /**
+   * Quita colas incompletas (condicionales, conjunciones) antes de publicar.
+   * @param {string} respuesta
+   * @returns {string}
+   */
+  trimDanglingResponseTail(respuesta = '') {
+    let text = String(respuesta || '').trim();
+    if (!text) return text;
+
+    const danglingTailPatterns = [
+      /\b(sobre todo|especialmente|o|y|pero)\s+si\s*$/i,
+      /\b(sobre todo|especialmente|o|y|pero)\s*$/i,
+      /,\s*$/,
+      /\b(?:si|que|qué)\s*$/i
+    ];
+
+    for (let i = 0; i < 3; i += 1) {
+      if (!danglingTailPatterns.some((pattern) => pattern.test(text))) break;
+      const parts = text.split(/(?<=[.!?])\s+/).filter((part) => part.trim());
+      if (parts.length <= 1) {
+        text = text
+          .replace(/\b(?:sobre todo|especialmente|o|y|pero)\s+si\s*$/i, '')
+          .replace(/,\s*$/, '')
+          .trim();
+        break;
+      }
+      text = parts.slice(0, -1).join(' ').trim();
+    }
+
+    return text;
   }
 
   /**

@@ -3,6 +3,10 @@
  * Gestiona secuencias estructuradas de intervenciones terapéuticas
  * que se desarrollan a lo largo de múltiples mensajes
  */
+import {
+  shouldStartHarmIntrusiveThoughtsProtocol
+} from '../constants/harmIntrusiveThoughts.js';
+
 class TherapeuticProtocolService {
   constructor() {
     // Protocolos disponibles
@@ -69,6 +73,40 @@ class TherapeuticProtocolService {
             name: 'Acción Reparadora',
             intervention: 'acción_reparadora',
             description: 'Explorar acciones constructivas si es apropiado',
+            nextStep: null
+          }
+        ]
+      },
+      harm_intrusive_thoughts_protocol: {
+        name: 'Protocolo de Pensamientos Intrusivos de Daño',
+        description: 'Acompañamiento para miedo a pensamientos de daño (ego-distónicos), distinto de crisis suicida',
+        steps: [
+          {
+            step: 1,
+            name: 'Validación y diferenciación',
+            intervention: 'validación_pensamiento_vs_intención',
+            description: 'Validar el miedo y separar pensamiento intrusivo de intención real',
+            nextStep: 2
+          },
+          {
+            step: 2,
+            name: 'Psicoeducación breve',
+            intervention: 'psicoeducación_intrusivos',
+            description: 'Normalizar intrusivos en ansiedad/TOC-spectrum sin diagnosticar',
+            nextStep: 3
+          },
+          {
+            step: 3,
+            name: 'Defusión y anclas',
+            intervention: 'defusión_intrusivos',
+            description: 'Técnicas ACT/ERP-lite: nombrar, no discutir, volver a la actividad',
+            nextStep: 4
+          },
+          {
+            step: 4,
+            name: 'Seguimiento profesional',
+            intervention: 'seguimiento_intrusivos',
+            description: 'Cuándo avisar al psiquiatra y señales de escalada real',
             nextStep: null
           }
         ]
@@ -544,10 +582,20 @@ class TherapeuticProtocolService {
    * @returns {string|null} Nombre del protocolo a iniciar o null
    */
   shouldStartProtocol(emotionalAnalysis, contextualAnalysis) {
-    const emotion = emotionalAnalysis?.mainEmotion;
-    const intensity = emotionalAnalysis?.intensity || 0;
-    const subtype = emotionalAnalysis?.subtype;
     const content = contextualAnalysis?.content || '';
+    const intensity = emotionalAnalysis?.intensity || 0;
+    const emotion = emotionalAnalysis?.mainEmotion;
+
+    // Pensamientos intrusivos de daño (ego-distónicos): antes que pánico/TOC genérico
+    if (
+      intensity >= 5 &&
+      shouldStartHarmIntrusiveThoughtsProtocol(content) &&
+      ['miedo', 'ansiedad', 'tristeza', 'verguenza'].includes(emotion)
+    ) {
+      return 'harm_intrusive_thoughts_protocol';
+    }
+
+    const subtype = emotionalAnalysis?.subtype;
 
     // Protocolo de pánico para ansiedad intensa con síntomas físicos o crisis
     const hasPanicKeywords = /(?:ataque.*de.*pánico|no.*puedo.*respirar|me.*ahogo|palpitaciones|siento.*que.*me.*voy.*a.*morir)/i.test(content);

@@ -128,5 +128,18 @@ describe('TherapeuticProtocolService', () => {
       expect(protocol.protocolName).toBe('loneliness_protocol');
     });
   });
+
+  describe('shouldStartProtocol', () => {
+    it('prioriza protocolo de pensamientos intrusivos de daño', () => {
+      const protocol = therapeuticProtocolService.shouldStartProtocol(
+        { mainEmotion: 'miedo', intensity: 10 },
+        {
+          content:
+            'tengo ansiedad con pensamientos intrusivos de hacer daño a la gente que más quiero'
+        }
+      );
+      expect(protocol).toBe('harm_intrusive_thoughts_protocol');
+    });
+  });
 });
 

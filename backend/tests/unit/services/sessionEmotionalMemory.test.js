@@ -127,6 +127,15 @@ describe('SessionEmotionalMemory Service', () => {
       expect(typeof trends).toBe('object');
       expect(trends).toHaveProperty('streakNegative');
       expect(trends).toHaveProperty('trend');
+      expect(trends.peakIntensity).toBe(8);
+    });
+
+    it('getPeakIntensity devuelve el máximo de la sesión', () => {
+      const userId = 'peak-user';
+      sessionEmotionalMemory.clearBuffer(userId);
+      sessionEmotionalMemory.addAnalysis(userId, { mainEmotion: 'miedo', intensity: 6 });
+      sessionEmotionalMemory.addAnalysis(userId, { mainEmotion: 'miedo', intensity: 10 });
+      expect(sessionEmotionalMemory.getPeakIntensity(userId)).toBe(10);
     });
 
     it('debe retornar valores por defecto para usuario sin análisis', () => {

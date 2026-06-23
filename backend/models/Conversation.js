@@ -103,6 +103,16 @@ const conversationSchema = new mongoose.Schema({
     },
     default: undefined,
   },
+  /** Pico emocional del hilo (para ruteo y continuidad entre turnos cortos) */
+  sessionEmotionalState: {
+    type: {
+      peakIntensity: { type: Number, default: 0, min: 0, max: 10 },
+      peakIntensityAt: { type: Date, default: null },
+      dominantEmotion: { type: String, default: null, maxlength: 40 },
+      distressTheme: { type: String, default: null, maxlength: 64 },
+    },
+    default: undefined,
+  },
 }, {
   timestamps: true // Crea createdAt y updatedAt automáticamente
 });

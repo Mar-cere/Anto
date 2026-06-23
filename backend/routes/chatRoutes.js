@@ -10,6 +10,7 @@ import {
     shouldAttachCrisisContextToPrompt,
     shouldIncludeCrisisInOpenaiContext,
 } from '../constants/crisis.js';
+import { resolveHarmIntrusiveDistressContext, clampEmotionalIntensity, HARM_INTRUSIVE_DISTRESS_THEME } from '../constants/harmIntrusiveThoughts.js';
 import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
 import {
     normalizeSessionIntention,
@@ -914,7 +915,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
       _id: new mongoose.Types.ObjectId(conversationId),
       userId: new mongoose.Types.ObjectId(req.user._id)
     })
-      .select('_id userId rollingSummary rollingSummaryAtMessageCount sessionIntention')
+      .select('_id userId rollingSummary rollingSummaryAtMessageCount sessionIntention sessionEmotionalState')
       .lean();
 
     if (!conversation) {
@@ -1198,6 +1199,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         
         // NUEVO: Obtener tendencias de la sesión actual
         const sessionTrends = sessionEmotionalMemory.analyzeTrends(req.user._id.toString());
+        const sessionPeakIntensity = clampEmotionalIntensity(
+          Math.max(
+            sessionTrends.peakIntensity || 0,
+            emotionalAnalysis.intensity || 0,
+            conversation?.sessionEmotionalState?.peakIntensity || 0
+          )
+        );
 
         // Analizar contexto conversacional para detectar escaladas y patrones
         const conversationContext = {
@@ -1237,10 +1245,38 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             conversationContext
           }
         );
+        const harmDistressContext = resolveHarmIntrusiveDistressContext({
+          content,
+          persistedDistressTheme: conversation?.sessionEmotionalState?.distressTheme || null,
+          riskLevel,
+          persistedDistress: conversation?.sessionEmotionalState?.distressTheme === HARM_INTRUSIVE_DISTRESS_THEME
+            ? { level: 'moderate', rejectedIntent: true }
+            : null
+        });
+
+        Conversation.updateOne(
+          { _id: conversation._id },
+          {
+            $set: {
+              sessionEmotionalState: {
+                peakIntensity: sessionPeakIntensity,
+                peakIntensityAt: new Date(),
+                dominantEmotion: emotionalAnalysis.mainEmotion || null,
+                distressTheme: harmDistressContext.active ? HARM_INTRUSIVE_DISTRESS_THEME : null
+              }
+            }
+          }
+        ).catch(() => {});
+
         try {
           userMessage.metadata = {
             ...(userMessage.metadata?.toObject?.() || userMessage.metadata || {}),
-            crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) }
+            crisis: { riskLevel: normalizeStoredCrisisRiskLevel(riskLevel) },
+            session: {
+              peakIntensity: sessionPeakIntensity,
+              emotionalIntensity: clampEmotionalIntensity(emotionalAnalysis.intensity || 0)
+            },
+            ...(harmDistressContext.distress ? { distress: harmDistressContext.distress } : {})
           };
           userMessage.markModified('metadata');
           await userMessage.save();
@@ -1402,6 +1438,10 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           language: appLanguageForChat,
           forceShortMode,
           forceFactualMode,
+          sessionEmotionalIntensity: sessionPeakIntensity,
+          sessionTrends,
+          userMessage: content.trim(),
+          distress: harmDistressContext.distress,
           _promptTelemetry: {
             userId: req.user._id,
             conversationId,

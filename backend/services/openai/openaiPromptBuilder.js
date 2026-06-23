@@ -15,6 +15,10 @@ import {
   shouldAttachCrisisWarningContextToPrompt,
 } from '../../constants/crisis.js';
 import {
+  buildHarmIntrusiveThoughtsDistressSnippet,
+  HARM_INTRUSIVE_DISTRESS_THEME
+} from '../../constants/harmIntrusiveThoughts.js';
+import {
   buildPersonalizedPrompt,
   CHAT_TURN_POLICY,
   DEFAULT_VALUES,
@@ -40,6 +44,7 @@ import { getSessionIntentionSystemSnippet } from '../chat/sessionIntentionHints.
 import { buildSensitiveVnpSystemSnippet } from '../chat/sensitiveResponseTemplate.js';
 import { buildUnderstandingPipelineSnippet } from '../chat/understandingPipeline.js';
 import { buildLowConfidenceClarifySnippet } from '../chat/lowConfidenceClarifyTemplate.js';
+import { resolveResponseLengthLimits } from '../chat/responseLengthPreference.js';
 import { normalizeSessionIntention } from '../../constants/sessionIntention.js';
 import { buildOnboardingAnswersSystemSnippet } from '../chat/onboardingPromptSnippet.js';
 
@@ -950,6 +955,19 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     responseStyle = 'deep';
   }
 
+  const userMessageForLength = String(
+    contexto.userMessage || contexto.currentMessage || mensaje?.content || ''
+  ).trim();
+  const responseLengthLimits = resolveResponseLengthLimits({
+    forceShortMode,
+    crisis: contexto.crisis,
+    emotional: contexto.emotional,
+    contextual: contexto.contextual,
+    userMessage: userMessageForLength,
+    sessionEmotionalIntensity: contexto.sessionEmotionalIntensity,
+    distressTheme: contexto.distress?.theme || null
+  });
+
   let systemMessage = buildPersonalizedPrompt({
     emotion,
     intensity,
@@ -974,7 +992,8 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     primaryDistortion: contexto.contextual?.primaryDistortion || null,
     distortionIntervention: contexto.contextual?.distortionIntervention || null,
     chatPreferences: contexto.profile?.preferences?.chatPreferences || null,
-    crisisRiskLevel: contexto.crisis?.riskLevel || null
+    crisisRiskLevel: contexto.crisis?.riskLevel || null,
+    maxWordsOverride: responseLengthLimits.maxWords
   });
 
   // Prompt base de comportamiento (reglas de estilo, seguridad y UX conversacional).
@@ -986,6 +1005,21 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
       language === 'en'
         ? '\n\nSESSION PREFERENCE: The user asked for brevity. Reply in a short, direct format; avoid long paragraphs.'
         : '\n\nPREFERENCIA DE SESIÓN: El usuario pidió brevedad explícita. Responde en formato corto y directo, evitando párrafos largos.';
+  } else if (responseLengthLimits.mode === 'expanded') {
+    systemMessage +=
+      language === 'en'
+        ? `\n\nRESPONSE LENGTH: The user asked for tips, steps, or practical ideas. You may use up to ${responseLengthLimits.maxWords} words and 3–4 complete sentences; finish lists without cutting mid-item.`
+        : `\n\nLONGITUD DE RESPUESTA: El usuario pidió tips, pasos o ideas prácticas. Puedes usar hasta ${responseLengthLimits.maxWords} palabras y 3–4 oraciones completas; termina listas sin cortar a mitad.`;
+  } else if (responseLengthLimits.mode === 'high_load') {
+    systemMessage +=
+      language === 'en'
+        ? `\n\nRESPONSE LENGTH: High emotional load in this thread. You may use up to ${responseLengthLimits.maxWords} words if needed to validate and complete safety conditionals — never end on "especially if..." or an unfinished clause.`
+        : `\n\nLONGITUD DE RESPUESTA: Alta carga emocional en este hilo. Puedes usar hasta ${responseLengthLimits.maxWords} palabras si hace falta para validar y cerrar condicionales de seguridad; nunca termines en "sobre todo si..." ni frases a medias.`;
+  }
+  if (contexto.distress?.theme === HARM_INTRUSIVE_DISTRESS_THEME) {
+    systemMessage += `\n\n${buildHarmIntrusiveThoughtsDistressSnippet(language, {
+      rejectedIntent: contexto.distress.rejectedIntent !== false
+    })}`;
   }
   if (forceFactualMode) {
     systemMessage +=

@@ -15,16 +15,24 @@ export const RESISTANCE_PATTERNS = {
   
   // Minimización
   minimization: [
-    /(?:solo|nada.*más|solo.*un.*poco|no.*es.*nada)/i,
-    /(?:otros.*tienen.*peor|no.*es.*tan.*malo|no.*es.*para.*tanto)/i,
-    /(?:es.*solo|nada.*importante|no.*es.*grave|no.*es.*serio)/i
+    /\bsolo\s+un\s+poco\b/i,
+    /\bnada\s+más\b/i,
+    /\bno\s+es\s+nada(?:\s+serio)?\b/i,
+    /\bno\s+es\s+para\s+tanto\b/i,
+    /\botros\s+tienen\s+peor\b/i,
+    /\bno\s+es\s+tan\s+malo\b/i,
+    /\bes\s+solo\b/i,
+    /\bnada\s+importante\b/i,
+    /\bno\s+es\s+grave\b/i,
+    /\bno\s+es\s+serio\b/i
   ],
   
   // Evitación
   avoidance: [
-    /(?:no.*quiero.*hablar|prefiero.*no|mejor.*no|no.*me.*gusta.*hablar)/i,
-    /(?:cambiar.*de.*tema|no.*quiero.*pensar|no.*quiero.*hablar.*de.*eso)/i,
-    /(?:mejor.*no.*hablamos|no.*quiero.*discutir|prefiero.*no.*hablar)/i
+    /(?:no\s+quiero\s+hablar|prefiero\s+no\s+hablar|no\s+me\s+gusta\s+hablar)/i,
+    /(?:cambiar\s+de\s+tema|no\s+quiero\s+hablar\s+de\s+eso)/i,
+    /(?:mejor\s+no\s+hablamos|no\s+quiero\s+discutir)/i,
+    /(?:no\s+quiero\s+pensar\s+en\s+eso|prefiero\s+no\s+pensar)/i
   ],
   
   // Ambivalencia
@@ -105,6 +113,15 @@ export const detectResistance = (messageContent) => {
   }
 
   const content = messageContent.toLowerCase();
+
+  // Afirmaciones de no intención de daño / valores (TOC-ansiedad) no son resistencia.
+  const affirmsNonHarmIntent =
+    /(?:no\s+quiero\s+(?:hacer(le)?\s+da[nñ]o|lastimar|herir)|jam[aá]s\s+tuve|lo\s+[uú]ltimo\s+que\s+quiero)/i.test(
+      content
+    );
+  if (affirmsNonHarmIntent) {
+    return null;
+  }
 
   // Diferenciar límites saludables de cierre defensivo.
   // "No quiero ser específica" o "son demasiadas cosas" suele ser sobrecarga,

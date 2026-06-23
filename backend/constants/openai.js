@@ -82,10 +82,17 @@ export function resolveModelRoutingForContext(contextLike) {
   const riskLevel = contextLike?.crisis?.riskLevel || null;
   const contentLength = String(contextLike?.content || '').trim().length;
   const confidence = Number(contextLike?.contextual?.intencion?.confianza ?? 1);
-  const intensity = Number(contextLike?.emotional?.intensity ?? 5);
+  const sessionIntensity = Number(
+    contextLike?.sessionEmotionalIntensity ?? contextLike?.emotional?.intensity ?? 5
+  );
+  const intensity = sessionIntensity;
   const isLowConfidence = Number.isFinite(confidence) ? confidence < MODEL_ROUTING_CONFIDENCE_THRESHOLD : false;
   const isLongMessage = contentLength >= MODEL_ROUTING_LONG_MESSAGE_THRESHOLD;
   const isHighEmotionalLoad = intensity >= MODEL_ROUTING_HIGH_INTENSITY_THRESHOLD;
+  const isEmotionalThread =
+    contextLike?.contextual?.tema?.categoria === 'EMOCIONAL' ||
+    contextLike?.contextual?.intencion?.tipo === 'AYUDA_EMOCIONAL' ||
+    contextLike?.emotional?.requiresAttention === true;
 
   let score = 0;
   if (isLowConfidence) score += 1;
@@ -135,6 +142,28 @@ export function resolveModelRoutingForContext(contextLike) {
       route: 'complex',
       reason: 'long_message_high_intensity',
       score,
+      signals: {
+        riskLevel,
+        contentLength,
+        confidence,
+        intensity,
+        isLowConfidence,
+        isLongMessage,
+        isHighEmotionalLoad
+      }
+    };
+  }
+
+  if (
+    !isLongMessage &&
+    isHighEmotionalLoad &&
+    (isEmotionalThread || contextLike?.emotional?.requiresAttention === true)
+  ) {
+    return {
+      model: OPENAI_COMPLEX_MODEL,
+      route: 'complex',
+      reason: 'session_high_emotional_load',
+      score: Math.max(score, 2),
       signals: {
         riskLevel,
         contentLength,
@@ -1141,7 +1170,9 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
     pronouns = null, // NUEVO: Pronombres preferidos
     chatPreferences = null,
     /** 'MEDIUM' | 'HIGH' | null — anula preferencias de tono “frías” por seguridad */
-    crisisRiskLevel = null
+    crisisRiskLevel = null,
+    /** Límite dinámico de palabras (tips, alta carga, etc.) */
+    maxWordsOverride = null
   } = context;
 
   const responseStyle = LEGACY_RESPONSE_STYLE_MAP[rawResponseStyle] || rawResponseStyle;
@@ -1291,6 +1322,13 @@ export const buildPersonalizedPrompt = (context, options = {}) => {
   } else {
     // balanced (default)
     responseStructure = PROMPT_TEMPLATES.RESPONSE_STRUCTURE.replace('{maxWords}', maxWords);
+  }
+
+  if (Number.isFinite(maxWordsOverride) && maxWordsOverride > maxWords) {
+    maxWords = maxWordsOverride;
+    if (responseStyle === 'balanced' || responseStyle === 'deep') {
+      responseStructure = PROMPT_TEMPLATES.RESPONSE_STRUCTURE.replace('{maxWords}', maxWords);
+    }
   }
   
   prompt += PROMPT_TEMPLATES.GENERAL_RULES

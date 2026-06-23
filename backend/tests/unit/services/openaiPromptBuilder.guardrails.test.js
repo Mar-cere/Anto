@@ -125,4 +125,33 @@ describe('openaiPromptBuilder — guardrails de brevedad/factual/identidad clín
     expect(systemMessage).toContain('IDENTITY AND CLINICAL PRIORITY');
     expect(systemMessage).not.toContain('IDENTIDAD Y PRIORIDAD CLÍNICA');
   });
+
+  it('amplía longitud en prompt cuando el usuario pide tips', async () => {
+    const { systemMessage } = await buildContextualizedPrompt(
+      { content: 'me das mas tips' },
+      {
+        ...baseContext,
+        userMessage: 'me das mas tips'
+      }
+    );
+    expect(systemMessage).toContain('LONGITUD DE RESPUESTA');
+    expect(systemMessage).toMatch(/tips|ideas prácticas/i);
+  });
+
+  it('inyecta snippet de angustia por pensamientos intrusivos de daño', async () => {
+    const { systemMessage } = await buildContextualizedPrompt(
+      { content: 'me da miedo pensar que les hago daño' },
+      {
+        ...baseContext,
+        emotional: { mainEmotion: 'miedo', intensity: 9, requiresAttention: true },
+        distress: {
+          theme: 'harm_intrusive_thoughts',
+          level: 'moderate',
+          rejectedIntent: true
+        }
+      }
+    );
+    expect(systemMessage).toContain('NO es crisis suicida');
+    expect(systemMessage).toMatch(/pensamiento vs intención/i);
+  });
 });

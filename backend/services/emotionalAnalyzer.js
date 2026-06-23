@@ -1007,13 +1007,14 @@ class EmotionalAnalyzer {
     if (!isBrief) return null;
 
     const hasFollowUpCue = /(?:pastillas?|medicaci[oó]n|medicinas?|dosis|lorazepam|citalopram|escitalopram|ansiol[ií]tico|benzodiazep|eso|esto)/i.test(content);
+    const isClarificationFollowUp = /^(?:s[ií]\s*,?\s*qu[eé]|qu[eé]|y\s+eso|como\s+as[ií])\s*\??$/i.test(content.trim());
     const last = recentPatterns[recentPatterns.length - 1];
     if (!last || !last.mainEmotion) return null;
 
     const wasHighNegative = ['miedo', 'ansiedad', 'tristeza', 'enojo'].includes(last.mainEmotion) && (last.intensity || 0) >= 8;
     const collapsedNow = currentEmotion?.name === this.EMOTION_NEUTRAL || currentIntensity <= 5;
 
-    if (wasHighNegative && collapsedNow && hasFollowUpCue) {
+    if (wasHighNegative && (collapsedNow || isClarificationFollowUp) && (hasFollowUpCue || isClarificationFollowUp)) {
       const carriedEmotionData = this.emotionPatterns[last.mainEmotion];
       if (!carriedEmotionData) return null;
       return {

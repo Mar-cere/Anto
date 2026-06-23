@@ -136,4 +136,24 @@ describe('openaiService — guardrails de calidad de respuesta', () => {
     expect(stripped).not.toMatch(/close this segment/i);
     expect(output).not.toMatch(/close this segment/i);
   });
+
+  it('trimDanglingResponseTail quita colas condicionales incompletas', () => {
+    const input =
+      'Sí, puede pasar al iniciar sertralina. Cuéntaselo a tu psiquiatra, sobre todo si';
+    const output = openaiService.trimDanglingResponseTail(input);
+    expect(output).not.toMatch(/sobre todo si\s*$/i);
+    expect(output).toContain('sertralina');
+  });
+
+  it('reducirRespuesta respeta límites ampliados para tips', () => {
+    const input =
+      'Sí. Prueba esto: - Nómbralo como pensamiento intrusivo. - Vuelve a lo que hacías. - Repite "pensar no es hacer". - Busca un ancla visual. - Avísale a tu psiquiatra si empeora.';
+    const output = openaiService.reducirRespuesta(input, {
+      maxChars: 720,
+      maxWords: 95,
+      maxSentencesReduce: 4
+    });
+    expect(output.length).toBeGreaterThan(100);
+    expect(output).toMatch(/pensar no es hacer|Nómbralo|ancla/i);
+  });
 });
