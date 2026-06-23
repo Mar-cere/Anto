@@ -82,6 +82,10 @@ import {
   sanitizeInterventionTopicFree,
   sanitizeInterventionTopicTag,
 } from '../utils/interventionEventGuards.js';
+import {
+  buildPreviousEmotionalPatterns,
+  EMOTIONAL_CONTEXT_SELECT,
+} from '../utils/previousEmotionalPatterns.js';
 import { isTopicFreeEmbeddingsEnabled } from '../services/topicFreeEmbeddingService.js';
 import { buildInterventionGraphPhase3Payload } from '../services/interventionGraphPhase3Service.js';
 import { enrichInterventionGraphLabels } from '../services/graphSourceLabelService.js';
@@ -1101,7 +1105,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         // Optimización: Usar índices compuestos y proyección para reducir datos transferidos
         const [conversationHistory, userProfile, therapeuticRecord, user, priorConversationCount, dailyMoodCheckIn] = await Promise.all([
           Message.find({ conversationId })
-          .select('content role metadata.context.emotional createdAt') // Solo campos necesarios
+          .select(EMOTIONAL_CONTEXT_SELECT)
           .sort({ createdAt: -1 })
           .limit(HISTORIAL_LIMITE)
           .lean(),
@@ -1124,14 +1128,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
         // 3. Análisis completo del mensaje (solo análisis críticos en paralelo)
         // Extraer patrones emocionales del historial para mejorar el análisis
-        const previousEmotionalPatterns = conversationHistory
-          .filter(msg => msg.metadata?.context?.emotional?.mainEmotion)
-          .map(msg => ({
-            emotion: msg.metadata.context.emotional.mainEmotion,
-            intensity: msg.metadata.context.emotional.intensity || 5,
-            timestamp: msg.createdAt
-          }))
-          .slice(-3); // Solo los últimos 3 para ajuste de tendencia
+        const previousEmotionalPatterns = buildPreviousEmotionalPatterns(conversationHistory);
 
         logs.push(`[${Date.now() - startTime}ms] Realizando análisis crítico del mensaje`);
         

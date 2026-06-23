@@ -1,3 +1,11 @@
+import {
+  detectEmotionDenial,
+  detectIdiomaticNegatedPositiveEmotion,
+  isDismissiveEmotionalPhrase,
+  isPositiveEmotionKeywordNegated,
+} from '../constants/emotionNegation.js';
+import { resolveBriefFollowUpCarryover } from '../constants/briefFollowUpCarryover.js';
+
 /**
  * Analizador Emocional - Detecta emociones principales y secundarias en mensajes del usuario
  * 
@@ -431,34 +439,22 @@ class EmotionalAnalyzer {
       }
     }
 
-    // Verificar negación emocional explícita (puede indicar que sí siente esa emoción)
-    if (this.denialPattern.test(content)) {
-      // Extraer la emoción negada
-      if (/no.*triste|no.*deprimid/i.test(content)) {
-        return {
-          name: 'tristeza',
-          category: 'negative',
-          baseIntensity: 5 // Intensidad menor porque está negada
-        };
-      } else if (/no.*ansios|no.*preocupa/i.test(content)) {
-        return {
-          name: 'ansiedad',
-          category: 'negative',
-          baseIntensity: 5
-        };
-      } else if (/no.*enojad/i.test(content)) {
-        return {
-          name: 'enojo',
-          category: 'negative',
-          baseIntensity: 5
-        };
-      } else if (/no.*miedo/i.test(content)) {
-        return {
-          name: 'miedo',
-          category: 'negative',
-          baseIntensity: 5
-        };
-      }
+    const idiomaticNegation = detectIdiomaticNegatedPositiveEmotion(content);
+    if (idiomaticNegation) {
+      return {
+        name: idiomaticNegation.name,
+        category: idiomaticNegation.category,
+        baseIntensity: idiomaticNegation.baseIntensity,
+      };
+    }
+
+    const emotionDenial = detectEmotionDenial(content);
+    if (emotionDenial) {
+      return {
+        name: emotionDenial.name,
+        category: emotionDenial.category,
+        baseIntensity: emotionDenial.baseIntensity,
+      };
     }
     
     // Verificar preguntas retóricas (indican frustración o ansiedad)
@@ -526,6 +522,10 @@ class EmotionalAnalyzer {
         // IMPORTANTE: Si es una emoción positiva, verificar que NO haya indicadores negativos
         // Ejemplo: "no me siento bien" NO debe ser "alegria"
         if (emotionData.category === 'positive') {
+          if (isPositiveEmotionKeywordNegated(content, emotion)) {
+            continue;
+          }
+
           // Verificar si hay un prefijo negativo
           if (hasNegativePrefix) {
             // Verificar patrones específicos que no deben coincidir con negación
@@ -590,6 +590,10 @@ class EmotionalAnalyzer {
           };
         }
         
+        if (emotion === 'ansiedad' && isDismissiveEmotionalPhrase(content)) {
+          continue;
+        }
+
         return {
           name: emotion,
           category: emotionData.category,
@@ -602,15 +606,21 @@ class EmotionalAnalyzer {
     for (const [emotion, data] of Object.entries(this.emotionPatterns)) {
       if (emotion !== 'neutral' && !emotionPriority.includes(emotion) && data.patterns.test(content)) {
         // Misma validación para prefijos negativos
-        if (data.category === 'positive' && hasNegativePrefix) {
-          const positivePatterns = ['me.*gusta', 'me.*encanta', 'me.*alegra', 'me.*emociona'];
-          const hasPositivePattern = positivePatterns.some(pattern => {
-            const regex = new RegExp(pattern, 'i');
-            return regex.test(content);
-          });
-          
-          if (hasPositivePattern && /no\s+me/i.test(content)) {
+        if (data.category === 'positive') {
+          if (isPositiveEmotionKeywordNegated(content, emotion)) {
             continue;
+          }
+
+          if (hasNegativePrefix) {
+            const positivePatterns = ['me.*gusta', 'me.*encanta', 'me.*alegra', 'me.*emociona'];
+            const hasPositivePattern = positivePatterns.some(pattern => {
+              const regex = new RegExp(pattern, 'i');
+              return regex.test(content);
+            });
+
+            if (hasPositivePattern && /no\s+me/i.test(content)) {
+              continue;
+            }
           }
         }
         
@@ -1003,30 +1013,14 @@ class EmotionalAnalyzer {
       return null;
     }
     const words = content.trim().split(/\s+/).filter(Boolean);
-    const isBrief = words.length <= this.BRIEF_FOLLOWUP_MAX_WORDS && content.length <= this.BRIEF_FOLLOWUP_MAX_CHARS;
+    const isBrief =
+      words.length <= this.BRIEF_FOLLOWUP_MAX_WORDS && content.length <= this.BRIEF_FOLLOWUP_MAX_CHARS;
     if (!isBrief) return null;
 
-    const hasFollowUpCue = /(?:pastillas?|medicaci[oó]n|medicinas?|dosis|lorazepam|citalopram|escitalopram|ansiol[ií]tico|benzodiazep|eso|esto)/i.test(content);
-    const isClarificationFollowUp = /^(?:s[ií]\s*,?\s*qu[eé]|qu[eé]|y\s+eso|como\s+as[ií])\s*\??$/i.test(content.trim());
-    const last = recentPatterns[recentPatterns.length - 1];
-    if (!last || !last.mainEmotion) return null;
-
-    const wasHighNegative = ['miedo', 'ansiedad', 'tristeza', 'enojo'].includes(last.mainEmotion) && (last.intensity || 0) >= 8;
-    const collapsedNow = currentEmotion?.name === this.EMOTION_NEUTRAL || currentIntensity <= 5;
-
-    if (wasHighNegative && (collapsedNow || isClarificationFollowUp) && (hasFollowUpCue || isClarificationFollowUp)) {
-      const carriedEmotionData = this.emotionPatterns[last.mainEmotion];
-      if (!carriedEmotionData) return null;
-      return {
-        emotion: {
-          name: last.mainEmotion,
-          category: carriedEmotionData.category,
-          baseIntensity: carriedEmotionData.intensity
-        },
-        intensity: this.clampIntensity(Math.max((last.intensity || 8) - 1, 7))
-      };
-    }
-    return null;
+    return resolveBriefFollowUpCarryover(content, currentEmotion, currentIntensity, recentPatterns, {
+      emotionPatterns: this.emotionPatterns,
+      emotionNeutral: this.EMOTION_NEUTRAL,
+    });
   }
 
   /**

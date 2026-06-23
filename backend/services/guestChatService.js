@@ -50,6 +50,10 @@ import { detectShortModeFromSession } from './chat/responseLengthPreference.js';
 import { buildSessionRetentionPayload, withThematicMicroClosureRetention } from './sessionRetentionHints.js';
 import { inferChatSessionPhase } from './chat/sessionPhaseHints.js';
 import { scheduleRollingSummaryRefresh } from './conversationRollingSummaryService.js';
+import {
+  buildPreviousEmotionalPatterns,
+  EMOTIONAL_CONTEXT_SELECT,
+} from '../utils/previousEmotionalPatterns.js';
 
 function signGuestToken(guestSessionId) {
   return jwt.sign(
@@ -283,19 +287,12 @@ export async function sendGuestMessage(guestSession, contentRaw) {
   });
 
   const conversationHistory = await Message.find({ conversationId })
-    .select('content role metadata.context.emotional createdAt')
+    .select(EMOTIONAL_CONTEXT_SELECT)
     .sort({ createdAt: -1 })
     .limit(HISTORIAL_LIMITE)
     .lean();
 
-  const previousEmotionalPatterns = conversationHistory
-    .filter((msg) => msg.metadata?.context?.emotional?.mainEmotion)
-    .map((msg) => ({
-      emotion: msg.metadata.context.emotional.mainEmotion,
-      intensity: msg.metadata.context.emotional.intensity || 5,
-      timestamp: msg.createdAt
-    }))
-    .slice(-3);
+  const previousEmotionalPatterns = buildPreviousEmotionalPatterns(conversationHistory);
 
   const [emotionalAnalysis, contextualAnalysis] = await Promise.all([
     emotionalAnalyzer.analyzeEmotion(content, previousEmotionalPatterns),

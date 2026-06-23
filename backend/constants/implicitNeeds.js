@@ -50,11 +50,12 @@ export const IMPLICIT_NEEDS_PATTERNS = {
     /(?:no.*pertenezco|me.*siento.*fuera.*de.*lugar)/i
   ],
   
-  // Necesidad de competencia
+  // Necesidad de competencia (excluye capacidades físicas/sueño: "no puedo dormir")
   competence: [
-    /(?:no.*sirvo|no.*puedo|no.*soy.*capaz)/i,
-    /(?:soy.*un.*fracaso|no.*hago.*nada.*bien)/i,
-    /(?:no.*tengo.*habilidades|no.*soy.*bueno.*en)/i
+    /(?:no\s+sirvo|no\s+soy\s+capaz)/i,
+    /(?:no\s+puedo)(?!.*(?:dormir|sueño|insomnio|conciliar|acostarme|respirar|más|aguantar|soportar|dejar\s+de|parar\s+de|concentrarme))/i,
+    /(?:soy\s+un\s+fracaso|no\s+hago\s+nada\s+bien)/i,
+    /(?:no\s+tengo\s+habilidades|no\s+soy\s+bueno\s+en)/i
   ]
 };
 

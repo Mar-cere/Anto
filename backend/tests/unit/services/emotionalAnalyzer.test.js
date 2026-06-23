@@ -146,10 +146,24 @@ describe('EmotionalAnalyzer Service', () => {
     });
 
     it('mantiene continuidad emocional en seguimiento breve tipo "las pastillas"', async () => {
-      const prev = [{ mainEmotion: 'miedo', intensity: 9 }];
+      const prev = [{ mainEmotion: 'miedo', intensity: 9, content: 'Tengo mucho miedo' }];
       const result = await emotionalAnalyzer.analyzeEmotion('Las pastillas', prev);
       expect(['miedo', 'ansiedad']).toContain(result.mainEmotion);
       expect(result.intensity).toBeGreaterThanOrEqual(7);
+    });
+
+    it('mantiene continuidad tras insomnio en mensaje breve de rumiación', async () => {
+      const prev = [
+        {
+          mainEmotion: 'tristeza',
+          intensity: 6,
+          topic: 'SALUD',
+          content: 'No puedo dormir',
+        },
+      ];
+      const result = await emotionalAnalyzer.analyzeEmotion('Es mi mente', prev);
+      expect(result.mainEmotion).toBe('tristeza');
+      expect(result.intensity).toBeGreaterThanOrEqual(5);
     });
   });
 });
