@@ -1,5 +1,5 @@
 /**
- * Blindaje release 1.5.0 — versión, builds, rendimiento home y paywall header.
+ * Blindaje release 1.5.x — versión, builds, rendimiento home y paywall header.
  */
 import fs from 'fs';
 import path from 'path';
@@ -15,21 +15,21 @@ function readSrc(relativePath) {
   return fs.readFileSync(path.join(FRONTEND_SRC, relativePath), 'utf8');
 }
 
-describe('release 1.5.0 guard', () => {
-  it('frontend alinea versión 1.5.0 y builds de tienda mínimos', () => {
+describe('release 1.5.x guard', () => {
+  it('frontend alinea versión 1.5.1 y builds de tienda mínimos', () => {
     const app = JSON.parse(readRepo('frontend/app.json'));
     const pkg = JSON.parse(readRepo('frontend/package.json'));
-    expect(app.expo.version).toBe('1.5.0');
-    expect(pkg.version).toBe('1.5.0');
-    expect(Number.parseInt(app.expo.ios.buildNumber, 10)).toBeGreaterThanOrEqual(39);
-    expect(app.expo.android.versionCode).toBeGreaterThanOrEqual(25);
+    expect(app.expo.version).toBe('1.5.1');
+    expect(pkg.version).toBe('1.5.1');
+    expect(Number.parseInt(app.expo.ios.buildNumber, 10)).toBeGreaterThanOrEqual(40);
+    expect(app.expo.android.versionCode).toBeGreaterThanOrEqual(26);
   });
 
-  it('backend expone APP_VERSION 1.5.0 en health y package', () => {
+  it('backend expone APP_VERSION 1.5.1 en health y package', () => {
     const server = readRepo('backend/server.js');
     const pkg = JSON.parse(readRepo('backend/package.json'));
-    expect(server).toMatch(/const APP_VERSION = '1\.5\.0'/);
-    expect(pkg.version).toBe('1.5.0');
+    expect(server).toMatch(/const APP_VERSION = '1\.5\.1'/);
+    expect(pkg.version).toBe('1.5.1');
   });
 
   it('DashScreen no bloquea UI por WebSocket y throttlea refresh al volver', () => {

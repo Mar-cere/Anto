@@ -95,17 +95,17 @@ if (
 }
 
 const serverJs = fs.readFileSync(path.join(root, 'backend/server.js'), 'utf8');
-if (serverJs.includes("const APP_VERSION = '1.5.0'")) {
-  pass('APP_VERSION 1.5.0 en server.js');
+if (serverJs.includes("const APP_VERSION = '1.5.1'")) {
+  pass('APP_VERSION 1.5.1 en server.js');
 } else {
-  fail('APP_VERSION 1.5.0 en server.js');
+  fail('APP_VERSION 1.5.1 en server.js');
 }
 
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'backend/package.json'), 'utf8'));
-if (pkg.version === '1.5.0' && pkg.scripts['smoke:release-1.5.0']) {
-  pass('backend package 1.5.0 + smoke script');
+if (pkg.version === '1.5.1' && pkg.scripts['smoke:release-1.5.0']) {
+  pass('backend package 1.5.1 + smoke script');
 } else {
-  fail('backend package 1.5.0 + smoke script');
+  fail('backend package 1.5.1 + smoke script');
 }
 
 const frontendApp = JSON.parse(fs.readFileSync(path.join(root, 'frontend/app.json'), 'utf8'));
@@ -113,22 +113,22 @@ const frontendPkg = JSON.parse(fs.readFileSync(path.join(root, 'frontend/package
 const iosBuild = Number.parseInt(frontendApp.expo?.ios?.buildNumber, 10);
 const androidCode = frontendApp.expo?.android?.versionCode;
 if (
-  frontendApp.expo?.version === '1.5.0' &&
-  frontendPkg.version === '1.5.0' &&
-  iosBuild >= 39 &&
-  androidCode >= 25
+  frontendApp.expo?.version === '1.5.1' &&
+  frontendPkg.version === '1.5.1' &&
+  iosBuild >= 40 &&
+  androidCode >= 26
 ) {
-  pass('frontend app 1.5.0 + builds tienda (iOS ≥39, Android ≥25)');
+  pass('frontend app 1.5.1 + builds tienda (iOS ≥40, Android ≥26)');
 } else {
-  fail('frontend app 1.5.0 + builds tienda', `version=${frontendApp.expo?.version} ios=${iosBuild} android=${androidCode}`);
+  fail('frontend app 1.5.1 + builds tienda', `version=${frontendApp.expo?.version} ios=${iosBuild} android=${androidCode}`);
 }
 
 const authRoutes = fs.readFileSync(path.join(root, 'backend/routes/authRoutes.js'), 'utf8');
 const swagger = fs.readFileSync(path.join(root, 'backend/config/swagger.js'), 'utf8');
-if (authRoutes.includes("version: '1.5.0'") && swagger.includes("version: '1.5.0'")) {
-  pass('authRoutes y swagger en 1.5.0');
+if (authRoutes.includes("version: '1.5.1'") && swagger.includes("version: '1.5.1'")) {
+  pass('authRoutes y swagger en 1.5.1');
 } else {
-  fail('authRoutes y swagger en 1.5.0');
+  fail('authRoutes y swagger en 1.5.1');
 }
 
 const appConstants = fs.readFileSync(path.join(root, 'backend/constants/app.js'), 'utf8');
