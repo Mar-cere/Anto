@@ -141,9 +141,9 @@ export const ONBOARDING = {
     'Revisa tu resumen, patrones y contactos de confianza en Perfil y Ajustes.',
   STEP_4_BENEFIT: 'Detección de crisis con recursos inmediatos si los necesitas.',
   STEP_4_HIGHLIGHTS: [
-    'Resumen e informes de tu proceso',
-    'Contactos de confianza en un solo lugar',
-    'Recursos de crisis si los necesitas',
+    'Tu resumen y progreso en Perfil',
+    'Patrones en tu bienestar semanal',
+    'Contactos de confianza y recursos de crisis',
   ],
   QUESTIONS_TITLE: '¿En qué quieres enfocarte primero?',
   QUESTIONS_SUBTITLE:

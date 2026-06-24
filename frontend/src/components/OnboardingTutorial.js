@@ -95,9 +95,9 @@ const DEFAULT_TEXTS = {
   ],
   STEP_4_LABEL: 'Paso 4 · Seguimiento',
   STEP_4_HIGHLIGHTS: [
-    'Resumen e informes de tu proceso',
-    'Contactos de confianza en un solo lugar',
-    'Recursos de crisis si los necesitas',
+    'Tu resumen y progreso en Perfil',
+    'Patrones en tu bienestar semanal',
+    'Contactos de confianza y recursos de crisis',
   ],
 };
 

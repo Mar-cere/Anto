@@ -89,6 +89,7 @@ describe('onboarding guard', () => {
     expect(src).toMatch(/STEP_2_TITLE: 'Herramientas con respaldo'/);
     expect(src).toMatch(/STEP_3_TITLE: 'Tu día en un vistazo'/);
     expect(src).toMatch(/STEP_4_TITLE: 'Progreso y seguridad'/);
+    expect(src).toMatch(/Patrones en tu bienestar semanal/);
     expect(src).toMatch(/DISCLAIMER:/);
     expect(src).toMatch(/sustituye terapia profesional/i);
     expect(src).toMatch(/PHQ-9, GAD-7/);
@@ -102,6 +103,7 @@ describe('onboarding guard', () => {
     expect(src).toMatch(/STEP_2_TITLE: 'Tools backed by evidence'/);
     expect(src).toMatch(/STEP_3_TITLE: 'Your day at a glance'/);
     expect(src).toMatch(/STEP_4_TITLE: 'Progress and safety'/);
+    expect(src).toMatch(/Patterns in your weekly wellbeing/);
     expect(src).not.toMatch(/^\s+STEP_5_TITLE:/m);
   });
 

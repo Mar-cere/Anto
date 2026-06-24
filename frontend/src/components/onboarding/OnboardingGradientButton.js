@@ -67,7 +67,8 @@ export default function OnboardingGradientButton({
           <Defs>
             <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
               <Stop offset="0%" stopColor={gradient.mid} />
-              <Stop offset="100%" stopColor={gradient.end} />
+              <Stop offset="55%" stopColor={gradient.indigo} />
+              <Stop offset="100%" stopColor={gradient.warm} />
             </LinearGradient>
           </Defs>
           <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gradId})`} />

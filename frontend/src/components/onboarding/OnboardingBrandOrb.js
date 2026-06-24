@@ -25,6 +25,16 @@ export default function OnboardingBrandOrb({
     [colors, dark],
   );
   const gradId = useId().replace(/:/g, '');
+  const fillGradId = `${gradId}-fill`;
+
+  const renderOrbGradient = (id) => (
+    <LinearGradient id={id} x1="8%" y1="6%" x2="92%" y2="94%">
+      <Stop offset="0%" stopColor={gradient.start} />
+      <Stop offset="32%" stopColor={gradient.mid} />
+      <Stop offset="68%" stopColor={gradient.indigo} />
+      <Stop offset="100%" stopColor={gradient.warm} />
+    </LinearGradient>
+  );
 
   const compact = size === 'compact';
   const orbSize = compact ? 88 : 104;
@@ -53,8 +63,8 @@ export default function OnboardingBrandOrb({
           height: wrapSize,
           borderRadius: wrapSize / 2,
           backgroundColor: dark
-            ? 'rgba(68, 215, 251, 0.16)'
-            : 'rgba(30, 131, 211, 0.18)',
+            ? 'rgba(139, 127, 232, 0.14)'
+            : 'rgba(91, 75, 212, 0.1)',
         },
         orbShell: {
           width: orbSize,
@@ -100,13 +110,7 @@ export default function OnboardingBrandOrb({
           style={StyleSheet.absoluteFillObject}
           pointerEvents="none"
         >
-          <Defs>
-            <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-              <Stop offset="0%" stopColor={gradient.start} />
-              <Stop offset="55%" stopColor={gradient.mid} />
-              <Stop offset="100%" stopColor={gradient.end} />
-            </LinearGradient>
-          </Defs>
+          <Defs>{renderOrbGradient(gradId)}</Defs>
           <Circle
             cx={center}
             cy={center}
@@ -118,24 +122,24 @@ export default function OnboardingBrandOrb({
         </Svg>
         <View style={styles.orbShell}>
           <Svg width={orbSize} height={orbSize} style={StyleSheet.absoluteFillObject}>
-            <Defs>
-              <LinearGradient id={`${gradId}-fill`} x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor={gradient.start} />
-                <Stop offset="55%" stopColor={gradient.mid} />
-                <Stop offset="100%" stopColor={gradient.end} />
-              </LinearGradient>
-            </Defs>
+            <Defs>{renderOrbGradient(fillGradId)}</Defs>
             <Circle
               cx={orbSize / 2}
               cy={orbSize / 2}
               r={orbSize / 2 - 1}
-              fill={`url(#${gradId}-fill)`}
+              fill={`url(#${fillGradId})`}
             />
             <Circle
-              cx={orbSize * 0.34}
-              cy={orbSize * 0.3}
-              r={orbSize * 0.11}
-              fill="rgba(255,255,255,0.32)"
+              cx={orbSize * 0.72}
+              cy={orbSize * 0.78}
+              r={orbSize * 0.09}
+              fill="rgba(232, 155, 184, 0.35)"
+            />
+            <Circle
+              cx={orbSize * 0.28}
+              cy={orbSize * 0.22}
+              r={orbSize * 0.1}
+              fill="rgba(255,255,255,0.28)"
             />
           </Svg>
           <Image

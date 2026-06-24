@@ -140,9 +140,9 @@ export const ONBOARDING = {
     'Review your summary, patterns, and trusted contacts in Profile and Settings.',
   STEP_4_BENEFIT: 'Crisis detection with immediate resources when you need them.',
   STEP_4_HIGHLIGHTS: [
-    'Summary and progress reports',
-    'Trusted contacts in one place',
-    'Crisis resources when you need them',
+    'Your summary and progress in Profile',
+    'Patterns in your weekly wellbeing',
+    'Trusted contacts and crisis resources',
   ],
   QUESTIONS_TITLE: 'What do you want to focus on first?',
   QUESTIONS_SUBTITLE:

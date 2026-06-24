@@ -9,7 +9,8 @@ export function resolveOnboardingGradient(colors = {}, dark = false) {
   return {
     start: colors.primaryBright || '#44D7FB',
     mid: colors.primary || '#1E83D3',
-    end: dark ? colors.accentSecondary || '#5B4BD4' : '#24234F',
+    indigo: colors.accentSecondary || (dark ? '#8B7FE8' : '#5B4BD4'),
+    warm: colors.accentWarm || '#E89BB8',
   };
 }
 

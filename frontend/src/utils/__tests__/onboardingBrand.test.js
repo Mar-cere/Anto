@@ -8,6 +8,7 @@ const COLORS = {
   primary: '#1E83D3',
   primaryBright: '#44D7FB',
   accentSecondary: '#5B4BD4',
+  accentWarm: '#E89BB8',
 };
 
 describe('onboardingBrand', () => {
@@ -16,14 +17,16 @@ describe('onboardingBrand', () => {
     expect(resolveOnboardingBrandAccent({})).toBe('#1E83D3');
   });
 
-  it('resolveOnboardingGradient adapta fin según tema', () => {
+  it('resolveOnboardingGradient expone cyan, azul, índigo y rosa de marca', () => {
     const light = resolveOnboardingGradient(COLORS, false);
     expect(light.start).toBe('#44D7FB');
     expect(light.mid).toBe('#1E83D3');
-    expect(light.end).toBe('#24234F');
+    expect(light.indigo).toBe('#5B4BD4');
+    expect(light.warm).toBe('#E89BB8');
 
     const dark = resolveOnboardingGradient(COLORS, true);
-    expect(dark.end).toBe('#5B4BD4');
+    expect(dark.indigo).toBe('#5B4BD4');
+    expect(dark.warm).toBe('#E89BB8');
   });
 
   it('buildOnboardingStepHighlights filtra líneas vacías', () => {

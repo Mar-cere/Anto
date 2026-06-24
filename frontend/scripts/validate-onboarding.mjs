@@ -129,10 +129,10 @@ if (
   fail('onboarding: eyebrow unificado, beneficio y highlights por paso');
 }
 
-if (brand.includes('resolveOnboardingGradient')) {
-  pass('onboarding: gradientes centralizados en onboardingBrand');
+if (brand.includes('accentWarm')) {
+  pass('onboarding: gradientes con rosa de marca (accentWarm)');
 } else {
-  fail('onboarding: gradientes centralizados en onboardingBrand');
+  fail('onboarding: gradientes con rosa de marca (accentWarm)');
 }
 
 const backendSub = fs.readFileSync(
