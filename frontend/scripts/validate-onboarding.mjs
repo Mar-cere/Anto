@@ -108,25 +108,25 @@ if (
 
 const orb = read('src/components/onboarding/OnboardingBrandOrb.js');
 if (
-  orb.includes('resolveOnboardingGradient') &&
-  orb.includes('stroke={`url(#${gradId})`}') &&
-  !orb.includes('styles.chip')
+  orb.includes('welcomeTheme.logo') &&
+  orb.includes('styles.chip') &&
+  !orb.includes('ambientGlow')
 ) {
-  pass('onboarding: orb con anillo gradiente');
+  pass('onboarding: orb con logo de marca y chip del paso');
 } else {
-  fail('onboarding: orb con anillo gradiente');
+  fail('onboarding: orb con logo de marca y chip del paso');
 }
 
 if (
   tutorial.includes('TEXTS.BENEFITS_HEADING') &&
   tutorial.includes('OnboardingBenefitCard text={currentStepData.benefit}') &&
-  !tutorial.includes('OnboardingStepHighlights') &&
+  tutorial.includes('OnboardingStepHighlights') &&
   !tutorial.includes('colors.warning') &&
   !tutorial.includes('colors.success')
 ) {
-  pass('onboarding: eyebrow unificado y beneficio único por paso');
+  pass('onboarding: eyebrow unificado, beneficio y highlights por paso');
 } else {
-  fail('onboarding: eyebrow unificado y beneficio único por paso');
+  fail('onboarding: eyebrow unificado, beneficio y highlights por paso');
 }
 
 if (brand.includes('resolveOnboardingGradient')) {

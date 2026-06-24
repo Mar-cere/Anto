@@ -42,11 +42,11 @@ describe('onboarding guard', () => {
     expect(tutorial).toMatch(/OnboardingBrandShell/);
     expect(tutorial).toMatch(/OnboardingBrandOrb/);
     expect(tutorial).toMatch(/OnboardingBenefitCard/);
+    expect(tutorial).toMatch(/OnboardingStepHighlights/);
     expect(tutorial).toMatch(/OnboardingGradientButton/);
     expect(tutorial).toMatch(/OnboardingBenefitList/);
     expect(tutorial).toMatch(/buildOnboardingTutorialSteps/);
     expect(tutorial).toMatch(/resolveOnboardingBrandAccent/);
-    expect(tutorial).not.toMatch(/OnboardingStepHighlights/);
     expect(tutorial).not.toMatch(/iconBadge/);
     expect(tutorial).toMatch(/TEXTS\.DISCLAIMER/);
     expect(tutorial).not.toMatch(/highlightElement: 'tasks-habits'/);
@@ -183,9 +183,9 @@ describe('onboarding guard', () => {
   it('componentes visuales del recorrido usan gradiente y tarjeta única de beneficio', () => {
     const orb = readSrc('components/onboarding/OnboardingBrandOrb.js');
     expect(orb).toMatch(/resolveOnboardingGradient/);
-    expect(orb).toMatch(/stroke=\{`url\(#\$\{gradId\}\)`\}/);
-    expect(orb).toMatch(/stepIcon \?/);
-    expect(orb).not.toMatch(/styles\.chip/);
+    expect(orb).toMatch(/welcomeTheme\.logo/);
+    expect(orb).toMatch(/styles\.chip/);
+    expect(orb).not.toMatch(/stepIcon \? \([\s\S]*MaterialCommunityIcons[\s\S]*\) : \(/);
 
     const cta = readSrc('components/onboarding/OnboardingGradientButton.js');
     expect(cta).toMatch(/resolveOnboardingGradient/);
@@ -206,10 +206,11 @@ describe('onboarding guard', () => {
     expect(tutorial).not.toMatch(/colors\.success/);
   });
 
-  it('OnboardingBrandShell mantiene glow ambiental en modo oscuro', () => {
+  it('OnboardingBrandShell integra footer dentro de la tarjeta a altura completa', () => {
     const shell = readSrc('components/onboarding/OnboardingBrandShell.js');
-    expect(shell).toMatch(/ambientGlow/);
-    expect(shell).toMatch(/\{dark \? <View style=\{styles\.ambientGlow\}/);
+    expect(shell).toMatch(/styles\.footer\}>\{footer\}/);
+    expect(shell).not.toMatch(/ambientGlow/);
+    expect(shell).toMatch(/flex: 1/);
   });
 
   it('todos los pasos comparten el mismo acento de marca', () => {

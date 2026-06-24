@@ -32,6 +32,7 @@ import OnboardingBenefitList from './onboarding/OnboardingBenefitList';
 import OnboardingBrandOrb from './onboarding/OnboardingBrandOrb';
 import OnboardingBrandShell from './onboarding/OnboardingBrandShell';
 import OnboardingGradientButton from './onboarding/OnboardingGradientButton';
+import OnboardingStepHighlights from './onboarding/OnboardingStepHighlights';
 
 const { width } = Dimensions.get('window');
 
@@ -162,7 +163,9 @@ const OnboardingTutorial = ({
         },
         scroll: {
           flexGrow: 1,
-          paddingBottom: 4,
+        },
+        stepScroll: {
+          flex: 1,
         },
         stepBody: {
           width: '100%',
@@ -465,6 +468,11 @@ const OnboardingTutorial = ({
         <Text style={styles.description}>{currentStepData.description}</Text>
 
         <OnboardingBenefitCard text={currentStepData.benefit} />
+
+        <OnboardingStepHighlights
+          heading={TEXTS.STEP_HIGHLIGHTS_HEADING}
+          items={currentStepData.highlights}
+        />
       </Animated.View>
     );
   };
@@ -516,28 +524,31 @@ const OnboardingTutorial = ({
       onRequestClose={handleSkip}
     >
       <View style={styles.root} {...panResponder.panHandlers}>
-        <OnboardingBrandShell footer={footer} scroll>
-          <View style={styles.topBar}>
-            <TouchableOpacity
-              onPress={handleSkip}
-              style={styles.skipButton}
-              activeOpacity={0.75}
+        <OnboardingBrandShell footer={footer}>
+          <View style={styles.stepScroll}>
+            <View style={styles.topBar}>
+              <TouchableOpacity
+                onPress={handleSkip}
+                style={styles.skipButton}
+                activeOpacity={0.75}
+              >
+                <Text style={styles.skipText}>{TEXTS.SKIP}</Text>
+              </TouchableOpacity>
+              {isWelcomeScreen ? (
+                <Text style={styles.swipeHint}>{TEXTS.SWIPE_TO_SKIP}</Text>
+              ) : (
+                <View style={{ flex: 1 }} />
+              )}
+            </View>
+            <ScrollView
+              style={styles.stepScroll}
+              contentContainerStyle={styles.scroll}
+              showsVerticalScrollIndicator={false}
+              bounces={false}
             >
-              <Text style={styles.skipText}>{TEXTS.SKIP}</Text>
-            </TouchableOpacity>
-            {isWelcomeScreen ? (
-              <Text style={styles.swipeHint}>{TEXTS.SWIPE_TO_SKIP}</Text>
-            ) : (
-              <View style={{ flex: 1 }} />
-            )}
+              {isWelcomeScreen ? renderWelcome() : renderStep()}
+            </ScrollView>
           </View>
-          <ScrollView
-            contentContainerStyle={styles.scroll}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
-            {isWelcomeScreen ? renderWelcome() : renderStep()}
-          </ScrollView>
         </OnboardingBrandShell>
       </View>
     </Modal>

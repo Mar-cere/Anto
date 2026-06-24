@@ -8,9 +8,9 @@ import DashboardBrandBackdrop from '../dashboard/DashboardBrandBackdrop';
 import SheetBrandGradient from '../common/SheetBrandGradient';
 
 /**
- * Contenedor visual del onboarding alineado al home/resumen (backdrop + tarjeta con gradiente).
+ * Contenedor visual del onboarding: tarjeta a altura completa con CTA integrado.
  */
-export default function OnboardingBrandShell({ children, footer, scroll = false }) {
+export default function OnboardingBrandShell({ children, footer }) {
   const { colors, resolvedScheme } = useTheme();
   const dark = resolvedScheme === 'dark';
   const insets = useSafeAreaInsets();
@@ -33,34 +33,28 @@ export default function OnboardingBrandShell({ children, footer, scroll = false 
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
         },
         card: {
-          flex: scroll ? undefined : 1,
-          flexGrow: scroll ? 0 : 1,
+          flex: 1,
           borderRadius: 22,
           overflow: 'hidden',
           borderWidth: dark ? StyleSheet.hairlineWidth : 1,
           borderColor: dark ? colors.glassOutline : 'rgba(36, 35, 79, 0.1)',
           backgroundColor: dark ? colors.chromeCard : colors.surface,
         },
-        ambientGlow: {
-          position: 'absolute',
-          left: '12%',
-          right: '12%',
-          bottom: -40,
-          height: 120,
-          borderRadius: 60,
-          backgroundColor: dark
-            ? 'rgba(68, 215, 251, 0.08)'
-            : 'rgba(30, 131, 211, 0.06)',
-        },
         inner: {
-          flex: scroll ? undefined : 1,
-          padding: 20,
+          flex: 1,
+          paddingHorizontal: 20,
+          paddingTop: 16,
+          paddingBottom: 18,
+        },
+        body: {
+          flex: 1,
+          minHeight: 0,
         },
         footer: {
-          marginTop: 14,
+          marginTop: 12,
         },
       }),
-    [colors, dark, insets.bottom, insets.top, scroll],
+    [colors, dark, insets.bottom, insets.top],
   );
 
   return (
@@ -72,10 +66,11 @@ export default function OnboardingBrandShell({ children, footer, scroll = false 
             topColor={heroGradient.top}
             bottomColor={heroGradient.bottom}
           />
-          {dark ? <View style={styles.ambientGlow} pointerEvents="none" /> : null}
-          <View style={styles.inner}>{children}</View>
+          <View style={styles.inner}>
+            <View style={styles.body}>{children}</View>
+            {footer ? <View style={styles.footer}>{footer}</View> : null}
+          </View>
         </View>
-        {footer ? <View style={styles.footer}>{footer}</View> : null}
       </View>
     </View>
   );
