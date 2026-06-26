@@ -17,6 +17,7 @@ import cacheService from './cacheService.js';
 import logger from '../utils/logger.js';
 import { calculateDaysRemainingUntil } from '../utils/subscriptionDaysRemaining.js';
 import { fetchMercadoPagoPaymentById, fetchMercadoPagoPreapprovalById } from '../utils/mercadopagoPaymentApi.js';
+import { isSubscriptionRenewalPayment } from '../utils/subscriptionPaymentEmail.js';
 
 /**
  * Cuando la vista efectiva es "expired", invalida el caché de GET /subscription-status
@@ -85,9 +86,10 @@ class PaymentServiceMercadoPago {
     return payload;
   }
 
-  async resolveTransactionForPaymentWebhook({ paymentId, preferenceId, payerEmail }) {
+  async resolveTransactionForPaymentWebhook({ paymentId, preferenceId, payerEmail, preapprovalId }) {
     const payIdStr = paymentId != null ? String(paymentId) : null;
     const prefIdStr = preferenceId != null ? String(preferenceId) : null;
+    const preapprovalIdStr = preapprovalId != null ? String(preapprovalId) : null;
     const normalizedPayerEmail = payerEmail?.toLowerCase().trim() || null;
 
     // 1) Coincidencias fuertes por IDs de pago ya persistidos (únicos por pago).
@@ -107,7 +109,40 @@ class PaymentServiceMercadoPago {
       }
     }
 
-    // 2) Fallback por reference/preapprovalPlanId (no único): acotar por estado y email del payer.
+    // 2) Renovaciones: enlazar por preapproval_id de la suscripción autorizada.
+    if (preapprovalIdStr) {
+      const byPreapprovalMeta = await Transaction.findOne({
+        'metadata.preapprovalId': preapprovalIdStr,
+        paymentProvider: 'mercadopago',
+        type: 'subscription',
+      })
+        .sort({ createdAt: -1 })
+        .populate('userId', 'email username name');
+
+      if (byPreapprovalMeta) {
+        return byPreapprovalMeta;
+      }
+
+      const linkedSubscription = await Subscription.findOne({
+        mercadopagoSubscriptionId: preapprovalIdStr,
+      }).select('userId plan');
+
+      if (linkedSubscription?.userId) {
+        const byUser = await Transaction.findOne({
+          userId: linkedSubscription.userId,
+          paymentProvider: 'mercadopago',
+          type: 'subscription',
+        })
+          .sort({ createdAt: -1 })
+          .populate('userId', 'email username name');
+
+        if (byUser) {
+          return byUser;
+        }
+      }
+    }
+
+    // 3) Fallback por reference/preapprovalPlanId (no único): acotar por estado y email del payer.
     if (prefIdStr) {
       const candidates = await Transaction.find({
         $or: [
@@ -144,6 +179,203 @@ class PaymentServiceMercadoPago {
     }
 
     return null;
+  }
+
+  /**
+   * Un cobro de MP = una transacción. En renovaciones crea un registro nuevo (el checkout inicial queda como histórico).
+   */
+  async ensureMercadoPagoPaymentTransaction({ paymentId, effectivePaymentData, linkedTransaction }) {
+    const payIdStr = paymentId != null ? String(paymentId) : null;
+    if (!payIdStr) return linkedTransaction || null;
+
+    const existing = await Transaction.findOne({
+      $or: [
+        { providerTransactionId: payIdStr },
+        { 'metadata.paymentId': payIdStr },
+        { 'metadata.mercadopagoPaymentId': payIdStr },
+      ],
+      paymentProvider: 'mercadopago',
+      type: 'subscription',
+    })
+      .sort({ createdAt: -1 })
+      .populate('userId', 'email username name');
+
+    if (existing) {
+      return existing;
+    }
+
+    if (!linkedTransaction) {
+      return null;
+    }
+
+    const linkedPaymentId =
+      linkedTransaction.metadata?.paymentId ||
+      linkedTransaction.metadata?.mercadopagoPaymentId ||
+      (linkedTransaction.status === 'completed' ? linkedTransaction.providerTransactionId : null);
+    const linkedAlreadyPaid =
+      linkedTransaction.status === 'completed' &&
+      linkedPaymentId &&
+      linkedPaymentId !== payIdStr;
+
+    if (!linkedAlreadyPaid) {
+      return linkedTransaction;
+    }
+
+    const userId = linkedTransaction.userId._id || linkedTransaction.userId;
+    const amount =
+      typeof effectivePaymentData?.transaction_amount === 'number'
+        ? effectivePaymentData.transaction_amount
+        : linkedTransaction.amount;
+    const currencyRaw =
+      effectivePaymentData?.currency_id || linkedTransaction.currency || 'CLP';
+
+    const renewalTransaction = await Transaction.create({
+      userId,
+      type: 'subscription',
+      amount,
+      currency: String(currencyRaw).toLowerCase(),
+      status: 'pending',
+      paymentProvider: 'mercadopago',
+      providerTransactionId: payIdStr,
+      plan: linkedTransaction.plan,
+      description: `Renovación suscripción ${linkedTransaction.plan}`,
+      metadata: {
+        preapprovalId: linkedTransaction.metadata?.preapprovalId || effectivePaymentData?.preapproval_id || null,
+        preapprovalPlanId: linkedTransaction.metadata?.preapprovalPlanId || null,
+        paymentId: payIdStr,
+        mercadopagoPaymentId: payIdStr,
+        renewalOfTransactionId: linkedTransaction._id.toString(),
+        isRenewal: true,
+        userEmail: linkedTransaction.metadata?.userEmail || linkedTransaction.userId?.email,
+        userId: userId.toString(),
+        createdAt: new Date().toISOString(),
+      },
+    });
+
+    return Transaction.findById(renewalTransaction._id).populate('userId', 'email username name');
+  }
+
+  mercadoPagoSubscriptionEmailAlreadySent(transaction, paymentId) {
+    const payIdStr = paymentId != null ? String(paymentId) : null;
+    if (!payIdStr || !transaction?.metadata?.subscriptionEmailsSent) {
+      return false;
+    }
+    return Boolean(transaction.metadata.subscriptionEmailsSent[payIdStr]);
+  }
+
+  async markMercadoPagoSubscriptionEmailSent(transactionId, paymentId, emailType) {
+    const payIdStr = String(paymentId);
+    await Transaction.updateOne(
+      { _id: transactionId },
+      {
+        $set: {
+          [`metadata.subscriptionEmailsSent.${payIdStr}`]: {
+            type: emailType,
+            sentAt: new Date().toISOString(),
+          },
+        },
+      },
+    );
+  }
+
+  /**
+   * Correo de primera compra o renovación (Mercado Pago). Idempotente por paymentId.
+   */
+  async sendMercadoPagoSubscriptionPaymentEmail(transaction, paymentId, { periodEnd } = {}) {
+    const payIdStr = paymentId != null ? String(paymentId) : null;
+    if (!transaction?.userId || !payIdStr) {
+      return false;
+    }
+
+    const txFresh = await Transaction.findById(transaction._id).select('metadata plan amount currency providerTransactionId userId');
+    if (!txFresh) {
+      return false;
+    }
+
+    if (this.mercadoPagoSubscriptionEmailAlreadySent(txFresh, payIdStr)) {
+      logger.payment('[MP_EMAIL] Correo ya enviado para este paymentId', {
+        transactionId: txFresh._id.toString(),
+        paymentId: payIdStr,
+      });
+      return true;
+    }
+
+    const userId = txFresh.userId._id || txFresh.userId;
+    const user = await User.findById(userId).select('email username name preferences.language');
+    if (!user?.email) {
+      return false;
+    }
+
+    const plan = txFresh.plan;
+    const isRenewal = await isSubscriptionRenewalPayment(userId, payIdStr);
+    let effectivePeriodEnd = periodEnd;
+    if (!effectivePeriodEnd) {
+      const subscription = await Subscription.findOne({ userId }).select('currentPeriodEnd');
+      effectivePeriodEnd = subscription?.currentPeriodEnd || null;
+    }
+    const mailer = (await import('../config/mailer.js')).default;
+    const username = user.name || user.username || 'Usuario';
+    const receipt = {
+      purchaseDate: new Date(),
+      amount: typeof txFresh.amount === 'number' ? txFresh.amount : null,
+      currency: txFresh.currency || 'CLP',
+      providerLabel: 'Mercado Pago',
+      reference: payIdStr,
+    };
+    const mailOptions = { user };
+
+    const sent = isRenewal
+      ? await mailer.sendSubscriptionRenewalEmail(
+          user.email,
+          username,
+          plan,
+          effectivePeriodEnd,
+          receipt,
+          'Renovación suscripción (Mercado Pago)',
+          mailOptions,
+        )
+      : await mailer.sendSubscriptionThankYouEmail(
+          user.email,
+          username,
+          plan,
+          effectivePeriodEnd,
+          receipt,
+          'Confirmación de compra / suscripción (Mercado Pago)',
+          mailOptions,
+        );
+
+    if (sent) {
+      await this.markMercadoPagoSubscriptionEmailSent(
+        txFresh._id,
+        payIdStr,
+        isRenewal ? 'renewal' : 'thank_you',
+      );
+      logger.payment(
+        isRenewal
+          ? 'Correo de renovación por suscripción enviado'
+          : 'Correo de agradecimiento por suscripción enviado',
+        {
+          userId: userId.toString(),
+          userEmail: user.email,
+          plan,
+          paymentId: payIdStr,
+        },
+      );
+    } else {
+      logger.warn(
+        isRenewal
+          ? 'Correo de renovación por suscripción no enviado (mailer devolvió false)'
+          : 'Correo de agradecimiento por suscripción no enviado (mailer devolvió false)',
+        {
+          userId: userId.toString(),
+          userEmail: user.email,
+          plan,
+          paymentId: payIdStr,
+        },
+      );
+    }
+
+    return sent;
   }
 
   async resolveTransactionForPreapprovalWebhook({ planId, preapprovalId, payerEmail }) {
@@ -717,22 +949,35 @@ class PaymentServiceMercadoPago {
     try {
       const paymentId = paymentData.id;
       let effectivePaymentData = paymentData;
-      if (paymentId && (!paymentData.status || !paymentData.preference_id)) {
+      if (paymentId) {
         const remotePayment = await fetchMercadoPagoPaymentById(String(paymentId));
         if (remotePayment) {
           effectivePaymentData = {
             ...paymentData,
             status: paymentData.status || remotePayment.status,
-            transaction_amount: paymentData.transaction_amount || remotePayment.transaction_amount,
+            transaction_amount:
+              paymentData.transaction_amount ?? remotePayment.transaction_amount,
             currency_id: paymentData.currency_id || remotePayment.currency_id,
+            preference_id: paymentData.preference_id || remotePayment.preference_id,
+            preapproval_id: paymentData.preapproval_id || remotePayment.preapproval_id,
+            preapproval_plan_id:
+              paymentData.preapproval_plan_id || remotePayment.preapproval_plan_id,
+            payer: paymentData.payer || remotePayment.payer,
+            external_reference:
+              paymentData.external_reference || remotePayment.external_reference,
           };
         }
       }
-      const preferenceId = effectivePaymentData.preference_id || effectivePaymentData.preapproval_plan_id;
+      const preferenceId =
+        effectivePaymentData.preference_id || effectivePaymentData.preapproval_plan_id;
+      const preapprovalId = effectivePaymentData.preapproval_id || null;
+      const payerEmail =
+        effectivePaymentData.payer?.email || paymentData.payer?.email || null;
 
       logger.payment('PAYMENT_WEBHOOK: Notificación de pago recibida', {
         paymentId,
         preferenceId,
+        preapprovalId,
         status: effectivePaymentData.status,
         paymentDataKeys: Object.keys(paymentData),
       });
@@ -745,21 +990,30 @@ class PaymentServiceMercadoPago {
       }
 
       // Resolver transacción de manera determinística.
-      let transaction = await this.resolveTransactionForPaymentWebhook({
+      const linkedTransaction = await this.resolveTransactionForPaymentWebhook({
         paymentId,
         preferenceId,
-        payerEmail: paymentData?.payer?.email,
+        payerEmail,
+        preapprovalId,
+      });
+
+      let transaction = await this.ensureMercadoPagoPaymentTransaction({
+        paymentId,
+        effectivePaymentData,
+        linkedTransaction,
       });
 
       if (!transaction) {
         logger.payment('PAYMENT_WEBHOOK: Transacción no encontrada (orphan)', {
           paymentId,
           preferenceId,
+          preapprovalId,
           status: paymentData.status,
         });
         await paymentAuditService.logEvent('PAYMENT_NOTIFICATION_ORPHAN', {
           paymentId,
           preferenceId,
+          preapprovalId,
           status: paymentData.status,
         }, null);
         return;
@@ -789,6 +1043,11 @@ class PaymentServiceMercadoPago {
           lastWebhookPaymentStatus: effectivePaymentData.status,
         };
         await transaction.save();
+
+        const subscription = await Subscription.findOne({ userId: userIdString }).select('currentPeriodEnd');
+        await this.sendMercadoPagoSubscriptionPaymentEmail(transaction, payIdStr, {
+          periodEnd: subscription?.currentPeriodEnd,
+        });
         return;
       }
 
@@ -878,6 +1137,7 @@ class PaymentServiceMercadoPago {
       transaction.metadata = {
         ...transaction.metadata,
         preapprovalPlanId: transaction.metadata.preapprovalPlanId || preferenceId,
+        preapprovalId: transaction.metadata.preapprovalId || preapprovalId || null,
         preapprovalProviderReferenceId:
           transaction.metadata.preapprovalProviderReferenceId || originalProviderRef,
         mercadopagoPaymentId: payIdStr,
@@ -1286,6 +1546,9 @@ class PaymentServiceMercadoPago {
             transactionId: transaction._id?.toString(),
             externalId,
           });
+          await this.sendMercadoPagoSubscriptionPaymentEmail(transaction, externalId, {
+            periodEnd: null,
+          });
           return { success: true, alreadyActive: true, idempotent: true };
         }
         if (source === 'preapproval' && externalId && metaEarly.subscriptionActivatedForPreapprovalId === String(externalId)) {
@@ -1532,66 +1795,29 @@ class PaymentServiceMercadoPago {
         periodEnd: periodEnd.toISOString(),
       }, userIdString, transaction._id.toString());
 
-      // Enviar correo de confirmación de compra / agradecimiento por suscripción
+      // Enviar correo de confirmación de compra o renovación
       try {
-        const mailer = (await import('../config/mailer.js')).default;
-        const username = user.name || user.username || 'Usuario';
-        const txRef =
-          transaction.providerTransactionId || transaction._id?.toString() || '—';
-        const receipt = {
-          purchaseDate: now,
-          amount: typeof transaction.amount === 'number' ? transaction.amount : null,
-          currency: transaction.currency || 'CLP',
-          providerLabel: 'Mercado Pago',
-          reference: txRef,
-        };
-        const mailOptions = { user };
-        const mpMailSent = isNewSubscription
-          ? await mailer.sendSubscriptionThankYouEmail(
-              user.email,
-              username,
-              plan,
-              periodEnd,
-              receipt,
-              'Confirmación de compra / suscripción (Mercado Pago)',
-              mailOptions,
-            )
-          : await mailer.sendSubscriptionRenewalEmail(
-              user.email,
-              username,
-              plan,
-              periodEnd,
-              receipt,
-              'Renovación suscripción (Mercado Pago)',
-              mailOptions,
-            );
+        const paymentIdForEmail =
+          source === 'payment' && externalId
+            ? String(externalId)
+            : transaction.metadata?.paymentId ||
+              transaction.metadata?.mercadopagoPaymentId ||
+              transaction.providerTransactionId ||
+              null;
 
-        if (mpMailSent) {
-          logger.payment(
-            isNewSubscription
-              ? 'Correo de agradecimiento por suscripción enviado'
-              : 'Correo de renovación por suscripción enviado',
-            {
-              userId: userIdString,
-              userEmail: user.email,
-              plan,
-            }
-          );
+        if (paymentIdForEmail) {
+          await this.sendMercadoPagoSubscriptionPaymentEmail(transaction, paymentIdForEmail, {
+            periodEnd,
+          });
         } else {
-          logger.warn(
-            isNewSubscription
-              ? 'Correo de agradecimiento por suscripción no enviado (mailer devolvió false)'
-              : 'Correo de renovación por suscripción no enviado (mailer devolvió false)',
-            {
-              userId: userIdString,
-              userEmail: user.email,
-              plan,
-            }
-          );
+          logger.warn('activateSubscriptionFromPayment: sin paymentId para correo post-pago', {
+            transactionId: transaction._id.toString(),
+            userId: userIdString,
+            source,
+          });
         }
       } catch (emailError) {
-        // No fallar la activación si el correo falla, solo loguear el error
-        logger.error('Error enviando correo de agradecimiento por suscripción', {
+        logger.error('Error enviando correo post-pago de suscripción (Mercado Pago)', {
           userId: userIdString,
           userEmail: user.email,
           error: emailError.message,
