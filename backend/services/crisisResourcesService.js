@@ -34,9 +34,14 @@ export function shouldExposeCrisisResourcesPanel({
   riskLevel,
   hardStop = false,
   isCrisis = false,
+  hasBatterySignal = false,
+  crisisProtocolActive = false,
 } = {}) {
   if (hardStop === true) return true;
   const level = String(riskLevel || 'LOW').toUpperCase();
+  if (level === 'WARNING') {
+    return hasBatterySignal === true || crisisProtocolActive === true;
+  }
   if (PANEL_RISK_LEVELS.has(level)) return true;
   return isCrisis === true && PANEL_RISK_LEVELS.has(level);
 }
@@ -168,12 +173,22 @@ export function crisisResourcesForTurn({
   riskLevel,
   hardStop = false,
   isCrisis = false,
+  hasBatterySignal = false,
+  crisisProtocolActive = false,
   preferences = null,
   phone = null,
   language = 'es',
   showContactAlertNotice = false,
 } = {}) {
-  if (!shouldExposeCrisisResourcesPanel({ riskLevel, hardStop, isCrisis })) {
+  if (
+    !shouldExposeCrisisResourcesPanel({
+      riskLevel,
+      hardStop,
+      isCrisis,
+      hasBatterySignal,
+      crisisProtocolActive,
+    })
+  ) {
     return null;
   }
   return buildCrisisResourcesClientPayload({

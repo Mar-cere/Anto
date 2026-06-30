@@ -61,6 +61,7 @@ import {
   findLatestCrisisContextFromMessages,
   normalizeCrisisResourcesPayload,
 } from '../utils/crisisResources';
+import { normalizeSoftCrisisCheckInPayload } from '../utils/softCrisisCheckIn';
 import { fetchCrisisResources } from '../services/crisisResourcesService';
 import userService from '../services/userService';
 import {
@@ -146,9 +147,11 @@ export function useChatScreen() {
   const dismissedContinuityIdsRef = useRef([]);
   const [tccLiteAtHandoff, setTccLiteAtHandoff] = useState(null);
   const [crisisResourcesPanel, setCrisisResourcesPanel] = useState(null);
+  const [softCrisisCheckInPanel, setSoftCrisisCheckInPanel] = useState(null);
   const [crisisContactAlertNotice, setCrisisContactAlertNotice] = useState(null);
   const [emergencyContactAlertConfirmingId, setEmergencyContactAlertConfirmingId] = useState(null);
   const crisisResourcesDismissedRef = useRef(false);
+  const softCrisisCheckInDismissedRef = useRef(false);
   const pendingTccLiteResumeRef = useRef(null);
   const handleSendRef = useRef(null);
   /** Evita doble POST / doble respuesta del asistente si el usuario envía dos veces muy rápido. */
@@ -326,11 +329,40 @@ export function useChatScreen() {
   }, []);
 
   const applyCrisisResourcesFromTurn = useCallback((payload) => {
-    const normalized = normalizeCrisisResourcesPayload(payload?.crisisResources);
-    if (!normalized) return;
-    crisisResourcesDismissedRef.current = false;
-    setCrisisResourcesPanel(normalized);
+    const normalizedResources = normalizeCrisisResourcesPayload(payload?.crisisResources);
+    const normalizedSoft = normalizeSoftCrisisCheckInPayload(payload?.softCrisisCheckIn);
+
+    if (normalizedResources) {
+      crisisResourcesDismissedRef.current = false;
+      setCrisisResourcesPanel(normalizedResources);
+      setSoftCrisisCheckInPanel(null);
+      return;
+    }
+
+    if (normalizedSoft && !softCrisisCheckInDismissedRef.current) {
+      softCrisisCheckInDismissedRef.current = false;
+      setSoftCrisisCheckInPanel(normalizedSoft);
+      setCrisisResourcesPanel(null);
+      return;
+    }
+
+    if (!normalizedSoft) {
+      setSoftCrisisCheckInPanel(null);
+    }
   }, []);
+
+  const dismissSoftCrisisCheckInPanel = useCallback(() => {
+    softCrisisCheckInDismissedRef.current = true;
+    setSoftCrisisCheckInPanel(null);
+  }, []);
+
+  const handleOpenSoftCrisisTechnique = useCallback(
+    (technique) => {
+      if (!technique?.screen) return;
+      navigation.navigate(technique.screen, technique.params || {});
+    },
+    [navigation],
+  );
 
   const hydrateCrisisResourcesFromMessages = useCallback(async (messageList) => {
     if (crisisResourcesDismissedRef.current) return;
@@ -1367,6 +1399,8 @@ export function useChatScreen() {
       setTccLiteAtHandoff(null);
       crisisResourcesDismissedRef.current = false;
       setCrisisResourcesPanel(null);
+      softCrisisCheckInDismissedRef.current = false;
+      setSoftCrisisCheckInPanel(null);
       userTurnBaselineRef.current = 0;
       captureVisitBaselineRef.current = true;
       pendingTccLiteResumeRef.current = null;
@@ -1839,8 +1873,11 @@ export function useChatScreen() {
     handleOpenTccLiteAtHandoff,
     handleDismissTccLiteAtHandoff,
     crisisResourcesPanel,
+    softCrisisCheckInPanel,
     crisisContactAlertNotice,
     dismissCrisisResourcesPanel,
+    dismissSoftCrisisCheckInPanel,
+    handleOpenSoftCrisisTechnique,
     openCrisisResourcesPanel,
     openEmergencyContactsFromChat,
     handleEmergencyContactAlertConfirm,

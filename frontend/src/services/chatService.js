@@ -365,6 +365,7 @@ export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite, 
         context: data?.context,
         guest: data?.guest,
         crisisResources: data?.crisisResources,
+        softCrisisCheckIn: data?.softCrisisCheckIn ?? null,
         tccLite: data?.tccLite ?? null,
       });
     }

@@ -47,6 +47,7 @@ import {
 } from '../services/crisisHardStopService.js';
 import { crisisResourcesForTurn } from '../services/crisisResourcesService.js';
 import { applyCrisisProtocolForTurn } from '../services/crisisTurnClientExtrasService.js';
+import { hasCrisisBatterySignal } from '../services/crisisProtocolService.js';
 import { indexPersonalPatternFromUserMessage } from '../services/personalPatternRagService.js';
 import { resolveChatConversationForSocket } from '../utils/resolveChatConversationForSocket.js';
 import { buildSocketChatErrorPayload } from '../utils/socketChatErrorPayload.js';
@@ -368,6 +369,11 @@ export const setupSocketIO = (server) => {
           phone: socketUser?.phone || null,
         });
         const buildSocketCrisisPayload = ({ hardStop = false } = {}) => {
+          const protocolActive = crisisTurnClientExtras?.crisisProtocolState?.active === true;
+          const batterySignal = hasCrisisBatterySignal(
+            messageText,
+            crisisTurnClientExtras?.crisisDecision,
+          );
           if (hardStop) {
             crisisTurnClientExtras = {
               ...crisisTurnClientExtras,
@@ -375,6 +381,8 @@ export const setupSocketIO = (server) => {
                 riskLevel,
                 hardStop: true,
                 isCrisis: true,
+                hasBatterySignal: batterySignal,
+                crisisProtocolActive: protocolActive,
                 preferences: socketPreferences,
                 phone: socketUser?.phone || null,
                 language: socketLanguage,
@@ -385,11 +393,13 @@ export const setupSocketIO = (server) => {
             };
           }
           const crisisResources =
-            crisisTurnClientExtras?.crisisResources ||
+            crisisTurnClientExtras?.crisisResources ??
             crisisResourcesForTurn({
               riskLevel,
               hardStop,
               isCrisis,
+              hasBatterySignal: batterySignal,
+              crisisProtocolActive: protocolActive,
               preferences: socketPreferences,
               phone: socketUser?.phone || null,
               language: socketLanguage,
@@ -404,6 +414,9 @@ export const setupSocketIO = (server) => {
                   proposedEmergencyContactAlert:
                     crisisTurnClientExtras.proposedEmergencyContactAlert,
                 }
+              : {}),
+            ...(crisisTurnClientExtras?.softCrisisCheckIn
+              ? { softCrisisCheckIn: crisisTurnClientExtras.softCrisisCheckIn }
               : {}),
           };
         };

@@ -1,5 +1,5 @@
 /**
- * Extras de cliente para un turno de chat en modo crisis (protocolo v1).
+ * Extras de cliente para un turno de chat en modo crisis (protocolo v1 + check-in suave #19).
  */
 import Conversation from '../models/Conversation.js';
 import {
@@ -9,9 +9,11 @@ import emergencyAlertService from './emergencyAlertService.js';
 import { crisisResourcesForTurn } from './crisisResourcesService.js';
 import {
   evaluateCrisisProtocolTurn,
+  hasCrisisBatterySignal,
   normalizeCrisisProtocolState,
   recordCrisisProtocolExit,
 } from './crisisProtocolService.js';
+import { evaluateSoftCrisisCheckInTurn } from './softCrisisCheckInService.js';
 
 function shouldSkipContactAlertOffer(protocolState) {
   const protocol = normalizeCrisisProtocolState(protocolState);
@@ -22,7 +24,7 @@ function shouldSkipContactAlertOffer(protocolState) {
 }
 
 /**
- * Persiste protocolo y arma payload cliente (recursos + oferta MEDIUM).
+ * Persiste protocolo/check-in suave y arma payload cliente (recursos + oferta MEDIUM).
  */
 export async function applyCrisisProtocolForTurn({
   conversation,
@@ -54,11 +56,28 @@ export async function applyCrisisProtocolForTurn({
     hadContactAlert,
   });
 
+  const protocolWasActive = normalizeCrisisProtocolState(conversation?.crisisProtocolState).active;
+  const protocolEntering = crisisProtocolState.active === true && !protocolWasActive;
+  const batterySignal = hasCrisisBatterySignal(messageContent, crisisDecision);
+
+  const softCheckInResult = evaluateSoftCrisisCheckInTurn({
+    previousState: conversation?.softCrisisCheckInState,
+    riskLevel,
+    messageContent,
+    crisisDecision,
+    hardStop,
+    crisisProtocolEntering: protocolEntering || crisisProtocolState.active === true,
+    crisisProtocolActive: crisisProtocolState.active === true,
+    language,
+    preferences,
+    phone,
+  });
+
   let nextProtocolState = crisisProtocolState;
   let proposedEmergencyContactAlert = null;
 
   const skipOffer = shouldSkipContactAlertOffer(crisisProtocolState);
-  if (crisisDecision.shouldOfferContactAlert && !skipOffer) {
+  if (crisisDecision.shouldOfferContactAlert && !skipOffer && crisisProtocolState.active) {
     const contacts =
       user?.emergencyContacts ||
       (await emergencyAlertService.getEmergencyContacts(userId));
@@ -79,6 +98,7 @@ export async function applyCrisisProtocolForTurn({
   if (conversation?._id) {
     await Conversation.findByIdAndUpdate(conversation._id, {
       crisisProtocolState: nextProtocolState,
+      softCrisisCheckInState: softCheckInResult.softCrisisCheckInState,
     }).catch(() => {});
   }
 
@@ -93,6 +113,8 @@ export async function applyCrisisProtocolForTurn({
     riskLevel,
     hardStop,
     isCrisis,
+    hasBatterySignal: batterySignal,
+    crisisProtocolActive: nextProtocolState.active === true,
     preferences,
     phone,
     language,
@@ -105,6 +127,9 @@ export async function applyCrisisProtocolForTurn({
     crisisProtocolExit,
     crisisResources,
     proposedEmergencyContactAlert,
+    softCrisisCheckIn: softCheckInResult.softCrisisCheckIn,
+    softCrisisCheckInState: softCheckInResult.softCrisisCheckInState,
+    softCrisisCheckInExit: softCheckInResult.softCrisisCheckInExit,
   };
 }
 
