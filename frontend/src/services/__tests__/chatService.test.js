@@ -497,6 +497,21 @@ describe('chatService', () => {
 
       expect(mockPostChatSseWithXHR).toHaveBeenCalled();
     });
+
+    it('propaga AbortSignal al socket (#168)', async () => {
+      const controller = new AbortController();
+      mockSendChatMessage.mockResolvedValue({
+        id: 'msg-1',
+        text: 'Respuesta',
+        conversationId: 'conv-123',
+      });
+
+      await sendMessageStream('Hola', { signal: controller.signal });
+
+      expect(mockSendChatMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ signal: controller.signal }),
+      );
+    });
   });
 
   describe('setSessionIntention', () => {
