@@ -205,7 +205,7 @@ Traducción EN obligatoria antes de cierre **#151** / **#153**.
 
 Marcar **#93** / **#205** (producto) / **#10** según fila.
 
-**Estado (30 jun 2026):** implementación v1 en `main` (PR #4 + #5); revisión clínica/legal aprobada; filas matriz **Sí***. **Pendiente cierre:** smoke dispositivo físico.
+**Estado (30 jun 2026):** implementación v1 en `main` (PR #4 + #5); revisión clínica/legal aprobada; filas matriz **Sí***. **Pendiente cierre:** smoke dispositivo físico — ver [SMOKE_DISPOSITIVO_CRISIS_I18N.md](./SMOKE_DISPOSITIVO_CRISIS_I18N.md) y `npm run test:crisis-protocol-suite`.
 
 ### #93 — Protocolo ideación
 
