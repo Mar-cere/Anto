@@ -172,6 +172,39 @@ describe('User Routes', () => {
       expect(response.body.user.preferences.timezone).toBe(tz);
     });
 
+    it('debe persistir preferences.country y reflejarlo en GET /me', async () => {
+      const putResponse = await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ preferences: { country: 'CL' } })
+        .expect(200);
+
+      expect(putResponse.body.user.preferences.country).toBe('CL');
+
+      const getResponse = await request(app)
+        .get('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(getResponse.body.preferences.country).toBe('CL');
+    });
+
+    it('debe permitir country null (automático)', async () => {
+      await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ preferences: { country: 'PE' } })
+        .expect(200);
+
+      const response = await request(app)
+        .put('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ preferences: { country: null } })
+        .expect(200);
+
+      expect(response.body.user.preferences.country).toBeNull();
+    });
+
     it('debe rechazar timezone que supera el límite de longitud', async () => {
       await request(app)
         .put('/api/users/me')

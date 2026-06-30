@@ -339,6 +339,12 @@ class CacheService {
       totalDeleted += 1;
     }
 
+    // GET /me usa clave exacta user:{userId} (sin sufijo); el patrón user:{userId}:* no la borra.
+    const userKey = this.generateKey('user', userId);
+    if (await this.delete(userKey)) {
+      totalDeleted += 1;
+    }
+
     return totalDeleted;
   }
 

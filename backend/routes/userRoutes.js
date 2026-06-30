@@ -321,6 +321,7 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
           ...(user.preferences || {}),
           ...valueForUpdate.preferences
         };
+        user.markModified('preferences');
       } else if (key === 'notificationPreferences') {
         const incoming = valueForUpdate.notificationPreferences || {};
         const prev = user.notificationPreferences || {};
@@ -365,6 +366,14 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
 
     const userJson = user.toJSON();
     const userWithChatPrefs = await attachChatPreferencesToUserPayload(userId, userJson);
+
+    // Recalentar GET /me para que la siguiente lectura refleje el PUT sin ir a BD en frío.
+    try {
+      const cacheKey = cacheService.generateKey('user', userId);
+      await cacheService.set(cacheKey, userWithChatPrefs, 300);
+    } catch (cacheError) {
+      logger.warn('Error al recalentar caché de usuario', { error: cacheError.message });
+    }
 
     res.json({
       message: req.apiCopy.profileUpdated,

@@ -127,6 +127,7 @@ describe('CacheService', () => {
     it('debe invalidar todas las claves de caché de un usuario', async () => {
       const userId = '123';
       await cacheService.set(`user:${userId}:profile`, { data: '1' });
+      await cacheService.set(`user:${userId}`, { data: 'me' });
       await cacheService.set(`profile:${userId}:data`, { data: '2' });
       await cacheService.set(`subscription:${userId}:info`, { data: '3' });
       await cacheService.set(`stats:${userId}:summary`, { data: '4' });
@@ -136,6 +137,7 @@ describe('CacheService', () => {
 
       expect(deleted).toBeGreaterThan(0);
       expect(await cacheService.get(`user:${userId}:profile`)).toBeNull();
+      expect(await cacheService.get(`user:${userId}`)).toBeNull();
       expect(await cacheService.get('user:456:profile')).not.toBeNull();
     });
   });
