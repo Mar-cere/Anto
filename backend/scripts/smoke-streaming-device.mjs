@@ -44,6 +44,14 @@ ok('chatRoutes importa chatStreamingMetrics', chatRoutes.includes('chatStreaming
 ok('chatRoutes registra preLlmEndAt', chatRoutes.includes('preLlmEndAt'));
 ok('chatRoutes SSE stream=true', chatRoutes.includes("req.query.stream === 'true'"));
 
+const socketSrc = read('backend/config/socket.js');
+ok('socket MESSAGE_CHUNK', socketSrc.includes("MESSAGE_CHUNK: 'message:chunk'"));
+ok('socket generarRespuestaStream', socketSrc.includes('generarRespuestaStream'));
+ok('socket TTFT métricas', socketSrc.includes('streaming_first_chunk'));
+
+const socketEvents = read('frontend/src/constants/chatSocketEvents.js');
+ok('frontend MESSAGE_CHUNK', socketEvents.includes("MESSAGE_CHUNK: 'message:chunk'"));
+
 const metricsSrc = read('backend/services/metricsService.js');
 ok('metricsService preLlmMsSamples', metricsSrc.includes('preLlmMsSamples'));
 ok('metricsService modelTtftMsSamples', metricsSrc.includes('modelTtftMsSamples'));

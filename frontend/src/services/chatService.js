@@ -103,6 +103,7 @@ async function sendMessageViaSocket(text, { onChunk, onDone, resumeTccLite, sign
     language: appLanguage,
     resumeTccLite,
     signal,
+    onChunk,
   });
 
   const payload = normalizeChatSocketTurnPayload(raw);
@@ -110,8 +111,6 @@ async function sendMessageViaSocket(text, { onChunk, onDone, resumeTccLite, sign
     await AsyncStorage.setItem('currentConversationId', String(payload.conversationId));
   }
 
-  const content = payload.content ?? '';
-  if (content && onChunk) onChunk(content);
   if (onDone) onDone(payload);
 }
 
