@@ -1435,6 +1435,7 @@ export function useChatScreen() {
       dismissedContinuityIdsRef.current = [];
       setDismissedContinuityIds([]);
       setTccLiteAtHandoff(null);
+      setTccContinuityItems([]);
       crisisResourcesDismissedRef.current = false;
       setCrisisResourcesPanel(null);
       softCrisisCheckInDismissedRef.current = false;
@@ -1734,12 +1735,22 @@ export function useChatScreen() {
     }
   }, []);
 
+  const hasUserMessagesInChat = useMemo(
+    () =>
+      (messages || []).some(
+        (m) => m?.role === MESSAGE_ROLES.USER && m?.type !== 'quickReplies',
+      ),
+    [messages],
+  );
+
   const visibleTccContinuityItems = useMemo(
     () =>
-      (tccContinuityItems || []).filter(
-        (item) => item?.id && !dismissedContinuityIds.includes(item.id),
-      ),
-    [tccContinuityItems, dismissedContinuityIds],
+      hasUserMessagesInChat
+        ? (tccContinuityItems || []).filter(
+            (item) => item?.id && !dismissedContinuityIds.includes(item.id),
+          )
+        : [],
+    [tccContinuityItems, dismissedContinuityIds, hasUserMessagesInChat],
   );
 
   const handleOpenTccContinuityItem = useCallback(
