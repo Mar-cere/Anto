@@ -424,7 +424,22 @@ export const userService = {
       console.error('Error al cerrar sesión:', error);
       throw error;
     }
-  }
+  },
+
+  async confirmEmergencyContactAlertFromChat({ offerId, conversationId }) {
+    const response = await apiClient.post(ENDPOINTS.EMERGENCY_CONTACTS_ALERT_FROM_CHAT, {
+      offerId,
+      conversationId,
+    });
+    return response.data;
+  },
+
+  async dismissEmergencyContactAlertFromChat({ conversationId }) {
+    const response = await apiClient.post(ENDPOINTS.EMERGENCY_CONTACTS_DISMISS_ALERT_FROM_CHAT, {
+      conversationId,
+    });
+    return response.data;
+  },
 };
 
 export const loginUser = async (credentials) => {

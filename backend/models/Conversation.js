@@ -113,6 +113,19 @@ const conversationSchema = new mongoose.Schema({
     },
     default: undefined,
   },
+  /** Protocolo de crisis v1 (#93): estado activo y salida */
+  crisisProtocolState: {
+    type: {
+      active: { type: Boolean, default: false },
+      stableUserTurns: { type: Number, default: 0, min: 0 },
+      hadContactAlert: { type: Boolean, default: false },
+      pendingContactAlertOfferId: { type: String, default: null, maxlength: 80 },
+      contactAlertOfferDismissed: { type: Boolean, default: false },
+      protocolVersion: { type: String, default: '1.0', maxlength: 16 },
+      enteredAt: { type: Date, default: null },
+    },
+    default: undefined,
+  },
 }, {
   timestamps: true // Crea createdAt y updatedAt automáticamente
 });

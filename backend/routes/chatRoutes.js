@@ -101,6 +101,7 @@ import {
   buildCrisisHardStopClientPayload,
 } from '../services/crisisHardStopService.js';
 import { crisisResourcesForTurn } from '../services/crisisResourcesService.js';
+import { applyCrisisProtocolForTurn } from '../services/crisisTurnClientExtrasService.js';
 import { indexPersonalPatternFromUserMessage } from '../services/personalPatternRagService.js';
 import {
   planChatTurnEnhancements,
@@ -1303,8 +1304,9 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         }
 
         const crisisTransport = req.query.stream === 'true' ? 'sse' : 'http';
+        let crisisBgResult = null;
         try {
-          await crisisBackgroundActionsService.runCrisisBackgroundActions({
+          crisisBgResult = await crisisBackgroundActionsService.runCrisisBackgroundActions({
             userId: req.user._id,
             messageId: userMessage._id,
             messageContent: content,
@@ -1314,6 +1316,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             trendAnalysis,
             crisisHistory,
             conversationContext,
+            conversationId: conversation._id,
             transport: crisisTransport,
             isCrisis,
             log: (msg) => logs.push(`[${Date.now() - startTime}ms] ${msg}`),
@@ -1353,17 +1356,65 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         };
 
         const appLanguageForChat = req.appLanguage || resolveRequestLanguage(req);
+        const willHardStop = shouldHardStopCrisisLlm({
+          riskLevel,
+          messageContent: content.trim(),
+        });
+
+        let crisisTurnClientExtras = await applyCrisisProtocolForTurn({
+          conversation,
+          userId: req.user._id,
+          user,
+          riskLevel,
+          messageContent: content.trim(),
+          contextualAnalysis,
+          trendAnalysis,
+          crisisHistory,
+          conversationContext,
+          hardStop: willHardStop,
+          isCrisis,
+          hadContactAlert: crisisBgResult?.alertSent === true,
+          language: appLanguageForChat,
+          preferences: combinedProfile?.preferences,
+          phone: combinedProfile?.phone,
+        });
 
         const attachTurnCrisisResources = (payload, { hardStop = false } = {}) => {
-          const crisisResources = crisisResourcesForTurn({
-            riskLevel,
-            hardStop,
-            isCrisis,
-            preferences: combinedProfile?.preferences,
-            phone: combinedProfile?.phone,
-            language: appLanguageForChat,
-          });
-          return crisisResources ? { ...payload, crisisResources } : payload;
+          if (hardStop) {
+            crisisTurnClientExtras = {
+              ...crisisTurnClientExtras,
+              crisisResources: crisisResourcesForTurn({
+                riskLevel,
+                hardStop: true,
+                isCrisis: true,
+                preferences: combinedProfile?.preferences,
+                phone: combinedProfile?.phone,
+                language: appLanguageForChat,
+                showContactAlertNotice:
+                  crisisTurnClientExtras?.crisisProtocolState?.hadContactAlert === true ||
+                  crisisBgResult?.alertSent === true,
+              }),
+            };
+          }
+          const crisisResources =
+            crisisTurnClientExtras?.crisisResources ||
+            crisisResourcesForTurn({
+              riskLevel,
+              hardStop,
+              isCrisis,
+              preferences: combinedProfile?.preferences,
+              phone: combinedProfile?.phone,
+              language: appLanguageForChat,
+              showContactAlertNotice:
+                crisisTurnClientExtras?.crisisProtocolState?.hadContactAlert === true ||
+                crisisBgResult?.alertSent === true,
+            });
+          let out = crisisResources ? { ...payload, crisisResources } : { ...payload };
+          if (crisisTurnClientExtras?.proposedEmergencyContactAlert) {
+            out.proposedEmergencyContactAlert =
+              crisisTurnClientExtras.proposedEmergencyContactAlert;
+          }
+          return out;
         };
 
         const sessionPhase = inferChatSessionPhase({
@@ -1467,10 +1518,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           crisisMetricTransport: req.query.stream === 'true' ? 'sse' : 'http',
         };
 
-        const crisisHardStopContent = shouldHardStopCrisisLlm({
-          riskLevel,
-          messageContent: content.trim(),
-        })
+        const crisisHardStopContent = willHardStop
           ? buildHardStopCrisisAssistantContent({
               riskLevel,
               language: appLanguageForChat,

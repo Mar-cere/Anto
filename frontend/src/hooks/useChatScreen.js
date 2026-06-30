@@ -62,6 +62,7 @@ import {
   normalizeCrisisResourcesPayload,
 } from '../utils/crisisResources';
 import { fetchCrisisResources } from '../services/crisisResourcesService';
+import userService from '../services/userService';
 import {
   clearPendingTccLiteResume,
   peekPendingTccLiteResume,
@@ -145,6 +146,8 @@ export function useChatScreen() {
   const dismissedContinuityIdsRef = useRef([]);
   const [tccLiteAtHandoff, setTccLiteAtHandoff] = useState(null);
   const [crisisResourcesPanel, setCrisisResourcesPanel] = useState(null);
+  const [crisisContactAlertNotice, setCrisisContactAlertNotice] = useState(null);
+  const [emergencyContactAlertConfirmingId, setEmergencyContactAlertConfirmingId] = useState(null);
   const crisisResourcesDismissedRef = useRef(false);
   const pendingTccLiteResumeRef = useRef(null);
   const handleSendRef = useRef(null);
@@ -686,6 +689,51 @@ export function useChatScreen() {
     }
   }, []);
 
+  const handleEmergencyContactAlertConfirm = useCallback(async (offerMessage) => {
+    const offer = offerMessage?.proposedEmergencyContactAlert;
+    const offerKey = offerMessage?.id || offerMessage?._id || offer?.id;
+    if (!offer?.id || emergencyContactAlertConfirmingId) return;
+    try {
+      const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+      if (!convId || !isValidMongoObjectId24(convId)) return;
+      setEmergencyContactAlertConfirmingId(String(offerKey));
+      await userService.confirmEmergencyContactAlertFromChat({
+        offerId: offer.id,
+        conversationId: convId,
+      });
+      const texts = textsRef.current;
+      setCrisisContactAlertNotice(texts.CRISIS_POST_CONTACT_ALERT_NOTICE);
+      setMessages((prev) =>
+        prev.filter((m) => {
+          const id = m.id || m._id;
+          const targetId = offerMessage?.id || offerMessage?._id;
+          return String(id) !== String(targetId);
+        }),
+      );
+    } catch (e) {
+      console.warn('[useChatScreen] emergency contact alert confirm:', e?.message || e);
+    } finally {
+      setEmergencyContactAlertConfirmingId(null);
+    }
+  }, [emergencyContactAlertConfirmingId]);
+
+  const handleEmergencyContactAlertReject = useCallback(async (offerMessage) => {
+    setMessages((prev) =>
+      prev.filter((m) => {
+        const id = m.id || m._id;
+        const targetId = offerMessage?.id || offerMessage?._id;
+        return String(id) !== String(targetId);
+      }),
+    );
+    try {
+      const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+      if (!convId || !isValidMongoObjectId24(convId)) return;
+      await userService.dismissEmergencyContactAlertFromChat({ conversationId: convId });
+    } catch (e) {
+      console.warn('[useChatScreen] emergency contact alert dismiss:', e?.message || e);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -942,6 +990,19 @@ export function useChatScreen() {
                 role: 'suggestions',
                 type: 'product_proposals',
                 proposedProductActions: ppa,
+                metadata: {
+                  timestamp: new Date().toISOString(),
+                  assistantMessageId: payload.messageId,
+                },
+              });
+            }
+            const eca = payload.proposedEmergencyContactAlert;
+            if (eca && eca.id && eca.message) {
+              next.push({
+                id: `emergency-contact-offer-${eca.id}`,
+                role: 'suggestions',
+                type: 'emergency_contact_alert_offer',
+                proposedEmergencyContactAlert: eca,
                 metadata: {
                   timestamp: new Date().toISOString(),
                   assistantMessageId: payload.messageId,
@@ -1547,12 +1608,11 @@ export function useChatScreen() {
     const unsubscribeAlert = websocketService.on('emergency:alert:sent', (data) => {
       const texts = textsRef.current;
       if (data && !data.isTest) {
-        Alert.alert(
-          `🚨 ${texts.EMERGENCY_ALERT_SENT_TITLE}`,
-          texts.EMERGENCY_ALERT_SENT_BODY
-            .replace('{successful}', String(data.successfulSends))
-            .replace('{total}', String(data.totalContacts)),
-          [{ text: texts.COMMON_OK }]
+        setCrisisContactAlertNotice(
+          texts.CRISIS_POST_CONTACT_ALERT_NOTICE ||
+            texts.EMERGENCY_ALERT_SENT_BODY
+              ?.replace('{successful}', String(data.successfulSends))
+              ?.replace('{total}', String(data.totalContacts)),
         );
       }
     });
@@ -1779,9 +1839,13 @@ export function useChatScreen() {
     handleOpenTccLiteAtHandoff,
     handleDismissTccLiteAtHandoff,
     crisisResourcesPanel,
+    crisisContactAlertNotice,
     dismissCrisisResourcesPanel,
     openCrisisResourcesPanel,
     openEmergencyContactsFromChat,
+    handleEmergencyContactAlertConfirm,
+    handleEmergencyContactAlertReject,
+    emergencyContactAlertConfirmingId,
     historyHasMore,
     loadingOlderMessages,
     loadOlderMessages,

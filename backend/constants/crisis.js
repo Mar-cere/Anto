@@ -781,12 +781,21 @@ export const buildCrisisActionDecision = ({
     moderateSignals >= 3 &&
     (signals.trendDeterioration || signals.recentCrisisHistory);
 
-  const shouldAlertContacts =
-    (riskLevel === 'HIGH' && confidence >= 0.9 && (hasStrongEvidence || hasAccumulatedEvidence)) ||
-    (riskLevel === 'MEDIUM' && confidence >= 0.95 && hasAccumulatedEvidence);
+  const shouldAlertContactsAuto =
+    riskLevel === 'HIGH' &&
+    confidence >= 0.9 &&
+    (hasStrongEvidence || hasAccumulatedEvidence);
 
-  if (shouldAlertContacts) {
+  const shouldOfferContactAlert =
+    riskLevel === 'MEDIUM' && confidence >= 0.95 && hasAccumulatedEvidence;
+
+  /** @deprecated alias de shouldAlertContactsAuto (HIGH automático) */
+  const shouldAlertContacts = shouldAlertContactsAuto;
+
+  if (shouldAlertContactsAuto) {
     actionLevel = ACTION_LEVELS.ALERT_CONTACTS;
+  } else if (shouldOfferContactAlert) {
+    actionLevel = ACTION_LEVELS.VERIFY;
   }
 
   const reasons = [];
@@ -802,6 +811,8 @@ export const buildCrisisActionDecision = ({
     riskLevel,
     actionLevel,
     shouldAlertContacts,
+    shouldAlertContactsAuto,
+    shouldOfferContactAlert,
     confidence,
     evidence: {
       criticalSignals,

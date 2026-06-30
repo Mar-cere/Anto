@@ -21,6 +21,10 @@ describe('normalizeChatSocketTurnPayload', () => {
       tccLite: { step: 2 },
       crisisResources: { country: 'AR' },
       crisisHardStop: true,
+      proposedEmergencyContactAlert: {
+        id: 'offer-abc12345',
+        message: '¿Quieres que avise?',
+      },
     };
 
     const out = normalizeChatSocketTurnPayload(raw);
@@ -36,6 +40,10 @@ describe('normalizeChatSocketTurnPayload', () => {
       tccLite: { step: 2 },
       crisisResources: { country: 'AR' },
       crisisHardStop: true,
+      proposedEmergencyContactAlert: {
+        id: 'offer-abc12345',
+        message: '¿Quieres que avise?',
+      },
       transport: 'socket',
     });
     expect(out.proposedProductActions).toEqual([]);

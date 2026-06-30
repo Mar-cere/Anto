@@ -131,6 +131,9 @@ export const ENDPOINTS = {
   EMERGENCY_CONTACT_TEST_WHATSAPP: (id: string) =>
     `/api/users/me/emergency-contacts/${id}/test-whatsapp`,
   EMERGENCY_CONTACTS_TEST_ALERT: '/api/users/me/emergency-contacts/test-alert',
+  EMERGENCY_CONTACTS_ALERT_FROM_CHAT: '/api/users/me/emergency-contacts/alert-from-chat',
+  EMERGENCY_CONTACTS_DISMISS_ALERT_FROM_CHAT:
+    '/api/users/me/emergency-contacts/dismiss-alert-from-chat',
   CRISIS_SUMMARY: '/api/crisis/summary',
   CRISIS_TRENDS: '/api/crisis/trends',
   CRISIS_BY_MONTH: '/api/crisis/by-month',

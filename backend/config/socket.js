@@ -46,6 +46,7 @@ import {
   buildCrisisHardStopClientPayload,
 } from '../services/crisisHardStopService.js';
 import { crisisResourcesForTurn } from '../services/crisisResourcesService.js';
+import { applyCrisisProtocolForTurn } from '../services/crisisTurnClientExtrasService.js';
 import { indexPersonalPatternFromUserMessage } from '../services/personalPatternRagService.js';
 import { resolveChatConversationForSocket } from '../utils/resolveChatConversationForSocket.js';
 import { buildSocketChatErrorPayload } from '../utils/socketChatErrorPayload.js';
@@ -270,8 +271,9 @@ export const setupSocketIO = (server) => {
             contextualAnalysis?.intencion?.confianza >= 0.9 &&
             riskLevel !== 'LOW');
 
+        let crisisBgResult = null;
         try {
-          await crisisBackgroundActionsService.runCrisisBackgroundActions({
+          crisisBgResult = await crisisBackgroundActionsService.runCrisisBackgroundActions({
             userId,
             messageId: userMessage._id,
             messageContent: messageText,
@@ -281,6 +283,7 @@ export const setupSocketIO = (server) => {
             trendAnalysis,
             crisisHistory,
             conversationContext,
+            conversationId: conversation._id,
             transport: 'socket',
             isCrisis,
           });
@@ -326,6 +329,72 @@ export const setupSocketIO = (server) => {
             userProfile?.language ||
             'es',
         );
+        const socketPreferences = {
+          ...(userProfile?.preferences || {}),
+          ...(socketUser?.preferences || {}),
+        };
+        const willHardStop = shouldHardStopCrisisLlm({
+          riskLevel,
+          messageContent: messageText,
+        });
+        let crisisTurnClientExtras = await applyCrisisProtocolForTurn({
+          conversation,
+          userId,
+          user: socketUser,
+          riskLevel,
+          messageContent: messageText,
+          contextualAnalysis,
+          trendAnalysis,
+          crisisHistory,
+          conversationContext,
+          hardStop: willHardStop,
+          isCrisis,
+          hadContactAlert: crisisBgResult?.alertSent === true,
+          language: socketLanguage,
+          preferences: socketPreferences,
+          phone: socketUser?.phone || null,
+        });
+        const buildSocketCrisisPayload = ({ hardStop = false } = {}) => {
+          if (hardStop) {
+            crisisTurnClientExtras = {
+              ...crisisTurnClientExtras,
+              crisisResources: crisisResourcesForTurn({
+                riskLevel,
+                hardStop: true,
+                isCrisis: true,
+                preferences: socketPreferences,
+                phone: socketUser?.phone || null,
+                language: socketLanguage,
+                showContactAlertNotice:
+                  crisisTurnClientExtras?.crisisProtocolState?.hadContactAlert === true ||
+                  crisisBgResult?.alertSent === true,
+              }),
+            };
+          }
+          const crisisResources =
+            crisisTurnClientExtras?.crisisResources ||
+            crisisResourcesForTurn({
+              riskLevel,
+              hardStop,
+              isCrisis,
+              preferences: socketPreferences,
+              phone: socketUser?.phone || null,
+              language: socketLanguage,
+              showContactAlertNotice:
+                crisisTurnClientExtras?.crisisProtocolState?.hadContactAlert === true ||
+                crisisBgResult?.alertSent === true,
+            });
+          return {
+            ...(crisisResources ? { crisisResources } : {}),
+            ...(crisisTurnClientExtras?.proposedEmergencyContactAlert
+              ? {
+                  proposedEmergencyContactAlert:
+                    crisisTurnClientExtras.proposedEmergencyContactAlert,
+                }
+              : {}),
+          };
+        };
+
         const turnEnhancements = await planChatTurnEnhancements({
           userId,
           conversationId: conversation._id,
@@ -348,10 +417,7 @@ export const setupSocketIO = (server) => {
           }),
         });
 
-        const crisisHardStopContent = shouldHardStopCrisisLlm({
-          riskLevel,
-          messageContent: messageText,
-        })
+        const crisisHardStopContent = willHardStop
           ? buildHardStopCrisisAssistantContent({
               riskLevel,
               language: socketLanguage,
@@ -422,19 +488,6 @@ export const setupSocketIO = (server) => {
           }).catch(() => {});
 
           const clientTurn = buildCrisisHardStopClientPayload(socketLanguage);
-          const socketPreferences = {
-            ...(userProfile?.preferences || {}),
-            ...(socketUser?.preferences || {}),
-          };
-          const crisisResources = crisisResourcesForTurn({
-            riskLevel,
-            hardStop: true,
-            isCrisis,
-            preferences: socketPreferences,
-            phone: socketUser?.phone || null,
-            language: socketLanguage,
-          });
-
           socket.emit(SOCKET_EVENTS.AI_TYPING, false);
           socket.emit(SOCKET_EVENTS.MESSAGE_RECEIVED, {
             id: assistantMessage._id.toString(),
@@ -448,7 +501,7 @@ export const setupSocketIO = (server) => {
             suggestions: clientTurn.suggestions,
             suggestionsPersonalized: clientTurn.suggestionsPersonalized,
             tccLite: clientTurn.tccLite,
-            ...(crisisResources ? { crisisResources } : {}),
+            ...buildSocketCrisisPayload({ hardStop: true }),
           });
           return;
         }
@@ -655,19 +708,6 @@ export const setupSocketIO = (server) => {
           riskLevel,
           userMessage: messageText,
         });
-        const socketPreferences = {
-          ...(userProfile?.preferences || {}),
-          ...(socketUser?.preferences || {}),
-        };
-        const crisisResources = crisisResourcesForTurn({
-          riskLevel,
-          hardStop: false,
-          isCrisis,
-          preferences: socketPreferences,
-          phone: socketUser?.phone || null,
-          language: socketLanguage,
-        });
-
         // 9. Emitir respuesta al cliente
         socket.emit(SOCKET_EVENTS.AI_TYPING, false);
         socket.emit(SOCKET_EVENTS.MESSAGE_RECEIVED, {
@@ -681,7 +721,7 @@ export const setupSocketIO = (server) => {
           suggestions: clientTurn.suggestions,
           suggestionsPersonalized: clientTurn.suggestionsPersonalized,
           tccLite: clientTurn.tccLite,
-          ...(crisisResources ? { crisisResources } : {}),
+          ...buildSocketCrisisPayload(),
         });
         
         console.log(`[SocketIO] Mensaje procesado para usuario ${currentUserId}`);
