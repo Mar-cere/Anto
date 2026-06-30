@@ -587,6 +587,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
       ? {
           snippet: lastSessionSummary.snippet,
           bridge: lastSessionSummary.bridge,
+          displaySubtitle: lastSessionSummary.displaySubtitle,
           conversationId: lastSessionSummary.conversationId,
           generatedAt: lastSessionSummary.generatedAt,
           placeholder: lastSessionSummary.placeholder,
@@ -660,6 +661,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
       followUpAt: c.followUpAt,
       followUpAnswer: c.followUpAnswer,
       createdAt: c.createdAt,
+      sourceMeta: c.sourceMeta || null,
     })),
     dailyMood: dailyMood || null,
     engagementStreak,

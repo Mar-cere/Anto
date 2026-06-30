@@ -45,6 +45,7 @@ function toClientCommitment(doc) {
     label: doc.label,
     status: doc.status,
     source: doc.source,
+    sourceMeta: doc.sourceMeta || null,
     conversationId: doc.conversationId ? String(doc.conversationId) : null,
     followUpAt: doc.followUpAt || null,
     followUpAnswer: doc.followUpAnswer || 'pending',
