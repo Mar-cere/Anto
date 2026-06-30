@@ -27,6 +27,7 @@ import {
   subscriptionPlanDisplayName,
 } from '../constants/emailMailerStrings.js';
 import { getUtcIsoWeekParts } from '../utils/isoWeek.js';
+import { getAlertMessages } from '../constants/crisis.js';
 import { emailDateLocale, normalizeEmailLanguage, resolveUserEmailLanguage } from '../utils/emailLanguage.js';
 import { isFullEmailHtmlDocument, wrapEmailHtmlDocument } from '../utils/emailHtmlDocument.js';
 import logger from '../utils/logger.js';
@@ -1273,6 +1274,74 @@ const emailTemplates = {
     };
   },
 
+  emergencyContactTestEmail: (contactName, userName, language = 'es') => {
+    const lang = normalizeEmailLanguage(language);
+    const m = getAlertMessages(lang);
+    const safeContact = escapeHtmlText(
+      String(contactName ?? '').trim() || (lang === 'en' ? 'there' : 'tú'),
+    );
+    const safeUser = escapeHtmlText(
+      String(userName ?? '').trim() || (lang === 'en' ? 'Anto user' : 'usuario de Anto'),
+    );
+    const explanation = escapeHtmlText(m.TEST_EXPLANATION.replace('{USER_NAME}', safeUser));
+    const greeting = lang === 'en' ? `Hello ${safeContact},` : `Hola ${safeContact},`;
+    const noEmergency =
+      lang === 'en'
+        ? 'There is no real emergency situation.'
+        : 'No hay ninguna situación de emergencia real.';
+    const footerAuto =
+      lang === 'en'
+        ? `This is an automatic test message from ${APP_NAME}.`
+        : `Este es un mensaje automático de prueba de ${APP_NAME}.`;
+    const footerContact =
+      lang === 'en'
+        ? `If you should not receive these emails, please contact ${safeUser}.`
+        : `Si no deberías recibir estos emails, por favor contacta a ${safeUser}.`;
+
+    const subject = m.TEST_SUBJECT.replace('{APP_NAME}', APP_NAME).replace('{USER_NAME}', safeUser);
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background-color: #0A1533; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+            .content { background-color: #f9f9f9; padding: 30px; border: 1px solid #ddd; border-top: none; border-radius: 0 0 8px 8px; }
+            .test-box { background-color: #e3f2fd; border-left: 4px solid #2196F3; padding: 15px; margin: 20px 0; border-radius: 4px; }
+            .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center; }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>${escapeHtmlText(m.TEST_HEADER)} - ${APP_NAME}</h1>
+          </div>
+          <div class="content">
+            <p>${greeting}</p>
+            <div class="test-box">
+              <h2 style="margin-top: 0;">${escapeHtmlText(m.TEST_HEADER)}</h2>
+              <p>${m.TEST_DESCRIPTION}</p>
+              <p>${explanation}</p>
+              <p><strong>${noEmergency}</strong></p>
+            </div>
+            <p>${m.TEST_SUCCESS}</p>
+            <ul>
+              <li>${m.TEST_SUCCESS_ITEM_1}</li>
+              <li>${m.TEST_SUCCESS_ITEM_2}</li>
+              <li>${m.TEST_SUCCESS_ITEM_3}</li>
+            </ul>
+            <p>${m.TEST_FOOTER}</p>
+            <div class="footer">
+              <p>${footerAuto}</p>
+              <p>${footerContact}</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+    return { subject, html };
+  },
+
   /**
    * Informe diario de uso de tokens OpenAI (visibilidad de coste operativo).
    */
@@ -1942,86 +2011,9 @@ const mailer = {
    * @param {string} userName - Nombre del usuario
    * @returns {Promise<boolean>} true si se envió correctamente
    */
-  sendEmergencyContactTestEmail: async (email, contactName, userName) => {
+  sendEmergencyContactTestEmail: async (email, contactName, userName, language = 'es') => {
     try {
-      const subject = `🧪 Prueba de Alerta - ${APP_NAME}`;
-      const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              line-height: 1.6;
-              color: #333;
-              max-width: 600px;
-              margin: 0 auto;
-              padding: 20px;
-            }
-            .header {
-              background-color: #0A1533;
-              color: white;
-              padding: 20px;
-              text-align: center;
-              border-radius: 8px 8px 0 0;
-            }
-            .content {
-              background-color: #f9f9f9;
-              padding: 30px;
-              border: 1px solid #ddd;
-              border-top: none;
-              border-radius: 0 0 8px 8px;
-            }
-            .test-box {
-              background-color: #e3f2fd;
-              border-left: 4px solid #2196F3;
-              padding: 15px;
-              margin: 20px 0;
-              border-radius: 4px;
-            }
-            .footer {
-              margin-top: 30px;
-              padding-top: 20px;
-              border-top: 1px solid #ddd;
-              font-size: 12px;
-              color: #666;
-              text-align: center;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>🧪 Prueba de Alerta - ${APP_NAME}</h1>
-          </div>
-          <div class="content">
-            <p>Hola ${contactName},</p>
-            
-            <div class="test-box">
-              <h2 style="margin-top: 0;">⚠️ Esta es una PRUEBA</h2>
-              <p>Este es un email de prueba enviado por <strong>${userName}</strong> para verificar que el sistema de alertas de emergencia funciona correctamente.</p>
-              <p><strong>No hay ninguna situación de emergencia real.</strong></p>
-            </div>
-
-            <p>Si recibiste este email, significa que:</p>
-            <ul>
-              <li>✅ Tu dirección de email está correctamente configurada</li>
-              <li>✅ El sistema puede contactarte en caso de emergencia</li>
-              <li>✅ Las alertas llegarán a tu bandeja de entrada</li>
-            </ul>
-
-            <p>En caso de una emergencia real, recibirás un email similar pero con información sobre la situación y recursos de ayuda.</p>
-
-            <div class="footer">
-              <p>Este es un mensaje automático de prueba de ${APP_NAME}.</p>
-              <p>Si no deberías recibir estos emails, por favor contacta a ${userName}.</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
-      
-      const template = { subject, html };
+      const template = emailTemplates.emergencyContactTestEmail(contactName, userName, language);
       return await sendEmail(email, template, 'Email de prueba de contacto de emergencia');
     } catch (error) {
       console.error('[Mailer] ❌ Error al enviar email de prueba:', error.message);
