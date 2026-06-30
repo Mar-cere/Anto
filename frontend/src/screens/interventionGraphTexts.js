@@ -49,7 +49,7 @@ const DEFAULTS = {
   MAP_SOURCE_COL: 'Lo que compartes',
   MAP_TARGET_COL: 'Técnicas',
   ORIGINAL_SNIPPET: 'Tal como lo escribiste',
-  MAP_TAP_HINT: 'Toca una conexión para ver por qué aparece aquí.',
+  MAP_TAP_HINT: 'Toca un tema o una técnica para ver el detalle.',
   CONNECTION_HELP: 'Esta técnica aparece porque conecta con lo que has compartido en el chat.',
   STATUS_NOT_YET: 'Aún no la has probado — puedes abrirla cuando quieras',
 };

@@ -2,7 +2,7 @@
  * Grafo tema–intervención (#127 / visual #218).
  */
 import { useFocusEffect } from '@react-navigation/native';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   RefreshControl,
   SafeAreaView,
@@ -25,6 +25,7 @@ import { useTheme } from '../context/ThemeContext';
 import chatService from '../services/chatService';
 import {
   buildInterventionGraphViewModel,
+  pickPrimaryGraphLink,
 } from '../utils/interventionGraphLayout';
 import {
   filterPublicGraphCorrelations,
@@ -57,6 +58,7 @@ const InterventionGraphScreen = ({ navigation }) => {
   const [windowDays, setWindowDays] = useState(30);
   const [viewMode, setViewMode] = useState('graph');
   const [selectedKey, setSelectedKey] = useState(null);
+  const didAutoSelectPrimaryRef = useRef(false);
   const { width: windowWidth } = useWindowDimensions();
 
   const graphWidth = useMemo(
@@ -208,6 +210,7 @@ const InterventionGraphScreen = ({ navigation }) => {
       setCorrelations(
         filterPublicGraphCorrelations(Array.isArray(data?.correlations) ? data.correlations : []),
       );
+      didAutoSelectPrimaryRef.current = false;
       setSelectedKey(null);
     } catch {
       setError(TEXTS.ERROR);
@@ -226,6 +229,38 @@ const InterventionGraphScreen = ({ navigation }) => {
       load();
     }, [load]),
   );
+
+  useEffect(() => {
+    if (
+      didAutoSelectPrimaryRef.current ||
+      loading ||
+      viewMode !== 'graph' ||
+      !hasVisualGraph
+    ) {
+      return;
+    }
+    const model = buildInterventionGraphViewModel(edges, topicFreeEdges, {
+      canvasWidth: graphWidth,
+      conceptNodes,
+      conceptEdges,
+      language,
+    });
+    const primary = pickPrimaryGraphLink(model.links);
+    if (primary?.key) {
+      setSelectedKey(primary.key);
+      didAutoSelectPrimaryRef.current = true;
+    }
+  }, [
+    loading,
+    viewMode,
+    hasVisualGraph,
+    edges,
+    topicFreeEdges,
+    conceptNodes,
+    conceptEdges,
+    graphWidth,
+    language,
+  ]);
 
   const openIntervention = useCallback(
     (edge) => {
