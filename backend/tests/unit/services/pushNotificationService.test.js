@@ -4,6 +4,7 @@
  * @author AntoApp Team
  */
 
+import { jest } from '@jest/globals';
 import pushNotificationService from '../../../services/pushNotificationService.js';
 
 describe('PushNotificationService', () => {
@@ -18,6 +19,29 @@ describe('PushNotificationService', () => {
       expect(body).toBe('You have a notification in Anto.');
       const bodyEs = pushNotificationService._sanitizePushText(null, null, 500, 'es');
       expect(bodyEs).toBe('Tienes una notificación en Anto.');
+    });
+
+    it('_send delega en sendNotification sin recursión', async () => {
+      const spy = jest
+        .spyOn(pushNotificationService, 'sendNotification')
+        .mockResolvedValue({ success: true });
+      await pushNotificationService._send(
+        'ExponentPushToken[test]',
+        'Título',
+        'Cuerpo',
+        { action: 'open_chat' },
+        pushNotificationService.NOTIFICATION_TYPES.CRISIS_WARNING,
+        { language: 'en' },
+      );
+      expect(spy).toHaveBeenCalledWith(
+        'ExponentPushToken[test]',
+        'Título',
+        'Cuerpo',
+        { action: 'open_chat', language: 'en' },
+        pushNotificationService.NOTIFICATION_TYPES.CRISIS_WARNING,
+        null,
+      );
+      spy.mockRestore();
     });
   });
 

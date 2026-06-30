@@ -1,5 +1,8 @@
 import { describe, expect, it } from '@jest/globals';
-import { shouldAttemptRollingSummary } from '../../../services/conversationRollingSummaryService.js';
+import {
+  shouldAttemptRollingSummary,
+  scheduleRollingSummaryRefresh,
+} from '../../../services/conversationRollingSummaryService.js';
 
 describe('shouldAttemptRollingSummary', () => {
   it('no intenta si hay pocos mensajes', () => {
@@ -16,5 +19,18 @@ describe('shouldAttemptRollingSummary', () => {
 
   it('refresca tras intervalo de mensajes nuevos', () => {
     expect(shouldAttemptRollingSummary(22, 14)).toBe(true);
+  });
+});
+
+describe('scheduleRollingSummaryRefresh', () => {
+  it('devuelve una promesa compatible con .catch()', async () => {
+    const promise = scheduleRollingSummaryRefresh({
+      conversationId: '507f1f77bcf86cd799439011',
+      userId: '507f1f77bcf86cd799439099',
+    });
+
+    expect(promise).toBeDefined();
+    expect(typeof promise.catch).toBe('function');
+    await expect(promise.catch(() => {})).resolves.toBeUndefined();
   });
 });

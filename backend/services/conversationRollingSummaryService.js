@@ -48,9 +48,13 @@ function buildMessageQuery({ conversationId, userId, guestSessionId, isGuest }) 
  * @param {{ conversationId: string, userId?: import('mongoose').Types.ObjectId|string|null, guestSessionId?: import('mongoose').Types.ObjectId|string|null, isGuest?: boolean }} params
  */
 export function scheduleRollingSummaryRefresh(params) {
-  setImmediate(() => {
-    refreshRollingSummary(params).catch((err) => {
-      console.warn('[RollingSummary]', err?.message || err);
+  return new Promise((resolve) => {
+    setImmediate(() => {
+      refreshRollingSummary(params)
+        .catch((err) => {
+          console.warn('[RollingSummary]', err?.message || err);
+        })
+        .finally(resolve);
     });
   });
 }

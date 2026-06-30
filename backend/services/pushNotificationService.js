@@ -230,7 +230,14 @@ class PushNotificationService {
   }
 
   _send(pushToken, title, body, data, type, options = {}) {
-    return this._send(pushToken, title, body, { ...data, language: options.language }, type);
+    return this.sendNotification(
+      pushToken,
+      title,
+      body,
+      { ...data, language: options.language },
+      type,
+      options.userId ?? null,
+    );
   }
 
   /**
