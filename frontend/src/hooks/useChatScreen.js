@@ -11,6 +11,9 @@ import { Alert, Animated, AppState, InteractionManager, Platform, Vibration } fr
 import chatService from '../services/chatService';
 import paymentService from '../services/paymentService';
 import websocketService from '../services/websocketService';
+import { useAuth } from '../context/AuthContext';
+import { canAttemptChatAccess } from '../utils/chatAccessGate';
+import { isSubscriptionRequiredError } from '../utils/subscriptionAccess';
 import { useNetworkStatus } from './useNetworkStatus';
 import { ROUTES } from '../constants/routes';
 import {
@@ -116,6 +119,7 @@ export function useChatScreen() {
   const textsRef = useRef(TEXTS);
   const navigation = useNavigation();
   const route = useRoute();
+  const { user } = useAuth();
   const { showToast } = useToast();
   const { isConnected, isInternetReachable } = useNetworkStatus();
   const isOffline = !isConnected || isInternetReachable === false;
@@ -457,6 +461,19 @@ export function useChatScreen() {
 
       if (userToken) {
         setGuestQuota(null);
+        const mayUseChat = await canAttemptChatAccess(user);
+        if (!mayUseChat) {
+          Alert.alert(texts.SUBSCRIPTION_REQUIRED_TITLE, texts.SUBSCRIPTION_REQUIRED_DEFAULT, [
+            { text: texts.COMMON_CANCEL, style: 'cancel', onPress: () => navigation.goBack() },
+            {
+              text: texts.SUBSCRIPTION_VIEW_PLANS,
+              onPress: () => navigation.navigate('Subscription'),
+            },
+          ]);
+          setMessages([]);
+          setShowSessionIntentionPrompt(false);
+          return;
+        }
         await chatService.initializeSocket();
         const paramOpenId = route.params?.openConversationId;
         if (paramOpenId && isValidMongoObjectId24(String(paramOpenId))) {
@@ -540,6 +557,19 @@ export function useChatScreen() {
         setShowSessionIntentionPrompt(false);
         return;
       }
+      if (isSubscriptionRequiredError(err) || extractErrorCode(err) === 'SUBSCRIPTION_REQUIRED') {
+        setError(null);
+        Alert.alert(texts.SUBSCRIPTION_REQUIRED_TITLE, texts.SUBSCRIPTION_REQUIRED_DEFAULT, [
+          { text: texts.COMMON_CANCEL, style: 'cancel', onPress: () => navigation.goBack() },
+          {
+            text: texts.SUBSCRIPTION_VIEW_PLANS,
+            onPress: () => navigation.navigate('Subscription'),
+          },
+        ]);
+        setMessages([]);
+        setShowSessionIntentionPrompt(false);
+        return;
+      }
       console.error('[ChatScreen] Error al inicializar chat:', err.message);
       setError(texts.NETWORK_ERROR_INIT);
     } finally {
@@ -552,6 +582,7 @@ export function useChatScreen() {
   }, [
     navigation,
     route.params?.openConversationId,
+    user,
     applyMessagePagination,
     hydrateCrisisResourcesFromMessages,
     captureUserTurnBaseline,

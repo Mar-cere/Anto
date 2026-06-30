@@ -29,4 +29,17 @@ describe('subscriptionLooksCurrentlyUsable', () => {
       }),
     ).toBe(true);
   });
+
+  it('permite trial User con isInTrial vigente', () => {
+    expect(
+      subscriptionLooksCurrentlyUsable({
+        success: true,
+        hasSubscription: true,
+        status: 'trial',
+        isActive: true,
+        isInTrial: true,
+        trialEndDate: new Date(Date.now() + 86400000).toISOString(),
+      }),
+    ).toBe(true);
+  });
 });

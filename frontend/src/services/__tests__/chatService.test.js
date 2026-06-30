@@ -73,6 +73,11 @@ jest.mock('../../utils/chatSseStream', () => ({
   streamChatSseWithFetch: (...args) => mockStreamChatSseWithFetch(...args),
 }));
 
+jest.mock('../../utils/chatAccessGate', () => ({
+  assertChatAccessOrThrow: jest.fn().mockResolvedValue(undefined),
+  canAttemptChatAccess: jest.fn().mockResolvedValue(true),
+}));
+
 // Necesitamos obtener el mock después de que se haya configurado
 let apiMock;
 
