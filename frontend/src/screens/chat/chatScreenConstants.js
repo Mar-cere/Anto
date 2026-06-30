@@ -39,6 +39,7 @@ export const TEXTS = {
   CHAT_OPTIONS_LAST_MESSAGE: 'Ir al último mensaje',
   CHAT_OPTIONS_CUSTOMIZE: 'Personalización del chat',
   CHAT_OPTIONS_AI_PRIVACY: 'Privacidad e IA',
+  CHAT_OPTIONS_AI_LIMITS: 'Límites de la IA',
   CHAT_OPTIONS_AI_INFO: 'Uso de la inteligencia artificial',
   CHAT_OPTIONS_CLEAR: 'Borrar esta conversación',
   CHAT_OPTIONS_CANCEL: 'Cerrar',

@@ -1,12 +1,13 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import React, { useMemo } from 'react';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ParticleBackground from '../components/ParticleBackground';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING } from '../constants/ui';
 import { useSectionTranslations } from '../hooks/useTranslations';
+import { useAiLimitsLibrary } from '../hooks/useAiLimitTopic';
 
 const PRIVACY_URL = 'https://www.antoapps.com/privacidad';
 
@@ -45,7 +46,11 @@ export default function AIPrivacyScreen() {
     () => ({ ...DEFAULT_TEXTS, ...(INFO?.AI_PRIVACY || {}) }),
     [INFO],
   );
+  const { sectionTitle, sectionIntro, topics } = useAiLimitsLibrary();
   const navigation = useNavigation();
+  const route = useRoute();
+  const scrollRef = useRef(null);
+  const limitsOffsetRef = useRef(0);
   const { colors } = useTheme();
 
   const styles = useMemo(
@@ -77,7 +82,19 @@ export default function AIPrivacyScreen() {
         },
         question: { color: colors.text, fontSize: 15, fontWeight: '700', marginBottom: 6 },
         answer: { color: colors.textSecondary, fontSize: 14, lineHeight: 20 },
-        sectionTitle: { color: colors.primary, fontSize: 15, fontWeight: '700', marginBottom: 8 },
+        sectionTitle: {
+          color: colors.primary,
+          fontSize: 16,
+          fontWeight: '700',
+          marginTop: 8,
+          marginBottom: 8,
+        },
+        sectionIntro: {
+          color: colors.textSecondary,
+          fontSize: 14,
+          lineHeight: 20,
+          marginBottom: 12,
+        },
         bulletRow: { flexDirection: 'row', marginBottom: 6 },
         bulletDot: { color: colors.primary, marginRight: 8, fontSize: 14 },
         bulletText: { color: colors.textSecondary, fontSize: 14, lineHeight: 20, flex: 1 },
@@ -94,6 +111,17 @@ export default function AIPrivacyScreen() {
       }),
     [colors],
   );
+
+  useEffect(() => {
+    if (!route.params?.focusLimits) return;
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, limitsOffsetRef.current - 8),
+        animated: true,
+      });
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [route.params?.focusLimits, topics.length]);
 
   const handleOpenPolicy = async () => {
     try {
@@ -119,7 +147,11 @@ export default function AIPrivacyScreen() {
         <View style={styles.headerButton} />
       </View>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scrollView}
+        contentContainerStyle={styles.content}
+      >
         <Text style={styles.introText}>{TEXTS.INTRO}</Text>
 
         <View style={styles.card}>
@@ -154,6 +186,29 @@ export default function AIPrivacyScreen() {
             <Text style={styles.policyButtonText}>{TEXTS.POLICY_BUTTON}</Text>
           </TouchableOpacity>
         </View>
+
+        {topics.length > 0 ? (
+          <View
+            onLayout={(event) => {
+              limitsOffsetRef.current = event.nativeEvent.layout.y;
+            }}
+          >
+            <Text style={styles.sectionTitle}>{sectionTitle}</Text>
+            <Text style={styles.sectionIntro}>{sectionIntro}</Text>
+            {topics.map((topic) => (
+              <View key={topic.id} style={styles.card}>
+                <Text style={styles.question}>{topic.title}</Text>
+                <Text style={styles.answer}>{topic.body}</Text>
+                {topic.bullets?.map((line) => (
+                  <View key={line} style={styles.bulletRow}>
+                    <Text style={styles.bulletDot}>•</Text>
+                    <Text style={styles.bulletText}>{line}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

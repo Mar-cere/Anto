@@ -391,6 +391,14 @@ const ChatScreen = () => {
     }
   }, [navigation, TEXTS.PRIVACY_SCREEN_WARN]);
 
+  const handleOpenAiLimitsLibrary = useCallback(() => {
+    try {
+      navigation.navigate('AIPrivacy', { focusLimits: true });
+    } catch (error) {
+      console.warn(TEXTS.PRIVACY_SCREEN_WARN, error);
+    }
+  }, [navigation, TEXTS.PRIVACY_SCREEN_WARN]);
+
   const handleOpenChatCustomization = useCallback(() => {
     try {
       navigation.navigate('Ajustes', { expandChatCustomization: true });
@@ -467,6 +475,7 @@ const ChatScreen = () => {
         onEmergencyContactAlertConfirm={handleEmergencyContactAlertConfirm}
         onEmergencyContactAlertReject={handleEmergencyContactAlertReject}
         emergencyContactAlertConfirmingId={emergencyContactAlertConfirmingId}
+        onOpenAiLimitsLibrary={handleOpenAiLimitsLibrary}
       />
     ),
     [
@@ -477,6 +486,7 @@ const ChatScreen = () => {
       handleEmergencyContactAlertConfirm,
       handleEmergencyContactAlertReject,
       emergencyContactAlertConfirmingId,
+      handleOpenAiLimitsLibrary,
     ]
   );
 
@@ -547,6 +557,7 @@ const ChatScreen = () => {
         onScrollToBottom={() => scrollToBottom(true, { force: true })}
         onOpenCustomization={handleOpenChatCustomization}
         onOpenPrivacy={handleOpenAIDetails}
+        onOpenAiLimits={handleOpenAiLimitsLibrary}
         onOpenAiInfo={() => setShowAIDisclosure(true)}
         onOpenCrisisResources={openCrisisResourcesPanel}
         onRequestClearConversation={() => setShowClearModal(true)}
@@ -673,6 +684,7 @@ const ChatScreen = () => {
           onOpenEmergencyContacts={
             guestQuota === null ? openEmergencyContactsFromChat : null
           }
+          onOpenAiLimitsLibrary={handleOpenAiLimitsLibrary}
         />
       ) : null}
 

@@ -2,7 +2,7 @@
  * Pantalla de perfil de usuario
  * Refactor: hook + subcomponentes en ./profileScreen/
  */
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -30,6 +30,9 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { styles, profileColors } = useProfileScreenStyles();
   const navigation = useNavigation();
+  const handleOpenAiLimitsLibrary = useCallback(() => {
+    navigation.navigate('AIPrivacy', { focusLimits: true });
+  }, [navigation]);
   const {
     loading,
     refreshing,
@@ -114,6 +117,7 @@ export default function ProfileScreen() {
             onDeleteContact={handleDeleteContact}
             onOpenCrisisDashboard={() => navigation.navigate('CrisisDashboard')}
             onOpenAlertsHistory={() => navigation.navigate('EmergencyAlertsHistory')}
+            onOpenAiLimitsLibrary={handleOpenAiLimitsLibrary}
           />
         </View>
 

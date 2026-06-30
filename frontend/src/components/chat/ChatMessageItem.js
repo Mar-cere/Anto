@@ -11,6 +11,8 @@ import { hydrateInterventionSuggestion } from '../../utils/psychoeducationTopic'
 import PsychoeducationSuggestionCard from '../PsychoeducationSuggestionCard';
 import MarkdownText from '../MarkdownText';
 import TccLiteMessageFooter from './TccLiteMessageFooter';
+import AiLimitInfoButton from '../common/AiLimitInfoButton';
+import { AI_LIMIT_TOPIC } from '../../constants/aiCompetenceLimits';
 import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -324,6 +326,7 @@ function ChatMessageItem({
   onEmergencyContactAlertConfirm,
   onEmergencyContactAlertReject,
   emergencyContactAlertConfirmingId = null,
+  onOpenAiLimitsLibrary,
 }) {
   const { language } = useLanguage();
   const TEXTS = useChatTexts();
@@ -381,7 +384,15 @@ function ChatMessageItem({
     const isConfirming = emergencyContactAlertConfirmingId === offerKey;
     return (
       <View style={styles.suggestionsContainer}>
-        <Text style={styles.suggestionsTitle}>{TEXTS.EMERGENCY_CONTACT_ALERT_OFFER_TITLE}</Text>
+        <View style={styles.productProposalTopRow}>
+          <Text style={styles.suggestionsTitle}>{TEXTS.EMERGENCY_CONTACT_ALERT_OFFER_TITLE}</Text>
+          <AiLimitInfoButton
+            topicId={AI_LIMIT_TOPIC.EMERGENCY_CONTACTS}
+            size={18}
+            color={colors.textSecondary}
+            onOpenFullLibrary={onOpenAiLimitsLibrary}
+          />
+        </View>
         <View style={styles.productProposalCard}>
           <Text style={styles.productProposalTitle}>{offer.message}</Text>
           <View style={styles.proposalActionsRow}>
@@ -416,7 +427,15 @@ function ChatMessageItem({
   if (message.type === 'product_proposals' && message.proposedProductActions?.length) {
     return (
       <View style={styles.suggestionsContainer}>
-        <Text style={styles.suggestionsTitle}>{TEXTS.PRODUCT_ACTIONS_TITLE}</Text>
+        <View style={styles.productProposalTopRow}>
+          <Text style={styles.suggestionsTitle}>{TEXTS.PRODUCT_ACTIONS_TITLE}</Text>
+          <AiLimitInfoButton
+            topicId={AI_LIMIT_TOPIC.CHAT_ACTIONS}
+            size={18}
+            color={colors.textSecondary}
+            onOpenFullLibrary={onOpenAiLimitsLibrary}
+          />
+        </View>
         {message.proposedProductActions.map((action) => (
           <View key={action.id} style={styles.productProposalCard}>
             <View style={styles.productProposalTopRow}>
