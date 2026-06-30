@@ -27,4 +27,25 @@ describe('metricsService — streaming TTFT desglosado (#59)', () => {
     expect(health.chatUsage.latencyByRoute['http:chat:registered'].ttft.preLlm.p50Ms).toBe(400);
     expect(health.chatUsage.latencyByRoute['http:chat:registered'].ttft.model.p50Ms).toBe(500);
   });
+
+  it('agrega ruta socket:chat:registered en latencyByRoute', async () => {
+    metricsService.inMemoryMetrics.chatUsage.latencyByRoute = {};
+
+    await metricsService.recordMetric(
+      'chat_usage',
+      {
+        action: 'streaming_first_chunk',
+        isGuest: false,
+        ttftMs: 250,
+        preLlmMs: 100,
+        modelTtftMs: 150,
+      },
+      '000000000000000000000001',
+      { transport: 'socket', endpoint: 'chat', surface: 'registered' },
+    );
+
+    const health = await metricsService.getHealthStats();
+    expect(health.chatUsage.latencyByRoute['socket:chat:registered']).toBeDefined();
+    expect(health.chatUsage.latencyByRoute['socket:chat:registered'].ttft.p50Ms).toBe(250);
+  });
 });

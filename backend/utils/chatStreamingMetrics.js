@@ -33,8 +33,12 @@ export function buildStreamingTtftMetrics({ startTime, preLlmEndAt, firstChunkAt
  */
 export function streamingTtftMetricPayload(metrics) {
   if (!metrics) return {};
-  const payload = { ttftMs: metrics.ttftMs };
-  if (metrics.preLlmMs != null) payload.preLlmMs = metrics.preLlmMs;
-  if (metrics.modelTtftMs != null) payload.modelTtftMs = metrics.modelTtftMs;
+  const ttftMs = Number(metrics.ttftMs);
+  if (!Number.isFinite(ttftMs) || ttftMs < 0) return {};
+  const payload = { ttftMs };
+  const preLlmMs = Number(metrics.preLlmMs);
+  const modelTtftMs = Number(metrics.modelTtftMs);
+  if (Number.isFinite(preLlmMs) && preLlmMs >= 0) payload.preLlmMs = preLlmMs;
+  if (Number.isFinite(modelTtftMs) && modelTtftMs >= 0) payload.modelTtftMs = modelTtftMs;
   return payload;
 }

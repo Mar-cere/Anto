@@ -8,6 +8,7 @@
 const mockSocket = {
   connected: false,
   on: jest.fn(),
+  off: jest.fn(),
   emit: jest.fn(),
   disconnect: jest.fn(),
   close: jest.fn()
@@ -153,6 +154,46 @@ describe('WebSocketService', () => {
 
     it('no debe fallar si no hay listeners', () => {
       expect(() => websocketService.emit('non-existent-event', { data: 'test' })).not.toThrow();
+    });
+  });
+
+  describe('sendChatMessage streaming (#128)', () => {
+    beforeEach(async () => {
+      await AsyncStorage.setItem('userToken', 'test-token');
+      mockSocket.connected = true;
+      websocketService.socket = mockSocket;
+      websocketService.isConnected = true;
+    });
+
+    it('propaga chunks solo de la conversación activa', async () => {
+      const onChunk = jest.fn();
+      let chunkHandler;
+      let receivedHandler;
+
+      mockSocket.on.mockImplementation((event, handler) => {
+        if (event === 'message:chunk') chunkHandler = handler;
+        if (event === 'message:received') receivedHandler = handler;
+      });
+
+      const promise = websocketService.sendChatMessage({
+        text: 'Hola',
+        conversationId: 'conv-a',
+        onChunk,
+      });
+
+      await Promise.resolve();
+
+      chunkHandler?.({ content: 'Otro', conversationId: 'conv-b' });
+      chunkHandler?.({ content: 'Bien', conversationId: 'conv-a' });
+      receivedHandler?.({
+        id: 'm1',
+        text: 'Bien',
+        conversationId: 'conv-a',
+      });
+
+      await expect(promise).resolves.toMatchObject({ conversationId: 'conv-a' });
+      expect(onChunk).toHaveBeenCalledTimes(1);
+      expect(onChunk).toHaveBeenCalledWith('Bien');
     });
   });
 });

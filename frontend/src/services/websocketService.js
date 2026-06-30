@@ -203,8 +203,18 @@ class WebSocketService {
         finish(timeoutErr);
       }, CHAT_TURN_TIMEOUT_MS);
 
+      const expectedConversationId = conversationId ? String(conversationId) : null;
+
       const onChunkEvent = (payload) => {
         if (typeof onChunk !== 'function') return;
+        if (expectedConversationId) {
+          const payloadConversationId = payload?.conversationId
+            ? String(payload.conversationId)
+            : null;
+          if (payloadConversationId && payloadConversationId !== expectedConversationId) {
+            return;
+          }
+        }
         const piece = payload?.content;
         if (typeof piece === 'string' && piece.length > 0) {
           onChunk(piece);
@@ -212,6 +222,14 @@ class WebSocketService {
       };
 
       const onReceived = (payload) => {
+        if (expectedConversationId) {
+          const payloadConversationId = payload?.conversationId
+            ? String(payload.conversationId)
+            : null;
+          if (payloadConversationId && payloadConversationId !== expectedConversationId) {
+            return;
+          }
+        }
         finish(null, payload);
       };
 
