@@ -11,6 +11,7 @@ import React, { useMemo, useEffect, useRef } from 'react';
 import {
   Animated,
   Alert,
+  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -27,7 +28,6 @@ import {
 } from '../utils/firstSessionHintStorage';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
-import { getFocusTheme } from '../styles/focusCardTheme';
 import { SPACING } from '../constants/ui';
 
 export { getFirstSessionHintDismissedKey, isFirstSessionHintDismissed, setFirstSessionHintDismissed };
@@ -57,34 +57,32 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null, userCreatedAt = n
   );
   const navigation = useNavigation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const { colors, resolvedScheme } = useTheme();
-  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const { colors } = useTheme();
 
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        overlay: {
-          ...StyleSheet.absoluteFillObject,
+        modalRoot: {
+          flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
           padding: 24,
-        },
-        backdrop: {
-          ...StyleSheet.absoluteFillObject,
           backgroundColor: colors.overlay,
         },
-        cardWrapper: {
+        card: {
           width: '100%',
           maxWidth: 340,
-          alignSelf: 'center',
-        },
-        card: {
-          ...t.FOCUS_PANEL,
-          marginBottom: 0,
+          backgroundColor: colors.modalSurface,
+          borderRadius: 20,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
           paddingVertical: 22,
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          width: '100%',
-          maxWidth: 340,
+          shadowColor: colors.shadowAmbient,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.28,
+          shadowRadius: 24,
+          elevation: 12,
         },
         iconRow: {
           alignItems: 'center',
@@ -140,7 +138,7 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null, userCreatedAt = n
           fontSize: 15,
         },
       }),
-    [colors, t],
+    [colors],
   );
 
   useEffect(() => {
@@ -202,9 +200,14 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null, userCreatedAt = n
   if (!visible) return null;
 
   return (
-    <Animated.View style={[styles.overlay, { opacity: fadeAnim }]} pointerEvents="auto">
-      <View style={styles.backdrop} />
-      <View style={styles.cardWrapper}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={handleGotIt}
+    >
+      <Animated.View style={[styles.modalRoot, { opacity: fadeAnim }]} pointerEvents="box-none">
         <View style={styles.card}>
         <View style={styles.iconRow}>
           <View style={styles.iconCircle}>
@@ -230,8 +233,8 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null, userCreatedAt = n
           </TouchableOpacity>
         </View>
       </View>
-      </View>
-    </Animated.View>
+      </Animated.View>
+    </Modal>
   );
 };
 

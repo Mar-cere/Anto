@@ -58,6 +58,13 @@ describe('postOnboardingChat guard', () => {
     expect(hint).toMatch(/setFirstSessionHintDismissed\(userId\)/);
   });
 
+  it('FirstSessionHint usa Modal opaco (modalSurface), no panel translúcido del dashboard', () => {
+    const hint = readSrc('components/FirstSessionHint.js');
+    expect(hint).toMatch(/<Modal/);
+    expect(hint).toMatch(/colors\.modalSurface/);
+    expect(hint).not.toMatch(/FOCUS_PANEL/);
+  });
+
   it('handleOnboardingQuestionsCompleted no descarta el hint prematuramente', () => {
     const dash = readSrc('screens/DashScreen.js');
     const block = dash.slice(
