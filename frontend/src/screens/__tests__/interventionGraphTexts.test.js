@@ -4,6 +4,8 @@ import {
   formatGraphMetrics,
   formatGraphRates,
   formatGraphRowContext,
+  formatGraphListInterventionTitle,
+  resolveGraphEdgeTopicLabel,
   formatCorrelationInsight,
   stripTechnicalInterventionSuffix,
 } from '../interventionGraphTexts';
@@ -18,6 +20,7 @@ const TEXTS = {
   STATUS_EXPLORED: 'Lo abriste para explorarlo',
   STATUS_DISMISSED: 'Lo descartaste en su momento',
   STATUS_SUGGESTED: 'Te lo sugerimos en el chat',
+  STATUS_NOT_YET: 'Aún no la has probado — puedes abrirla cuando quieras',
 };
 
 describe('interventionGraphTexts', () => {
@@ -61,6 +64,27 @@ describe('interventionGraphTexts', () => {
     );
     expect(formatGraphHumanStatus(TEXTS, { shown: 1, clicked: 0, dismissed: 1 })).toBe(
       'Lo descartaste en su momento',
+    );
+    expect(formatGraphHumanStatus(TEXTS, { shown: 0, clicked: 0, dismissed: 0 })).toBe(
+      TEXTS.STATUS_NOT_YET,
+    );
+  });
+
+  it('resolveGraphEdgeTopicLabel prioriza displayLabel', () => {
+    expect(
+      resolveGraphEdgeTopicLabel(
+        { topicFree: 'raw', displayLabel: 'Lucha interna y falta de motivación' },
+        'es',
+      ),
+    ).toBe('Lucha interna y falta de motivación');
+  });
+
+  it('formatGraphListInterventionTitle quita sufijos técnicos', () => {
+    expect(
+      formatGraphListInterventionTitle('Enojo e ira (psicoeducación)', 'psychoeducation_anger'),
+    ).toMatch(/Enojo e ira/);
+    expect(formatGraphListInterventionTitle('Enojo e ira (psicoeducación)', 'psychoeducation_anger')).not.toMatch(
+      /psicoeducación/i,
     );
   });
 
