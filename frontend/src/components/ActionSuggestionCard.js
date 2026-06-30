@@ -3,7 +3,7 @@
  * Muestra sugerencias de acciones basadas en el análisis emocional
  * Incluye animaciones, gestos de deslizar y preview
  */
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -15,14 +15,13 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { resolveInterventionVisual, resolveVisualAccent } from '../constants/interventionVisuals';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { getFocusTheme } from '../styles/focusCardTheme';
 import { SPACING } from '../constants/ui';
 
 const CARD_MARGIN_BOTTOM = 8;
-const ICON_SIZE = 20;
-const ICON_MARGIN_RIGHT = 10;
 const DEFAULT_TEXTS = {
   PREVIEW_HINT: 'Toca para abrir esta acción',
   OPEN_BUTTON: 'Abrir',
@@ -40,6 +39,19 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
     [translated],
   );
   const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const visual = useMemo(() => {
+    const fromSuggestion = suggestion?.vectorIcon
+      ? {
+          mciIcon: suggestion.vectorIcon,
+          emoji: suggestion.icon,
+          accentKey: suggestion.accentKey || 'primary',
+        }
+      : null;
+    const base = fromSuggestion || resolveInterventionVisual(suggestion?.id);
+    const { accent, iconBg } = resolveVisualAccent(colors, base.accentKey);
+    return { ...base, accent, iconBg };
+  }, [colors, suggestion?.accentKey, suggestion?.icon, suggestion?.id, suggestion?.vectorIcon]);
+
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -47,23 +59,41 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           marginBottom: CARD_MARGIN_BOTTOM,
         },
         card: {
-          ...t.FOCUS_INNER_ROW,
+          flexDirection: 'row',
+          alignItems: 'center',
           justifyContent: 'space-between',
+          borderRadius: 16,
+          paddingVertical: 12,
+          paddingHorizontal: 14,
+          backgroundColor: colors.cardBackground ?? colors.modalSurface ?? colors.surface,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
+          borderLeftWidth: 3,
+          borderLeftColor: visual.accent,
+          shadowColor: colors.glassShadow ?? colors.shadowAmbient,
+          shadowOffset: { width: 0, height: 3 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          elevation: 2,
         },
         content: {
           flexDirection: 'row',
           alignItems: 'center',
           flex: 1,
+          minWidth: 0,
         },
-        icon: {
-          fontSize: ICON_SIZE,
-          marginRight: ICON_MARGIN_RIGHT,
+        iconWrap: {
+          width: 32,
+          height: 32,
+          borderRadius: 10,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: visual.iconBg,
+          marginRight: 12,
         },
         label: {
           fontSize: 15,
-          fontWeight: '500',
+          fontWeight: '600',
           lineHeight: 20,
           color: colors.text,
           flex: 1,
@@ -73,7 +103,7 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
         },
         previewOverlay: {
           flex: 1,
-          backgroundColor: colors.backdropStrong ?? 'rgba(0, 0, 0, 0.5)',
+          backgroundColor: colors.overlay ?? 'rgba(0, 0, 0, 0.65)',
           justifyContent: 'center',
           alignItems: 'center',
           padding: SPACING.SCREEN_EDGE_INSET,
@@ -83,14 +113,22 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           maxWidth: 400,
         },
         previewCard: {
-          ...t.FOCUS_PANEL,
+          backgroundColor: colors.modalSurface ?? colors.surface,
+          borderRadius: 20,
           marginBottom: 0,
           paddingVertical: 24,
           paddingHorizontal: 22,
           alignItems: 'center',
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.border,
         },
-        previewIcon: {
-          fontSize: 48,
+        previewIconWrap: {
+          width: 64,
+          height: 64,
+          borderRadius: 20,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: visual.iconBg,
           marginBottom: 16,
         },
         previewTitle: {
@@ -137,7 +175,7 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           padding: 8,
         },
       }),
-    [colors, t],
+    [colors, t, visual.accent, visual.iconBg],
   );
 
   const [showPreview, setShowPreview] = useState(false);
@@ -252,9 +290,13 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           activeOpacity={0.7}
         >
           <View style={styles.content}>
-            {suggestion.icon && (
-              <Text style={styles.icon}>{suggestion.icon}</Text>
-            )}
+            <View style={styles.iconWrap}>
+              <MaterialCommunityIcons
+                name={visual.mciIcon}
+                size={18}
+                color={visual.accent}
+              />
+            </View>
             <Text style={styles.label}>{suggestion.label}</Text>
           </View>
           <Ionicons 
@@ -280,9 +322,13 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
         >
           <View style={styles.previewContainer}>
             <View style={styles.previewCard}>
-              {suggestion.icon && (
-                <Text style={styles.previewIcon}>{suggestion.icon}</Text>
-              )}
+              <View style={styles.previewIconWrap}>
+                <MaterialCommunityIcons
+                  name={visual.mciIcon}
+                  size={32}
+                  color={visual.accent}
+                />
+              </View>
               <Text style={styles.previewTitle}>{suggestion.label}</Text>
               {suggestion.description && (
                 <Text style={styles.previewDescription}>

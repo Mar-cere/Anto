@@ -15,7 +15,7 @@ import UserInsight from '../models/UserInsight.js';
 import cacheService from './cacheService.js';
 import openaiService from './openaiService.js';
 import { computeNextRoutinePushSlot } from './notificationScheduler.js';
-import { getLastSessionSummaryForUser } from './lastSessionSummaryService.js';
+import { getLastSessionSummaryForUser, reconcileChatContinuitySummary } from './lastSessionSummaryService.js';
 import { getTodayDailyMoodCheckIn } from './dailyMoodCheckInService.js';
 import { getEngagementStreak } from './engagementStreakService.js';
 import { buildUserSummary } from './userSummaryService.js';
@@ -480,7 +480,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
     habitReminder,
     protocolNext,
     userFocusPrefs,
-    lastSessionSummaryRaw,
+    lastSessionSummaryStored,
     baWeekFocus,
     exposureFocus
   ] = await Promise.all([
@@ -496,6 +496,12 @@ export async function buildDashboardFocus(userId, opts = {}) {
     loadBaWeekFocus(userId, language),
     loadExposureFocus(userId)
   ]);
+
+  const lastSessionSummaryRaw = reconcileChatContinuitySummary(
+    lastSessionSummaryStored,
+    recentConversations,
+    { language, now: new Date() },
+  );
 
   const notificationPreferences = userFocusPrefs?.notificationPreferences || null;
   const userTimezone = userFocusPrefs?.timezone || null;
@@ -584,6 +590,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
           conversationId: lastSessionSummary.conversationId,
           generatedAt: lastSessionSummary.generatedAt,
           placeholder: lastSessionSummary.placeholder,
+          recentActivityPending: lastSessionSummary.recentActivityPending === true,
           headline: lastSessionSummary.headline
         }
       : null,

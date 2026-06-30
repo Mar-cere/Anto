@@ -444,7 +444,11 @@ const DashboardFocusCard = ({
         icon: 'reader-outline',
         title: lastSession?.headline || DASH.FOCUS_CHAT_CONTINUITY_HEADLINE,
         subtitle: lastSessionText,
-        badge: lastSession?.placeholder ? DASH.FOCUS_CHAT_CONTINUITY_BADGE : null,
+        badge: lastSession?.recentActivityPending
+          ? DASH.FOCUS_CHAT_CONTINUITY_RECENT_BADGE
+          : lastSession?.placeholder
+            ? DASH.FOCUS_CHAT_CONTINUITY_BADGE
+            : null,
         onPress: onLastSessionPress,
         showChevron: true,
         a11yLabel: `${lastSession?.headline || DASH.FOCUS_CHAT_CONTINUITY_HEADLINE}. ${lastSessionText}`,

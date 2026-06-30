@@ -50,6 +50,7 @@ import {
 } from '../utils/recordInterventionCompleted';
 import { topicFromInterventionId } from '../utils/psychoeducationTopic';
 import { SPACING } from '../constants/ui';
+import { estimateChatStripReserveHeight } from '../utils/chatStripStyles';
 import {
   formatGuestQuotaBanner,
   ICON_SIZES,
@@ -345,6 +346,29 @@ const ChatScreen = () => {
   } = useChatScreen();
   const hasTccContinuity = visibleTccContinuityItems.length > 0;
   const showTccLiteHandoff = Boolean(tccLiteAtHandoff?.screen) && !hasTccContinuity;
+  const showSoftCrisisStrip =
+    !immersiveMode && Boolean(softCrisisCheckInPanel) && !crisisResourcesPanel;
+  const showCrisisStrip = !immersiveMode && Boolean(crisisResourcesPanel);
+
+  const messagesListStyle = useMemo(() => {
+    const stripReserve = estimateChatStripReserveHeight({
+      tccContinuityCount: !immersiveMode ? visibleTccContinuityItems.length : 0,
+      softCrisisActive: showSoftCrisisStrip,
+      tccLiteHandoff: !immersiveMode && showTccLiteHandoff,
+      crisisResources: showCrisisStrip,
+    });
+    return [
+      styles.messagesList,
+      stripReserve > 0 ? { paddingBottom: LAYOUT.MESSAGES_LIST_PADDING_BOTTOM + stripReserve } : null,
+    ];
+  }, [
+    styles.messagesList,
+    immersiveMode,
+    visibleTccContinuityItems.length,
+    showSoftCrisisStrip,
+    showTccLiteHandoff,
+    showCrisisStrip,
+  ]);
   const [showAIDisclosure, setShowAIDisclosure] = React.useState(false);
   const [showChatOptions, setShowChatOptions] = React.useState(false);
 
@@ -633,7 +657,7 @@ const ChatScreen = () => {
             data={messages}
             renderItem={renderMessage}
             keyExtractor={keyExtractor}
-            contentContainerStyle={styles.messagesList}
+            contentContainerStyle={messagesListStyle}
             onContentSizeChange={handleMessagesContentSizeChange}
             onLayout={handleMessagesListLayout}
             extraData={messages}

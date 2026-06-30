@@ -535,6 +535,81 @@ export async function runDueSessionSummaryJobs() {
  */
 const RISK_TIER_API = new Set(['low', 'warning', 'medium', 'high', 'unknown']);
 
+const RECONCILE_TOLERANCE_MS = 60_000;
+
+/**
+ * Alinea la continuidad del dashboard con la conversación más reciente cuando el
+ * resumen persistido pertenece a otra sesión o quedó desactualizado.
+ *
+ * @param {object|null} stored
+ * @param {Array<{ conversationId?: string, updatedAt?: Date|string, lastMessagePreview?: string, lastMessageRole?: string, messageCount?: number }>} recentConversations
+ * @param {{ language?: 'es'|'en', now?: Date }} [opts]
+ */
+export function reconcileChatContinuitySummary(stored, recentConversations = [], opts = {}) {
+  const lang = normalizeFocusLanguage(opts.language);
+  const c = focusCopy(lang);
+  const now = opts.now instanceof Date ? opts.now : new Date();
+  const latest = Array.isArray(recentConversations) ? recentConversations[0] : null;
+
+  if (!latest?.conversationId || !latest.updatedAt) {
+    return stored || null;
+  }
+
+  const latestAt = new Date(latest.updatedAt).getTime();
+  if (!Number.isFinite(latestAt)) return stored || null;
+
+  const storedConvId = stored?.conversationId ? String(stored.conversationId) : null;
+  const latestConvId = String(latest.conversationId);
+  const sameConversation = Boolean(storedConvId && storedConvId === latestConvId);
+  const storedAt = stored?.sessionEndedAt
+    ? new Date(stored.sessionEndedAt).getTime()
+    : stored?.generatedAt
+      ? new Date(stored.generatedAt).getTime()
+      : 0;
+
+  const storedIsFresh =
+    stored &&
+    sameConversation &&
+    Number.isFinite(storedAt) &&
+    storedAt >= latestAt - RECONCILE_TOLERANCE_MS &&
+    stored.placeholder !== true;
+
+  if (storedIsFresh) return stored;
+
+  const needsRefresh =
+    !stored ||
+    !sameConversation ||
+    (sameConversation && Number.isFinite(storedAt) && latestAt > storedAt + RECONCILE_TOLERANCE_MS) ||
+    stored.placeholder === true;
+
+  if (!needsRefresh) return stored;
+
+  const preview = sanitizeContinuationText(String(latest.lastMessagePreview || ''), 100);
+  let snippet = c.lastSessionRecentActivitySnippet;
+  if (preview && latest.lastMessageRole === 'user') {
+    const clipped = preview.length >= 100 ? `${preview}…` : preview;
+    snippet = `${c.lastSessionRecentUserPrefix}${clipped}${c.lastSessionRecentUserSuffix}`;
+  } else if (preview) {
+    snippet = preview.length >= 100 ? `${preview}…` : preview;
+  }
+
+  return {
+    conversationId: latestConvId,
+    bullets: [],
+    bridge: '',
+    snippet,
+    riskTier: stored?.riskTier && RISK_TIER_API.has(String(stored.riskTier).toLowerCase())
+      ? String(stored.riskTier).toLowerCase()
+      : 'unknown',
+    placeholder: false,
+    recentActivityPending: true,
+    userTurnCount: Number.isFinite(latest.messageCount) ? latest.messageCount : 0,
+    language: lang,
+    generatedAt: new Date(latestAt).toISOString(),
+    sessionEndedAt: new Date(latestAt).toISOString(),
+  };
+}
+
 export async function getLastSessionSummaryForUser(userId) {
   if (!mongoose.isValidObjectId(userId)) return null;
   const uid = new mongoose.Types.ObjectId(String(userId));

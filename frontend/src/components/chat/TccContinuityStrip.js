@@ -1,16 +1,22 @@
 /**
  * Franja de continuidad TCC en el chat (retomar BA, exposición, etc.).
  */
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { resolveTccContinuityVisual, resolveVisualAccent } from '../../constants/interventionVisuals';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
 import { pickLocalizedDefaults } from '../../utils/localizedFallback';
-import { getFocusTheme } from '../../styles/focusCardTheme';
+import {
+  createChatStripIconWrapStyle,
+  createChatStripItemStyle,
+  createChatStripPanelStyle,
+  createChatStripWrapStyle,
+} from '../../utils/chatStripStyles';
 
 const DEFAULT_TEXTS_BY_LANG = {
   es: {
@@ -26,10 +32,9 @@ const DEFAULT_TEXTS_BY_LANG = {
 };
 
 export default function TccContinuityStrip({ items, onOpen, onDismiss, style }) {
-  const { colors, resolvedScheme } = useTheme();
+  const { colors } = useTheme();
   const { language } = useLanguage();
   const translated = useSectionTranslations('CHAT');
-  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
 
   const TEXTS = useMemo(() => {
     const defaults = pickLocalizedDefaults(language, DEFAULT_TEXTS_BY_LANG);
@@ -43,30 +48,23 @@ export default function TccContinuityStrip({ items, onOpen, onDismiss, style }) 
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        wrap: {
-          marginHorizontal: SPACING.SCREEN_EDGE_INSET,
-          marginBottom: SPACING.sm,
-        },
-        panel: {
-          ...t.FOCUS_PANEL,
-          padding: SPACING.md,
-          gap: SPACING.sm,
-        },
+        wrap: createChatStripWrapStyle(),
+        panel: createChatStripPanelStyle(colors),
         kicker: {
           fontSize: 11,
           fontWeight: '700',
           letterSpacing: 1.2,
           textTransform: 'uppercase',
-          color: t.FOCUS_KICKER_COLOR,
+          color: colors.primary,
         },
-        item: {
-          ...t.FOCUS_INNER_ROW,
-          alignItems: 'flex-start',
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: t.FOCUS_BORDER_SUBTLE,
-        },
+        item: createChatStripItemStyle(colors),
         itemBody: { flex: 1, paddingRight: SPACING.sm },
+        titleRow: {
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+        },
         itemTitle: {
+          flex: 1,
           fontSize: 14,
           fontWeight: '700',
           color: colors.text,
@@ -75,7 +73,7 @@ export default function TccContinuityStrip({ items, onOpen, onDismiss, style }) 
         itemSubtitle: {
           fontSize: 13,
           lineHeight: 18,
-          color: t.FOCUS_META,
+          color: colors.textSecondary,
           marginTop: 2,
         },
         itemActions: {
@@ -94,15 +92,8 @@ export default function TccContinuityStrip({ items, onOpen, onDismiss, style }) 
           fontWeight: '700',
           color: colors.primary,
         },
-        iconRow: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-          marginBottom: 2,
-        },
-        icon: { fontSize: 18 },
       }),
-    [colors, t],
+    [colors],
   );
 
   if (!Array.isArray(items) || items.length === 0) return null;
@@ -111,45 +102,56 @@ export default function TccContinuityStrip({ items, onOpen, onDismiss, style }) 
     <View style={[styles.wrap, style]}>
       <View style={styles.panel}>
         <Text style={styles.kicker}>{TEXTS.KICKER}</Text>
-        {items.map((item) => (
-          <View key={item.id} style={styles.item}>
-            <View style={styles.itemBody}>
-              <View style={styles.iconRow}>
-                {item.icon ? <Text style={styles.icon}>{item.icon}</Text> : null}
-                <Text style={styles.itemTitle}>{item.title}</Text>
+        {items.map((item) => {
+          const visual = resolveTccContinuityVisual(item.kind || item.interventionId);
+          const { accent, iconBg } = resolveVisualAccent(colors, visual.accentKey);
+          const iconWrapStyle = createChatStripIconWrapStyle(colors, visual.accentKey);
+          return (
+            <View key={item.id} style={styles.item}>
+              <View style={styles.itemBody}>
+                <View style={styles.titleRow}>
+                  <View style={[iconWrapStyle, { backgroundColor: iconBg }]}>
+                    <MaterialCommunityIcons
+                      name={visual.mciIcon}
+                      size={18}
+                      color={accent}
+                    />
+                  </View>
+                  <Text style={styles.itemTitle}>{item.title}</Text>
+                </View>
+                {item.subtitle ? (
+                  <Text style={styles.itemSubtitle} numberOfLines={2}>
+                    {item.subtitle}
+                  </Text>
+                ) : null}
               </View>
-              {item.subtitle ? (
-                <Text style={styles.itemSubtitle} numberOfLines={2}>
-                  {item.subtitle}
-                </Text>
-              ) : null}
+              <View style={styles.itemActions}>
+                <TouchableOpacity
+                  style={styles.openBtn}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+                    onOpen?.(item);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${TEXTS.OPEN}: ${item.title}`}
+                >
+                  <Text style={styles.openText}>{TEXTS.OPEN}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    Haptics.selectionAsync().catch(() => {});
+                    onDismiss?.(item);
+                  }}
+                  accessibilityRole="button"
+                  accessibilityLabel={TEXTS.DISMISS_A11Y}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="close" size={18} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
             </View>
-            <View style={styles.itemActions}>
-              <TouchableOpacity
-                style={styles.openBtn}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-                  onOpen?.(item);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={`${TEXTS.OPEN}: ${item.title}`}
-              >
-                <Text style={styles.openText}>{TEXTS.OPEN}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  Haptics.selectionAsync().catch(() => {});
-                  onDismiss?.(item);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={TEXTS.DISMISS_A11Y}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons name="close" size={18} color={colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
+          );
+        })}
       </View>
     </View>
   );

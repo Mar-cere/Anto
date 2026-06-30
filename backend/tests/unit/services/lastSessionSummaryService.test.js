@@ -5,7 +5,8 @@ import {
   collectRiskLevelsFromMessages,
   countUserTurnStats,
   scheduleLastSessionSummary,
-  sanitizeContinuationText
+  sanitizeContinuationText,
+  reconcileChatContinuitySummary,
 } from '../../../services/lastSessionSummaryService.js';
 
 describe('lastSessionSummaryService', () => {
@@ -87,6 +88,51 @@ describe('lastSessionSummaryService', () => {
 
     it('entrada no array devuelve ceros', () => {
       expect(countUserTurnStats(undefined)).toEqual({ userTurns: 0, userChars: 0 });
+    });
+  });
+
+  describe('reconcileChatContinuitySummary', () => {
+    const recent = [
+      {
+        conversationId: 'conv-new',
+        updatedAt: '2026-06-30T12:00:00.000Z',
+        lastMessagePreview: 'Me siento agotado hoy',
+        lastMessageRole: 'user',
+        messageCount: 12,
+      },
+    ];
+
+    it('devuelve stored si sigue alineado con la conversación más reciente', () => {
+      const stored = {
+        conversationId: 'conv-new',
+        snippet: 'Resumen LLM reciente',
+        bridge: '',
+        placeholder: false,
+        sessionEndedAt: '2026-06-30T11:59:00.000Z',
+        generatedAt: '2026-06-30T11:59:00.000Z',
+      };
+      expect(reconcileChatContinuitySummary(stored, recent, { language: 'es' })).toBe(stored);
+    });
+
+    it('genera continuidad provisional cuando la conversación reciente es distinta', () => {
+      const stored = {
+        conversationId: 'conv-old',
+        snippet: 'Tema anterior',
+        bridge: '',
+        placeholder: false,
+        sessionEndedAt: '2026-06-28T10:00:00.000Z',
+        generatedAt: '2026-06-28T10:00:00.000Z',
+      };
+      const out = reconcileChatContinuitySummary(stored, recent, { language: 'es' });
+      expect(out.conversationId).toBe('conv-new');
+      expect(out.recentActivityPending).toBe(true);
+      expect(out.snippet).toContain('Compartiste hace poco');
+    });
+
+    it('crea continuidad cuando no hay resumen persistido', () => {
+      const out = reconcileChatContinuitySummary(null, recent, { language: 'en' });
+      expect(out.conversationId).toBe('conv-new');
+      expect(out.snippet).toMatch(/You recently shared/i);
     });
   });
 });
