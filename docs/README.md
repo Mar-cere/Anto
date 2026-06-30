@@ -12,6 +12,8 @@
 | [CONTRATOS_API.md](./CONTRATOS_API.md) | Alineación frontend–backend: endpoints, rutas y contratos request/response. |
 | [REVISION_STOREKIT_COMPRAS.md](./REVISION_STOREKIT_COMPRAS.md) | Revisión del flujo de compras con StoreKit (iOS) y validación de recibos. |
 | [PAYMENTS_PRODUCTION_CHECKLIST.md](./PAYMENTS_PRODUCTION_CHECKLIST.md) | Invariantes de pagos, trial y webhooks; checklist manual en producción. |
+| [PROTOCOLO_CRISIS_V1.md](./PROTOCOLO_CRISIS_V1.md) | Contrato producto/clínico del modo crisis (#93, #10, #205). |
+| [SMOKE_DISPOSITIVO_CRISIS_I18N.md](./SMOKE_DISPOSITIVO_CRISIS_I18N.md) | Checklist manual dispositivo + comandos smoke automatizados (crisis + i18n EN). |
 
 ---
 
