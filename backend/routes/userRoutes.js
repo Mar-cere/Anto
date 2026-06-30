@@ -1061,6 +1061,42 @@ router.post('/me/emergency-contacts/dismiss-alert-from-chat', authenticateToken,
   }
 });
 
+// Ocultar check-in crisis suave (#19) sin salir del flujo de regulación en servidor
+router.post('/me/emergency-contacts/dismiss-soft-check-in-from-chat', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const { conversationId } = req.body || {};
+    const { isValidConversationIdForOffer } = await import(
+      '../services/crisisContactAlertOfferService.js'
+    );
+    const { dismissSoftCrisisCheckInForConversation } = await import(
+      '../services/crisisTurnClientExtrasService.js'
+    );
+
+    if (!isValidConversationIdForOffer(conversationId)) {
+      return res.status(400).json({ message: req.apiCopy.invalidRequest || 'Solicitud inválida' });
+    }
+
+    const outcome = await dismissSoftCrisisCheckInForConversation(conversationId, req.user._id);
+    if (!outcome.ok) {
+      return res.status(outcome.status).json({
+        message: req.apiCopy.invalidRequest || 'Solicitud inválida',
+        code: outcome.code,
+      });
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    logger.error('Error al rechazar check-in suave desde chat', {
+      error: error.message,
+      userId: req.user._id,
+    });
+    return res.status(500).json({
+      message: req.apiCopy.testAlertError,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
 // Probar alertas de emergencia (envía alerta de prueba a todos los contactos)
 router.post('/me/emergency-contacts/test-alert', authenticateToken, validateUserObjectId, async (req, res) => {
   try {

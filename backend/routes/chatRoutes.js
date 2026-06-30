@@ -106,6 +106,7 @@ import {
 } from '../services/crisisHardStopService.js';
 import { crisisResourcesForTurn } from '../services/crisisResourcesService.js';
 import { applyCrisisProtocolForTurn } from '../services/crisisTurnClientExtrasService.js';
+import { hasCrisisBatterySignal } from '../services/crisisProtocolService.js';
 import { indexPersonalPatternFromUserMessage } from '../services/personalPatternRagService.js';
 import {
   planChatTurnEnhancements,
@@ -1384,6 +1385,11 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         });
 
         const attachTurnCrisisResources = (payload, { hardStop = false } = {}) => {
+          const protocolActive = crisisTurnClientExtras?.crisisProtocolState?.active === true;
+          const batterySignal = hasCrisisBatterySignal(
+            content.trim(),
+            crisisTurnClientExtras?.crisisDecision,
+          );
           if (hardStop) {
             crisisTurnClientExtras = {
               ...crisisTurnClientExtras,
@@ -1391,6 +1397,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 riskLevel,
                 hardStop: true,
                 isCrisis: true,
+                hasBatterySignal: batterySignal,
+                crisisProtocolActive: protocolActive,
                 preferences: combinedProfile?.preferences,
                 phone: combinedProfile?.phone,
                 language: appLanguageForChat,
@@ -1401,11 +1409,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             };
           }
           const crisisResources =
-            crisisTurnClientExtras?.crisisResources ||
+            crisisTurnClientExtras?.crisisResources ??
             crisisResourcesForTurn({
               riskLevel,
               hardStop,
               isCrisis,
+              hasBatterySignal: batterySignal,
+              crisisProtocolActive: protocolActive,
               preferences: combinedProfile?.preferences,
               phone: combinedProfile?.phone,
               language: appLanguageForChat,
@@ -1417,6 +1427,9 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           if (crisisTurnClientExtras?.proposedEmergencyContactAlert) {
             out.proposedEmergencyContactAlert =
               crisisTurnClientExtras.proposedEmergencyContactAlert;
+          }
+          if (crisisTurnClientExtras?.softCrisisCheckIn) {
+            out.softCrisisCheckIn = crisisTurnClientExtras.softCrisisCheckIn;
           }
           return out;
         };

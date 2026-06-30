@@ -20,6 +20,10 @@ describe('normalizeChatSocketTurnPayload', () => {
       productActionStatus: { status: 'pending' },
       tccLite: { step: 2 },
       crisisResources: { country: 'AR' },
+      softCrisisCheckIn: {
+        active: true,
+        techniques: [{ id: 'breathing', label: 'Respiración', screen: 'BreathingExercise' }],
+      },
       crisisHardStop: true,
       proposedEmergencyContactAlert: {
         id: 'offer-abc12345',
@@ -39,6 +43,10 @@ describe('normalizeChatSocketTurnPayload', () => {
       productActionStatus: { status: 'pending' },
       tccLite: { step: 2 },
       crisisResources: { country: 'AR' },
+      softCrisisCheckIn: {
+        active: true,
+        techniques: [{ id: 'breathing', label: 'Respiración', screen: 'BreathingExercise' }],
+      },
       crisisHardStop: true,
       proposedEmergencyContactAlert: {
         id: 'offer-abc12345',

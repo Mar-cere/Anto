@@ -126,6 +126,17 @@ const conversationSchema = new mongoose.Schema({
     },
     default: undefined,
   },
+  /** Check-in crisis suave (#19): regulación breve sin protocolo completo */
+  softCrisisCheckInState: {
+    type: {
+      active: { type: Boolean, default: false },
+      stableUserTurns: { type: Number, default: 0, min: 0 },
+      dismissed: { type: Boolean, default: false },
+      version: { type: String, default: '1.0', maxlength: 16 },
+      enteredAt: { type: Date, default: null },
+    },
+    default: undefined,
+  },
 }, {
   timestamps: true // Crea createdAt y updatedAt automáticamente
 });

@@ -32,7 +32,21 @@ El modo protocolo **#93** se activa cuando:
 - El **riesgo** es **WARNING** o superior **y** hay al menos una señal de la **batería v1** (§2), **o**
 - El riesgo es **MEDIUM** / **HIGH** con evidencia acumulada según `buildCrisisActionDecision`.
 
-El **malestar elevado sin señales de batería** queda **fuera** de este protocolo (futuro **#19** check-in crisis suave).
+El **malestar elevado sin señales de batería** activa el **check-in crisis suave (#19)**: validación breve y CTAs de regulación (respiración/grounding), **sin** protocolo #93 ni panel de recursos completo.
+
+### 1.3.1 Check-in crisis suave (#19)
+
+**Condición:** riesgo **WARNING** sin señales de batería §2 y sin hard-stop.
+
+**Contenido:**
+
+1. Validación breve («escucho que se siente pesado»).
+2. CTAs a técnicas de regulación (respiración, grounding 5-4-3-2-1).
+3. Nota ligera con línea de prevención si el malestar sube (no panel T1–T5).
+
+**Prohibido en #19:** oferta de alerta a contactos, protocolo #93, panel de emergencias completo.
+
+**Salida:** 2 turnos estables en LOW/WARNING sin batería, mensaje explícito de bienestar, o escalada a #93/MEDIUM/HIGH.
 
 ### 1.4 Éxito del protocolo
 
@@ -57,7 +71,7 @@ Lista explícita de señales que activan o mantienen el modo protocolo. **Adicci
 | B3 | Plan o intención | plan concreto, medios, despedidas | B o A según riesgo y léxico |
 | B4 | Adicción en crisis | sobredosis, miedo a recaer inminente, «no puedo parar» | Mismo protocolo; recursos de sustancias si aplica |
 | B5 | Deterioro acumulado | aislamiento + empeoramiento + historial reciente | Camino B; alerta terceros solo §5 |
-| — | Malestar sin batería | ansiedad/tristeza sin señales anteriores | **Fuera** de #93 |
+| — | Malestar sin batería | ansiedad/tristeza sin señales anteriores | **#19** check-in suave (no #93) |
 
 **Señales técnicas** (ya en código, alineadas a esta batería): `advanced_planning`, `farewell_signals`, `obsessive_distress`, `isolation`, `communication_disengagement`, `trend_deterioration`, `recent_crisis_history`, léxico explícito (`hasExplicitSuicidalOrSelfHarmLexicon`).
 
@@ -193,7 +207,7 @@ Traducción EN obligatoria antes de cierre **#151** / **#153**.
 | Tema | Propuesta | Motivo |
 |------|-----------|--------|
 | Buscar psicólogo / guía profesional | **#9** | Pospuesto; no mostrar en UI |
-| Check-in crisis suave | **#19** | Malestar sin batería |
+| Check-in crisis suave | **#19** | Malestar sin batería — entregado jun 2026 (`softCrisisCheckInService`, `SoftCrisisCheckInStrip`) |
 | Explicación técnica del clasificador | — | Solo copy humano §6 |
 | Integración salud / telepsicología | — | Futuro |
 

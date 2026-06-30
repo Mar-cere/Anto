@@ -28,9 +28,12 @@ describe('crisisResources utils', () => {
     expect(out.transparency[0].id).toBe('why');
   });
 
-  it('shouldShowCrisisResourcesPanel alinea con backend', () => {
+  it('shouldShowCrisisResourcesPanel alinea con backend (#19)', () => {
     expect(shouldShowCrisisResourcesPanel({ riskLevel: 'MEDIUM' })).toBe(true);
-    expect(shouldShowCrisisResourcesPanel({ riskLevel: 'WARNING' })).toBe(true);
+    expect(shouldShowCrisisResourcesPanel({ riskLevel: 'WARNING' })).toBe(false);
+    expect(
+      shouldShowCrisisResourcesPanel({ riskLevel: 'WARNING', hasBatterySignal: true }),
+    ).toBe(true);
     expect(shouldShowCrisisResourcesPanel({ riskLevel: 'LOW' })).toBe(false);
   });
 

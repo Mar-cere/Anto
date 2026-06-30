@@ -23,6 +23,10 @@ import {
   isValidConversationIdForOffer,
 } from '../services/crisisContactAlertOfferService.js';
 import { buildCrisisResourcesClientPayload } from '../services/crisisResourcesService.js';
+import {
+  evaluateSoftCrisisCheckInTurn,
+  shouldOfferSoftCrisisCheckIn,
+} from '../services/softCrisisCheckInService.js';
 import { hasSpanishVoseo } from '../utils/copyToneGuards.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -125,6 +129,51 @@ ok(
   'chat integra crisisProtocolState',
   chatRoutes.includes('crisisProtocolState') && chatRoutes.includes('crisisTurnClientExtras'),
 );
+ok(
+  'chat integra softCrisisCheckIn (#19)',
+  chatRoutes.includes('softCrisisCheckIn') &&
+    fs.existsSync(path.join(root, 'backend/services/softCrisisCheckInService.js')),
+);
+
+ok(
+  'ruta dismiss check-in suave',
+  userRoutes.includes('dismiss-soft-check-in-from-chat'),
+);
+
+ok(
+  'exclusividad soft vs panel crisis en extras',
+  fs
+    .readFileSync(path.join(root, 'backend/services/crisisTurnClientExtrasService.js'), 'utf8')
+    .includes('crisisResources != null ? null : softCheckInResult.softCrisisCheckIn'),
+);
+
+const softStrip = fs.readFileSync(
+  path.join(root, 'frontend/src/components/chat/SoftCrisisCheckInStrip.js'),
+  'utf8',
+);
+ok(
+  'SoftCrisisCheckInStrip técnicas regulación',
+  softStrip.includes('onOpenTechnique') && softStrip.includes('checkIn.techniques'),
+);
+
+ok(
+  'check-in suave en WARNING sin batería',
+  shouldOfferSoftCrisisCheckIn({
+    riskLevel: 'WARNING',
+    messageContent: 'me siento muy mal',
+  }) === true,
+);
+const softTurn = evaluateSoftCrisisCheckInTurn({
+  previousState: null,
+  riskLevel: 'WARNING',
+  messageContent: 'ansiedad fuerte',
+  language: 'es',
+});
+ok(
+  'payload check-in suave con técnicas',
+  softTurn.softCrisisCheckIn?.active === true &&
+    softTurn.softCrisisCheckIn?.techniques?.length >= 2,
+);
 
 const apiTs = fs.readFileSync(path.join(root, 'frontend/src/config/api.ts'), 'utf8');
 ok(
@@ -161,6 +210,7 @@ const unitTests = [
   'backend/tests/unit/services/crisisProtocolService.test.js',
   'backend/tests/unit/services/crisisContactAlertOfferService.test.js',
   'backend/tests/unit/services/crisisHardStopService.test.js',
+  'backend/tests/unit/services/softCrisisCheckInService.test.js',
 ];
 for (const rel of unitTests) {
   ok(`existe ${path.basename(rel)}`, fs.existsSync(path.join(root, rel)));

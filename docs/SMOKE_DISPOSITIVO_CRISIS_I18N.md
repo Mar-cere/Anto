@@ -102,9 +102,24 @@ Con idioma **English** activo:
 
 ---
 
+## E. Check-in crisis suave (#19)
+
+Malestar **WARNING** sin señales de batería (sin ideación explícita, autolesión ni adicción en crisis).
+
+1. [ ] En chat, enviar mensaje de malestar elevado (p. ej. «me siento muy mal, no aguanto») **sin** léxico de batería
+2. [ ] Aparece franja **«Pausa breve»** / **«Brief pause»** (no el panel completo de emergencias)
+3. [ ] CTAs **Respiración** y **Grounding** abren las pantallas de técnica
+4. [ ] **No** aparece oferta de alerta a contactos ni panel T1–T5
+5. [ ] Ocultar (×) la franja: no reaparece en el mismo hilo al enviar otro mensaje WARNING
+6. [ ] Si el malestar escala (ideación explícita o MEDIUM+), desaparece la franja suave y entra protocolo #93 / panel recursos
+
+**Resultado E:** ☐ OK  ☐ Fallos:
+
+---
+
 ## D. Cierre y matriz
 
-Cuando **A + B + C** estén OK en al menos un dispositivo por plataforma objetivo:
+Cuando **A + B + C + E** estén OK en al menos un dispositivo por plataforma objetivo:
 
 1. Marcar en [PROTOCOLO_CRISIS_V1.md](./PROTOCOLO_CRISIS_V1.md) §8 los ítems de smoke dispositivo
 2. Actualizar matriz: **#10**, **#93**, **#205**, **#151** → **Sí**
@@ -116,6 +131,7 @@ Cuando **A + B + C** estén OK en al menos un dispositivo por plataforma objetiv
 | #93 Protocolo ideación | Sí* | Sí |
 | #205 Guardrails crisis | Sí* | Sí |
 | #151 i18n EN fase 1 | Sí* | Sí |
+| #19 Check-in crisis suave | Sí* | Sí |
 
 ---
 

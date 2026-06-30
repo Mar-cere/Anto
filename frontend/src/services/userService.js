@@ -440,6 +440,14 @@ export const userService = {
     });
     return response.data;
   },
+
+  async dismissSoftCrisisCheckInFromChat({ conversationId }) {
+    const response = await apiClient.post(
+      ENDPOINTS.EMERGENCY_CONTACTS_DISMISS_SOFT_CHECK_IN_FROM_CHAT,
+      { conversationId },
+    );
+    return response.data;
+  },
 };
 
 export const loginUser = async (credentials) => {

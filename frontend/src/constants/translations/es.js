@@ -1083,6 +1083,9 @@ export const CHAT = {
   CRISIS_RESOURCES_DISMISS_A11Y: 'Ocultar panel de recursos',
   CRISIS_RESOURCES_COUNTRY_PREFIX: 'Para',
   CHAT_OPTIONS_CRISIS_RESOURCES: 'Recursos de crisis',
+  SOFT_CRISIS_KICKER: 'Pausa breve',
+  SOFT_CRISIS_OPEN: 'Abrir',
+  SOFT_CRISIS_DISMISS_A11Y: 'Ocultar sugerencia de regulación',
   CRISIS_POST_CONTACT_ALERT_NOTICE:
     'Si tenías contactos de emergencia activos, les enviamos un aviso breve de que podrías necesitar apoyo. No incluye el texto de esta conversación.',
   EMERGENCY_CONTACT_ALERT_OFFER_YES: 'Sí, avísales',

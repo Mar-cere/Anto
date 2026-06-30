@@ -32,6 +32,7 @@ import SessionIntentionBanner from '../components/chat/SessionIntentionBanner';
 import TccContinuityStrip from '../components/chat/TccContinuityStrip';
 import TccLiteAtHandoffStrip from '../components/chat/TccLiteAtHandoffStrip';
 import CrisisResourcesStrip from '../components/chat/CrisisResourcesStrip';
+import SoftCrisisCheckInStrip from '../components/chat/SoftCrisisCheckInStrip';
 import ChatTypingIndicator from '../components/chat/ChatTypingIndicator';
 import ChatOptionsSheet from '../components/chat/ChatOptionsSheet';
 import ClearConversationModal from '../components/chat/ClearConversationModal';
@@ -326,8 +327,11 @@ const ChatScreen = () => {
     handleOpenTccLiteAtHandoff,
     handleDismissTccLiteAtHandoff,
     crisisResourcesPanel,
+    softCrisisCheckInPanel,
     crisisContactAlertNotice,
     dismissCrisisResourcesPanel,
+    dismissSoftCrisisCheckInPanel,
+    handleOpenSoftCrisisTechnique,
     openCrisisResourcesPanel,
     openEmergencyContactsFromChat,
     handleEmergencyContactAlertConfirm,
@@ -673,6 +677,14 @@ const ChatScreen = () => {
           items={visibleTccContinuityItems}
           onOpen={handleOpenTccContinuityItem}
           onDismiss={handleDismissTccContinuityItem}
+        />
+      ) : null}
+
+      {!immersiveMode && softCrisisCheckInPanel && !crisisResourcesPanel ? (
+        <SoftCrisisCheckInStrip
+          checkIn={softCrisisCheckInPanel}
+          onOpenTechnique={handleOpenSoftCrisisTechnique}
+          onDismiss={dismissSoftCrisisCheckInPanel}
         />
       ) : null}
 

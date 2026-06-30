@@ -161,7 +161,7 @@ Incorporadas como **#201–#223** (lotes 1–3). Criterio: no duplicar filas ya 
 | 15 | Sesiones programadas | Recordatorios tipo “tu espacio con Anto” en horarios fijos para ritualizar el encuentro. | No | 3 | 4 | 5 | 5 | B | S | Q2 |
 | 17 | Línea de vida / contexto | Captura estructurada (hitos, pérdidas, fortalezas) que alimente el contexto del modelo con consentimiento explícito. | No | 2 | 4 | 4 | 4 | A | L | Q2 |
 | 18 | Tarjetas contextuales chat | In-chat shortcuts a respiración, ancla, línea de ayuda cuando el tono o clasificación lo sugieran. | No | 3 | 4 | 3 | 4 | M | M | Q2 |
-| 19 | Check-in crisis suave | Flujo corto de regulación sin activar todo el protocolo de crisis cuando solo hay malestar elevado. | No | 4 | 4 | 3 | 4 | M | M | Q1 |
+| 19 | Check-in crisis suave | Flujo corto de regulación sin activar todo el protocolo de crisis cuando solo hay malestar elevado. **Sí* (jun 2026):** `softCrisisCheckInService`, strip `SoftCrisisCheckInStrip` (validación + respiración/grounding), WARNING sin batería sin panel crisis completo; estado `softCrisisCheckInState` en `Conversation`. **Pendiente:** smoke dispositivo físico. | Sí* | 4 | 4 | 3 | 4 | M | M | Q1 |
 | 20 | Compromisos del chat | Lista de “acuerdos” o micro-compromisos detectados o confirmados por el usuario tras la sesión. | No | 2 | 4 | 5 | 5 | M | M | Q2 |
 | 22 | Exportar para profesional | PDF/Markdown con resumen + escalas (si aplica) para llevar a terapia presencial. | No | 3 | 4 | 2 | 3 | M | M | Q4 |
 | 23 | Fatiga conversacional | Si la sesión es muy larga o repetitiva, sugerir pausa, técnica breve o “seguimos mañana”. | No | 2 | 3 | 4 | 4 | M | S | Q2 |
