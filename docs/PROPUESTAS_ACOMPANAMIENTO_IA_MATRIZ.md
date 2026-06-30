@@ -1,6 +1,6 @@
 # Propuestas de producto: acompañamiento e IA
 
-Listado de **~182** propuestas `No` en la tabla principal, más **2** filas **`Parcial`** con trabajo abierto — derivación **#9** (Q3), i18n **#151** (Q2) — y **smoke dispositivo físico** pendiente en crisis **#10**, **#93**, **#205** (spec [PROTOCOLO_CRISIS_V1.md](./PROTOCOLO_CRISIS_V1.md); releases **1.5.0** / **1.5.1**; revisión clínica/legal aprobada 30 jun 2026) — y **8 anclas entregadas** referenciadas (numeración **#1–#223**; huecos históricos conservados; **16** ex-Q5 + **11** entregadas archivadas). **Hecha:** `Sí` / `Sí*` / `Parcial` = ver columna. Chat → tarea/hábito: [CONTRATO_CHAT_ACCIONES_V1.md](./CONTRATO_CHAT_ACCIONES_V1.md). Crisis → [PROTOCOLO_CRISIS_V1.md](./PROTOCOLO_CRISIS_V1.md).
+Listado de **~183** propuestas `No` en la tabla principal, más **1** fila **`Parcial`** con trabajo abierto — i18n **#151** (Q2) — y **smoke dispositivo físico** pendiente en crisis **#10**, **#93**, **#205** (spec [PROTOCOLO_CRISIS_V1.md](./PROTOCOLO_CRISIS_V1.md); releases **1.5.0** / **1.5.1**; revisión clínica/legal aprobada 30 jun 2026). **#9** derivación humana **pospuesta** (Q4). **8 anclas entregadas** referenciadas (numeración **#1–#223**; huecos históricos conservados; **16** ex-Q5 + **11** entregadas archivadas). **Hecha:** `Sí` / `Sí*` / `Parcial` = ver columna. Chat → tarea/hábito: [CONTRATO_CHAT_ACCIONES_V1.md](./CONTRATO_CHAT_ACCIONES_V1.md). Crisis → [PROTOCOLO_CRISIS_V1.md](./PROTOCOLO_CRISIS_V1.md).
 
 **Matriz:** Urgencia, Impacto, Retención (1–5). **Imp*** = redondeo de la media de Impacto y Retención. **Costo** B/M/A. **T** tiempo dev S/M/L. **Q** = cuadrante Eisenhower (**Q1–Q4**). **Q5** = descartadas (sección ex-Q5). **Entregadas archivadas** = fuera de la tabla salvo anclas referenciadas (sección siguiente).
 
@@ -29,7 +29,7 @@ Criterio para **eliminar** del backlog activo (no son un quinto cuadrante de pri
 | 188 | Copy remoto server-driven | Complejidad vs release de store |
 | 196 | Mutación tests pago/token | Costo A/L; Ret bajo |
 
-**Q4 activo** tras el recorte: **7** propuestas (#22, #30, #43, #45, #58, #145, #165) — posponer, no descartar del todo.
+**Q4 activo** tras el recorte: **8** propuestas (**#9**, #22, #30, #43, #45, #58, #145, #165) — posponer, no descartar del todo.
 
 ### Propuestas entregadas archivadas (fuera de la tabla, mayo 2026)
 
@@ -152,7 +152,7 @@ Incorporadas como **#201–#223** (lotes 1–3). Criterio: no duplicar filas ya 
 | 6 | Puente protocolos–chat | Que el chat nombre y retome protocolos activos en mensajes posteriores, sin silos de pantalla. | No | 3 | 5 | 4 | 5 | M | M | Q2 |
 | 7 | Bitácora terapéutica | Plantillas cortas (pensamiento–emoción–conducta) además del diario libre; opción exportar. | No | 2 | 4 | 4 | 4 | M | M | Q2 |
 | 8 | Panel qué hace la IA | Copy corto desde chat y ajustes: límites, expectativas, honestidad del producto. **App:** `AIPrivacyScreen` (Ajustes > Privacidad e IA), acceso desde menú del chat; copy en `INFO.AI_PRIVACY` (es/en). Biblioteca ampliada en **#194** (`INFO.AI_LIMITS_LIBRARY`). | Sí | 4 | 5 | 3 | 4 | B | S | Q1 |
-| 9 | Derivación humana | Recursos por región: líneas, guías para buscar psicólogo; posiciona la app como puente, no sustituto. **Parcial (jun 2026):** números por país, panel chat, contactos en Perfil; complemento explícito en [PROTOCOLO_CRISIS_V1.md](./PROTOCOLO_CRISIS_V1.md). **v1 protocolo:** guía «buscar profesional» **no visible** hasta contenido utilizable. **Pendiente:** guías por país, recursos en dashboard. | Parcial | 4 | 4 | 2 | 3 | M | M | Q3 |
+| 9 | Derivación humana | Recursos por región: líneas, guías para buscar psicólogo; posiciona la app como puente, no sustituto. **Pospuesto (30 jun 2026):** fuera de planes inmediatos. **Ya en app (v1 crisis):** números por país, panel chat, contactos en Perfil ([PROTOCOLO_CRISIS_V1.md](./PROTOCOLO_CRISIS_V1.md)). **Sin planificar aún:** guía «buscar profesional», recursos en dashboard. | No | 4 | 4 | 2 | 3 | M | M | Q4 |
 | 10 | Transparencia crisis | Explicación en lenguaje llano del «por qué» en modo crisis. **Sí* (jun 2026):** bloques T1–T5 en `CrisisResourcesStrip` (`crisisProtocolCopy` es/en); T5 si hubo alerta; aviso post-envío §5.3; hints **#194**. **Revisión clínica/legal aprobada (30 jun 2026).** **Pendiente:** smoke dispositivo físico. | Sí* | 4 | 5 | 4 | 5 | B | S | Q1 |
 | 11 | Resumen en app | Más allá del email: bloque en app con temas recurrentes, micro-logros y una pregunta para la semana siguiente. **Ampliado (1.5.0):** `SummaryScreen` accionable, «lo que te ayuda» navegable, enlace a técnicas concretas desde insights. | Sí | 3 | 5 | 5 | 5 | M | M | Q2 |
 | 12 | Voz y ritmo unificados | Preferencias finas (longitud, formalidad, ratio pregunta/afirmación) coherentes en chat, onboarding y correos. | No | 3 | 4 | 4 | 4 | M | M | Q2 |
@@ -312,7 +312,7 @@ Incorporadas como **#201–#223** (lotes 1–3). Criterio: no duplicar filas ya 
 | 191 | Mecanismo de cambio one-liner | Tras micro-guías (**#78**, **#85**), una frase tipo “por qué esto ayuda” basada en evidencia genérica. **Cerrado (jun 2026):** `mechanismLine` es/en en los **12** temas del catálogo #85 (módulo biblioteca + tarjeta chat expandida/compacta). | Sí* | 2 | 4 | 4 | 4 | M | M | Q2 |
 | 192 | Formulación cultural opt-in | Campo opt-in (valores, idioma familiar, espiritualidad) que informa el tono sin diagnosticar; ética con **#104**. | No | 2 | 4 | 3 | 4 | M | M | Q2 |
 | 193 | Repair alianza WAI baja | Si **#98** detecta caída, guion breve de “chequeo de ajuste” sin culpar al usuario. | No | 3 | 4 | 5 | 5 | M | M | Q2 |
-| 194 | Biblioteca límites competencia IA | Pantallas y tooltips: **qué no hace** la app, cuándo **#9**, crisis **#10**; reduce expectativas mágicas. **En `main`:** `INFO.AI_LIMITS_LIBRARY` (8 temas es/en), sección en `AIPrivacyScreen`, hints contextuales en chat (crisis, tareas/hábitos, alertas contactos), Perfil y Ajustes. | Sí | 4 | 4 | 4 | 4 | M | M | Q1 |
+| 194 | Biblioteca límites competencia IA | Pantallas y tooltips: **qué no hace** la app, cuándo buscar ayuda humana, crisis **#10**; reduce expectativas mágicas. **En `main`:** `INFO.AI_LIMITS_LIBRARY` (8 temas es/en), sección en `AIPrivacyScreen`, hints contextuales en chat (crisis, tareas/hábitos, alertas contactos), Perfil y Ajustes. | Sí | 4 | 4 | 4 | 4 | M | M | Q1 |
 | 195 | Diario sueño-vigilia UX | UX de registro simple acoplado a **#95** y resúmenes semanales (**#11**, **#154**). | No | 3 | 4 | 4 | 4 | M | M | Q2 |
 | 197 | Deep link push a hilo | Notificación abre **conversación y posición** exacta; retención de retorno. | No | 3 | 4 | 4 | 4 | M | M | Q2 |
 | 198 | VoiceOver TalkBack chat | Orden de foco, anuncios de “escribiendo”, estados de error; va más allá de **#149**. | No | 3 | 5 | 3 | 4 | M | L | Q2 |
@@ -344,4 +344,4 @@ Incorporadas como **#201–#223** (lotes 1–3). Criterio: no duplicar filas ya 
 
 ---
 
-*Puntuaciones orientativas. Última revisión: **30 jun 2026** (merge PR #5 **#194**; crisis **#10**, **#93**, **#205** → **Sí*** con revisión clínica/legal aprobada; pendiente común: smoke dispositivo físico; parciales abiertos: **#9** Q3, **#151** Q2).*
+*Puntuaciones orientativas. Última revisión: **30 jun 2026** (crisis **#10**, **#93**, **#205** → **Sí***; pendiente smoke dispositivo físico; **#9** pospuesto Q4; parcial abierto: **#151** Q2).*
