@@ -112,7 +112,7 @@ Debe mostrar **siempre visible** en modo protocolo (§6 — transparencia #10):
 - Bloque **«Por qué ves esto»** (copy fijo §6).
 - Líneas marcables por país.
 - Acceso a contactos de emergencia en Perfil.
-- **No** incluir enlaces «buscar profesional» hasta que **#9** tenga guía utilizable (fuera de v1).
+- **No** incluir enlaces «buscar profesional» — **#9 pospuesto** (fuera de planes inmediatos).
 
 ---
 
@@ -233,8 +233,8 @@ Marcar **#93** / **#205** (producto) / **#10** según fila.
 
 ### #9 — Derivación
 
-- [ ] **Sigue Parcial** hasta guía «buscar profesional» utilizable
-- [x] v1: líneas + contactos + copy complemento (§1.2)
+- [x] **Pospuesto** (30 jun 2026): fuera de planes inmediatos; sin guía «buscar profesional» ni dashboard en roadmap
+- [x] v1 crisis: líneas por país + contactos + copy complemento (§1.2)
 
 ---
 
