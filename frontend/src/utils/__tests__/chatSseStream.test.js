@@ -1,4 +1,4 @@
-import { consumeSseDelta, dispatchSsePayloads, streamChatSseWithFetch } from '../chatSseStream';
+import { consumeSseDelta, dispatchSsePayloads, postChatSseWithXHR, streamChatSseWithFetch } from '../chatSseStream';
 
 describe('chatSseStream', () => {
   describe('consumeSseDelta', () => {
@@ -136,6 +136,70 @@ describe('chatSseStream', () => {
           content: 'Me alegra que hoy esté todo bien.',
         })
       );
+    });
+  });
+
+  describe('postChatSseWithXHR — cancelación (#168)', () => {
+    const OrigXHR = global.XMLHttpRequest;
+
+    afterEach(() => {
+      global.XMLHttpRequest = OrigXHR;
+    });
+
+    it('respeta AbortSignal antes de enviar', async () => {
+      const controller = new AbortController();
+      controller.abort();
+
+      const send = jest.fn();
+      global.XMLHttpRequest = jest.fn().mockImplementation(function MockXHR() {
+        this.open = jest.fn();
+        this.setRequestHeader = jest.fn();
+        this.abort = jest.fn();
+        this.send = send;
+        this.readyState = 0;
+        this.responseText = '';
+        this.status = 0;
+      });
+
+      await postChatSseWithXHR({
+        url: 'http://localhost/api/chat/messages?stream=true',
+        headers: {},
+        body: '{}',
+        onChunk: jest.fn(),
+        onDone: jest.fn(),
+        signal: controller.signal,
+      });
+
+      expect(send).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('streamChatSseWithFetch — cancelación (#168)', () => {
+    const origFetch = global.fetch;
+
+    afterEach(() => {
+      global.fetch = origFetch;
+    });
+
+    it('propaga abort del signal sin llamar fetch', async () => {
+      const controller = new AbortController();
+      controller.abort();
+
+      global.fetch = jest.fn();
+
+      await expect(
+        streamChatSseWithFetch({
+          url: 'http://localhost/api/chat/messages?stream=true',
+          headers: {},
+          body: '{}',
+          onChunk: jest.fn(),
+          onDone: jest.fn(),
+          signal: controller.signal,
+          timeoutMs: 5000,
+        }),
+      ).resolves.toBeUndefined();
+
+      expect(global.fetch).not.toHaveBeenCalled();
     });
   });
 });

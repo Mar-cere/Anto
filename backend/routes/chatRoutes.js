@@ -13,6 +13,10 @@ import {
 import { resolveHarmIntrusiveDistressContext, clampEmotionalIntensity, HARM_INTRUSIVE_DISTRESS_THEME } from '../constants/harmIntrusiveThoughts.js';
 import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
 import {
+  buildStreamingTtftMetrics,
+  streamingTtftMetricPayload,
+} from '../utils/chatStreamingMetrics.js';
+import {
     normalizeSessionIntention,
     sanitizeSessionIntentionForClient,
     wasSessionIntentionProvided
@@ -1708,17 +1712,23 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
           try {
             let firstChunkAt = null;
+            const preLlmEndAt = Date.now();
             for await (const event of openaiService.generarRespuestaStream(userMessage, openaiContext)) {
               if (event.type === 'chunk') {
                 if (!firstChunkAt) {
                   firstChunkAt = Date.now();
+                  const ttftMetrics = buildStreamingTtftMetrics({
+                    startTime,
+                    preLlmEndAt,
+                    firstChunkAt,
+                  });
                   metricsService
                     .recordMetric(
                       'chat_usage',
                       {
                         action: 'streaming_first_chunk',
                         isGuest: false,
-                        ttftMs: firstChunkAt - startTime
+                        ...streamingTtftMetricPayload(ttftMetrics),
                       },
                       req.user._id.toString(),
                       {

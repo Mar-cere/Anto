@@ -41,6 +41,8 @@ class MetricsService {
         streamingResponsesCompleted: 0,
         streamingFirstChunks: 0,
         ttftMsSamples: [],
+        preLlmMsSamples: [],
+        modelTtftMsSamples: [],
         nonStreamLatencyMsSamples: [],
         /**
          * Latencia por ruta/superficie (solo memoria).
@@ -512,6 +514,8 @@ class MetricsService {
                 streamingFirstChunks: 0,
                 nonStreamingResponses: 0,
                 ttftMsSamples: [],
+                preLlmMsSamples: [],
+                modelTtftMsSamples: [],
                 nonStreamLatencyMsSamples: [],
                 lastSeenAt: now
               })
@@ -557,13 +561,31 @@ class MetricsService {
         if (action === 'streaming_first_chunk') {
           cu.streamingFirstChunks++;
           const ttftMs = Number(data?.ttftMs);
+          const preLlmMs = Number(data?.preLlmMs);
+          const modelTtftMs = Number(data?.modelTtftMs);
           if (Number.isFinite(ttftMs) && ttftMs >= 0) {
             cu.ttftMsSamples.push(ttftMs);
             if (cu.ttftMsSamples.length > 1000) cu.ttftMsSamples.shift();
+            if (Number.isFinite(preLlmMs) && preLlmMs >= 0) {
+              cu.preLlmMsSamples.push(preLlmMs);
+              if (cu.preLlmMsSamples.length > 1000) cu.preLlmMsSamples.shift();
+            }
+            if (Number.isFinite(modelTtftMs) && modelTtftMs >= 0) {
+              cu.modelTtftMsSamples.push(modelTtftMs);
+              if (cu.modelTtftMsSamples.length > 1000) cu.modelTtftMsSamples.shift();
+            }
             if (routeBucket) {
               routeBucket.streamingFirstChunks++;
               routeBucket.ttftMsSamples.push(ttftMs);
               if (routeBucket.ttftMsSamples.length > 500) routeBucket.ttftMsSamples.shift();
+              if (Number.isFinite(preLlmMs) && preLlmMs >= 0) {
+                routeBucket.preLlmMsSamples.push(preLlmMs);
+                if (routeBucket.preLlmMsSamples.length > 500) routeBucket.preLlmMsSamples.shift();
+              }
+              if (Number.isFinite(modelTtftMs) && modelTtftMs >= 0) {
+                routeBucket.modelTtftMsSamples.push(modelTtftMs);
+                if (routeBucket.modelTtftMsSamples.length > 500) routeBucket.modelTtftMsSamples.shift();
+              }
             }
           }
         }
@@ -852,6 +874,8 @@ class MetricsService {
 
     const latencyByRoute = Object.entries(cu.latencyByRoute || {}).reduce((acc, [k, v]) => {
       const ttftSamples = Array.isArray(v?.ttftMsSamples) ? v.ttftMsSamples : [];
+      const preLlmSamples = Array.isArray(v?.preLlmMsSamples) ? v.preLlmMsSamples : [];
+      const modelTtftSamples = Array.isArray(v?.modelTtftMsSamples) ? v.modelTtftMsSamples : [];
       const nonSamples = Array.isArray(v?.nonStreamLatencyMsSamples) ? v.nonStreamLatencyMsSamples : [];
       acc[k] = {
         streamingFirstChunks: Number(v?.streamingFirstChunks || 0),
@@ -859,7 +883,17 @@ class MetricsService {
         ttft: {
           samples: ttftSamples.length,
           p50Ms: calcPercentile(ttftSamples, 50),
-          p95Ms: calcPercentile(ttftSamples, 95)
+          p95Ms: calcPercentile(ttftSamples, 95),
+          preLlm: {
+            samples: preLlmSamples.length,
+            p50Ms: calcPercentile(preLlmSamples, 50),
+            p95Ms: calcPercentile(preLlmSamples, 95)
+          },
+          model: {
+            samples: modelTtftSamples.length,
+            p50Ms: calcPercentile(modelTtftSamples, 50),
+            p95Ms: calcPercentile(modelTtftSamples, 95)
+          }
         },
         nonStreaming: {
           samples: nonSamples.length,
@@ -888,7 +922,17 @@ class MetricsService {
         ttft: {
           samples: cu.ttftMsSamples.length,
           p50Ms: calcPercentile(cu.ttftMsSamples, 50),
-          p95Ms: calcPercentile(cu.ttftMsSamples, 95)
+          p95Ms: calcPercentile(cu.ttftMsSamples, 95),
+          preLlm: {
+            samples: cu.preLlmMsSamples.length,
+            p50Ms: calcPercentile(cu.preLlmMsSamples, 50),
+            p95Ms: calcPercentile(cu.preLlmMsSamples, 95)
+          },
+          model: {
+            samples: cu.modelTtftMsSamples.length,
+            p50Ms: calcPercentile(cu.modelTtftMsSamples, 50),
+            p95Ms: calcPercentile(cu.modelTtftMsSamples, 95)
+          }
         }
       },
       nonStreaming: {
