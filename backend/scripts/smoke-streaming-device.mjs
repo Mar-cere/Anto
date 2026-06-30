@@ -52,6 +52,10 @@ ok('socket TTFT métricas', socketSrc.includes('streaming_first_chunk'));
 const socketEvents = read('frontend/src/constants/chatSocketEvents.js');
 ok('frontend MESSAGE_CHUNK', socketEvents.includes("MESSAGE_CHUNK: 'message:chunk'"));
 
+const wsSrc = read('frontend/src/services/websocketService.js');
+ok('websocket filtra conversationId en chunks', wsSrc.includes('expectedConversationId'));
+ok('socket chunk sintético sin deltas', socketSrc.includes('synthetic: true'));
+
 const metricsSrc = read('backend/services/metricsService.js');
 ok('metricsService preLlmMsSamples', metricsSrc.includes('preLlmMsSamples'));
 ok('metricsService modelTtftMsSamples', metricsSrc.includes('modelTtftMsSamples'));
@@ -71,6 +75,7 @@ ok('SLO monitor p95 (#67)', sloMonitor.includes('calcPercentile'));
 ok('test chatStreamingMetrics', fs.existsSync(path.join(root, 'backend/tests/unit/utils/chatStreamingMetrics.test.js')));
 ok('test generarRespuestaStream', fs.existsSync(path.join(root, 'backend/tests/unit/services/openaiService.generarRespuestaStream.test.js')));
 ok('test chatSseStream abort', read('frontend/src/utils/__tests__/chatSseStream.test.js').includes('AbortSignal'));
+ok('doc smoke dispositivo', fs.existsSync(path.join(root, 'docs/SMOKE_DISPOSITIVO_STREAMING.md')));
 
 console.log(failed === 0 ? '\nSmoke streaming: OK\n' : `\nSmoke streaming: ${failed} fallo(s)\n`);
 process.exit(failed === 0 ? 0 : 1);

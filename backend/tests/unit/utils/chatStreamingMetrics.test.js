@@ -54,5 +54,6 @@ describe('chatStreamingMetrics (#59)', () => {
       modelTtftMs: 600,
     });
     expect(streamingTtftMetricPayload(null)).toEqual({});
+    expect(streamingTtftMetricPayload({ ttftMs: -1, preLlmMs: 0 })).toEqual({});
   });
 });

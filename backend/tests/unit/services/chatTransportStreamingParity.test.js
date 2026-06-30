@@ -32,7 +32,13 @@ describe('chat transport streaming parity (#128)', () => {
     expect(eventsSrc).toMatch(/MESSAGE_CHUNK:\s*'message:chunk'/);
     expect(wsSrc).toMatch(/MESSAGE_CHUNK/);
     expect(wsSrc).toMatch(/onChunk/);
+    expect(wsSrc).toMatch(/expectedConversationId/);
     expect(chatServiceSrc).toMatch(/onChunk/);
     expect(chatServiceSrc).not.toMatch(/if \(content && onChunk\) onChunk\(content\)/);
+  });
+
+  it('socket emite chunk sintético si el stream termina sin deltas', () => {
+    expect(socketSrc).toMatch(/synthetic:\s*true/);
+    expect(socketSrc).toMatch(/if \(!firstChunkAt && streamResponse\.content\)/);
   });
 });

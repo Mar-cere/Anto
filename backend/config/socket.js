@@ -617,6 +617,8 @@ export const setupSocketIO = (server) => {
             return;
           }
           if (event.type === 'chunk') {
+            const chunkText = typeof event.content === 'string' ? event.content : '';
+            if (!chunkText) continue;
             if (!firstChunkAt) {
               firstChunkAt = Date.now();
               const ttftMetrics = buildStreamingTtftMetrics({
@@ -644,7 +646,7 @@ export const setupSocketIO = (server) => {
                 .catch(() => {});
             }
             socket.emit(SOCKET_EVENTS.MESSAGE_CHUNK, {
-              content: event.content,
+              content: chunkText,
               conversationId: conversation._id.toString(),
             });
           } else if (event.type === 'done') {
@@ -660,6 +662,14 @@ export const setupSocketIO = (server) => {
 
         if (!streamResponse?.content) {
           throw new Error('Respuesta vacía del stream de chat');
+        }
+
+        if (!firstChunkAt && streamResponse.content) {
+          socket.emit(SOCKET_EVENTS.MESSAGE_CHUNK, {
+            content: streamResponse.content,
+            conversationId: conversation._id.toString(),
+            synthetic: true,
+          });
         }
 
         const response = streamResponse;
