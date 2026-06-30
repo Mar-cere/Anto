@@ -120,6 +120,17 @@ describe('dashboardHomeUtils', () => {
     expect(copy.subtitle.length).toBeGreaterThan(10);
   });
 
+  it('prioriza displaySubtitle y evita despedidas', () => {
+    const summary = {
+      snippet: 'Chau, cuídate. Cuando quieras volver, aquí estaré.',
+      bridge: 'Chau, cuídate.',
+      displaySubtitle: 'Tu conversación sigue en el chat, en privado. Retoma cuando quieras.',
+      placeholder: false,
+    };
+    expect(getLastSessionDisplayText(summary)).toBe(summary.displaySubtitle);
+    expect(hasDashboardChatContinuity(summary)).toBe(true);
+  });
+
   it('prioriza bridge en placeholder para continuidad del chat', () => {
     const summary = {
       snippet: 'Resumen largo',

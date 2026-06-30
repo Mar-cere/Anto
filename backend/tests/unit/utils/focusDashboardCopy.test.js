@@ -3,9 +3,11 @@ import {
   calendarDaysBetweenInTz,
   fixContinuationTemporalOpeners,
   focusCopy,
+  getChatContinuityInviteSubtitle,
   getLastSessionDisplayText,
   hasChatContinuityDisplayText,
   localizeLastSessionSummaryForDisplay,
+  looksLikeChatClosureText,
   looksLikeSpanishText,
   shouldSuppressFocusLineForContinuity,
 } from '../../../utils/focusDashboardCopy.js';
@@ -82,8 +84,9 @@ describe('focusDashboardCopy', () => {
       snippet: 'Hoy te sentiste bien después de un día difícil.',
       bridge: '',
       placeholder: false,
+      language: 'es',
     };
-    expect(getLastSessionDisplayText(session)).toContain('sentiste bien');
+    expect(getLastSessionDisplayText(session)).toMatch(/chat|retoma/i);
     expect(hasChatContinuityDisplayText(session)).toBe(true);
     expect(
       shouldSuppressFocusLineForContinuity(focusCopy('es').focusResumeOrCheckIn, 'es'),
@@ -91,5 +94,22 @@ describe('focusDashboardCopy', () => {
     expect(
       shouldSuppressFocusLineForContinuity('Próximo foco práctico: llamar al banco.', 'es'),
     ).toBe(false);
+  });
+
+  it('evita despedidas del asistente en subtítulo de continuidad', () => {
+    expect(
+      looksLikeChatClosureText('Chau, cuídate. Cuando quieras volver, aquí estaré.'),
+    ).toBe(true);
+    const invite = getChatContinuityInviteSubtitle(
+      {
+        snippet: 'Chau, cuídate. Cuando quieras volver, aquí estaré.',
+        bridge: 'Chau, cuídate. Cuando quieras volver, aquí estaré.',
+        placeholder: false,
+        language: 'es',
+      },
+      'es',
+    );
+    expect(invite).not.toMatch(/chau|cuídate/i);
+    expect(invite).toMatch(/retoma|chat|hilo/i);
   });
 });

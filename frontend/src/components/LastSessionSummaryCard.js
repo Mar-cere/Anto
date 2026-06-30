@@ -9,6 +9,7 @@ import { useProfileTexts } from '../screens/profileScreen/profileScreenConstants
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { SPACING } from '../constants/ui';
+import { getLastSessionDisplayText } from '../utils/dashboardHomeUtils';
 
 function formatGeneratedAt(iso, language) {
   if (!iso) return '';
@@ -28,9 +29,9 @@ export function LastSessionSummaryCard({ summary, onOpenChat, flushWithParentGut
   const TEXTS = useProfileTexts();
   const text = useMemo(() => {
     if (!summary) return '';
-    const s = String(summary.snippet || '').trim();
-    if (s) return s;
-    return String(summary.bridge || '').trim();
+    const display = String(summary.displaySubtitle || '').trim();
+    if (display) return display;
+    return getLastSessionDisplayText(summary);
   }, [summary]);
   const dateLabel = formatGeneratedAt(summary?.generatedAt, language);
   const card = useMemo(

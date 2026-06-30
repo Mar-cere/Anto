@@ -13,6 +13,14 @@ export function focusLocale(language) {
 const COPY = {
   es: {
     chatContinuityHeadline: 'Continuidad del chat',
+    chatContinuityInviteDefault:
+      'Tu conversación sigue en el chat, en privado. Retoma cuando quieras.',
+    chatContinuityInviteRecent:
+      'Hubo actividad reciente. Puedes seguir en el chat cuando te venga bien.',
+    chatContinuityInviteOneDay:
+      'Ayer estuviste en el chat. El hilo sigue ahí cuando quieras retomarlo.',
+    chatContinuityInviteDays: (days) =>
+      `Hace ${days} días estuviste en el chat. El hilo sigue ahí cuando quieras.`,
     chatResumeDefault: 'Tu conversación sigue en el chat, en privado.',
     chatResumeRecent: 'Hubo actividad reciente en el chat.',
     chatResumeOneDay: 'Última actividad en el chat: hace un día.',
@@ -63,6 +71,14 @@ const COPY = {
   },
   en: {
     chatContinuityHeadline: 'Chat continuity',
+    chatContinuityInviteDefault:
+      'Your conversation is still in chat, privately. Pick it up whenever you want.',
+    chatContinuityInviteRecent:
+      'There was recent activity. You can continue in chat whenever it feels right.',
+    chatContinuityInviteOneDay:
+      'You were in chat yesterday. The thread is still there when you want to return.',
+    chatContinuityInviteDays: (days) =>
+      `You were in chat ${days} days ago. The thread is still there when you want to return.`,
     chatResumeDefault: 'Your conversation is still in chat, privately.',
     chatResumeRecent: 'There was recent activity in chat.',
     chatResumeOneDay: 'Last chat activity: one day ago.',
@@ -226,17 +242,98 @@ export function localizeLastSessionSummaryForDisplay(summary, language = 'es', o
     ...summary,
     snippet,
     bridge,
-    headline: c.chatContinuityHeadline
+    headline: c.chatContinuityHeadline,
+    displaySubtitle: getChatContinuityInviteSubtitle(
+      { ...summary, snippet, bridge },
+      lang,
+      { now, timezone },
+    ),
   };
+}
+
+const CHAT_CLOSURE_RE =
+  /\b(chau|adi[oó]s|cu[ií]date|hasta (luego|pronto)|nos vemos|cuando quieras volver|aqu[ií] estar[eé]|goodbye|take care|whenever you want|i.?ll be here|see you|bye)\b/i;
+
+const CHAT_FORWARD_RE =
+  /\b(retom|continu|siguiente|pr[oó]ximo|cuando quieras|pick up|continue|when you.?re ready|you can return|puedes volver|puedes seguir|el hilo)\b/i;
+
+/** Texto que suena a despedida del asistente; no invita a volver al chat. */
+export function looksLikeChatClosureText(text) {
+  const t = String(text || '').trim();
+  if (!t) return false;
+  return CHAT_CLOSURE_RE.test(t);
+}
+
+function withChatContinuityRecency(base, summary, language, now, timezone) {
+  const ref = summary?.sessionEndedAt || summary?.generatedAt;
+  if (!ref) return base;
+  const days = calendarDaysBetweenInTz(ref, now, timezone);
+  if (days <= 0) return base;
+  const c = focusCopy(language);
+  if (days === 1) return c.chatContinuityInviteOneDay;
+  if (days <= 14) return c.chatContinuityInviteDays(days);
+  return base;
+}
+
+/**
+ * Subtítulo orientado a retorno (no cita el último mensaje ni despedidas).
+ * @param {object|null} summary
+ * @param {'es'|'en'} [language]
+ * @param {{ now?: Date, timezone?: string }} [opts]
+ */
+export function getChatContinuityInviteSubtitle(summary, language = 'es', opts = {}) {
+  if (!summary) return '';
+  const lang = normalizeFocusLanguage(language);
+  const c = focusCopy(lang);
+  const now = opts.now instanceof Date ? opts.now : new Date();
+  const timezone = opts.timezone;
+
+  if (summary.recentActivityPending === true) {
+    return withChatContinuityRecency(c.chatContinuityInviteRecent, summary, lang, now, timezone);
+  }
+
+  if (summary.placeholder === true) {
+    return c.lastSessionPlaceholderBridge;
+  }
+
+  const bridge = String(summary.bridge || '').trim();
+  const snippet = String(summary.snippet || '').trim();
+  const bullets = Array.isArray(summary.bullets)
+    ? summary.bullets.map((b) => String(b || '').trim()).filter(Boolean)
+    : [];
+
+  const sessionRef = summary.sessionEndedAt || summary.generatedAt;
+  const temporal = (text) =>
+    sessionRef ? fixContinuationTemporalOpeners(text, sessionRef, lang, now, timezone) : text;
+
+  if (bridge && !looksLikeChatClosureText(bridge) && CHAT_FORWARD_RE.test(bridge)) {
+    return temporal(bridge);
+  }
+
+  const thematic = bullets.find((b) => b && !looksLikeChatClosureText(b));
+  if (thematic) return temporal(thematic);
+
+  if (snippet && !looksLikeChatClosureText(snippet) && CHAT_FORWARD_RE.test(snippet)) {
+    return temporal(snippet);
+  }
+
+  return withChatContinuityRecency(c.chatContinuityInviteDefault, summary, lang, now, timezone);
 }
 
 export function getLastSessionDisplayText(lastSession) {
   if (!lastSession) return '';
-  const snippet = String(lastSession.snippet || '').trim();
-  const bridge = String(lastSession.bridge || '').trim();
-  if (lastSession.placeholder && bridge) return bridge;
-  if (snippet) return snippet;
-  return bridge;
+  const hasPayload =
+    lastSession.conversationId ||
+    lastSession.placeholder === true ||
+    lastSession.recentActivityPending === true ||
+    String(lastSession.displaySubtitle || '').trim() ||
+    String(lastSession.snippet || '').trim() ||
+    String(lastSession.bridge || '').trim();
+  if (!hasPayload) return '';
+
+  const display = String(lastSession.displaySubtitle || '').trim();
+  if (display) return display;
+  return getChatContinuityInviteSubtitle(lastSession, lastSession.language || 'es');
 }
 
 export function hasChatContinuityDisplayText(lastSession) {

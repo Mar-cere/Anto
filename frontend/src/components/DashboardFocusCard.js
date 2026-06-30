@@ -12,6 +12,10 @@ import { createDashboardFocusStyles } from '../styles/focusCardTheme';
 import { updateSessionCommitment } from '../services/sessionCommitmentsService';
 import { getLastSessionDisplayText } from '../utils/dashboardHomeUtils';
 import {
+  buildCommitmentDisplayTitle,
+  buildCommitmentFollowUpPrompt,
+} from '../utils/commitmentDisplayCopy';
+import {
   buildFocusTaskOpenPayload,
   formatFocusNextTaskDue,
   resolveFocusNextTask,
@@ -547,14 +551,17 @@ const DashboardFocusCard = ({
         {commitments.length > 0 ? (
           <View style={styles.insetSection}>
             <Text style={styles.insetLabel}>{DASH.FOCUS_COMMITMENTS}</Text>
-            {commitments.map((item) => (
+            {commitments.map((item) => {
+              const commitmentTitle = buildCommitmentDisplayTitle(item, DASH);
+              const followUpPrompt = buildCommitmentFollowUpPrompt(item, DASH);
+              return (
               <View key={item.id} style={styles.commitmentRow}>
                 <Text style={styles.commitmentLabel} numberOfLines={2}>
-                  {item.label}
+                  {commitmentTitle}
                 </Text>
                 {item.followUpAnswer === 'pending' ? (
                   <View style={styles.commitmentActions}>
-                    <Text style={styles.commitmentPrompt}>{DASH.FOCUS_COMMITMENT_FOLLOW_UP}</Text>
+                    <Text style={styles.commitmentPrompt}>{followUpPrompt}</Text>
                     <View style={styles.commitmentButtons}>
                       <Pressable
                         onPress={() => handleCommitmentAnswer(item.id, 'yes')}
@@ -581,7 +588,8 @@ const DashboardFocusCard = ({
                   </View>
                 ) : null}
               </View>
-            ))}
+            );
+            })}
           </View>
         ) : null}
 

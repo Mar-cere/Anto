@@ -12,7 +12,8 @@ import logger from '../utils/logger.js';
 import {
   focusCopy,
   focusLocale,
-  normalizeFocusLanguage
+  normalizeFocusLanguage,
+  looksLikeChatClosureText,
 } from '../utils/focusDashboardCopy.js';
 
 const RISK_RANK = { LOW: 0, WARNING: 1, MEDIUM: 2, HIGH: 3, unknown: -1 };
@@ -373,7 +374,7 @@ async function processOneJob(job) {
       : 'Español neutro; sin listas numeradas dentro de strings; no diagnosticar; no inventar hechos no dichos.';
 
   const sessionHint = formatSessionEndedHint(sessionEndedAt, language);
-  const userPrompt = `${sessionHint ? `${sessionHint}\n\n` : ''}Transcript (chronological order, truncated if needed):\n${transcript}\n\nReturn ONLY JSON with exact shape:\n{"bullets":["..."],"bridge":"..."}\n- bullets: at most ${limits.maxBullets} strings, each max ${limits.bulletMaxChars} characters.\n- bridge: 1-2 short sentences for next time, max ${limits.bridgeMaxChars} characters total.\n- ${langDirective}`;
+  const userPrompt = `${sessionHint ? `${sessionHint}\n\n` : ''}Transcript (chronological order, truncated if needed):\n${transcript}\n\nReturn ONLY JSON with exact shape:\n{"bullets":["..."],"bridge":"..."}\n- bullets: at most ${limits.maxBullets} strings, each max ${limits.bulletMaxChars} characters. Summarize themes the USER shared (not assistant farewells).\n- bridge: 1-2 short sentences inviting a calm return next time, max ${limits.bridgeMaxChars} characters total. Do NOT quote goodbye lines, "take care", or closing phrases from the assistant.\n- ${langDirective}`;
 
   const systemLang =
     language === 'en'
@@ -586,10 +587,10 @@ export function reconcileChatContinuitySummary(stored, recentConversations = [],
 
   const preview = sanitizeContinuationText(String(latest.lastMessagePreview || ''), 100);
   let snippet = c.lastSessionRecentActivitySnippet;
-  if (preview && latest.lastMessageRole === 'user') {
+  if (preview && latest.lastMessageRole === 'user' && !looksLikeChatClosureText(preview)) {
     const clipped = preview.length >= 100 ? `${preview}…` : preview;
     snippet = `${c.lastSessionRecentUserPrefix}${clipped}${c.lastSessionRecentUserSuffix}`;
-  } else if (preview) {
+  } else if (preview && !looksLikeChatClosureText(preview) && /\b(retom|continu|cuando quieras|pick up|continue)\b/i.test(preview)) {
     snippet = preview.length >= 100 ? `${preview}…` : preview;
   }
 
