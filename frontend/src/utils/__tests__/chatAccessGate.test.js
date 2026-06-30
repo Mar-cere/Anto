@@ -1,5 +1,6 @@
 import {
   accountWithinFirstSessionGrace,
+  assertChatAccessOrThrow,
   canAttemptChatAccess,
   FIRST_SESSION_GRACE_MS,
 } from '../chatAccessGate';
@@ -64,5 +65,19 @@ describe('chatAccessGate', () => {
     paymentService.getTrialInfo.mockResolvedValue({ success: true, isInTrial: false });
     const old = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
     await expect(canAttemptChatAccess({ createdAt: old })).resolves.toBe(false);
+  });
+
+  it('assertChatAccessOrThrow lanza SUBSCRIPTION_REQUIRED sin acceso', async () => {
+    paymentService.getSubscriptionStatus.mockResolvedValue({
+      success: true,
+      hasSubscription: false,
+      isActive: false,
+      status: 'expired',
+    });
+    paymentService.getTrialInfo.mockResolvedValue({ success: true, isInTrial: false });
+    const old = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    await expect(assertChatAccessOrThrow({ createdAt: old })).rejects.toMatchObject({
+      code: 'SUBSCRIPTION_REQUIRED',
+    });
   });
 });

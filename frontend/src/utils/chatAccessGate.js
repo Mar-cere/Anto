@@ -38,3 +38,16 @@ export async function canAttemptChatAccess(userData = null) {
     return accountWithinFirstSessionGrace(userData?.createdAt);
   }
 }
+
+/**
+ * Lanza SUBSCRIPTION_REQUIRED si el cliente no debería llamar al chat aún.
+ * @param {object|null|undefined} userData
+ */
+export async function assertChatAccessOrThrow(userData = null) {
+  const allowed = await canAttemptChatAccess(userData);
+  if (allowed) return;
+  const err = new Error('Se requiere suscripción activa o trial válido para usar el chat');
+  err.code = 'SUBSCRIPTION_REQUIRED';
+  err.response = { status: 403, data: { requiresSubscription: true } };
+  throw err;
+}

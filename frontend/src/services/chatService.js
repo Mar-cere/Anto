@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { devLog, devWarn } from '../utils/devLog';
-import { parseChatMessagesArrayFromStorage } from '../utils/safeStorageJson';
+import { parseChatMessagesArrayFromStorage, parseUserIdFromUserDataStorage } from '../utils/safeStorageJson';
+import { assertChatAccessOrThrow, canAttemptChatAccess } from '../utils/chatAccessGate';
+import { isSubscriptionRequiredError } from '../utils/subscriptionAccess';
 import apiClient, { API_URL, ENDPOINTS, getAppLanguage } from '../config/api';
 import { getChatCopy } from '../utils/serviceCopy';
 import { isValidSessionIntentionId } from '../constants/sessionIntention';
@@ -8,7 +10,6 @@ import { clearPersistedChatSession } from '../utils/chatSessionStorage';
 import { postChatSseWithXHR, streamChatSseWithFetch } from '../utils/chatSseStream';
 import { normalizeChatSocketTurnPayload } from '../utils/chatSocketTurnPayload';
 import { shouldFallbackChatTransportToSse } from '../utils/chatSocketTransport';
-import { parseUserIdFromUserDataStorage } from '../utils/safeStorageJson';
 import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
 import websocketService from './websocketService';
 import { Platform } from 'react-native';
@@ -23,6 +24,17 @@ const handleError = (error) => {
   errorCallbacks.forEach(callback => callback(error));
 };
 
+async function readStoredUserData() {
+  try {
+    const raw = await AsyncStorage.getItem('userData');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 // Inicializar el servicio (conversación + socket de chat)
 export const initializeSocket = async () => {
   try {
@@ -34,6 +46,8 @@ export const initializeSocket = async () => {
       return false;
     }
 
+    await assertChatAccessOrThrow(await readStoredUserData());
+
     let conversationId = await AsyncStorage.getItem('currentConversationId');
     
     if (!conversationId) {
@@ -41,7 +55,9 @@ export const initializeSocket = async () => {
       conversationId = await createConversation();
         devLog('Conversación creada durante inicialización:', conversationId);
       } catch (createError) {
-        console.error('Error al crear conversación durante inicialización:', createError);
+        if (!isSubscriptionRequiredError(createError)) {
+          console.error('Error al crear conversación durante inicialización:', createError);
+        }
         return false;
       }
     }
@@ -531,6 +547,9 @@ export const closeSocket = () => {
  */
 export const createConversation = async (options = {}) => {
   try {
+    if (!(await isGuestChatMode())) {
+      await assertChatAccessOrThrow(await readStoredUserData());
+    }
     const lang = await getAppLanguage();
     const sessionIntention =
       typeof options === 'string' ? options : options?.sessionIntention;
@@ -562,7 +581,9 @@ export const createConversation = async (options = {}) => {
     e.code = 'CONVERSATION_CREATE_FAILED';
     throw e;
   } catch (error) {
-    console.error('Error al crear conversación:', error);
+    if (!isSubscriptionRequiredError(error)) {
+      console.error('Error al crear conversación:', error);
+    }
     throw error;
   }
 };
@@ -775,6 +796,8 @@ export const fetchTccContinuity = async (conversationId) => {
     if (await isGuestChatMode()) return [];
     const token = await AsyncStorage.getItem('userToken');
     if (!token) return [];
+    const userData = await readStoredUserData();
+    if (!(await canAttemptChatAccess(userData))) return [];
     const cid = String(conversationId ?? '').trim();
     const query = /^[\da-f]{24}$/i.test(cid) ? { conversationId: cid } : {};
     const response = await apiClient.get(ENDPOINTS.CHAT_TCC_CONTINUITY, query);

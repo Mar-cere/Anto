@@ -26,5 +26,23 @@ export function subscriptionLooksCurrentlyUsable(status) {
   const trialEndMs = status.trialEndDate ? new Date(status.trialEndDate).getTime() : NaN;
   const trialEnded = Number.isFinite(trialEndMs) && trialEndMs < Date.now();
   if ((st === 'trialing' || st === 'trial') && (status.isInTrial === false || trialEnded)) return false;
-  return st === 'premium' || st === 'active' || st === 'trialing';
+  return st === 'premium' || st === 'active' || st === 'trialing' || st === 'trial';
+}
+
+/**
+ * @param {unknown} errorLike
+ * @returns {boolean}
+ */
+export function isSubscriptionRequiredError(errorLike) {
+  if (!errorLike || typeof errorLike !== 'object') return false;
+  const code = String(errorLike.code || errorLike.errorCode || '').toUpperCase();
+  if (code === 'SUBSCRIPTION_REQUIRED') return true;
+  const response = errorLike.response;
+  if (response?.status === 403 && response?.data?.requiresSubscription === true) return true;
+  const msg = String(errorLike.message || '');
+  return (
+    msg.includes('suscripción') ||
+    msg.includes('subscription') ||
+    msg.includes('Se requiere suscripción activa')
+  );
 }
