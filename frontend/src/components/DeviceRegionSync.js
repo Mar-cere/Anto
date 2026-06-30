@@ -3,15 +3,12 @@
  * Complementa timezone en useSettingsScreen; corre en toda la app autenticada.
  */
 import { useEffect, useRef } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { api, ENDPOINTS } from '../config/api';
 import { useAuth } from '../context/AuthContext';
 import { inferDeviceRegionCountry } from '../utils/deviceRegion';
 
-const STORAGE_USER_DATA = 'userData';
-
 export default function DeviceRegionSync() {
-  const { user, refreshSession } = useAuth();
+  const { user, applyLocalUser } = useAuth();
   const syncedRef = useRef(false);
   const userId = user?._id ?? user?.id;
 
@@ -42,14 +39,13 @@ export default function DeviceRegionSync() {
           preferences: { ...currentPreferences, regionCountry: iso },
         });
         if (result?.user) {
-          await AsyncStorage.setItem(STORAGE_USER_DATA, JSON.stringify(result.user));
-          await refreshSession();
+          await applyLocalUser(result.user);
         }
       } catch {
         // silencioso
       }
     })();
-  }, [refreshSession, user, userId]);
+  }, [applyLocalUser, user, userId]);
 
   return null;
 }
