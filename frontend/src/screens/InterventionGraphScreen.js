@@ -25,27 +25,22 @@ import { useTheme } from '../context/ThemeContext';
 import chatService from '../services/chatService';
 import {
   buildInterventionGraphViewModel,
-  formatTopicTagLabel,
 } from '../utils/interventionGraphLayout';
 import {
   filterPublicGraphCorrelations,
   filterPublicGraphInterventionEdges,
-  resolveGraphInterventionLabel,
 } from '../utils/graphInterventionLabel';
 import { resolveInterventionScreen } from '../utils/interventionCatalogResolve';
 import { recordInterventionClicked } from '../utils/recordInterventionCompleted';
 import {
   formatGraphMeta,
-  formatGraphMetrics,
-  formatGraphRates,
+  formatGraphHumanStatus,
+  formatGraphRowContext,
   formatCorrelationInsight,
+  formatGraphListInterventionTitle,
+  resolveGraphEdgeTopicLabel,
   useInterventionGraphTexts,
 } from './interventionGraphTexts';
-
-function pct(n) {
-  if (!Number.isFinite(n)) return '0%';
-  return `${Math.round(n * 100)}%`;
-}
 
 const InterventionGraphScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
@@ -59,8 +54,6 @@ const InterventionGraphScreen = ({ navigation }) => {
   const [conceptNodes, setConceptNodes] = useState([]);
   const [conceptEdges, setConceptEdges] = useState([]);
   const [correlations, setCorrelations] = useState([]);
-  const [vectorSearchMode, setVectorSearchMode] = useState('off');
-  const [embeddingsEnabled, setEmbeddingsEnabled] = useState(false);
   const [windowDays, setWindowDays] = useState(30);
   const [viewMode, setViewMode] = useState('graph');
   const [selectedKey, setSelectedKey] = useState(null);
@@ -158,6 +151,13 @@ const InterventionGraphScreen = ({ navigation }) => {
         },
         rowTitle: { fontSize: 15, fontWeight: '700', color: colors.text, marginBottom: 6 },
         rowSub: { fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
+        rowStatus: {
+          fontSize: 13,
+          color: colors.primary,
+          lineHeight: 18,
+          marginTop: 6,
+          fontWeight: '500',
+        },
         detail: {
           borderRadius: 12,
           padding: 12,
@@ -208,8 +208,6 @@ const InterventionGraphScreen = ({ navigation }) => {
       setCorrelations(
         filterPublicGraphCorrelations(Array.isArray(data?.correlations) ? data.correlations : []),
       );
-      setVectorSearchMode(String(data?.vectorSearchMode || data?.features?.vectorSearch?.mode || 'off'));
-      setEmbeddingsEnabled(data?.embeddingsEnabled === true);
       setSelectedKey(null);
     } catch {
       setError(TEXTS.ERROR);
@@ -244,17 +242,17 @@ const InterventionGraphScreen = ({ navigation }) => {
   );
 
   const renderEdgeRow = (edge, { topicFree = false } = {}) => {
-    const label = resolveGraphInterventionLabel(edge.interventionLabel, edge.interventionId);
-    if (!label) return null;
+    const interventionTitle = formatGraphListInterventionTitle(
+      edge.interventionLabel,
+      edge.interventionId,
+    );
+    if (!interventionTitle) return null;
     const key = topicFree
       ? `tf:${edge.topicFree}:${edge.interventionId}`
       : `${edge.topicTag}:${edge.interventionId}`;
-    const rawTopic = String(edge.topicFree || '').trim();
-    const displayTopic = String(edge.displayLabel || rawTopic).trim();
-    const topicLabel = topicFree
-      ? `"${displayTopic.length > 56 ? `${displayTopic.slice(0, 55)}…` : displayTopic}"`
-      : formatTopicTagLabel(edge.topicTag, language);
+    const topicLabel = resolveGraphEdgeTopicLabel(edge, language);
     const isSelected = selectedKey === key;
+    const status = formatGraphHumanStatus(TEXTS, edge);
     return (
       <TouchableOpacity
         key={key}
@@ -263,11 +261,11 @@ const InterventionGraphScreen = ({ navigation }) => {
         accessibilityRole="button"
         accessibilityState={{ selected: isSelected }}
       >
-        <Text style={styles.rowTitle}>
-          {topicLabel} → {label}
-        </Text>
-        <Text style={styles.rowSub}>{formatGraphMetrics(TEXTS, edge)}</Text>
-        <Text style={styles.rowSub}>{formatGraphRates(TEXTS, edge, pct)}</Text>
+        <Text style={styles.rowTitle}>{interventionTitle}</Text>
+        {topicLabel ? (
+          <Text style={styles.rowSub}>{formatGraphRowContext(TEXTS, topicLabel)}</Text>
+        ) : null}
+        {status ? <Text style={styles.rowStatus}>{status}</Text> : null}
       </TouchableOpacity>
     );
   };
@@ -284,15 +282,6 @@ const InterventionGraphScreen = ({ navigation }) => {
         }
       >
         <Text style={styles.meta}>{formatGraphMeta(TEXTS, windowDays)}</Text>
-        {embeddingsEnabled ? (
-          <Text style={[styles.legend, { marginTop: -8 }]}>
-            {vectorSearchMode === 'atlas'
-              ? TEXTS.VECTOR_ATLAS_ON
-              : vectorSearchMode === 'scan'
-                ? TEXTS.VECTOR_SCAN_ON
-                : TEXTS.EMBEDDINGS_ON}
-          </Text>
-        ) : null}
 
         {correlations.length > 0 && showStatePanel !== 'error' ? (
           <View style={styles.insight}>
@@ -406,6 +395,12 @@ const InterventionGraphScreen = ({ navigation }) => {
             {selectedEdge ? (
               <View style={styles.detail}>
                 {(() => {
+                  const interventionTitle = formatGraphListInterventionTitle(
+                    selectedEdge.interventionLabel,
+                    selectedEdge.interventionId,
+                  );
+                  const topicLabel = resolveGraphEdgeTopicLabel(selectedEdge, language);
+                  const status = formatGraphHumanStatus(TEXTS, selectedEdge);
                   const rawSnippet = String(
                     selectedEdge.conceptLabel || selectedEdge.topicFree || '',
                   ).trim();
@@ -414,28 +409,25 @@ const InterventionGraphScreen = ({ navigation }) => {
                       topicFreeEdges.find((e) => e.topicFree === rawSnippet)?.displayLabel ||
                       rawSnippet,
                   ).trim();
-                  const titleLeft = rawSnippet
-                    ? `"${displaySnippet}"`
-                    : formatTopicTagLabel(selectedEdge.topicTag, language);
                   return (
                     <>
-                      <Text style={styles.detailTitle}>
-                        {titleLeft} →{' '}
-                        {resolveGraphInterventionLabel(
-                          selectedEdge.interventionLabel,
-                          selectedEdge.interventionId,
-                        ) || selectedEdge.interventionLabel || selectedEdge.interventionId}
-                      </Text>
-                      {rawSnippet && displaySnippet && rawSnippet !== displaySnippet ? (
+                      <Text style={styles.detailTitle}>{interventionTitle}</Text>
+                      {topicLabel ? (
                         <Text style={styles.rowSub}>
+                          {formatGraphRowContext(TEXTS, topicLabel)}
+                        </Text>
+                      ) : (
+                        <Text style={styles.rowSub}>{TEXTS.CONNECTION_HELP}</Text>
+                      )}
+                      {status ? <Text style={styles.rowStatus}>{status}</Text> : null}
+                      {rawSnippet && displaySnippet && rawSnippet !== displaySnippet ? (
+                        <Text style={[styles.rowSub, { marginTop: 8 }]}>
                           {TEXTS.ORIGINAL_SNIPPET}: «{rawSnippet}»
                         </Text>
                       ) : null}
                     </>
                   );
                 })()}
-                <Text style={styles.rowSub}>{formatGraphMetrics(TEXTS, selectedEdge)}</Text>
-                <Text style={styles.rowSub}>{formatGraphRates(TEXTS, selectedEdge, pct)}</Text>
                 {resolveInterventionScreen(selectedEdge.interventionId) ? (
                   <TouchableOpacity
                     style={styles.detailCta}

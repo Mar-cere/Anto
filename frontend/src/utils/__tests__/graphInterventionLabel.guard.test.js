@@ -24,7 +24,7 @@ describe('graphInterventionLabel guard', () => {
     const src = readSrc('screens/InterventionGraphScreen.js');
     expect(src).toMatch(/filterPublicGraphInterventionEdges/);
     expect(src).toMatch(/filterPublicGraphCorrelations/);
-    expect(src).toMatch(/resolveGraphInterventionLabel/);
+    expect(src).toMatch(/formatGraphHumanStatus/);
   });
 
   it('interventionGraphLayout filtra antes de construir el modelo visual', () => {
@@ -52,5 +52,7 @@ describe('graphInterventionLabel guard', () => {
     expect(src).toMatch(/recordInterventionClicked/);
     expect(src).toMatch(/openIntervention/);
     expect(src).toMatch(/OPEN_TECHNIQUE/);
+    expect(src).not.toMatch(/formatGraphMetrics/);
+    expect(src).not.toMatch(/VECTOR_ATLAS_ON/);
   });
 });
