@@ -162,6 +162,26 @@ describe('User Routes', () => {
     });
   });
 
+  describe('POST /api/users/me/emergency-contacts/alert-from-chat', () => {
+    it('debe rechazar confirmaci?n sin autenticaci?n', async () => {
+      const response = await request(app)
+        .post('/api/users/me/emergency-contacts/alert-from-chat')
+        .send({ offerId: 'offer-abc12345', conversationId: '507f1f77bcf86cd799439011' });
+
+      expect([401, 400, 404]).toContain(response.status);
+    });
+  });
+
+  describe('POST /api/users/me/emergency-contacts/dismiss-alert-from-chat', () => {
+    it('debe rechazar dismiss sin autenticaci?n', async () => {
+      const response = await request(app)
+        .post('/api/users/me/emergency-contacts/dismiss-alert-from-chat')
+        .send({ conversationId: '507f1f77bcf86cd799439011' });
+
+      expect([401, 400, 404]).toContain(response.status);
+    });
+  });
+
   describe('POST /api/users/me/emergency-contacts/:contactId/test-whatsapp', () => {
     it('debe rechazar test sin autenticación', async () => {
       const response = await request(app)

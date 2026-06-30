@@ -332,6 +332,7 @@ const ChatScreen = () => {
     openEmergencyContactsFromChat,
     handleEmergencyContactAlertConfirm,
     handleEmergencyContactAlertReject,
+    emergencyContactAlertConfirmingId,
     historyHasMore,
     loadingOlderMessages,
     loadOlderMessages,
@@ -465,6 +466,7 @@ const ChatScreen = () => {
         onProductProposalReject={handleProductProposalReject}
         onEmergencyContactAlertConfirm={handleEmergencyContactAlertConfirm}
         onEmergencyContactAlertReject={handleEmergencyContactAlertReject}
+        emergencyContactAlertConfirmingId={emergencyContactAlertConfirmingId}
       />
     ),
     [
@@ -474,6 +476,7 @@ const ChatScreen = () => {
       handleProductProposalReject,
       handleEmergencyContactAlertConfirm,
       handleEmergencyContactAlertReject,
+      emergencyContactAlertConfirmingId,
     ]
   );
 

@@ -147,6 +147,7 @@ export function useChatScreen() {
   const [tccLiteAtHandoff, setTccLiteAtHandoff] = useState(null);
   const [crisisResourcesPanel, setCrisisResourcesPanel] = useState(null);
   const [crisisContactAlertNotice, setCrisisContactAlertNotice] = useState(null);
+  const [emergencyContactAlertConfirmingId, setEmergencyContactAlertConfirmingId] = useState(null);
   const crisisResourcesDismissedRef = useRef(false);
   const pendingTccLiteResumeRef = useRef(null);
   const handleSendRef = useRef(null);
@@ -689,10 +690,13 @@ export function useChatScreen() {
   }, []);
 
   const handleEmergencyContactAlertConfirm = useCallback(async (offerMessage) => {
+    const offer = offerMessage?.proposedEmergencyContactAlert;
+    const offerKey = offerMessage?.id || offerMessage?._id || offer?.id;
+    if (!offer?.id || emergencyContactAlertConfirmingId) return;
     try {
-      const offer = offerMessage?.proposedEmergencyContactAlert;
       const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
-      if (!offer?.id || !convId || !isValidMongoObjectId24(convId)) return;
+      if (!convId || !isValidMongoObjectId24(convId)) return;
+      setEmergencyContactAlertConfirmingId(String(offerKey));
       await userService.confirmEmergencyContactAlertFromChat({
         offerId: offer.id,
         conversationId: convId,
@@ -708,10 +712,12 @@ export function useChatScreen() {
       );
     } catch (e) {
       console.warn('[useChatScreen] emergency contact alert confirm:', e?.message || e);
+    } finally {
+      setEmergencyContactAlertConfirmingId(null);
     }
-  }, []);
+  }, [emergencyContactAlertConfirmingId]);
 
-  const handleEmergencyContactAlertReject = useCallback((offerMessage) => {
+  const handleEmergencyContactAlertReject = useCallback(async (offerMessage) => {
     setMessages((prev) =>
       prev.filter((m) => {
         const id = m.id || m._id;
@@ -719,6 +725,13 @@ export function useChatScreen() {
         return String(id) !== String(targetId);
       }),
     );
+    try {
+      const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+      if (!convId || !isValidMongoObjectId24(convId)) return;
+      await userService.dismissEmergencyContactAlertFromChat({ conversationId: convId });
+    } catch (e) {
+      console.warn('[useChatScreen] emergency contact alert dismiss:', e?.message || e);
+    }
   }, []);
 
   useEffect(() => {
@@ -1832,6 +1845,7 @@ export function useChatScreen() {
     openEmergencyContactsFromChat,
     handleEmergencyContactAlertConfirm,
     handleEmergencyContactAlertReject,
+    emergencyContactAlertConfirmingId,
     historyHasMore,
     loadingOlderMessages,
     loadOlderMessages,

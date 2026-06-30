@@ -59,6 +59,8 @@ function defaultProtocolState() {
     active: false,
     stableUserTurns: 0,
     hadContactAlert: false,
+    pendingContactAlertOfferId: null,
+    contactAlertOfferDismissed: false,
     protocolVersion: PROTOCOL_VERSION,
     enteredAt: null,
   };
@@ -70,6 +72,11 @@ export function normalizeCrisisProtocolState(raw) {
     active: raw.active === true,
     stableUserTurns: Math.max(0, Number(raw.stableUserTurns) || 0),
     hadContactAlert: raw.hadContactAlert === true,
+    pendingContactAlertOfferId:
+      raw.pendingContactAlertOfferId != null
+        ? String(raw.pendingContactAlertOfferId).slice(0, 80)
+        : null,
+    contactAlertOfferDismissed: raw.contactAlertOfferDismissed === true,
     protocolVersion: String(raw.protocolVersion || PROTOCOL_VERSION).slice(0, 16),
     enteredAt: raw.enteredAt || null,
   };
@@ -109,6 +116,8 @@ export function advanceCrisisProtocolState(
         active: true,
         stableUserTurns: 0,
         hadContactAlert: hadContactAlert === true,
+        pendingContactAlertOfferId: null,
+        contactAlertOfferDismissed: false,
         protocolVersion: PROTOCOL_VERSION,
         enteredAt: new Date(),
       },
@@ -147,6 +156,8 @@ export function advanceCrisisProtocolState(
       active: true,
       stableUserTurns,
       hadContactAlert: hadAlert,
+      pendingContactAlertOfferId: prev.pendingContactAlertOfferId || null,
+      contactAlertOfferDismissed: prev.contactAlertOfferDismissed === true,
       protocolVersion: PROTOCOL_VERSION,
       enteredAt: prev.enteredAt || new Date(),
     },

@@ -1356,6 +1356,10 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         };
 
         const appLanguageForChat = req.appLanguage || resolveRequestLanguage(req);
+        const willHardStop = shouldHardStopCrisisLlm({
+          riskLevel,
+          messageContent: content.trim(),
+        });
 
         let crisisTurnClientExtras = await applyCrisisProtocolForTurn({
           conversation,
@@ -1367,6 +1371,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           trendAnalysis,
           crisisHistory,
           conversationContext,
+          hardStop: willHardStop,
           isCrisis,
           hadContactAlert: crisisBgResult?.alertSent === true,
           language: appLanguageForChat,
@@ -1401,7 +1406,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               phone: combinedProfile?.phone,
               language: appLanguageForChat,
               showContactAlertNotice:
-                crisisTurnClientExtras?.crisisProtocolState?.hadContactAlert === true,
+                crisisTurnClientExtras?.crisisProtocolState?.hadContactAlert === true ||
+                crisisBgResult?.alertSent === true,
             });
           let out = crisisResources ? { ...payload, crisisResources } : { ...payload };
           if (crisisTurnClientExtras?.proposedEmergencyContactAlert) {
@@ -1512,10 +1518,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           crisisMetricTransport: req.query.stream === 'true' ? 'sse' : 'http',
         };
 
-        const crisisHardStopContent = shouldHardStopCrisisLlm({
-          riskLevel,
-          messageContent: content.trim(),
-        })
+        const crisisHardStopContent = willHardStop
           ? buildHardStopCrisisAssistantContent({
               riskLevel,
               language: appLanguageForChat,

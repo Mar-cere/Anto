@@ -333,6 +333,10 @@ export const setupSocketIO = (server) => {
           ...(userProfile?.preferences || {}),
           ...(socketUser?.preferences || {}),
         };
+        const willHardStop = shouldHardStopCrisisLlm({
+          riskLevel,
+          messageContent: messageText,
+        });
         let crisisTurnClientExtras = await applyCrisisProtocolForTurn({
           conversation,
           userId,
@@ -343,6 +347,7 @@ export const setupSocketIO = (server) => {
           trendAnalysis,
           crisisHistory,
           conversationContext,
+          hardStop: willHardStop,
           isCrisis,
           hadContactAlert: crisisBgResult?.alertSent === true,
           language: socketLanguage,
@@ -376,7 +381,8 @@ export const setupSocketIO = (server) => {
               phone: socketUser?.phone || null,
               language: socketLanguage,
               showContactAlertNotice:
-                crisisTurnClientExtras?.crisisProtocolState?.hadContactAlert === true,
+                crisisTurnClientExtras?.crisisProtocolState?.hadContactAlert === true ||
+                crisisBgResult?.alertSent === true,
             });
           return {
             ...(crisisResources ? { crisisResources } : {}),
@@ -411,10 +417,7 @@ export const setupSocketIO = (server) => {
           }),
         });
 
-        const crisisHardStopContent = shouldHardStopCrisisLlm({
-          riskLevel,
-          messageContent: messageText,
-        })
+        const crisisHardStopContent = willHardStop
           ? buildHardStopCrisisAssistantContent({
               riskLevel,
               language: socketLanguage,

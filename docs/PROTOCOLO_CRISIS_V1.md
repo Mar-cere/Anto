@@ -203,32 +203,35 @@ Traducción EN obligatoria antes de cierre **#151** / **#153**.
 
 ## 8. Checklist de cierre (matriz)
 
-Marcar **#93** / **#205** (producto) / **#10** según fila:
+Marcar **#93** / **#205** (producto) / **#10** según fila.
+
+**Estado ingeniería (30 jun 2026):** implementación v1 en PR #4; pendiente firma clínica/legal antes de cerrar filas en matriz.
 
 ### #93 — Protocolo ideación
 
 - [ ] Revisión clínica del documento y batería §2
 - [ ] Revisión legal (alertas, copy, menores si aplica)
-- [ ] Plantillas camino A es/en alineadas a §3.1
-- [ ] Constraints camino B y rama rechazo §3.3 en prompt
-- [ ] Tests: `crisisHardStopService`, `crisisDetectionFlow`, smoke release
+- [x] Plantillas camino A es/en alineadas a §3.1 (`crisisHardStopService`)
+- [x] Constraints camino B y rama rechazo §3.3 en prompt (`crisis.js`)
+- [x] Tests unitarios: `crisisHardStopService`, `crisisProtocolService`, decisión MEDIUM
+- [ ] Tests integración: `crisisDetectionFlow`, smoke release (requiere entorno con API keys)
 
 ### #205 — Guardrails
 
-- [ ] Camino A/B según §3
-- [ ] Salida §4 + evento `crisis_protocol_exit`
-- [ ] MEDIUM alerta **preguntada** (§5.2) implementada si difiere de producción
-- [ ] Post-envío §5.3 en UI
+- [x] Camino A/B según §3
+- [x] Salida §4 + evento `crisis_protocol_exit`
+- [x] MEDIUM alerta **preguntada** (§5.2) con validación de oferta y dismiss
+- [x] Post-envío §5.3 en UI (`CrisisResourcesStrip` + WebSocket)
 
 ### #10 — Transparencia
 
-- [ ] Bloques T1–T5 siempre visibles en `CrisisResourcesStrip`
-- [ ] Misma semántica en push de crisis relevantes
+- [x] Bloques T1–T5 siempre visibles en `CrisisResourcesStrip`
+- [x] Misma semántica en push de crisis relevantes (copy §5.3 / `emergency:alert:sent`)
 
 ### #9 — Derivación
 
 - [ ] **Sigue Parcial** hasta guía «buscar profesional» utilizable
-- [ ] v1: líneas + contactos + copy complemento (§1.2)
+- [x] v1: líneas + contactos + copy complemento (§1.2)
 
 ---
 
@@ -247,4 +250,4 @@ Marcar **#93** / **#205** (producto) / **#10** según fila:
 
 ---
 
-*Última actualización: 30 jun 2026 — decisiones de marco producto (contención, complemento, salida 2 turnos, alertas híbridas opción C, #9 profesional fuera de v1).*
+*Última actualización: 30 jun 2026 — decisiones de marco producto; checklist §8 marcado en ítems de ingeniería (PR #4). Pendiente: revisión clínica/legal.*

@@ -964,27 +964,42 @@ router.post('/me/emergency-contacts/:contactId/test', authenticateToken, validat
 router.post('/me/emergency-contacts/alert-from-chat', authenticateToken, validateUserObjectId, async (req, res) => {
   try {
     const { offerId, conversationId } = req.body || {};
+    const Conversation = (await import('../models/Conversation.js')).default;
     const {
       confirmEmergencyContactAlertFromChat,
-      isValidEmergencyContactAlertOfferId,
+      isValidConversationIdForOffer,
+      validateContactAlertOfferConfirmation,
     } = await import('../services/crisisContactAlertOfferService.js');
     const { markConversationContactAlertSent } = await import(
       '../services/crisisTurnClientExtrasService.js'
     );
 
-    if (!isValidEmergencyContactAlertOfferId(offerId)) {
+    if (!isValidConversationIdForOffer(conversationId)) {
       return res.status(400).json({ message: req.apiCopy.invalidRequest || 'Solicitud inválida' });
+    }
+
+    const conversation = await Conversation.findById(conversationId).select(
+      'userId crisisProtocolState',
+    );
+    const validation = validateContactAlertOfferConfirmation({
+      offerId,
+      conversation,
+      userId: req.user._id,
+    });
+    if (!validation.ok) {
+      return res.status(validation.status).json({
+        message: req.apiCopy.invalidRequest || 'Solicitud inválida',
+        code: validation.code,
+      });
     }
 
     const result = await confirmEmergencyContactAlertFromChat(req.user._id, {
       riskLevel: 'MEDIUM',
       messageContent: null,
-      metadata: { offerId, conversationId: conversationId || null, source: 'chat_offer_confirmed' },
+      metadata: { offerId, conversationId: String(conversationId), source: 'chat_offer_confirmed' },
     });
 
-    if (conversationId) {
-      await markConversationContactAlertSent(conversationId);
-    }
+    await markConversationContactAlertSent(conversationId);
 
     if (!result.sent) {
       return res.status(400).json({
@@ -1003,6 +1018,42 @@ router.post('/me/emergency-contacts/alert-from-chat', authenticateToken, validat
     });
   } catch (error) {
     logger.error('Error al confirmar alerta desde chat', { error: error.message, userId: req.user._id });
+    return res.status(500).json({
+      message: req.apiCopy.testAlertError,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
+// Rechazar oferta MEDIUM en chat (no re-ofertar en la misma sesión de protocolo)
+router.post('/me/emergency-contacts/dismiss-alert-from-chat', authenticateToken, validateUserObjectId, async (req, res) => {
+  try {
+    const { conversationId } = req.body || {};
+    const { isValidConversationIdForOffer } = await import(
+      '../services/crisisContactAlertOfferService.js'
+    );
+    const { dismissContactAlertOffer } = await import(
+      '../services/crisisTurnClientExtrasService.js'
+    );
+
+    if (!isValidConversationIdForOffer(conversationId)) {
+      return res.status(400).json({ message: req.apiCopy.invalidRequest || 'Solicitud inválida' });
+    }
+
+    const outcome = await dismissContactAlertOffer(conversationId, req.user._id);
+    if (!outcome.ok) {
+      return res.status(outcome.status).json({
+        message: req.apiCopy.invalidRequest || 'Solicitud inválida',
+        code: outcome.code,
+      });
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    logger.error('Error al rechazar oferta de alerta desde chat', {
+      error: error.message,
+      userId: req.user._id,
+    });
     return res.status(500).json({
       message: req.apiCopy.testAlertError,
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,

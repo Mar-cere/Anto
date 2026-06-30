@@ -323,6 +323,7 @@ function ChatMessageItem({
   onProductProposalReject,
   onEmergencyContactAlertConfirm,
   onEmergencyContactAlertReject,
+  emergencyContactAlertConfirmingId = null,
 }) {
   const { language } = useLanguage();
   const TEXTS = useChatTexts();
@@ -376,6 +377,8 @@ function ChatMessageItem({
 
   if (message.type === 'emergency_contact_alert_offer' && message.proposedEmergencyContactAlert) {
     const offer = message.proposedEmergencyContactAlert;
+    const offerKey = String(message.id || message._id || offer.id);
+    const isConfirming = emergencyContactAlertConfirmingId === offerKey;
     return (
       <View style={styles.suggestionsContainer}>
         <Text style={styles.suggestionsTitle}>{TEXTS.EMERGENCY_CONTACT_ALERT_OFFER_TITLE}</Text>
@@ -383,18 +386,22 @@ function ChatMessageItem({
           <Text style={styles.productProposalTitle}>{offer.message}</Text>
           <View style={styles.proposalActionsRow}>
             <TouchableOpacity
-              style={styles.proposalPrimaryBtn}
+              style={[styles.proposalPrimaryBtn, isConfirming && { opacity: 0.6 }]}
               onPress={() => onEmergencyContactAlertConfirm?.(message)}
+              disabled={isConfirming}
               accessibilityRole="button"
+              accessibilityState={{ disabled: isConfirming }}
             >
               <Text style={styles.proposalPrimaryBtnText}>
                 {TEXTS.EMERGENCY_CONTACT_ALERT_OFFER_YES}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.proposalGhostBtn}
+              style={[styles.proposalGhostBtn, isConfirming && { opacity: 0.6 }]}
               onPress={() => onEmergencyContactAlertReject?.(message)}
+              disabled={isConfirming}
               accessibilityRole="button"
+              accessibilityState={{ disabled: isConfirming }}
             >
               <Text style={styles.proposalGhostBtnText}>
                 {TEXTS.EMERGENCY_CONTACT_ALERT_OFFER_NO}

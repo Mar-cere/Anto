@@ -119,6 +119,8 @@ const conversationSchema = new mongoose.Schema({
       active: { type: Boolean, default: false },
       stableUserTurns: { type: Number, default: 0, min: 0 },
       hadContactAlert: { type: Boolean, default: false },
+      pendingContactAlertOfferId: { type: String, default: null, maxlength: 80 },
+      contactAlertOfferDismissed: { type: Boolean, default: false },
       protocolVersion: { type: String, default: '1.0', maxlength: 16 },
       enteredAt: { type: Date, default: null },
     },
