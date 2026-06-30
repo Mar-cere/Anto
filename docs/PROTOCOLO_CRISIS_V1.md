@@ -192,12 +192,12 @@ Traducción EN obligatoria antes de cierre **#151** / **#153**.
 
 | Tema | Propuesta | Motivo |
 |------|-----------|--------|
-| Buscar psicólogo / guía profesional | **#9** | No utilizable aún; no mostrar en UI |
+| Buscar psicólogo / guía profesional | **#9** | Pospuesto; no mostrar en UI |
 | Check-in crisis suave | **#19** | Malestar sin batería |
 | Explicación técnica del clasificador | — | Solo copy humano §6 |
 | Integración salud / telepsicología | — | Futuro |
 
-**#9 en v1:** líneas por país + contactos de emergencia + dashboard crisis (sin guía profesional).
+**#9 en v1 crisis:** líneas por país + contactos de emergencia + panel crisis (sin guía profesional; ampliación **#9** pospuesta).
 
 ---
 
