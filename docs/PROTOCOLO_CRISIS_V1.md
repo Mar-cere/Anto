@@ -205,7 +205,7 @@ Traducción EN obligatoria antes de cierre **#151** / **#153**.
 
 Marcar **#93** / **#205** (producto) / **#10** según fila.
 
-**Estado ingeniería (30 jun 2026):** implementación v1 en PR #4; pendiente firma clínica/legal antes de cerrar filas en matriz.
+**Estado ingeniería (30 jun 2026):** implementación v1 mergeada en `main` (PR #4); pendiente firma clínica/legal y smoke antes de cerrar filas en matriz.
 
 ### #93 — Protocolo ideación
 
