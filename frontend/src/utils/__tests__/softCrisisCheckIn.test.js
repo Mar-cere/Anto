@@ -23,4 +23,13 @@ describe('softCrisisCheckIn utils', () => {
     expect(normalizeSoftCrisisCheckInPayload({ active: true, techniques: [] })).toBeNull();
     expect(normalizeSoftCrisisCheckInPayload(null)).toBeNull();
   });
+
+  it('normalizeSoftCrisisCheckInPayload rechaza pantallas no permitidas', () => {
+    expect(
+      normalizeSoftCrisisCheckInPayload({
+        active: true,
+        techniques: [{ id: 'x', label: 'Hack', screen: 'EvilScreen' }],
+      }),
+    ).toBeNull();
+  });
 });

@@ -4,6 +4,7 @@
 
 const MAX_TEXT_LEN = 500;
 const MAX_TECHNIQUES = 4;
+const ALLOWED_TECHNIQUE_SCREENS = new Set(['BreathingExercise', 'GroundingTechnique']);
 
 function clipText(value, maxLen = MAX_TEXT_LEN) {
   return String(value || '').trim().slice(0, maxLen);
@@ -13,7 +14,14 @@ export function normalizeSoftCrisisCheckInPayload(raw) {
   if (!raw || typeof raw !== 'object' || raw.active !== true) return null;
   const techniques = Array.isArray(raw.techniques)
     ? raw.techniques
-        .filter((t) => t && t.id && t.label && t.screen)
+        .filter(
+          (t) =>
+            t &&
+            t.id &&
+            t.label &&
+            t.screen &&
+            ALLOWED_TECHNIQUE_SCREENS.has(String(t.screen)),
+        )
         .slice(0, MAX_TECHNIQUES)
         .map((t) => ({
           id: clipText(t.id, 40),

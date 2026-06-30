@@ -1,13 +1,28 @@
 /**
  * Tests unitarios para softCrisisCheckInService (#19).
  */
-import {
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+
+const mockRecordMetric = jest.fn().mockResolvedValue(undefined);
+
+jest.unstable_mockModule('../../../services/metricsService.js', () => ({
+  default: {
+    recordMetric: (...args) => mockRecordMetric(...args),
+  },
+}));
+
+const {
   advanceSoftCrisisCheckInState,
   evaluateSoftCrisisCheckInTurn,
+  recordSoftCrisisCheckInExit,
   shouldOfferSoftCrisisCheckIn,
-} from '../../../services/softCrisisCheckInService.js';
+} = await import('../../../services/softCrisisCheckInService.js');
 
 describe('softCrisisCheckInService', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   describe('shouldOfferSoftCrisisCheckIn', () => {
     it('ofrece en WARNING sin batería ni hard-stop', () => {
       expect(
@@ -117,6 +132,42 @@ describe('softCrisisCheckInService', () => {
         language: 'en',
       });
       expect(result.softCrisisCheckIn).toBeNull();
+    });
+
+    it('no arma payload si el estado está dismissed', () => {
+      const result = evaluateSoftCrisisCheckInTurn({
+        previousState: { active: true, stableUserTurns: 0, dismissed: true },
+        riskLevel: 'WARNING',
+        messageContent: 'sigo mal',
+        language: 'es',
+      });
+      expect(result.softCrisisCheckIn).toBeNull();
+      expect(result.softCrisisCheckInState.dismissed).toBe(true);
+    });
+
+    it('copy EN en payload cliente', () => {
+      const result = evaluateSoftCrisisCheckInTurn({
+        previousState: null,
+        riskLevel: 'WARNING',
+        messageContent: 'overwhelmed',
+        language: 'en',
+      });
+      expect(result.softCrisisCheckIn?.validation).toMatch(/heavy right now/i);
+    });
+  });
+
+  describe('recordSoftCrisisCheckInExit', () => {
+    it('registra métrica soft_crisis_check_in_exit', async () => {
+      await recordSoftCrisisCheckInExit('user1', 'conv1', {
+        reason: 'user_explicit_ok',
+        riskLevelAtExit: 'LOW',
+      });
+      expect(mockRecordMetric).toHaveBeenCalledWith(
+        'soft_crisis_check_in_exit',
+        expect.objectContaining({ reason: 'user_explicit_ok' }),
+        'user1',
+        { conversationId: 'conv1' },
+      );
     });
   });
 });

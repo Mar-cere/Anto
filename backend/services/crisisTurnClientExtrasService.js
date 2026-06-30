@@ -13,7 +13,12 @@ import {
   normalizeCrisisProtocolState,
   recordCrisisProtocolExit,
 } from './crisisProtocolService.js';
-import { evaluateSoftCrisisCheckInTurn } from './softCrisisCheckInService.js';
+import {
+  dismissSoftCrisisCheckInState,
+  evaluateSoftCrisisCheckInTurn,
+  normalizeSoftCrisisCheckInState,
+  recordSoftCrisisCheckInExit,
+} from './softCrisisCheckInService.js';
 
 function shouldSkipContactAlertOffer(protocolState) {
   const protocol = normalizeCrisisProtocolState(protocolState);
@@ -106,6 +111,14 @@ export async function applyCrisisProtocolForTurn({
     await recordCrisisProtocolExit(userId, conversation?._id, crisisProtocolExit);
   }
 
+  if (softCheckInResult.softCrisisCheckInExit) {
+    await recordSoftCrisisCheckInExit(
+      userId,
+      conversation?._id,
+      softCheckInResult.softCrisisCheckInExit,
+    );
+  }
+
   const showContactAlertNotice =
     nextProtocolState.hadContactAlert === true || hadContactAlert === true;
 
@@ -121,13 +134,16 @@ export async function applyCrisisProtocolForTurn({
     showContactAlertNotice,
   });
 
+  const softCrisisCheckIn =
+    crisisResources != null ? null : softCheckInResult.softCrisisCheckIn;
+
   return {
     crisisDecision,
     crisisProtocolState: nextProtocolState,
     crisisProtocolExit,
     crisisResources,
     proposedEmergencyContactAlert,
-    softCrisisCheckIn: softCheckInResult.softCrisisCheckIn,
+    softCrisisCheckIn,
     softCrisisCheckInState: softCheckInResult.softCrisisCheckInState,
     softCrisisCheckInExit: softCheckInResult.softCrisisCheckInExit,
   };
@@ -164,8 +180,30 @@ export async function dismissContactAlertOffer(conversationId, userId) {
   return { ok: true };
 }
 
+export async function dismissSoftCrisisCheckInForConversation(conversationId, userId) {
+  if (!conversationId || !userId) {
+    return { ok: false, status: 400, code: 'invalid_request' };
+  }
+  const conversation = await Conversation.findOne({
+    _id: conversationId,
+    userId,
+  }).select('softCrisisCheckInState userId');
+  if (!conversation) {
+    return { ok: false, status: 404, code: 'conversation_not_found' };
+  }
+  const checkIn = normalizeSoftCrisisCheckInState(conversation.softCrisisCheckInState);
+  if (!checkIn.active) {
+    return { ok: false, status: 409, code: 'soft_check_in_not_active' };
+  }
+  await Conversation.findByIdAndUpdate(conversationId, {
+    softCrisisCheckInState: dismissSoftCrisisCheckInState(checkIn),
+  }).catch(() => {});
+  return { ok: true };
+}
+
 export default {
   applyCrisisProtocolForTurn,
   markConversationContactAlertSent,
   dismissContactAlertOffer,
+  dismissSoftCrisisCheckInForConversation,
 };

@@ -134,6 +134,8 @@ export const ENDPOINTS = {
   EMERGENCY_CONTACTS_ALERT_FROM_CHAT: '/api/users/me/emergency-contacts/alert-from-chat',
   EMERGENCY_CONTACTS_DISMISS_ALERT_FROM_CHAT:
     '/api/users/me/emergency-contacts/dismiss-alert-from-chat',
+  EMERGENCY_CONTACTS_DISMISS_SOFT_CHECK_IN_FROM_CHAT:
+    '/api/users/me/emergency-contacts/dismiss-soft-check-in-from-chat',
   CRISIS_SUMMARY: '/api/crisis/summary',
   CRISIS_TRENDS: '/api/crisis/trends',
   CRISIS_BY_MONTH: '/api/crisis/by-month',

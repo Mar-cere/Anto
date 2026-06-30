@@ -59,9 +59,17 @@ export function normalizeCrisisResourcesPayload(raw) {
   };
 }
 
-export function shouldShowCrisisResourcesPanel({ riskLevel, hardStop = false } = {}) {
+export function shouldShowCrisisResourcesPanel({
+  riskLevel,
+  hardStop = false,
+  hasBatterySignal = false,
+  crisisProtocolActive = false,
+} = {}) {
   if (hardStop === true) return true;
   const level = String(riskLevel || 'LOW').toUpperCase();
+  if (level === 'WARNING') {
+    return hasBatterySignal === true || crisisProtocolActive === true;
+  }
   return PANEL_RISK_LEVELS.has(level);
 }
 

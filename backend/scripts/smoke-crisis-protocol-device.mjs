@@ -135,6 +135,18 @@ ok(
     fs.existsSync(path.join(root, 'backend/services/softCrisisCheckInService.js')),
 );
 
+ok(
+  'ruta dismiss check-in suave',
+  userRoutes.includes('dismiss-soft-check-in-from-chat'),
+);
+
+ok(
+  'exclusividad soft vs panel crisis en extras',
+  fs
+    .readFileSync(path.join(root, 'backend/services/crisisTurnClientExtrasService.js'), 'utf8')
+    .includes('crisisResources != null ? null : softCheckInResult.softCrisisCheckIn'),
+);
+
 const softStrip = fs.readFileSync(
   path.join(root, 'frontend/src/components/chat/SoftCrisisCheckInStrip.js'),
   'utf8',

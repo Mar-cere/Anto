@@ -351,9 +351,16 @@ export function useChatScreen() {
     }
   }, []);
 
-  const dismissSoftCrisisCheckInPanel = useCallback(() => {
+  const dismissSoftCrisisCheckInPanel = useCallback(async () => {
     softCrisisCheckInDismissedRef.current = true;
     setSoftCrisisCheckInPanel(null);
+    try {
+      const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+      if (!convId || !isValidMongoObjectId24(convId)) return;
+      await userService.dismissSoftCrisisCheckInFromChat({ conversationId: convId });
+    } catch (e) {
+      console.warn('[useChatScreen] soft crisis check-in dismiss:', e?.message || e);
+    }
   }, []);
 
   const handleOpenSoftCrisisTechnique = useCallback(

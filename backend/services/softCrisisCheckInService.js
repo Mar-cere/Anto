@@ -8,6 +8,7 @@ import {
   isUserExplicitWellbeingMessage,
   shouldActivateCrisisProtocol,
 } from './crisisProtocolService.js';
+import metricsService from './metricsService.js';
 
 const STABLE_RISK_LEVELS = new Set(['LOW', 'WARNING']);
 const STABLE_TURNS_REQUIRED = 2;
@@ -202,6 +203,21 @@ export function evaluateSoftCrisisCheckInTurn({
   return { softCrisisCheckInState: nextState, softCrisisCheckIn, softCrisisCheckInExit: exit };
 }
 
+export async function recordSoftCrisisCheckInExit(userId, conversationId, exitPayload) {
+  if (!exitPayload) return;
+  await metricsService
+    .recordMetric(
+      'soft_crisis_check_in_exit',
+      {
+        reason: exitPayload.reason,
+        riskLevelAtExit: exitPayload.riskLevelAtExit,
+      },
+      userId != null ? String(userId) : null,
+      conversationId != null ? { conversationId: String(conversationId) } : {},
+    )
+    .catch(() => {});
+}
+
 export function dismissSoftCrisisCheckInState(previousState) {
   const prev = normalizeSoftCrisisCheckInState(previousState);
   if (!prev.active) return prev;
@@ -214,4 +230,5 @@ export default {
   advanceSoftCrisisCheckInState,
   evaluateSoftCrisisCheckInTurn,
   dismissSoftCrisisCheckInState,
+  recordSoftCrisisCheckInExit,
 };
