@@ -1,7 +1,7 @@
 /**
  * Franja de check-in de crisis suave (#19): validación + técnicas de regulación.
  */
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -10,7 +10,12 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
 import { pickLocalizedDefaults } from '../../utils/localizedFallback';
-import { getFocusTheme } from '../../styles/focusCardTheme';
+import {
+  createChatStripIconWrapStyle,
+  createChatStripItemStyle,
+  createChatStripPanelStyle,
+  createChatStripWrapStyle,
+} from '../../utils/chatStripStyles';
 
 const DEFAULT_TEXTS_BY_LANG = {
   es: {
@@ -40,10 +45,9 @@ export default function SoftCrisisCheckInStrip({
   onDismiss,
   style,
 }) {
-  const { colors, resolvedScheme } = useTheme();
+  const { colors } = useTheme();
   const { language } = useLanguage();
   const translated = useSectionTranslations('CHAT');
-  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
 
   const TEXTS = useMemo(() => {
     const defaults = pickLocalizedDefaults(language, DEFAULT_TEXTS_BY_LANG);
@@ -57,21 +61,14 @@ export default function SoftCrisisCheckInStrip({
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        wrap: {
-          marginHorizontal: SPACING.SCREEN_EDGE_INSET,
-          marginBottom: SPACING.sm,
-        },
-        panel: {
-          ...t.FOCUS_PANEL,
-          padding: SPACING.md,
-          gap: SPACING.sm,
-        },
+        wrap: createChatStripWrapStyle(),
+        panel: createChatStripPanelStyle(colors),
         kicker: {
           fontSize: 11,
           fontWeight: '700',
           letterSpacing: 1.2,
           textTransform: 'uppercase',
-          color: t.FOCUS_KICKER_COLOR,
+          color: colors.primary,
         },
         validation: {
           fontSize: 15,
@@ -82,16 +79,9 @@ export default function SoftCrisisCheckInStrip({
         subtitle: {
           fontSize: 13,
           lineHeight: 18,
-          color: t.FOCUS_META,
+          color: colors.textSecondary,
         },
-        technique: {
-          ...t.FOCUS_INNER_ROW,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderWidth: StyleSheet.hairlineWidth,
-          borderColor: t.FOCUS_BORDER_SUBTLE,
-        },
+        technique: createChatStripItemStyle(colors),
         techniqueLabel: {
           flex: 1,
           fontSize: 14,
@@ -113,7 +103,7 @@ export default function SoftCrisisCheckInStrip({
         footnote: {
           fontSize: 12,
           lineHeight: 17,
-          color: t.FOCUS_META,
+          color: colors.textSecondary,
         },
         headerRow: {
           flexDirection: 'row',
@@ -124,11 +114,19 @@ export default function SoftCrisisCheckInStrip({
         dismissBtn: {
           padding: 4,
         },
+        techniqueRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          flex: 1,
+          minWidth: 0,
+        },
       }),
-    [colors, t],
+    [colors],
   );
 
   if (!checkIn?.active) return null;
+
+  const iconWrapStyle = createChatStripIconWrapStyle(colors, 'warning');
 
   return (
     <View style={[styles.wrap, style]}>
@@ -146,7 +144,7 @@ export default function SoftCrisisCheckInStrip({
               style={styles.dismissBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="close" size={18} color={t.FOCUS_META} />
+              <Ionicons name="close" size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -156,7 +154,12 @@ export default function SoftCrisisCheckInStrip({
         {checkIn.subtitle ? <Text style={styles.subtitle}>{checkIn.subtitle}</Text> : null}
         {checkIn.techniques.map((technique) => (
           <View key={technique.id} style={styles.technique}>
-            <Text style={styles.techniqueLabel}>{technique.label}</Text>
+            <View style={styles.techniqueRow}>
+              <View style={iconWrapStyle}>
+                <MaterialCommunityIcons name="heart-pulse" size={18} color={colors.warning} />
+              </View>
+              <Text style={styles.techniqueLabel}>{technique.label}</Text>
+            </View>
             <TouchableOpacity
               style={styles.openBtn}
               onPress={() => {

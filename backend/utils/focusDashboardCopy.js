@@ -48,6 +48,10 @@ const COPY = {
     lastSessionPlaceholderSnippet: 'Charla breve — sigue cuando quieras.',
     lastSessionMismatchFallback:
       'Abre tu última conversación para retomar donde lo dejaste.',
+    lastSessionRecentActivitySnippet:
+      'Hubo actividad reciente en el chat. Puedes retomar el hilo cuando quieras.',
+    lastSessionRecentUserPrefix: 'Compartiste hace poco: «',
+    lastSessionRecentUserSuffix: '»',
     llmFocusSystem:
       'Eres guía de producto para bienestar. Redacta en español neutro y natural: tono cotidiano y amable, comprensible en cualquier país hispanohablante; sin voseo ni localismos marcados, sin jerga clínica ni tono publicitario, sin imperativos duros ni listas. Suena a persona, no a anuncio ni informe. Devuelve UNA sola línea (máx. 260 caracteres), cálida, sin diagnosticar, sin mencionar PHQ/GAD como enfermedad. Prioriza retorno al chat si hay baja actividad; si hay tarea próxima, menciónala sin presión. No cites texto del usuario ni extractos del chat. No cierres con pregunta. No uses emojis.',
     llmFocusUserSuffix:
@@ -94,6 +98,10 @@ const COPY = {
     lastSessionPlaceholderSnippet: 'Brief chat — continue whenever you want.',
     lastSessionMismatchFallback:
       'Open your last conversation to continue where you left off.',
+    lastSessionRecentActivitySnippet:
+      'There was recent activity in chat. You can pick up the thread whenever you want.',
+    lastSessionRecentUserPrefix: 'You recently shared: "',
+    lastSessionRecentUserSuffix: '"',
     llmFocusSystem:
       'You are a wellbeing product guide. Write in neutral, natural English: everyday, friendly tone; no heavy clinical jargon or marketing voice; no harsh imperatives or bullet lists. Sound human, not like an ad or report. Return ONE line only (max 260 characters), warm, no diagnosing, do not mention PHQ/GAD as illness. Prioritize returning to chat when activity is low; if there is an upcoming task, mention it without pressure. Do not quote user text or chat excerpts. Do not end with a question. No emojis.',
     llmFocusUserSuffix:
@@ -193,9 +201,14 @@ export function localizeLastSessionSummaryForDisplay(summary, language = 'es', o
   let snippet = typeof summary.snippet === 'string' ? summary.snippet : '';
   let bridge = typeof summary.bridge === 'string' ? summary.bridge : '';
 
-  if (summary.placeholder === true) {
+  if (summary.placeholder === true && !summary.recentActivityPending) {
     snippet = c.lastSessionPlaceholderSnippet;
     bridge = c.lastSessionPlaceholderBridge;
+  } else if (summary.recentActivityPending === true && snippet) {
+    const sessionRef = summary.sessionEndedAt || summary.generatedAt;
+    if (sessionRef) {
+      snippet = fixContinuationTemporalOpeners(snippet, sessionRef, lang, now, timezone);
+    }
   } else if (lang !== storedLang && lang === 'en' && looksLikeSpanishText(snippet)) {
     snippet = c.lastSessionMismatchFallback;
     if (looksLikeSpanishText(bridge)) {

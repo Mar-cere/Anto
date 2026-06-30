@@ -408,6 +408,7 @@ export default function SessionInsightScreen() {
     !sessionWai?.alreadyRecorded &&
     !waiHandled;
   const showWaiReminder = Boolean(sessionWai?.reminder?.show) && showWaiCard;
+  const waiBlocksFooter = showWaiCard;
 
   const applySessionWaiPayload = useCallback((payload) => {
     if (payload?.sessionWai) {
@@ -659,11 +660,13 @@ export default function SessionInsightScreen() {
 
         {waiNotice ? <Text style={styles.waiNotice}>{waiNotice}</Text> : null}
 
-        <TouchableOpacity style={styles.ctaPrimary} onPress={finish} accessibilityRole="button">
-          <Text style={styles.ctaPrimaryText}>{TEXTS.CTA_DONE}</Text>
-        </TouchableOpacity>
+        {!waiBlocksFooter ? (
+          <TouchableOpacity style={styles.ctaPrimary} onPress={finish} accessibilityRole="button">
+            <Text style={styles.ctaPrimaryText}>{TEXTS.CTA_DONE}</Text>
+          </TouchableOpacity>
+        ) : null}
 
-        {step ? (
+        {step && !waiBlocksFooter ? (
           <TouchableOpacity style={styles.ctaSecondary} onPress={finish} accessibilityRole="button">
             <Text style={styles.ctaSecondaryText}>{TEXTS.CTA_SKIP_STEP}</Text>
           </TouchableOpacity>
