@@ -464,6 +464,8 @@ export const SETTINGS = {
   APP_INFO: 'App information',
   AI_PRIVACY: 'Privacy and AI',
   AI_PRIVACY_DESC: 'What data is processed with AI and with which provider',
+  AI_LIMITS_LIBRARY: 'AI limits',
+  AI_LIMITS_LIBRARY_DESC: 'What Anto does and does not do',
   LOGOUT_TITLE: 'Sign out',
   LOGOUT_MESSAGE: 'Are you sure you want to sign out?',
   DELETE_TITLE: 'Delete account',
@@ -864,6 +866,88 @@ export const INFO = {
       'OpenAI provides the language models used to draft assistant responses. Anto defines what context and data are sent each time and keeps product logic on its servers.',
     POLICY_BUTTON: 'Open Privacy Policy',
   },
+  AI_LIMITS_LIBRARY: {
+    SECTION_TITLE: 'What Anto does and does not do',
+    SECTION_INTRO:
+      'Anto is AI-supported accompaniment. These notes help align expectations and know when human help is appropriate.',
+    HINT_A11Y: 'More about Anto’s limits',
+    SHEET_CLOSE: 'Close',
+    SHEET_OPEN_LIBRARY: 'View full library',
+    TOPICS: {
+      general: {
+        title: 'Support, not a substitute',
+        body:
+          'Anto combines AI chat, wellness techniques, and in-app tracking. It can help you organize thoughts, practice tools, and remember commitments, but it does not replace a therapeutic relationship or emergency services.',
+        bullets: [
+          'Responses are generated with language models and product rules.',
+          'You can review privacy and providers under Privacy and AI.',
+        ],
+      },
+      not_therapy: {
+        title: 'Not psychotherapy or psychiatry',
+        body:
+          'Anto does not diagnose, prescribe, or replace a mental health professional. If you need treatment, clinical referral, or medication, seek qualified in-person or telehealth care.',
+        bullets: [
+          'The tone may feel warm, but it is not a clinical bond.',
+          'In crisis, we prioritize containment and human resources.',
+        ],
+      },
+      no_diagnosis: {
+        title: 'No diagnoses or clinical labels',
+        body:
+          'Anto does not label you with disorders or confirm diagnoses. It may discuss emotions and patterns in everyday language, without replacing a professional assessment.',
+        bullets: [
+          'Scales or insights in the app are orientational, not clinical reports.',
+        ],
+      },
+      crisis: {
+        title: 'Crisis mode: containment and resources',
+        body:
+          'If we detect elevated risk signals, Anto enters a protocol mode: safety first, helplines, and contacts you configured. It does not replace emergency services or a crisis line.',
+        bullets: [
+          'Anto cannot call or message on your behalf except alerts you activate.',
+          'The crisis panel explains why you see it and what you can do now.',
+          'Contact alerts never include chat text.',
+        ],
+      },
+      human_help: {
+        title: 'When to seek human help',
+        body:
+          'Contact a crisis line, emergency services, or someone you trust if there is immediate danger, active ideation, recent self-harm, or you feel you cannot stay safe.',
+        bullets: [
+          'The app shows emergency numbers for your country.',
+          'Anto complements—it does not replace in-person professional help.',
+        ],
+      },
+      emergency_contacts: {
+        title: 'Emergency contacts and alerts',
+        body:
+          'If you configure contacts and alerts activate per product rules, we send a brief notice (without chat content). At medium levels you choose whether to notify; in some severe cases it may be automatic.',
+        bullets: [
+          'Review and update contacts in Profile.',
+          'You can decline an alert offer in chat.',
+        ],
+      },
+      chat_actions: {
+        title: 'Tasks and habits from chat',
+        body:
+          'Anto may suggest tasks or habits from the conversation. They are only created if you confirm. They are organizational supports, not clinical homework or treatment prescriptions.',
+        bullets: [
+          'You can edit the title before creating.',
+          'You can say “not for me” without penalty.',
+        ],
+      },
+      memory: {
+        title: 'Memory and personal data',
+        body:
+          'Anto uses conversation context and preferences you share. It should not invent biography, dates, or promises about your life. If something feels off, correct it in chat.',
+        bullets: [
+          'You can clear the conversation from the chat menu.',
+          'More detail under Privacy and AI.',
+        ],
+      },
+    },
+  },
 };
 
 export const CHAT = {
@@ -887,6 +971,7 @@ export const CHAT = {
   CHAT_OPTIONS_LAST_MESSAGE: 'Go to last message',
   CHAT_OPTIONS_CUSTOMIZE: 'Chat customization',
   CHAT_OPTIONS_AI_PRIVACY: 'Privacy and AI',
+  CHAT_OPTIONS_AI_LIMITS: 'AI limits',
   CHAT_OPTIONS_AI_INFO: 'Use of artificial intelligence',
   CHAT_OPTIONS_CLEAR: 'Clear this conversation',
   CHAT_OPTIONS_IMMERSIVE_ON: 'Immersive mode (hide distractions)',

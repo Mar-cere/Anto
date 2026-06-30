@@ -463,6 +463,8 @@ export const SETTINGS = {
   APP_INFO: 'Información de la aplicación',
   AI_PRIVACY: 'Privacidad e IA',
   AI_PRIVACY_DESC: 'Qué datos se procesan con IA y con qué proveedor',
+  AI_LIMITS_LIBRARY: 'Límites de la IA',
+  AI_LIMITS_LIBRARY_DESC: 'Qué hace y qué no hace Anto',
   LOGOUT_TITLE: 'Cerrar sesión',
   LOGOUT_MESSAGE: '¿Estás seguro de que deseas cerrar sesión?',
   DELETE_TITLE: 'Eliminar cuenta',
@@ -869,6 +871,88 @@ export const INFO = {
       'OpenAI aporta los modelos de lenguaje con los que se redactan las respuestas del asistente. Anto define qué contexto y datos se envían en cada caso y mantiene la lógica del producto en sus servidores.',
     POLICY_BUTTON: 'Abrir Política de Privacidad',
   },
+  AI_LIMITS_LIBRARY: {
+    SECTION_TITLE: 'Qué hace y qué no hace Anto',
+    SECTION_INTRO:
+      'Anto es un acompañamiento con IA. Estas notas ayudan a alinear expectativas y saber cuándo conviene ayuda humana.',
+    HINT_A11Y: 'Más sobre los límites de Anto',
+    SHEET_CLOSE: 'Cerrar',
+    SHEET_OPEN_LIBRARY: 'Ver biblioteca completa',
+    TOPICS: {
+      general: {
+        title: 'Acompañamiento, no sustituto',
+        body:
+          'Anto combina chat con IA, técnicas de bienestar y seguimiento en la app. Puede ayudarte a ordenar ideas, practicar herramientas y recordar compromisos, pero no reemplaza una relación terapéutica ni un servicio de emergencias.',
+        bullets: [
+          'Las respuestas se generan con modelos de lenguaje y reglas del producto.',
+          'Puedes revisar privacidad y proveedores en Privacidad e IA.',
+        ],
+      },
+      not_therapy: {
+        title: 'No es psicoterapia ni psiquiatría',
+        body:
+          'Anto no diagnostica, no prescribe y no sustituye un profesional de salud mental. Si necesitas tratamiento, derivación clínica o medicación, busca ayuda presencial o teleasistencia calificada.',
+        bullets: [
+          'El tono puede sentirse cercano, pero no implica vínculo clínico.',
+          'En crisis, priorizamos contención y recursos humanos.',
+        ],
+      },
+      no_diagnosis: {
+        title: 'Sin diagnósticos ni etiquetas clínicas',
+        body:
+          'Anto no te etiqueta con trastornos ni confirma diagnósticos. Puede hablar de emociones y patrones en lenguaje cotidiano, sin sustituir una evaluación profesional.',
+        bullets: [
+          'Escalas o insights en la app son orientativos, no informes clínicos.',
+        ],
+      },
+      crisis: {
+        title: 'Modo crisis: contención y recursos',
+        body:
+          'Si detectamos señales de riesgo elevado, Anto entra en un modo de protocolo: prioriza seguridad, líneas de ayuda y contactos que configuraste. No sustituye servicios de emergencia ni una línea de crisis.',
+        bullets: [
+          'Anto no llama ni envía mensajes por ti salvo las alertas que actives.',
+          'El panel de crisis explica por qué lo ves y qué puedes hacer ahora.',
+          'Las alertas a contactos no incluyen el texto del chat.',
+        ],
+      },
+      human_help: {
+        title: 'Cuándo buscar ayuda humana',
+        body:
+          'Conviene contactar una línea de crisis, urgencias o alguien de confianza si hay peligro inmediato, ideación activa, autolesión reciente o si sientes que no puedes mantenerte a salvo.',
+        bullets: [
+          'En la app verás números de emergencia según tu país.',
+          'Anto complementa; no sustituye ayuda profesional presencial.',
+        ],
+      },
+      emergency_contacts: {
+        title: 'Contactos de emergencia y alertas',
+        body:
+          'Si configuras contactos y las alertas se activan según las reglas del producto, enviamos un aviso breve (sin el contenido del chat). Tú decides en niveles medios si avisar; en algunos casos graves puede ser automático.',
+        bullets: [
+          'Revisa y actualiza contactos en Perfil.',
+          'Puedes rechazar una oferta de aviso en el chat.',
+        ],
+      },
+      chat_actions: {
+        title: 'Tareas y hábitos desde el chat',
+        body:
+          'Anto puede sugerir tareas u hábitos a partir de la conversación. Solo se crean si tú confirmas. Son apoyos de organización, no deberes clínicos ni prescripción de tratamiento.',
+        bullets: [
+          'Puedes editar el título antes de crear.',
+          'Puedes decir «no aplica» sin penalización.',
+        ],
+      },
+      memory: {
+        title: 'Memoria y datos personales',
+        body:
+          'Anto usa el contexto de la conversación y preferencias que compartes. No debe inventar biografía, fechas ni promesas sobre tu vida. Si algo no cuadra, corrígelo en el chat.',
+        bullets: [
+          'Puedes borrar la conversación desde el menú del chat.',
+          'Más detalle en Privacidad e IA.',
+        ],
+      },
+    },
+  },
 };
 
 export const CHAT = {
@@ -892,6 +976,7 @@ export const CHAT = {
   CHAT_OPTIONS_LAST_MESSAGE: 'Ir al último mensaje',
   CHAT_OPTIONS_CUSTOMIZE: 'Personalización del chat',
   CHAT_OPTIONS_AI_PRIVACY: 'Privacidad e IA',
+  CHAT_OPTIONS_AI_LIMITS: 'Límites de la IA',
   CHAT_OPTIONS_AI_INFO: 'Uso de la inteligencia artificial',
   CHAT_OPTIONS_CLEAR: 'Borrar esta conversación',
   CHAT_OPTIONS_IMMERSIVE_ON: 'Modo inmersivo (ocultar distracciones)',

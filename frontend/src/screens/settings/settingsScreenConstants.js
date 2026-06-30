@@ -76,6 +76,8 @@ export const TEXTS = {
   APP_INFO: 'Información de la aplicación',
   AI_PRIVACY: 'Privacidad e IA',
   AI_PRIVACY_DESC: 'Qué datos se procesan con IA y con qué proveedor',
+  AI_LIMITS_LIBRARY: 'Límites de la IA',
+  AI_LIMITS_LIBRARY_DESC: 'Qué hace y qué no hace Anto',
   LOGOUT_TITLE: 'Cerrar sesión',
   LOGOUT_MESSAGE: '¿Estás seguro que deseas cerrar sesión?',
   DELETE_TITLE: 'Eliminar cuenta',

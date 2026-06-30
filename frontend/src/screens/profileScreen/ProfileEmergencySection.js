@@ -8,6 +8,8 @@ import * as Haptics from 'expo-haptics';
 import { useProfileScreenStyles } from './profileScreenStyles';
 import { ICON_SIZE, useProfileTexts } from './profileScreenConstants';
 import { getEmergencyContactId } from '../../utils/emergencyContactUtils';
+import AiLimitInfoButton from '../../components/common/AiLimitInfoButton';
+import { AI_LIMIT_TOPIC } from '../../constants/aiCompetenceLimits';
 
 function hapticLight() {
   if (Platform.OS === 'ios') {
@@ -24,12 +26,23 @@ export function ProfileEmergencySection({
   onOpenCrisisDashboard,
   onOpenAlertsHistory,
   onOpenEmergencyModal,
+  onOpenAiLimitsLibrary,
 }) {
   const TEXTS = useProfileTexts();
   const { styles, profileColors } = useProfileScreenStyles();
   return (
     <View style={styles.optionsContainer}>
-      <Text style={styles.sectionTitle}>{TEXTS.EMERGENCY_CONTACTS}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={styles.sectionTitle}>{TEXTS.EMERGENCY_CONTACTS}</Text>
+        {onOpenAiLimitsLibrary ? (
+          <AiLimitInfoButton
+            topicId={AI_LIMIT_TOPIC.EMERGENCY_CONTACTS}
+            size={20}
+            color={profileColors.PRIMARY}
+            onOpenFullLibrary={onOpenAiLimitsLibrary}
+          />
+        ) : null}
+      </View>
       <View style={styles.emergencyContactsSection}>
         {loadingContacts ? (
           <Text style={styles.loadingText}>{TEXTS.LOADING_CONTACTS}</Text>

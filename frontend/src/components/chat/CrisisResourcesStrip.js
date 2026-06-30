@@ -18,6 +18,8 @@ import { SPACING } from '../../constants/ui';
 import { pickLocalizedDefaults } from '../../utils/localizedFallback';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { buildTelUri } from '../../utils/crisisResources';
+import AiLimitInfoButton from '../common/AiLimitInfoButton';
+import { AI_LIMIT_TOPIC } from '../../constants/aiCompetenceLimits';
 
 const DEFAULT_TEXTS_BY_LANG = {
   es: {
@@ -53,6 +55,7 @@ export default function CrisisResourcesStrip({
   resources,
   onDismiss,
   onOpenEmergencyContacts,
+  onOpenAiLimitsLibrary,
   contactAlertNotice = null,
   style,
 }) {
@@ -214,6 +217,14 @@ export default function CrisisResourcesStrip({
               </Text>
             ) : null}
           </View>
+          {onOpenAiLimitsLibrary ? (
+            <AiLimitInfoButton
+              topicId={AI_LIMIT_TOPIC.CRISIS}
+              size={20}
+              color={colors.textSecondary}
+              onOpenFullLibrary={onOpenAiLimitsLibrary}
+            />
+          ) : null}
           {onDismiss ? (
             <TouchableOpacity
               onPress={() => {
