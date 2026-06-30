@@ -8,6 +8,9 @@ import {
   localizeGraphModel,
   measureLabelLines,
   normalizeStrokeWidth,
+  nodeParticipatesInGraphLink,
+  pickPrimaryGraphLink,
+  pickStrongestLinkForSourceNode,
 } from '../interventionGraphLayout';
 
 describe('interventionGraphLayout', () => {
@@ -230,5 +233,28 @@ describe('interventionGraphLayout', () => {
       },
     );
     expect(model.mode).toBe('concept');
+  });
+
+  it('pickPrimaryGraphLink elige la arista de mayor peso', () => {
+    const links = [
+      { key: 'a', weight: 1.2, sourceId: 's1', targetId: 't1' },
+      { key: 'b', weight: 4.5, sourceId: 's2', targetId: 't2' },
+    ];
+    expect(pickPrimaryGraphLink(links)?.key).toBe('b');
+  });
+
+  it('pickStrongestLinkForSourceNode prioriza peso sobre orden', () => {
+    const links = [
+      { key: 'a', weight: 1, sourceId: 'idea-a', targetId: 't1' },
+      { key: 'b', weight: 5, sourceId: 'idea-a', targetId: 't2' },
+    ];
+    expect(pickStrongestLinkForSourceNode(links, 'idea-a')?.key).toBe('b');
+  });
+
+  it('nodeParticipatesInGraphLink reconoce extremos de la arista', () => {
+    const link = { sourceId: 'idea', targetId: 'ba', topicFree: 'idea' };
+    expect(nodeParticipatesInGraphLink('idea', link)).toBe(true);
+    expect(nodeParticipatesInGraphLink('ba', link)).toBe(true);
+    expect(nodeParticipatesInGraphLink('other', link)).toBe(false);
   });
 });

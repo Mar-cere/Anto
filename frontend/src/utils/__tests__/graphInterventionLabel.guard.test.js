@@ -54,5 +54,15 @@ describe('graphInterventionLabel guard', () => {
     expect(src).toMatch(/OPEN_TECHNIQUE/);
     expect(src).not.toMatch(/formatGraphMetrics/);
     expect(src).not.toMatch(/VECTOR_ATLAS_ON/);
+    expect(src).toMatch(/pickPrimaryGraphLink/);
+  });
+
+  it('InterventionGraphVisual resalta conexión principal y nodos pulsables', () => {
+    const src = readSrc('components/intervention/InterventionGraphVisual.js');
+    expect(src).toMatch(/pickPrimaryGraphLink/);
+    expect(src).toMatch(/pickStrongestLinkForSourceNode/);
+    expect(src).toMatch(/pickStrongestLinkForTargetNode/);
+    expect(src).toMatch(/nodeParticipatesInGraphLink/);
+    expect(src).toMatch(/dimmed/);
   });
 });

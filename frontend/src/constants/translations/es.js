@@ -2239,7 +2239,7 @@ export const TECHNIQUES = {
   INTERVENTION_GRAPH_MAP_A11Y: 'Mapa de lo que te ayuda',
   INTERVENTION_GRAPH_MAP_SOURCE_COL: 'Tus ideas en el chat',
   INTERVENTION_GRAPH_MAP_TARGET_COL: 'Técnicas',
-  INTERVENTION_GRAPH_MAP_TAP_HINT: 'Toca una conexión para ver por qué aparece aquí.',
+  INTERVENTION_GRAPH_MAP_TAP_HINT: 'Toca un tema o una técnica para ver el detalle.',
   INTERVENTION_GRAPH_CONNECTION_HELP:
     'Esta técnica aparece porque conecta con lo que has compartido en el chat.',
   INTERVENTION_GRAPH_STATUS_NOT_YET: 'Aún no la has probado — puedes abrirla cuando quieras',
