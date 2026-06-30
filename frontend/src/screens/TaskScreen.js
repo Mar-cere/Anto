@@ -790,6 +790,10 @@ const TaskScreen = ({
     return buildTaskSections(displayItems, {
       overdue: unifiedTexts.SECTION_ATTENTION,
       today: unifiedTexts.SECTION_TODAY,
+      tomorrow: unifiedTexts.SECTION_TOMORROW,
+      this_week: unifiedTexts.SECTION_THIS_WEEK,
+      later: unifiedTexts.SECTION_LATER,
+      completed: unifiedTexts.SECTION_COMPLETED,
     });
   }, [showSkeleton, skeletonData, displayItems, unifiedView, unifiedTexts]);
 

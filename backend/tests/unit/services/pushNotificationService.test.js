@@ -12,6 +12,13 @@ describe('PushNotificationService', () => {
       expect(pushNotificationService).toBeDefined();
       expect(typeof pushNotificationService).toBe('object');
     });
+
+    it('_sanitizePushText usa fallback en inglés cuando language=en', () => {
+      const body = pushNotificationService._sanitizePushText(null, null, 500, 'en');
+      expect(body).toBe('You have a notification in Anto.');
+      const bodyEs = pushNotificationService._sanitizePushText(null, null, 500, 'es');
+      expect(bodyEs).toBe('Tienes una notificación en Anto.');
+    });
   });
 
   describe('Mapeo de canales y prioridad', () => {

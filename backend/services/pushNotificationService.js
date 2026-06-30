@@ -14,6 +14,7 @@ import {
   getPushNotificationCopy,
   buildWeeklyProgressBody,
   pickRandom,
+  normalizeNotificationLanguage,
 } from './pushNotificationCopyPools.js';
 
 function poolFor(options = {}) {
@@ -105,10 +106,13 @@ class PushNotificationService {
   /**
    * Normaliza título/cuerpo antes de Expo (trim, fallback, longitud).
    */
-  _sanitizePushText(text, fallback, maxLen) {
+  _sanitizePushText(text, fallback, maxLen, language = 'es') {
+    const lang = normalizeNotificationLanguage(language);
+    const defaultBody =
+      lang === 'en' ? 'You have a notification in Anto.' : 'Tienes una notificación en Anto.';
     const fb =
       String(fallback ?? '').trim() ||
-      (maxLen <= 200 ? 'Anto' : 'Tienes una notificación en Anto.');
+      (maxLen <= 200 ? 'Anto' : defaultBody);
     if (text === undefined || text === null) {
       return fb.slice(0, maxLen);
     }
@@ -136,12 +140,9 @@ class PushNotificationService {
         return { success: false, error: 'Token inválido' };
       }
 
-      const safeTitle = this._sanitizePushText(title, 'Anto', 180);
-      const safeBody = this._sanitizePushText(
-        body,
-        'Tienes una notificación en Anto.',
-        500
-      );
+      const language = normalizeNotificationLanguage(data?.language);
+      const safeTitle = this._sanitizePushText(title, 'Anto', 180, language);
+      const safeBody = this._sanitizePushText(body, null, 500, language);
 
       // Determinar canal y prioridad según tipo
       const channelId = this.getChannelId(type);
@@ -228,6 +229,10 @@ class PushNotificationService {
     }
   }
 
+  _send(pushToken, title, body, data, type, options = {}) {
+    return this._send(pushToken, title, body, { ...data, language: options.language }, type);
+  }
+
   /**
    * Envía notificación de crisis WARNING
    * @param {string} pushToken - Token push
@@ -236,7 +241,7 @@ class PushNotificationService {
    */
   async sendCrisisWarning(pushToken, options = {}) {
     const { emotion, intensity } = options;
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).crisisWarning.titles),
       pickRandom(poolFor(options).crisisWarning.bodies),
@@ -245,7 +250,8 @@ class PushNotificationService {
         intensity,
         action: 'open_chat',
       },
-      this.NOTIFICATION_TYPES.CRISIS_WARNING
+      this.NOTIFICATION_TYPES.CRISIS_WARNING,
+    options
     );
   }
 
@@ -256,7 +262,7 @@ class PushNotificationService {
    * @returns {Promise<Object>}
    */
   async sendCrisisMedium(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).crisisMedium.titles),
       pickRandom(poolFor(options).crisisMedium.bodies),
@@ -264,7 +270,8 @@ class PushNotificationService {
         action: 'open_chat',
         riskLevel: 'MEDIUM',
       },
-      this.NOTIFICATION_TYPES.CRISIS_MEDIUM
+      this.NOTIFICATION_TYPES.CRISIS_MEDIUM,
+    options
     );
   }
 
@@ -275,7 +282,7 @@ class PushNotificationService {
    * @returns {Promise<Object>}
    */
   async sendCrisisHigh(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).crisisHigh.titles),
       pickRandom(poolFor(options).crisisHigh.bodies),
@@ -284,7 +291,8 @@ class PushNotificationService {
         riskLevel: 'HIGH',
         emergency: true,
       },
-      this.NOTIFICATION_TYPES.CRISIS_HIGH
+      this.NOTIFICATION_TYPES.CRISIS_HIGH,
+    options
     );
   }
 
@@ -304,7 +312,7 @@ class PushNotificationService {
         body = pickRandom(poolFor(options).followUpNoHours);
       }
     }
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(
         poolFor(options).followUpTitles,
@@ -315,7 +323,8 @@ class PushNotificationService {
         action: 'open_chat',
         followUp: true,
       },
-      this.NOTIFICATION_TYPES.FOLLOW_UP
+      this.NOTIFICATION_TYPES.FOLLOW_UP,
+    options
     );
   }
 
@@ -326,7 +335,7 @@ class PushNotificationService {
     const { conversationId } = options;
     const conv = conversationId != null ? String(conversationId) : undefined;
 
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).wellbeingCheckIn.titles),
       pickRandom(poolFor(options).wellbeingCheckIn.bodies),
@@ -335,7 +344,8 @@ class PushNotificationService {
         wellbeingCheckIn: true,
         ...(conv ? { conversationId: conv } : {})
       },
-      this.NOTIFICATION_TYPES.EMOTIONAL_CHECKIN
+      this.NOTIFICATION_TYPES.EMOTIONAL_CHECKIN,
+    options
     );
   }
 
@@ -353,7 +363,7 @@ class PushNotificationService {
         : 'regulación emocional';
     const safeEmotion =
       emotion != null && String(emotion).trim() !== '' ? String(emotion).trim().slice(0, 80) : '';
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(
         poolFor(options).techniqueTitles,
@@ -368,7 +378,8 @@ class PushNotificationService {
         technique: safeTechnique,
         emotion: safeEmotion || emotion,
       },
-      this.NOTIFICATION_TYPES.TECHNIQUE_REMINDER
+      this.NOTIFICATION_TYPES.TECHNIQUE_REMINDER,
+    options
     );
   }
 
@@ -381,7 +392,7 @@ class PushNotificationService {
   async sendProgressPositive(pushToken, options = {}) {
     const { achievement, message } = options;
     const ach = achievement || 'un avance importante';
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).progressPositive.titles),
       message || pickRandom(poolFor(options).progressPositive.bodies(ach)),
@@ -389,7 +400,8 @@ class PushNotificationService {
         action: 'open_dashboard',
         achievement,
       },
-      this.NOTIFICATION_TYPES.PROGRESS_POSITIVE
+      this.NOTIFICATION_TYPES.PROGRESS_POSITIVE,
+    options
     );
   }
 
@@ -402,7 +414,7 @@ class PushNotificationService {
   async sendHabitReminder(pushToken, options = {}) {
     const { habitName, habitId } = options;
     const name = habitName || 'tu hábito';
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).habitReminder.titles),
       pickRandom(poolFor(options).habitReminder.bodies(name)),
@@ -411,7 +423,8 @@ class PushNotificationService {
         habitId,
         habitName,
       },
-      this.NOTIFICATION_TYPES.HABIT_REMINDER
+      this.NOTIFICATION_TYPES.HABIT_REMINDER,
+    options
     );
   }
 
@@ -424,7 +437,7 @@ class PushNotificationService {
   async sendHabitMissed(pushToken, options = {}) {
     const { habitName, streak } = options;
     const name = habitName || 'tu hábito';
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).habitMissed.titles),
       pickRandom(poolFor(options).habitMissed.bodies(name, streak)),
@@ -433,7 +446,8 @@ class PushNotificationService {
         habitName,
         streak,
       },
-      this.NOTIFICATION_TYPES.HABIT_MISSED
+      this.NOTIFICATION_TYPES.HABIT_MISSED,
+    options
     );
   }
 
@@ -446,7 +460,7 @@ class PushNotificationService {
   async sendTaskReminder(pushToken, options = {}) {
     const { taskTitle, taskId, dueDate } = options;
     const title = taskTitle || (options.language === 'en' ? 'Task' : 'Tarea');
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).taskReminder.titles),
       pickRandom(poolFor(options).taskReminder.bodies(title, dueDate)),
@@ -455,7 +469,8 @@ class PushNotificationService {
         taskId,
         taskTitle,
       },
-      this.NOTIFICATION_TYPES.TASK_REMINDER
+      this.NOTIFICATION_TYPES.TASK_REMINDER,
+    options
     );
   }
 
@@ -467,7 +482,7 @@ class PushNotificationService {
    */
   async sendTaskOverdue(pushToken, options = {}) {
     const { taskTitle, taskId, daysOverdue } = options;
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).taskOverdue.titles),
       pickRandom(
@@ -482,7 +497,8 @@ class PushNotificationService {
         taskTitle,
         overdue: true,
       },
-      this.NOTIFICATION_TYPES.TASK_OVERDUE
+      this.NOTIFICATION_TYPES.TASK_OVERDUE,
+    options
     );
   }
 
@@ -501,7 +517,7 @@ class PushNotificationService {
     };
     const greeting = greetings[timeOfDay] || 'Hola';
     const titlePool = poolFor(options).dailyCheckIn.titles(greeting);
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(titlePool),
       pickRandom(poolFor(options).dailyCheckIn.bodies),
@@ -510,13 +526,14 @@ class PushNotificationService {
         checkIn: true,
         timeOfDay,
       },
-      this.NOTIFICATION_TYPES.DAILY_CHECKIN
+      this.NOTIFICATION_TYPES.DAILY_CHECKIN,
+    options
     );
   }
 
   async sendBetweenSessionsNudge(pushToken, options = {}) {
     const { message } = options;
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).betweenSessionsNudge.titles),
       message || pickRandom(poolFor(options).betweenSessionsNudge.bodies),
@@ -524,7 +541,8 @@ class PushNotificationService {
         action: 'open_chat',
         betweenSessions: true,
       },
-      this.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE
+      this.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE,
+    options
     );
   }
 
@@ -535,7 +553,7 @@ class PushNotificationService {
    * @returns {Promise<Object>}
    */
   async sendBreathingReminder(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).breathing.titles),
       pickRandom(poolFor(options).breathing.bodies),
@@ -543,7 +561,8 @@ class PushNotificationService {
         action: 'open_technique',
         technique: 'breathing',
       },
-      this.NOTIFICATION_TYPES.BREATHING_REMINDER
+      this.NOTIFICATION_TYPES.BREATHING_REMINDER,
+    options
     );
   }
 
@@ -554,7 +573,7 @@ class PushNotificationService {
    * @returns {Promise<Object>}
    */
   async sendMindfulnessReminder(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).mindfulness.titles),
       pickRandom(poolFor(options).mindfulness.bodies),
@@ -562,7 +581,8 @@ class PushNotificationService {
         action: 'open_technique',
         technique: 'mindfulness',
       },
-      this.NOTIFICATION_TYPES.MINDFULNESS_REMINDER
+      this.NOTIFICATION_TYPES.MINDFULNESS_REMINDER,
+    options
     );
   }
 
@@ -575,7 +595,7 @@ class PushNotificationService {
   async sendAchievementUnlocked(pushToken, options = {}) {
     const { achievementName, description } = options;
     const name = achievementName || 'Logro';
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).achievement.titles),
       pickRandom(poolFor(options).achievement.bodies(name, description)),
@@ -583,7 +603,8 @@ class PushNotificationService {
         action: 'open_dashboard',
         achievement: achievementName,
       },
-      this.NOTIFICATION_TYPES.ACHIEVEMENT_UNLOCKED
+      this.NOTIFICATION_TYPES.ACHIEVEMENT_UNLOCKED,
+    options
     );
   }
 
@@ -600,7 +621,7 @@ class PushNotificationService {
     const streakSafe = Number.isFinite(raw)
       ? Math.max(0, Math.min(10000, Math.floor(raw)))
       : 0;
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(
         poolFor(options).streak.titles,
@@ -615,7 +636,8 @@ class PushNotificationService {
         streak: streakSafe,
         type,
       },
-      this.NOTIFICATION_TYPES.STREAK_MILESTONE
+      this.NOTIFICATION_TYPES.STREAK_MILESTONE,
+    options
     );
   }
 
@@ -633,7 +655,7 @@ class PushNotificationService {
       emotionalTrend,
       options.language,
     );
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).weeklyProgress.titles),
       body,
@@ -641,7 +663,8 @@ class PushNotificationService {
         action: 'open_dashboard',
         weeklySummary: true,
       },
-      this.NOTIFICATION_TYPES.WEEKLY_PROGRESS
+      this.NOTIFICATION_TYPES.WEEKLY_PROGRESS,
+    options
     );
   }
 
@@ -656,7 +679,7 @@ class PushNotificationService {
     const messagePool =
       poolFor(options).motivational[timeOfDay] || poolFor(options).motivational.morning;
     const selectedMessage = message || pickRandom(messagePool);
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).motivationalTitles),
       selectedMessage,
@@ -664,7 +687,8 @@ class PushNotificationService {
         action: 'open_dashboard',
         motivational: true,
       },
-      this.NOTIFICATION_TYPES.MOTIVATIONAL_MESSAGE
+      this.NOTIFICATION_TYPES.MOTIVATIONAL_MESSAGE,
+    options
     );
   }
 
@@ -675,7 +699,7 @@ class PushNotificationService {
    * @returns {Promise<Object>}
    */
   async sendGratitudeReminder(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).gratitude.titles),
       pickRandom(poolFor(options).gratitude.bodies),
@@ -683,7 +707,8 @@ class PushNotificationService {
         action: 'open_chat',
         gratitude: true,
       },
-      this.NOTIFICATION_TYPES.GRATITUDE_REMINDER
+      this.NOTIFICATION_TYPES.GRATITUDE_REMINDER,
+    options
     );
   }
 
@@ -696,7 +721,7 @@ class PushNotificationService {
   async sendWellnessTip(pushToken, options = {}) {
     const { tip } = options;
     const selectedTip = tip || pickRandom(poolFor(options).wellnessTips);
-    return this.sendNotification(
+    return this._send(
       pushToken,
       '💡 Consejo de bienestar',
       selectedTip,
@@ -704,7 +729,8 @@ class PushNotificationService {
         action: 'open_dashboard',
         wellnessTip: true,
       },
-      this.NOTIFICATION_TYPES.WELLNESS_TIP
+      this.NOTIFICATION_TYPES.WELLNESS_TIP,
+    options
     );
   }
 
@@ -715,7 +741,7 @@ class PushNotificationService {
    * @returns {Promise<Object>}
    */
   async sendSelfCareReminder(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).selfCare.titles),
       pickRandom(poolFor(options).selfCare.bodies),
@@ -723,7 +749,8 @@ class PushNotificationService {
         action: 'open_dashboard',
         selfCare: true,
       },
-      this.NOTIFICATION_TYPES.SELF_CARE_REMINDER
+      this.NOTIFICATION_TYPES.SELF_CARE_REMINDER,
+    options
     );
   }
 
@@ -748,7 +775,7 @@ class PushNotificationService {
         ? 'Your trial period is ending soon. Review plans when you can.'
         : 'Tu período de prueba está por terminar. Revisa los planes cuando puedas.',
     );
-    return this.sendNotification(
+    return this._send(
       pushToken,
       title,
       body,
@@ -756,7 +783,8 @@ class PushNotificationService {
         action: 'open_subscription',
         daysRemaining: dr,
       },
-      this.NOTIFICATION_TYPES.TRIAL_EXPIRING
+      this.NOTIFICATION_TYPES.TRIAL_EXPIRING,
+    options
     );
   }
 
@@ -767,14 +795,15 @@ class PushNotificationService {
    * @returns {Promise<Object>}
    */
   async sendTrialExpired(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).trialExpired.titles),
       pickRandom(poolFor(options).trialExpired.bodies),
       {
         action: 'open_subscription',
       },
-      this.NOTIFICATION_TYPES.TRIAL_EXPIRED
+      this.NOTIFICATION_TYPES.TRIAL_EXPIRED,
+    options
     );
   }
 
@@ -786,14 +815,15 @@ class PushNotificationService {
    */
   async sendSubscriptionReminder(pushToken, options = {}) {
     const { message } = options;
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).subscriptionReminder.titles),
       message || pickRandom(poolFor(options).subscriptionReminder.bodies),
       {
         action: 'open_subscription',
       },
-      this.NOTIFICATION_TYPES.SUBSCRIPTION_REMINDER
+      this.NOTIFICATION_TYPES.SUBSCRIPTION_REMINDER,
+    options
     );
   }
 
@@ -813,7 +843,7 @@ class PushNotificationService {
     const body = isTest
       ? pickRandom(poolFor(options).emergencySent.testBodies(ok, total))
       : pickRandom(poolFor(options).emergencySent.liveBodies(ok, total));
-    return this.sendNotification(
+    return this._send(
       pushToken,
       title,
       body,
@@ -824,7 +854,8 @@ class PushNotificationService {
         totalContacts,
         isTest: isTest || false,
       },
-      this.NOTIFICATION_TYPES.EMERGENCY_ALERT_SENT
+      this.NOTIFICATION_TYPES.EMERGENCY_ALERT_SENT,
+    options
     );
   }
 
@@ -833,32 +864,35 @@ class PushNotificationService {
    */
   async sendCrisisResources(pushToken, options = {}) {
     const { message } = options;
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).crisisResources.titles),
       message || pickRandom(poolFor(options).crisisResources.bodies),
       { action: 'open_chat', resources: true },
-      this.NOTIFICATION_TYPES.CRISIS_RESOURCES
+      this.NOTIFICATION_TYPES.CRISIS_RESOURCES,
+    options
     );
   }
 
   async sendGroundingReminder(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).grounding.titles),
       pickRandom(poolFor(options).grounding.bodies),
       { action: 'open_technique', technique: 'grounding' },
-      this.NOTIFICATION_TYPES.GROUNDING_REMINDER
+      this.NOTIFICATION_TYPES.GROUNDING_REMINDER,
+    options
     );
   }
 
   async sendProgressiveRelaxation(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).progressiveRelaxation.titles),
       pickRandom(poolFor(options).progressiveRelaxation.bodies),
       { action: 'open_technique', technique: 'progressive_relaxation' },
-      this.NOTIFICATION_TYPES.PROGRESSIVE_RELAXATION
+      this.NOTIFICATION_TYPES.PROGRESSIVE_RELAXATION,
+    options
     );
   }
 
@@ -866,7 +900,7 @@ class PushNotificationService {
     const { metric, value } = options;
     const m = metric || 'tu seguimiento';
     const v = value ?? '¡sigue así!';
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(
         poolFor(options).personalBest.titles,
@@ -879,7 +913,8 @@ class PushNotificationService {
           : `Superaste tu mejor marca en ${m}: ${v}`.trim(),
       ),
       { action: 'open_dashboard', personalBest: true },
-      this.NOTIFICATION_TYPES.PERSONAL_BEST
+      this.NOTIFICATION_TYPES.PERSONAL_BEST,
+    options
     );
   }
 
@@ -887,107 +922,117 @@ class PushNotificationService {
     const { taskTitle, taskId, dueIn } = options;
     const t = taskTitle || 'Tu tarea';
     const d = dueIn || 'pronto';
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).taskDueSoon.titles),
       pickRandom(poolFor(options).taskDueSoon.bodies(t, d)),
       { action: 'open_tasks', taskId, taskTitle, dueSoon: true },
-      this.NOTIFICATION_TYPES.TASK_DUE_SOON
+      this.NOTIFICATION_TYPES.TASK_DUE_SOON,
+    options
     );
   }
 
   async sendJournalingPrompt(pushToken, options = {}) {
     const { prompt } = options;
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).journaling.titles),
       prompt || pickRandom(poolFor(options).journaling.bodies),
       { action: 'open_chat', journaling: true },
-      this.NOTIFICATION_TYPES.JOURNALING_PROMPT
+      this.NOTIFICATION_TYPES.JOURNALING_PROMPT,
+    options
     );
   }
 
   async sendWeeklyReflection(pushToken, options = {}) {
     const { summary } = options;
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).weeklyReflection.titles),
       summary || pickRandom(poolFor(options).weeklyReflection.bodies),
       { action: 'open_dashboard', weeklyReflection: true },
-      this.NOTIFICATION_TYPES.WEEKLY_REFLECTION
+      this.NOTIFICATION_TYPES.WEEKLY_REFLECTION,
+    options
     );
   }
 
   async sendMiddayMotivation(pushToken, options = {}) {
     const { message } = options;
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).midday.titles),
       message || pickRandom(poolFor(options).midday.bodies),
       { action: 'open_dashboard', midday: true },
-      this.NOTIFICATION_TYPES.MIDDAY_MOTIVATION
+      this.NOTIFICATION_TYPES.MIDDAY_MOTIVATION,
+    options
     );
   }
 
   async sendWeekendReflection(pushToken, options = {}) {
     const { message } = options;
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).weekend.titles),
       message || pickRandom(poolFor(options).weekend.bodies),
       { action: 'open_dashboard', weekend: true },
-      this.NOTIFICATION_TYPES.WEEKEND_REFLECTION
+      this.NOTIFICATION_TYPES.WEEKEND_REFLECTION,
+    options
     );
   }
 
   async sendHydrationReminder(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).hydration.titles),
       pickRandom(poolFor(options).hydration.bodies),
       { action: 'open_dashboard', hydration: true },
-      this.NOTIFICATION_TYPES.HYDRATION_REMINDER
+      this.NOTIFICATION_TYPES.HYDRATION_REMINDER,
+    options
     );
   }
 
   async sendMovementBreak(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).movementBreak.titles),
       pickRandom(poolFor(options).movementBreak.bodies),
       { action: 'open_dashboard', movementBreak: true },
-      this.NOTIFICATION_TYPES.MOVEMENT_BREAK
+      this.NOTIFICATION_TYPES.MOVEMENT_BREAK,
+    options
     );
   }
 
   async sendSleepRoutineReminder(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).sleepRoutine.titles),
       pickRandom(poolFor(options).sleepRoutine.bodies),
       { action: 'open_dashboard', sleepRoutine: true },
-      this.NOTIFICATION_TYPES.SLEEP_ROUTINE_REMINDER
+      this.NOTIFICATION_TYPES.SLEEP_ROUTINE_REMINDER,
+    options
     );
   }
 
   async sendTrialWelcome(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).trialWelcome.titles),
       pickRandom(poolFor(options).trialWelcome.bodies),
       { action: 'open_dashboard', trialWelcome: true },
-      this.NOTIFICATION_TYPES.TRIAL_WELCOME
+      this.NOTIFICATION_TYPES.TRIAL_WELCOME,
+    options
     );
   }
 
   async sendSubscriptionRenewalHint(pushToken, options = {}) {
     const { message } = options;
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).renewalHint.titles),
       message || pickRandom(poolFor(options).renewalHint.bodies),
       { action: 'open_subscription', renewalHint: true },
-      this.NOTIFICATION_TYPES.SUBSCRIPTION_RENEWAL_HINT
+      this.NOTIFICATION_TYPES.SUBSCRIPTION_RENEWAL_HINT,
+    options
     );
   }
 
@@ -996,43 +1041,47 @@ class PushNotificationService {
     const body = contactName
       ? pickRandom(poolFor(options).emergencyContactUpdated.bodiesWithName(contactName))
       : pickRandom(poolFor(options).emergencyContactUpdated.bodiesGeneric);
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).emergencyContactUpdated.titles),
       body,
       { action: 'open_emergency_alerts', contactUpdated: true },
-      this.NOTIFICATION_TYPES.EMERGENCY_CONTACT_UPDATED
+      this.NOTIFICATION_TYPES.EMERGENCY_CONTACT_UPDATED,
+    options
     );
   }
 
   async sendEmergencyTestReminder(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).emergencyTestReminder.titles),
       pickRandom(poolFor(options).emergencyTestReminder.bodies),
       { action: 'open_emergency_alerts', testReminder: true },
-      this.NOTIFICATION_TYPES.EMERGENCY_TEST_REMINDER
+      this.NOTIFICATION_TYPES.EMERGENCY_TEST_REMINDER,
+    options
     );
   }
 
   async sendEmergencySafetyReview(pushToken, options = {}) {
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).emergencySafetyReview.titles),
       pickRandom(poolFor(options).emergencySafetyReview.bodies),
       { action: 'open_emergency_alerts', safetyReview: true },
-      this.NOTIFICATION_TYPES.EMERGENCY_SAFETY_REVIEW
+      this.NOTIFICATION_TYPES.EMERGENCY_SAFETY_REVIEW,
+    options
     );
   }
 
   async sendEmergencyInfoDigest(pushToken, options = {}) {
     const { snippet } = options;
-    return this.sendNotification(
+    return this._send(
       pushToken,
       pickRandom(poolFor(options).emergencyInfoDigest.titles),
       snippet || pickRandom(poolFor(options).emergencyInfoDigest.bodies),
       { action: 'open_emergency_alerts', infoDigest: true },
-      this.NOTIFICATION_TYPES.EMERGENCY_INFO_DIGEST
+      this.NOTIFICATION_TYPES.EMERGENCY_INFO_DIGEST,
+    options
     );
   }
 
