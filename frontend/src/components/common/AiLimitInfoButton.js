@@ -4,7 +4,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useCallback, useState } from 'react';
 import { TouchableOpacity } from 'react-native';
-import { AI_LIMIT_TOPIC } from '../../constants/aiCompetenceLimits';
+import { AI_LIMIT_TOPIC, isValidAiLimitTopicId } from '../../constants/aiCompetenceLimits';
 import { useAiLimitTopic } from '../../hooks/useAiLimitTopic';
 import AiLimitHintSheet from './AiLimitHintSheet';
 
@@ -17,7 +17,11 @@ export default function AiLimitInfoButton({
   onOpenFullLibrary,
 }) {
   const [open, setOpen] = useState(false);
-  const topic = useAiLimitTopic(topicId);
+  const resolvedTopicId = isValidAiLimitTopicId(topicId)
+    ? topicId
+    : AI_LIMIT_TOPIC.GENERAL;
+  const topic = useAiLimitTopic(resolvedTopicId);
+  const a11yLabel = topic.title ? `${topic.hintA11y}: ${topic.title}` : topic.hintA11y;
 
   const handleOpen = useCallback(() => setOpen(true), []);
   const handleClose = useCallback(() => setOpen(false), []);
@@ -31,7 +35,8 @@ export default function AiLimitInfoButton({
         hitSlop={hitSlop}
         style={style}
         accessibilityRole="button"
-        accessibilityLabel={topic.hintA11y}
+        accessibilityLabel={a11yLabel}
+        accessibilityHint={topic.sheetOpenLibrary}
       >
         <MaterialCommunityIcons
           name="information-outline"
@@ -41,7 +46,7 @@ export default function AiLimitInfoButton({
       </TouchableOpacity>
       <AiLimitHintSheet
         visible={open}
-        topicId={topicId}
+        topicId={resolvedTopicId}
         onClose={handleClose}
         onOpenFullLibrary={
           onOpenFullLibrary

@@ -1,5 +1,8 @@
 import { useMemo } from 'react';
-import { AI_LIMIT_LIBRARY_ORDER } from '../constants/aiCompetenceLimits';
+import {
+  AI_LIMIT_LIBRARY_ORDER,
+  isValidAiLimitTopicId,
+} from '../constants/aiCompetenceLimits';
 import { useSectionTranslations } from './useTranslations';
 
 function normalizeTopic(raw) {
@@ -13,25 +16,41 @@ function normalizeTopic(raw) {
   return { title, body, bullets };
 }
 
+const EMPTY_TOPIC = {
+  title: '',
+  body: '',
+  bullets: [],
+  hasContent: false,
+};
+
 export function useAiLimitTopic(topicId) {
   const info = useSectionTranslations('INFO');
   const lib = info?.AI_LIMITS_LIBRARY;
+  const resolvedTopicId = isValidAiLimitTopicId(topicId) ? topicId : null;
 
   return useMemo(() => {
-    const topic = normalizeTopic(lib?.TOPICS?.[topicId]);
-    return {
-      topicId,
-      title: topic?.title || '',
-      body: topic?.body || '',
-      bullets: topic?.bullets || [],
+    const sheetMeta = {
       hintA11y: lib?.HINT_A11Y || 'Más sobre los límites de Anto',
       sheetClose: lib?.SHEET_CLOSE || 'Cerrar',
       sheetOpenLibrary: lib?.SHEET_OPEN_LIBRARY || 'Ver biblioteca completa',
       libraryTitle: lib?.SECTION_TITLE || '',
       libraryIntro: lib?.SECTION_INTRO || '',
+    };
+
+    if (!resolvedTopicId) {
+      return { topicId, ...EMPTY_TOPIC, ...sheetMeta };
+    }
+
+    const topic = normalizeTopic(lib?.TOPICS?.[resolvedTopicId]);
+    return {
+      topicId: resolvedTopicId,
+      title: topic?.title || '',
+      body: topic?.body || '',
+      bullets: topic?.bullets || [],
+      ...sheetMeta,
       hasContent: Boolean(topic),
     };
-  }, [lib, topicId]);
+  }, [lib, topicId, resolvedTopicId]);
 }
 
 export function useAiLimitsLibrary() {

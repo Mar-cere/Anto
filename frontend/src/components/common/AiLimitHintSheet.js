@@ -128,7 +128,13 @@ export default function AiLimitHintSheet({
   if (!topic.hasContent) return null;
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+      accessibilityViewIsModal
+    >
       <View style={styles.root}>
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" />
         <View style={styles.sheetWrap}>
@@ -141,7 +147,9 @@ export default function AiLimitHintSheet({
                   size={22}
                   color={colors.primary}
                 />
-                <Text style={styles.title}>{topic.title}</Text>
+                <Text style={styles.title} accessibilityRole="header">
+                  {topic.title}
+                </Text>
               </View>
               <Text style={styles.body}>{topic.body}</Text>
               {topic.bullets.map((line) => (

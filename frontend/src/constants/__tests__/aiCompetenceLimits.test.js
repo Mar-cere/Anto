@@ -6,6 +6,8 @@ import {
   AI_LIMIT_TOPIC,
   isValidAiLimitTopicId,
 } from '../aiCompetenceLimits';
+import { INFO as INFO_ES } from '../translations/es';
+import { INFO as INFO_EN } from '../translations/en';
 
 describe('aiCompetenceLimits', () => {
   it('isValidAiLimitTopicId acepta ids conocidos', () => {
@@ -23,5 +25,24 @@ describe('aiCompetenceLimits', () => {
         AI_LIMIT_TOPIC.CHAT_ACTIONS,
       ]),
     );
+  });
+
+  it('AI_LIMIT_LIBRARY_ORDER cubre todos los AI_LIMIT_TOPIC', () => {
+    expect(AI_LIMIT_LIBRARY_ORDER).toHaveLength(Object.keys(AI_LIMIT_TOPIC).length);
+    Object.values(AI_LIMIT_TOPIC).forEach((id) => {
+      expect(AI_LIMIT_LIBRARY_ORDER).toContain(id);
+    });
+  });
+
+  it.each([
+    ['es', INFO_ES],
+    ['en', INFO_EN],
+  ])('traducciones %s tienen copy completo para cada tema', (_lang, info) => {
+    const topics = info.AI_LIMITS_LIBRARY.TOPICS;
+    AI_LIMIT_LIBRARY_ORDER.forEach((id) => {
+      const topic = topics[id];
+      expect(topic?.title?.trim()).toBeTruthy();
+      expect(topic?.body?.trim()).toBeTruthy();
+    });
   });
 });

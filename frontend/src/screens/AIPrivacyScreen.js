@@ -119,9 +119,10 @@ export default function AIPrivacyScreen() {
         y: Math.max(0, limitsOffsetRef.current - 8),
         animated: true,
       });
+      navigation.setParams({ focusLimits: undefined });
     }, 120);
     return () => clearTimeout(timer);
-  }, [route.params?.focusLimits, topics.length]);
+  }, [navigation, route.params?.focusLimits, topics.length]);
 
   const handleOpenPolicy = async () => {
     try {
