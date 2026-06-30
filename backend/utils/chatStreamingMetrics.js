@@ -20,7 +20,9 @@ export function buildStreamingTtftMetrics({ startTime, preLlmEndAt, firstChunkAt
   const preLlmMs =
     Number.isFinite(preLlmEnd) && preLlmEnd >= start ? preLlmEnd - start : null;
   const modelTtftMs =
-    Number.isFinite(preLlmEnd) && first >= preLlmEnd ? first - preLlmEnd : null;
+    Number.isFinite(preLlmEnd) && preLlmEnd >= start
+      ? Math.max(0, first - preLlmEnd)
+      : null;
 
   return { ttftMs, preLlmMs, modelTtftMs };
 }

@@ -37,6 +37,16 @@ describe('chatStreamingMetrics (#59)', () => {
     });
   });
 
+  it('modelTtftMs no es negativo si preLlmEndAt es posterior (skew de reloj)', () => {
+    const metrics = buildStreamingTtftMetrics({
+      startTime: 1000,
+      preLlmEndAt: 1600,
+      firstChunkAt: 1500,
+    });
+    expect(metrics?.modelTtftMs).toBe(0);
+    expect(metrics?.ttftMs).toBe(500);
+  });
+
   it('streamingTtftMetricPayload incluye solo campos presentes', () => {
     expect(streamingTtftMetricPayload({ ttftMs: 900, preLlmMs: 300, modelTtftMs: 600 })).toEqual({
       ttftMs: 900,

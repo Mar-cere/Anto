@@ -176,7 +176,7 @@ class WebSocketService {
   /**
    * Envía mensaje de chat y espera message:received (un turno).
    */
-  sendChatMessage({ text, conversationId, resumeTccLite, language, signal } = {}) {
+  sendChatMessage({ text, conversationId, resumeTccLite, language, signal, onChunk } = {}) {
     return new Promise((resolve, reject) => {
       if (!this.socket?.connected) {
         const err = new Error('Socket no conectado');
@@ -203,6 +203,14 @@ class WebSocketService {
         finish(timeoutErr);
       }, CHAT_TURN_TIMEOUT_MS);
 
+      const onChunkEvent = (payload) => {
+        if (typeof onChunk !== 'function') return;
+        const piece = payload?.content;
+        if (typeof piece === 'string' && piece.length > 0) {
+          onChunk(piece);
+        }
+      };
+
       const onReceived = (payload) => {
         finish(null, payload);
       };
@@ -224,6 +232,7 @@ class WebSocketService {
 
       const finish = (err, payload) => {
         clearTimeout(turnTimer);
+        this.socket?.off(CHAT_SOCKET_EVENTS.MESSAGE_CHUNK, onChunkEvent);
         this.socket?.off(CHAT_SOCKET_EVENTS.MESSAGE_RECEIVED, onReceived);
         this.socket?.off(CHAT_SOCKET_EVENTS.ERROR, onSocketError);
         signal?.removeEventListener('abort', onAbort);
@@ -240,6 +249,7 @@ class WebSocketService {
 
       const cleanupRef = (rejectError) => {
         clearTimeout(turnTimer);
+        this.socket?.off(CHAT_SOCKET_EVENTS.MESSAGE_CHUNK, onChunkEvent);
         this.socket?.off(CHAT_SOCKET_EVENTS.MESSAGE_RECEIVED, onReceived);
         this.socket?.off(CHAT_SOCKET_EVENTS.ERROR, onSocketError);
         signal?.removeEventListener('abort', onAbort);
@@ -250,6 +260,7 @@ class WebSocketService {
       };
       this.chatTurnCleanup = cleanupRef;
 
+      this.socket.on(CHAT_SOCKET_EVENTS.MESSAGE_CHUNK, onChunkEvent);
       this.socket.on(CHAT_SOCKET_EVENTS.MESSAGE_RECEIVED, onReceived);
       this.socket.on(CHAT_SOCKET_EVENTS.ERROR, onSocketError);
       signal?.addEventListener('abort', onAbort, { once: true });

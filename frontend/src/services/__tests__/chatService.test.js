@@ -512,6 +512,25 @@ describe('chatService', () => {
         expect.objectContaining({ signal: controller.signal }),
       );
     });
+
+    it('propaga onChunk incremental por socket (#128)', async () => {
+      const onChunk = jest.fn();
+      mockSendChatMessage.mockImplementation(async ({ onChunk: chunkCb }) => {
+        chunkCb?.('Te ');
+        chunkCb?.('escucho.');
+        return {
+          id: 'msg-1',
+          text: 'Te escucho.',
+          conversationId: 'conv-123',
+        };
+      });
+
+      await sendMessageStream('Hola', { onChunk });
+
+      expect(onChunk).toHaveBeenCalledTimes(2);
+      expect(onChunk).toHaveBeenNthCalledWith(1, 'Te ');
+      expect(onChunk).toHaveBeenNthCalledWith(2, 'escucho.');
+    });
   });
 
   describe('setSessionIntention', () => {

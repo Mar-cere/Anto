@@ -3,6 +3,7 @@ export const CHAT_SOCKET_EVENTS = {
   AUTHENTICATE: 'authenticate',
   MESSAGE: 'message',
   MESSAGE_SENT: 'message:sent',
+  MESSAGE_CHUNK: 'message:chunk',
   MESSAGE_RECEIVED: 'message:received',
   AI_TYPING: 'ai:typing',
   CANCEL_RESPONSE: 'cancel:response',

@@ -50,6 +50,10 @@ import { applyCrisisProtocolForTurn } from '../services/crisisTurnClientExtrasSe
 import { indexPersonalPatternFromUserMessage } from '../services/personalPatternRagService.js';
 import { resolveChatConversationForSocket } from '../utils/resolveChatConversationForSocket.js';
 import { buildSocketChatErrorPayload } from '../utils/socketChatErrorPayload.js';
+import {
+  buildStreamingTtftMetrics,
+  streamingTtftMetricPayload,
+} from '../utils/chatStreamingMetrics.js';
 
 // Constantes de configuración
 const DEFAULT_FRONTEND_URLS = ['http://localhost:3000', 'http://localhost:19006'];
@@ -68,6 +72,7 @@ const SOCKET_EVENTS = {
   AUTHENTICATE: 'authenticate',
   MESSAGE: 'message',
   MESSAGE_SENT: 'message:sent',
+  MESSAGE_CHUNK: 'message:chunk',
   MESSAGE_RECEIVED: 'message:received',
   AI_TYPING: 'ai:typing',
   CANCEL_RESPONSE: 'cancel:response',
@@ -134,6 +139,7 @@ export const setupSocketIO = (server) => {
     
     let currentUserId = null;
     let responseTimeout = null;
+    socket._chatTurnControl = null;
     
     /**
      * Autenticación del socket
@@ -162,6 +168,13 @@ export const setupSocketIO = (server) => {
         if (!currentUserId) {
           throw new Error(ERROR_MESSAGES.USER_NOT_AUTHENTICATED);
         }
+
+        if (socket._chatTurnControl) {
+          socket._chatTurnControl.aborted = true;
+        }
+        const turnControl = { aborted: false };
+        socket._chatTurnControl = turnControl;
+        const turnStartTime = Date.now();
         
         // Validar que el mensaje tenga contenido
         if (!data || !data.text || typeof data.text !== 'string' || !data.text.trim()) {
@@ -488,6 +501,10 @@ export const setupSocketIO = (server) => {
           }).catch(() => {});
 
           const clientTurn = buildCrisisHardStopClientPayload(socketLanguage);
+          socket.emit(SOCKET_EVENTS.MESSAGE_CHUNK, {
+            content: crisisHardStopContent,
+            conversationId: conversation._id.toString(),
+          });
           socket.emit(SOCKET_EVENTS.AI_TYPING, false);
           socket.emit(SOCKET_EVENTS.MESSAGE_RECEIVED, {
             id: assistantMessage._id.toString(),
@@ -532,50 +549,120 @@ export const setupSocketIO = (server) => {
             : sessionIntentionSafe === 'plan'
               ? 'action_first_then_validation'
               : 'balanced';
-        const response = await openaiService.generarRespuesta(
-          userMessage,
-          {
-            rollingSummary: conversation?.rollingSummary || null,
-            sessionPhase,
-            safetyHistory: conversationHistory.map((m) => ({
-              role: m.role,
-              content: m.content || '',
-            })),
-            history: historialParaPrompt,
-            emotional: emotionalAnalysis,
-            contextual: contextualAnalysis,
-            profile: userProfile,
-            currentConversationId: conversation._id,
-            sessionPhase,
-            sessionRetention,
-            conversationPattern,
-            sessionIntention: sessionIntentionSafe,
-            responseStrategyHint,
-            psychoeducationPromptSnippet: promptSnippets.psychoeducationPromptSnippet,
-            activeTccProtocolsPromptSnippet: promptSnippets.activeTccProtocolsPromptSnippet,
-            tccLitePromptSnippet: promptSnippets.tccLitePromptSnippet,
-            digitalPhenotypePromptSnippet: promptSnippets.digitalPhenotypePromptSnippet,
-            recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
-            personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
-            crisis: buildOpenaiCrisisContext({
-              riskLevel,
-              isCrisis,
-              userMessage: messageText,
-              preferences: {
-                ...(userProfile?.preferences || {}),
-                ...(socketUser?.preferences || {}),
-              },
-              phone: socketUser?.phone || null,
-            }),
-            crisisMetricTransport: 'socket',
-            _promptTelemetry: {
-              userId,
-              conversationId: conversation._id,
-              source: 'socket',
-              callSite: 'buildHistoryForPromptFromMessages'
-            }
+
+        const openaiContext = {
+          rollingSummary: conversation?.rollingSummary || null,
+          sessionPhase,
+          safetyHistory: conversationHistory.map((m) => ({
+            role: m.role,
+            content: m.content || '',
+          })),
+          history: historialParaPrompt,
+          emotional: emotionalAnalysis,
+          contextual: contextualAnalysis,
+          profile: userProfile,
+          currentConversationId: conversation._id,
+          sessionPhase,
+          sessionRetention,
+          conversationPattern,
+          sessionIntention: sessionIntentionSafe,
+          responseStrategyHint,
+          psychoeducationPromptSnippet: promptSnippets.psychoeducationPromptSnippet,
+          activeTccProtocolsPromptSnippet: promptSnippets.activeTccProtocolsPromptSnippet,
+          tccLitePromptSnippet: promptSnippets.tccLitePromptSnippet,
+          digitalPhenotypePromptSnippet: promptSnippets.digitalPhenotypePromptSnippet,
+          recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
+          personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
+          crisis: buildOpenaiCrisisContext({
+            riskLevel,
+            isCrisis,
+            userMessage: messageText,
+            preferences: {
+              ...(userProfile?.preferences || {}),
+              ...(socketUser?.preferences || {}),
+            },
+            phone: socketUser?.phone || null,
+          }),
+          crisisMetricTransport: 'socket',
+          _promptTelemetry: {
+            userId,
+            conversationId: conversation._id,
+            source: 'socket',
+            callSite: 'buildHistoryForPromptFromMessages',
+          },
+        };
+
+        metricsService
+          .recordMetric(
+            'chat_usage',
+            { action: 'streaming_request', isGuest: false },
+            userId.toString(),
+            {
+              conversationId: String(conversation._id),
+              transport: 'socket',
+              endpoint: 'chat',
+              surface: 'registered',
+              streaming: true,
+            },
+          )
+          .catch(() => {});
+
+        const preLlmEndAt = Date.now();
+        let firstChunkAt = null;
+        let streamResponse = null;
+
+        for await (const event of openaiService.generarRespuestaStream(userMessage, openaiContext)) {
+          if (turnControl.aborted) {
+            socket.emit(SOCKET_EVENTS.AI_TYPING, false);
+            return;
           }
-        );
+          if (event.type === 'chunk') {
+            if (!firstChunkAt) {
+              firstChunkAt = Date.now();
+              const ttftMetrics = buildStreamingTtftMetrics({
+                startTime: turnStartTime,
+                preLlmEndAt,
+                firstChunkAt,
+              });
+              metricsService
+                .recordMetric(
+                  'chat_usage',
+                  {
+                    action: 'streaming_first_chunk',
+                    isGuest: false,
+                    ...streamingTtftMetricPayload(ttftMetrics),
+                  },
+                  userId.toString(),
+                  {
+                    conversationId: String(conversation._id),
+                    transport: 'socket',
+                    endpoint: 'chat',
+                    surface: 'registered',
+                    streaming: true,
+                  },
+                )
+                .catch(() => {});
+            }
+            socket.emit(SOCKET_EVENTS.MESSAGE_CHUNK, {
+              content: event.content,
+              conversationId: conversation._id.toString(),
+            });
+          } else if (event.type === 'done') {
+            streamResponse = { content: event.content, context: event.context };
+            break;
+          }
+        }
+
+        if (turnControl.aborted) {
+          socket.emit(SOCKET_EVENTS.AI_TYPING, false);
+          return;
+        }
+
+        if (!streamResponse?.content) {
+          throw new Error('Respuesta vacía del stream de chat');
+        }
+
+        const response = streamResponse;
         
         // 7. Guardar mensaje del asistente
         const assistantMessage = new Message({
@@ -709,6 +796,25 @@ export const setupSocketIO = (server) => {
           userMessage: messageText,
         });
         // 9. Emitir respuesta al cliente
+        metricsService
+          .recordMetric(
+            'chat_usage',
+            {
+              action: 'streaming_done',
+              isGuest: false,
+              timeToDoneMs: Date.now() - turnStartTime,
+            },
+            userId.toString(),
+            {
+              conversationId: String(conversation._id),
+              transport: 'socket',
+              endpoint: 'chat',
+              surface: 'registered',
+              streaming: true,
+            },
+          )
+          .catch(() => {});
+
         socket.emit(SOCKET_EVENTS.AI_TYPING, false);
         socket.emit(SOCKET_EVENTS.MESSAGE_RECEIVED, {
           id: assistantMessage._id.toString(),
@@ -738,6 +844,9 @@ export const setupSocketIO = (server) => {
      * Permite al usuario cancelar una respuesta que se está generando
      */
     socket.on(SOCKET_EVENTS.CANCEL_RESPONSE, () => {
+      if (socket._chatTurnControl) {
+        socket._chatTurnControl.aborted = true;
+      }
       if (responseTimeout) {
         clearTimeout(responseTimeout);
         responseTimeout = null;
@@ -751,6 +860,10 @@ export const setupSocketIO = (server) => {
      * Limpia recursos y notifica la desconexión
      */
     socket.on(SOCKET_EVENTS.DISCONNECT, () => {
+      if (socket._chatTurnControl) {
+        socket._chatTurnControl.aborted = true;
+        socket._chatTurnControl = null;
+      }
       // Limpiar timeout si existe
       if (responseTimeout) {
         clearTimeout(responseTimeout);
