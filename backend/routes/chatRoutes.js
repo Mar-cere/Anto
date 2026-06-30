@@ -611,8 +611,12 @@ router.get('/interventions/graph', protect, requireActiveSubscription(true), asy
 router.get('/tcc-continuity', protect, requireActiveSubscription(true), async (req, res) => {
   try {
     const language = req.appLanguage || resolveRequestLanguage(req);
-    const data = await buildChatTccContinuity({ userId: req.user._id, language });
     const conversationId = String(req.query?.conversationId || '').trim();
+    const data = await buildChatTccContinuity({
+      userId: req.user._id,
+      language,
+      conversationId: conversationId || null,
+    });
     if (
       conversationId &&
       mongoose.Types.ObjectId.isValid(conversationId) &&
@@ -2887,7 +2891,10 @@ router.delete('/conversations/:conversationId', protect, validarConversationId, 
     const result = await Message.deleteMany(query);
 
     if (!role) {
-      await resetConversationSessionState(conversationId, { full: true });
+      await resetConversationSessionState(conversationId, {
+        full: true,
+        userId: req.user._id,
+      });
     }
 
     res.json({
