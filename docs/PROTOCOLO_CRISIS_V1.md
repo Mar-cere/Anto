@@ -1,10 +1,10 @@
 # Protocolo de crisis v1
 
-**Versión:** 1.0 (borrador producto)  
+**Versión:** 1.0 (aprobado clínica/legal 30 jun 2026)  
 **Fecha:** 30 jun 2026  
 **Relacionado:** [PROPUESTAS_ACOMPANAMIENTO_IA_MATRIZ.md](./PROPUESTAS_ACOMPANAMIENTO_IA_MATRIZ.md) (**#93**, **#9**, **#10**, **#205**), implementación en `crisisHardStopService`, `crisisBackgroundActionsService`, `CrisisResourcesStrip`.
 
-Este documento fija el **contrato de producto y clínico-operativo** para el modo crisis en Anto. Requiere **revisión y firma clínica/legal** antes de marcar **#93** como cerrado en la matriz.
+Este documento fija el **contrato de producto y clínico-operativo** para el modo crisis en Anto. **Revisión clínica/legal aprobada (30 jun 2026).** Filas **#93**, **#10** y **#205** en matriz: **Sí***; pendiente único de cierre producto: **smoke dispositivo físico**.
 
 ---
 
@@ -205,16 +205,17 @@ Traducción EN obligatoria antes de cierre **#151** / **#153**.
 
 Marcar **#93** / **#205** (producto) / **#10** según fila.
 
-**Estado ingeniería (30 jun 2026):** implementación v1 mergeada en `main` (PR #4); pendiente firma clínica/legal y smoke antes de cerrar filas en matriz.
+**Estado (30 jun 2026):** implementación v1 en `main` (PR #4 + #5); revisión clínica/legal aprobada; filas matriz **Sí***. **Pendiente cierre:** smoke dispositivo físico.
 
 ### #93 — Protocolo ideación
 
-- [ ] Revisión clínica del documento y batería §2
-- [ ] Revisión legal (alertas, copy, menores si aplica)
+- [x] Revisión clínica del documento y batería §2 (30 jun 2026)
+- [x] Revisión legal (alertas, copy, menores si aplica) (30 jun 2026)
 - [x] Plantillas camino A es/en alineadas a §3.1 (`crisisHardStopService`)
 - [x] Constraints camino B y rama rechazo §3.3 en prompt (`crisis.js`)
 - [x] Tests unitarios: `crisisHardStopService`, `crisisProtocolService`, decisión MEDIUM
-- [ ] Tests integración: `crisisDetectionFlow`, smoke release (requiere entorno con API keys)
+- [ ] Smoke dispositivo físico (flujo crisis end-to-end)
+- [ ] Tests integración: `crisisDetectionFlow` (CI con API keys; no bloquea Sí*)
 
 ### #205 — Guardrails
 
@@ -222,11 +223,13 @@ Marcar **#93** / **#205** (producto) / **#10** según fila.
 - [x] Salida §4 + evento `crisis_protocol_exit`
 - [x] MEDIUM alerta **preguntada** (§5.2) con validación de oferta y dismiss
 - [x] Post-envío §5.3 en UI (`CrisisResourcesStrip` + WebSocket)
+- [ ] Smoke dispositivo físico (camino A/B + alertas híbridas)
 
 ### #10 — Transparencia
 
 - [x] Bloques T1–T5 siempre visibles en `CrisisResourcesStrip`
 - [x] Misma semántica en push de crisis relevantes (copy §5.3 / `emergency:alert:sent`)
+- [ ] Smoke dispositivo físico (panel crisis + transparencia T1–T5)
 
 ### #9 — Derivación
 
@@ -250,4 +253,4 @@ Marcar **#93** / **#205** (producto) / **#10** según fila.
 
 ---
 
-*Última actualización: 30 jun 2026 — decisiones de marco producto; checklist §8 marcado en ítems de ingeniería (PR #4). Pendiente: revisión clínica/legal.*
+*Última actualización: 30 jun 2026 — revisión clínica/legal aprobada; matriz **#93**, **#10**, **#205** → **Sí***; pendiente smoke dispositivo físico.*
