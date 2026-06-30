@@ -998,6 +998,11 @@ export const CHAT = {
   CRISIS_RESOURCES_DISMISS_A11Y: 'Ocultar panel de recursos',
   CRISIS_RESOURCES_COUNTRY_PREFIX: 'Para',
   CHAT_OPTIONS_CRISIS_RESOURCES: 'Recursos de crisis',
+  CRISIS_POST_CONTACT_ALERT_NOTICE:
+    'Si tenías contactos de emergencia activos, les enviamos un aviso breve de que podrías necesitar apoyo. No incluye el texto de esta conversación.',
+  EMERGENCY_CONTACT_ALERT_OFFER_YES: 'Sí, avísales',
+  EMERGENCY_CONTACT_ALERT_OFFER_NO: 'No, gracias',
+  EMERGENCY_CONTACT_ALERT_OFFER_TITLE: 'Aviso a contactos',
   PRODUCT_PROPOSAL_TYPE_HABIT: 'Hábito',
   PRODUCT_PROPOSAL_TYPE_TASK: 'Tarea',
   PRODUCT_PROPOSAL_HINT_EDIT: 'Editar rápido',

@@ -21,6 +21,7 @@ import crisisFollowUpService from './crisisFollowUpService.js';
 import emergencyAlertService from './emergencyAlertService.js';
 import metricsService from './metricsService.js';
 import pushNotificationService from './pushNotificationService.js';
+import { markConversationContactAlertSent } from './crisisTurnClientExtrasService.js';
 
 const BACKGROUND_LEVELS = new Set(['WARNING', 'MEDIUM', 'HIGH']);
 
@@ -71,7 +72,8 @@ function buildRiskMetadata({
     decision: {
       actionLevel: crisisDecision.actionLevel,
       confidence: crisisDecision.confidence,
-      shouldAlertContacts: crisisDecision.shouldAlertContacts,
+      shouldAlertContacts: crisisDecision.shouldAlertContactsAuto,
+      shouldOfferContactAlert: crisisDecision.shouldOfferContactAlert,
       reasons: crisisDecision.reasons,
     },
   };
@@ -153,7 +155,7 @@ async function sendHighAlerts({
   log,
 }) {
   let alertResult = null;
-  if (crisisDecision.shouldAlertContacts) {
+  if (crisisDecision.shouldAlertContactsAuto) {
     alertResult = await emergencyAlertService.sendEmergencyAlerts(userId, riskLevel, messageContent, {
       trendAnalysis,
       metadata: {
@@ -246,27 +248,10 @@ async function handleMediumAsync({
   log,
 }) {
   let mediumAlertResult = null;
-  if (crisisDecision.shouldAlertContacts) {
-    mediumAlertResult = await emergencyAlertService.sendEmergencyAlerts(userId, riskLevel, messageContent, {
-      trendAnalysis,
-      metadata: {
-        riskScore: calculateRiskScore(emotionalAnalysis, contextualAnalysis, messageContent, {
-          trendAnalysis,
-          crisisHistory,
-          conversationContext,
-        }),
-        factors: extractRiskFactors(emotionalAnalysis, contextualAnalysis, messageContent, {
-          trendAnalysis,
-          crisisHistory,
-          conversationContext,
-        }),
-        decision: {
-          actionLevel: crisisDecision.actionLevel,
-          confidence: crisisDecision.confidence,
-          reasons: crisisDecision.reasons,
-        },
-      },
-    });
+  if (crisisDecision.shouldOfferContactAlert) {
+    log?.(
+      'MEDIUM con evidencia acumulada: alerta a contactos diferida (oferta en chat, protocolo v1)',
+    );
   }
 
   const user = await User.findById(userId).select('+pushToken');
@@ -331,6 +316,7 @@ export async function runCrisisBackgroundActions({
   trendAnalysis = null,
   crisisHistory = null,
   conversationContext = {},
+  conversationId = null,
   transport = 'http',
   isCrisis = false,
   log,
@@ -402,6 +388,10 @@ export async function runCrisisBackgroundActions({
         await maybeScheduleFollowUps(crisisEvent._id, normalizedRiskLevel);
       }
 
+      if (alertResult?.sent && conversationId) {
+        await markConversationContactAlertSent(conversationId);
+      }
+
       bumpBackgroundMetric({
         riskLevel: normalizedRiskLevel,
         transport,
@@ -413,6 +403,7 @@ export async function runCrisisBackgroundActions({
         riskLevel: normalizedRiskLevel,
         phase: 'sync',
         crisisEventId: crisisEvent?._id?.toString(),
+        alertSent: alertResult?.sent === true,
       };
     } catch (error) {
       console.error('[CrisisBackgroundActions] Error manejando crisis HIGH:', error);

@@ -321,6 +321,8 @@ function ChatMessageItem({
   onSuggestionDismiss,
   onProductProposalPress,
   onProductProposalReject,
+  onEmergencyContactAlertConfirm,
+  onEmergencyContactAlertReject,
 }) {
   const { language } = useLanguage();
   const TEXTS = useChatTexts();
@@ -367,6 +369,38 @@ function ChatMessageItem({
       <View style={styles.suggestionsContainer}>
         <View style={styles.statusCard}>
           <Text style={styles.statusCardText}>{txt}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (message.type === 'emergency_contact_alert_offer' && message.proposedEmergencyContactAlert) {
+    const offer = message.proposedEmergencyContactAlert;
+    return (
+      <View style={styles.suggestionsContainer}>
+        <Text style={styles.suggestionsTitle}>{TEXTS.EMERGENCY_CONTACT_ALERT_OFFER_TITLE}</Text>
+        <View style={styles.productProposalCard}>
+          <Text style={styles.productProposalTitle}>{offer.message}</Text>
+          <View style={styles.proposalActionsRow}>
+            <TouchableOpacity
+              style={styles.proposalPrimaryBtn}
+              onPress={() => onEmergencyContactAlertConfirm?.(message)}
+              accessibilityRole="button"
+            >
+              <Text style={styles.proposalPrimaryBtnText}>
+                {TEXTS.EMERGENCY_CONTACT_ALERT_OFFER_YES}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.proposalGhostBtn}
+              onPress={() => onEmergencyContactAlertReject?.(message)}
+              accessibilityRole="button"
+            >
+              <Text style={styles.proposalGhostBtnText}>
+                {TEXTS.EMERGENCY_CONTACT_ALERT_OFFER_NO}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     );

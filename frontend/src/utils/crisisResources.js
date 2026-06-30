@@ -47,6 +47,15 @@ export function normalizeCrisisResourcesPayload(raw) {
     items,
     disclaimer: raw.disclaimer ? clipText(raw.disclaimer, MAX_DISCLAIMER_LEN) : '',
     appLimits: raw.appLimits ? clipText(raw.appLimits, MAX_DISCLAIMER_LEN) : '',
+    transparency: Array.isArray(raw.transparency)
+      ? raw.transparency
+          .filter((b) => b && b.text)
+          .slice(0, 6)
+          .map((b) => ({
+            id: clipText(b.id || 'block', 40),
+            text: clipText(b.text, MAX_DISCLAIMER_LEN),
+          }))
+      : [],
   };
 }
 

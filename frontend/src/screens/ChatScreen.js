@@ -326,9 +326,12 @@ const ChatScreen = () => {
     handleOpenTccLiteAtHandoff,
     handleDismissTccLiteAtHandoff,
     crisisResourcesPanel,
+    crisisContactAlertNotice,
     dismissCrisisResourcesPanel,
     openCrisisResourcesPanel,
     openEmergencyContactsFromChat,
+    handleEmergencyContactAlertConfirm,
+    handleEmergencyContactAlertReject,
     historyHasMore,
     loadingOlderMessages,
     loadOlderMessages,
@@ -460,6 +463,8 @@ const ChatScreen = () => {
         onSuggestionDismiss={handleSuggestionDismiss}
         onProductProposalPress={handleProductProposalPress}
         onProductProposalReject={handleProductProposalReject}
+        onEmergencyContactAlertConfirm={handleEmergencyContactAlertConfirm}
+        onEmergencyContactAlertReject={handleEmergencyContactAlertReject}
       />
     ),
     [
@@ -467,6 +472,8 @@ const ChatScreen = () => {
       handleSuggestionDismiss,
       handleProductProposalPress,
       handleProductProposalReject,
+      handleEmergencyContactAlertConfirm,
+      handleEmergencyContactAlertReject,
     ]
   );
 
@@ -658,6 +665,7 @@ const ChatScreen = () => {
       {!immersiveMode && crisisResourcesPanel ? (
         <CrisisResourcesStrip
           resources={crisisResourcesPanel}
+          contactAlertNotice={crisisContactAlertNotice}
           onDismiss={dismissCrisisResourcesPanel}
           onOpenEmergencyContacts={
             guestQuota === null ? openEmergencyContactsFromChat : null

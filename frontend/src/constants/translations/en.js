@@ -993,6 +993,11 @@ export const CHAT = {
   CRISIS_RESOURCES_DISMISS_A11Y: 'Hide resources panel',
   CRISIS_RESOURCES_COUNTRY_PREFIX: 'For',
   CHAT_OPTIONS_CRISIS_RESOURCES: 'Crisis resources',
+  CRISIS_POST_CONTACT_ALERT_NOTICE:
+    'If you had active emergency contacts, we sent them a brief notice that you might need support. It does not include this conversation.',
+  EMERGENCY_CONTACT_ALERT_OFFER_YES: 'Yes, notify them',
+  EMERGENCY_CONTACT_ALERT_OFFER_NO: 'No, thanks',
+  EMERGENCY_CONTACT_ALERT_OFFER_TITLE: 'Contact alert',
   PRODUCT_PROPOSAL_TYPE_HABIT: 'Habit',
   PRODUCT_PROPOSAL_TYPE_TASK: 'Task',
   PRODUCT_PROPOSAL_HINT_EDIT: 'Quick edit',
