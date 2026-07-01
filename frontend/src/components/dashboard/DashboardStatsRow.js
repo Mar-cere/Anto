@@ -4,6 +4,7 @@ import { View, Text, Animated, Easing } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { createDashboardStyles } from '../../styles/dashboardTheme';
+import { buildStreakCardSeed, pickStreakTierBadge } from '../../utils/dashboardStreakCardUtils';
 import { getStreakVisual } from '../../utils/streakVisualUtils';
 
 const DashboardStatsRow = memo(({
@@ -73,7 +74,11 @@ const DashboardStatsRow = memo(({
     };
   }, [streakVisual.pulse, pulse, glow]);
 
-  const tierLabel = streakVisual.labelKey ? DASH[streakVisual.labelKey] : null;
+  const tierLabel = pickStreakTierBadge(
+    streakVisual.tier,
+    DASH,
+    buildStreakCardSeed(streakDays),
+  );
 
   if (!showStreakStat && !showHabitsStat) {
     return null;

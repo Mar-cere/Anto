@@ -8,6 +8,9 @@ import { createDashboardStyles } from '../../styles/dashboardTheme';
 import { buildStreakHeroCopy } from '../../utils/dashboardHomeUtils';
 import {
   buildStreakCardMetaLine,
+  buildStreakCardSeed,
+  pickStreakCardNudge,
+  pickStreakTierBadge,
   resolveStreakUnitLabel,
 } from '../../utils/dashboardStreakCardUtils';
 import { getStreakVisual } from '../../utils/streakVisualUtils';
@@ -68,7 +71,9 @@ const DashboardStreakHero = memo(({ streakDays, displayName, dailyMood, onOpenCh
     onOpenChat?.();
   };
 
-  const tierBadge = streakVisual.labelKey ? DASH[streakVisual.labelKey] : null;
+  const streakCardSeed = buildStreakCardSeed(streakDays, dailyMood?.dateKey);
+  const tierBadge = pickStreakTierBadge(streakVisual.tier, DASH, streakCardSeed);
+  const streakNudge = pickStreakCardNudge(streakVisual.tier, DASH, streakCardSeed);
   const streakChipLabel =
     streakDays === 1
       ? DASH.STREAK_CHIP_ONE || `1 ${DASH.STAT_STREAK_DAYS}`
@@ -80,7 +85,7 @@ const DashboardStreakHero = memo(({ streakDays, displayName, dailyMood, onOpenCh
 
   const streakMetaLine = buildStreakCardMetaLine({
     tierBadge,
-    nudge: DASH.STREAK_CARD_NUDGE,
+    nudge: streakNudge,
     fallbackSubtitle: copy.subtitle,
   });
 
@@ -115,7 +120,7 @@ const DashboardStreakHero = memo(({ streakDays, displayName, dailyMood, onOpenCh
         {gradientLayers}
         <View style={styles.heroStreakDynamicRow}>
           <View style={styles.heroStreakIconWrap}>
-            <Ionicons name="sparkles" size={22} color={streakVisual.sparkleColor} />
+            <Ionicons name={streakVisual.icon} size={22} color={streakVisual.sparkleColor} />
           </View>
           <View style={styles.heroStreakCopy}>
             <View style={styles.heroStreakMainLine}>

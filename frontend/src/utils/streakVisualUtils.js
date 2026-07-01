@@ -1,5 +1,6 @@
 /**
  * Paleta y metadatos visuales de racha según días consecutivos.
+ * La intensidad de color escala dentro de cada nivel según el avance en días.
  */
 
 export const STREAK_TIERS = {
@@ -10,6 +11,50 @@ export const STREAK_TIERS = {
   stellar: { min: 14, max: 29 },
   legend: { min: 30, max: Infinity },
 };
+
+function clamp01(value) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function hexToRgb(hex) {
+  const normalized = String(hex || '').replace('#', '');
+  if (normalized.length !== 6) return null;
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  if ([r, g, b].some((channel) => Number.isNaN(channel))) return null;
+  return { r, g, b };
+}
+
+function mixHex(baseHex, accentHex, ratio) {
+  const base = hexToRgb(baseHex);
+  const accent = hexToRgb(accentHex);
+  if (!base || !accent) return baseHex;
+  const t = clamp01(ratio);
+  const r = Math.round(base.r + (accent.r - base.r) * t);
+  const g = Math.round(base.g + (accent.g - base.g) * t);
+  const b = Math.round(base.b + (accent.b - base.b) * t);
+  return `#${[r, g, b].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
+}
+
+function mixRgba(rgba, alphaScale) {
+  const match = String(rgba).match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+  if (!match) return rgba;
+  const [, r, g, b, a = '1'] = match;
+  const nextAlpha = clamp01(Number(a) * alphaScale);
+  return `rgba(${r}, ${g}, ${b}, ${nextAlpha.toFixed(3)})`;
+}
+
+function tierProgress(days, tier) {
+  const bounds = STREAK_TIERS[tier];
+  if (!bounds || tier === 'none') return 0;
+  if (!Number.isFinite(bounds.max)) {
+    const span = Math.max(1, days - bounds.min);
+    return clamp01(span / 30);
+  }
+  const span = Math.max(1, bounds.max - bounds.min);
+  return clamp01((days - bounds.min) / span);
+}
 
 export function resolveStreakTier(streakDays = 0) {
   const days = Math.max(0, Math.floor(Number(streakDays) || 0));
@@ -30,6 +75,8 @@ export function getStreakVisual(streakDays = 0, colors = {}, resolvedScheme = 'l
   const days = Math.max(0, Math.floor(Number(streakDays) || 0));
   const tier = resolveStreakTier(days);
   const dark = resolvedScheme === 'dark';
+  const progress = tierProgress(days, tier);
+  const intensity = 0.65 + progress * 0.35;
 
   const palettes = {
     none: {
@@ -130,25 +177,38 @@ export function getStreakVisual(streakDays = 0, colors = {}, resolvedScheme = 'l
     },
   };
 
+  const palette = palettes[tier];
   const gradient = heroGradients[tier];
+  const accentSparkle = gradient.sparkle;
+
+  const heroGradientTop = mixHex(gradient.top, accentSparkle, progress * 0.18);
+  const heroGradientBottom = mixHex(gradient.bottom, palette.accent, progress * 0.24);
+  const heroBackground = mixHex(heroSurfaces[tier], palette.accent, progress * 0.12);
+  const sparkleColor = mixHex(gradient.sparkle, palette.accent, progress * 0.2);
+
+  const orbBase =
+    tier === 'legend'
+      ? 'rgba(245, 197, 66, 0.35)'
+      : tier === 'stellar'
+        ? 'rgba(184, 140, 255, 0.3)'
+        : tier === 'blaze'
+          ? 'rgba(240, 122, 69, 0.28)'
+          : dark
+            ? 'rgba(68, 215, 251, 0.22)'
+            : 'rgba(255, 255, 255, 0.18)';
 
   return {
     tier,
     days,
-    ...palettes[tier],
-    heroBackground: heroSurfaces[tier],
-    heroGradientTop: gradient.top,
-    heroGradientBottom: gradient.bottom,
-    sparkleColor: gradient.sparkle,
-    orbColor:
-      tier === 'legend'
-        ? 'rgba(245, 197, 66, 0.35)'
-        : tier === 'stellar'
-          ? 'rgba(184, 140, 255, 0.3)'
-          : tier === 'blaze'
-            ? 'rgba(240, 122, 69, 0.28)'
-            : dark
-              ? 'rgba(68, 215, 251, 0.22)'
-              : 'rgba(255, 255, 255, 0.18)',
+    progress,
+    ...palette,
+    accent: mixHex(palette.accent, accentSparkle, progress * 0.15),
+    glow: mixRgba(palette.glow, intensity),
+    surface: mixRgba(palette.surface, intensity),
+    heroBackground,
+    heroGradientTop,
+    heroGradientBottom,
+    sparkleColor,
+    orbColor: mixRgba(orbBase, intensity),
   };
 }
