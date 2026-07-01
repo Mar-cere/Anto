@@ -188,6 +188,7 @@ async function conversationHasUserMessages(conversationId, userId) {
       conversationId: cid,
       userId: uid,
       role: 'user',
+      content: { $regex: /\S/ },
     }),
   );
 }

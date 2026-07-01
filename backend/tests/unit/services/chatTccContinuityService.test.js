@@ -94,6 +94,20 @@ describe('chatTccContinuityService', () => {
     expect(mockMessageExists).not.toHaveBeenCalled();
   });
 
+  it('devuelve vacío con conversationId inválido', async () => {
+    mockFindWeekPlanForUser.mockResolvedValue(weekPlanWithTodaySlot('Caminar'));
+
+    const result = await buildChatTccContinuity({
+      userId: '507f1f77bcf86cd799439011',
+      language: 'es',
+      conversationId: 'not-a-valid-id',
+    });
+
+    expect(result.items).toEqual([]);
+    expect(mockMessageExists).not.toHaveBeenCalled();
+    expect(mockFindWeekPlanForUser).not.toHaveBeenCalled();
+  });
+
   it('devuelve vacío si la conversación no tiene mensajes del usuario', async () => {
     mockMessageExists.mockResolvedValue(false);
     mockFindWeekPlanForUser.mockResolvedValue(weekPlanWithTodaySlot('Caminar'));

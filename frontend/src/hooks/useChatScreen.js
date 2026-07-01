@@ -72,7 +72,7 @@ import {
   peekPendingTccLiteResume,
   setPendingTccLiteResume,
 } from '../utils/chatTccLiteResume';
-import { countNonemptyUserTurns } from '../utils/chatTurnUtils';
+import { countNonemptyUserTurns, hasNonemptyUserTurns } from '../utils/chatTurnUtils';
 import {
   buildAssistantMetadataFromTurnPayload,
   resolveTccLiteAtHandoffFromPayload,
@@ -1458,6 +1458,12 @@ export function useChatScreen() {
     } catch (err) {
       console.error('Error al borrar la conversación:', err);
       setError(texts.ERROR_CLEAR);
+      tccContinuityRequestIdRef.current += 1;
+      try {
+        await initializeConversation();
+      } catch (_) {
+        /* mejor esfuerzo: rehidratar desde servidor */
+      }
     }
   }, [initializeConversation, cancelActiveStream]);
 
@@ -1737,6 +1743,10 @@ export function useChatScreen() {
       const convId = await AsyncStorage.getItem(CHAT_SESSION_KEYS.CONVERSATION_ID);
       const items = await chatService.fetchTccContinuity(convId);
       if (requestId !== tccContinuityRequestIdRef.current) return;
+      if (!hasNonemptyUserTurns(messagesRef.current)) {
+        setTccContinuityItems([]);
+        return;
+      }
       setTccContinuityItems(Array.isArray(items) ? items : []);
     } catch {
       if (requestId !== tccContinuityRequestIdRef.current) return;
@@ -1745,10 +1755,7 @@ export function useChatScreen() {
   }, []);
 
   const hasUserMessagesInChat = useMemo(
-    () =>
-      (messages || []).some(
-        (m) => m?.role === MESSAGE_ROLES.USER && m?.type !== 'quickReplies',
-      ),
+    () => hasNonemptyUserTurns(messages),
     [messages],
   );
 

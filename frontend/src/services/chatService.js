@@ -794,13 +794,15 @@ export const getInterventionGraph = async (params = {}) => {
 export const fetchTccContinuity = async (conversationId) => {
   try {
     if (await isGuestChatMode()) return [];
+    const cid = String(conversationId ?? '').trim();
+    if (!/^[\da-f]{24}$/i.test(cid)) return [];
     const token = await AsyncStorage.getItem('userToken');
     if (!token) return [];
     const userData = await readStoredUserData();
     if (!(await canAttemptChatAccess(userData))) return [];
-    const cid = String(conversationId ?? '').trim();
-    const query = /^[\da-f]{24}$/i.test(cid) ? { conversationId: cid } : {};
-    const response = await apiClient.get(ENDPOINTS.CHAT_TCC_CONTINUITY, query);
+    const response = await apiClient.get(ENDPOINTS.CHAT_TCC_CONTINUITY, {
+      conversationId: cid,
+    });
     return response?.data?.data?.items || response?.data?.items || [];
   } catch (e) {
     if (typeof __DEV__ !== 'undefined' && __DEV__) {
