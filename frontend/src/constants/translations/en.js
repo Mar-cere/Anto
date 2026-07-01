@@ -298,7 +298,7 @@ export const DASH = {
   MOOD_SECTION_LABEL: 'How you are feeling today',
   MOOD_QUESTION: 'How do you feel right now?',
   MOOD_CALM: 'Calm',
-  MOOD_ANXIOUS: 'Anxious',
+  MOOD_ANXIOUS: 'Tense',
   MOOD_TIRED: 'Tired',
   MOOD_GOOD: 'Good',
   ANTO_PROMPT_CONTINUE: 'Continue',

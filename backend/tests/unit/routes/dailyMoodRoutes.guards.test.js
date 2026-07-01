@@ -38,7 +38,7 @@ describe('Daily mood routes guards', () => {
     getTodayDailyMoodCheckIn.mockResolvedValue({
       mood: 'calm',
       dateKey: '2026-06-17',
-      label: 'Tranquilo',
+      label: 'Calma',
       acknowledgment: 'Qué bueno.',
       suggestChat: false,
     });
@@ -75,7 +75,7 @@ describe('Daily mood routes guards', () => {
     upsertTodayDailyMoodCheckIn.mockResolvedValue({
       checkIn: {
         mood: 'anxious',
-        label: 'Ansioso',
+        label: 'Tenso',
         suggestChat: true,
       },
     });

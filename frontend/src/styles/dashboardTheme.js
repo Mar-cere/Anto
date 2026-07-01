@@ -415,8 +415,11 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       marginLeft: 8,
     },
     moodPill: {
+      flex: 1,
+      minWidth: 0,
+      alignItems: 'center',
       paddingVertical: 10,
-      paddingHorizontal: 16,
+      paddingHorizontal: 10,
       borderRadius: 999,
       borderWidth: StyleSheet.hairlineWidth,
     },
@@ -432,6 +435,7 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       fontSize: 14,
       fontWeight: '500',
       color: colors.text,
+      textAlign: 'center',
     },
     moodPillTextSelected: {
       color: colors.primary,
@@ -439,7 +443,7 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
     },
     moodRow: {
       flexDirection: 'row',
-      flexWrap: 'wrap',
+      flexWrap: 'nowrap',
       gap: 8,
       marginTop: 14,
     },

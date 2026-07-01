@@ -24,12 +24,12 @@ describe('dailyMoodCopy', () => {
   it('marca ansioso como suggestChat', () => {
     const meta = getDailyMoodCopy('anxious', 'es');
     expect(meta.suggestChat).toBe(true);
-    expect(meta.label).toBe('Ansioso');
+    expect(meta.label).toBe('Tenso');
   });
 
   it('genera snippet de prompt en español', () => {
     const snippet = buildDailyMoodPromptSnippet({ mood: 'tired' }, 'es');
     expect(snippet).toMatch(/check-in del día/i);
-    expect(snippet).toMatch(/cansado/i);
+    expect(snippet).toMatch(/fatiga/i);
   });
 });
