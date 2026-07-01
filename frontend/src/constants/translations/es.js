@@ -7,6 +7,8 @@
  * @author AntoApp Team
  */
 
+import { ONBOARDING_FOCUS_LABELS } from '../onboardingFocusLabels.js';
+
 export const HOME = {
   BRAND_NAME: 'Anto',
   BADGE: '1 día gratis · sin tarjeta',
@@ -159,13 +161,7 @@ export const ONBOARDING = {
     'Demasiados intentos. Espera un momento y vuelve a intentar.',
   QUESTIONS_CONNECTION_ERROR:
     'No hay conexión. Verifica tu internet e inténtalo de nuevo.',
-  QUESTIONS_FOCUS_OPTIONS: [
-    'Apoyo emocional',
-    'Ansiedad o estrés',
-    'Sueño y descanso',
-    'Hábitos y rutinas',
-    'Enfoque y organización',
-  ],
+  QUESTIONS_FOCUS_OPTIONS: ONBOARDING_FOCUS_LABELS.es,
 };
 
 export const DASH = {
