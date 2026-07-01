@@ -10,6 +10,8 @@ import {
   shouldOrientSessionClosure,
   stripPrematureSessionClosurePhrases,
   stripRepeatedSessionClosurePhrase,
+  hasActiveCrisisRecoveryInThread,
+  shouldSuppressSessionClosure,
   responseHasSessionClosureBridge,
   isGreetingOrCheckInMessage,
   getSessionClosureBridge,
@@ -57,6 +59,37 @@ describe('sessionRetentionHints', () => {
       expect(isOngoingEmotionalShareMessage('Todo, tuve crisis de panico')).toBe(true);
       expect(isOngoingEmotionalShareMessage('Acaba de pasar')).toBe(true);
       expect(isOngoingEmotionalShareMessage('Ya va bajando')).toBe(true);
+    });
+  });
+
+  describe('hasActiveCrisisRecoveryInThread', () => {
+    it('detecta pánico reciente aunque el turno actual sea breve', () => {
+      expect(
+        hasActiveCrisisRecoveryInThread('Ya va bajando', [
+          { role: 'user', content: 'Todo, tuve crisis de panico' },
+          { role: 'assistant', content: 'Eso puede dejarte muy sacudido.' },
+        ]),
+      ).toBe(true);
+    });
+  });
+
+  describe('shouldSuppressSessionClosure', () => {
+    it('bloquea cierre en fase acute sin despedida', () => {
+      expect(
+        shouldSuppressSessionClosure({
+          sessionPhase: 'acute',
+          sessionRetention: { likelyFarewell: false },
+        }),
+      ).toBe(true);
+    });
+
+    it('permite cierre en despedida explícita aunque la fase sea acute', () => {
+      expect(
+        shouldSuppressSessionClosure({
+          sessionPhase: 'acute',
+          sessionRetention: { likelyFarewell: true },
+        }),
+      ).toBe(false);
     });
   });
 
