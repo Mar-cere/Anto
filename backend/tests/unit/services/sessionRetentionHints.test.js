@@ -9,6 +9,7 @@ import {
   evaluateConversationClosureReadiness,
   shouldOrientSessionClosure,
   stripPrematureSessionClosurePhrases,
+  stripRepeatedSessionClosurePhrase,
   responseHasSessionClosureBridge,
   isGreetingOrCheckInMessage,
   getSessionClosureBridge,
@@ -50,6 +51,12 @@ describe('sessionRetentionHints', () => {
       expect(isOngoingEmotionalShareMessage('I feel good today')).toBe(true);
       expect(isOngoingEmotionalShareMessage('Hoy me siento mejor')).toBe(true);
       expect(isOngoingEmotionalShareMessage('chau gracias')).toBe(false);
+    });
+
+    it('detecta recuperación tras crisis de pánico', () => {
+      expect(isOngoingEmotionalShareMessage('Todo, tuve crisis de panico')).toBe(true);
+      expect(isOngoingEmotionalShareMessage('Acaba de pasar')).toBe(true);
+      expect(isOngoingEmotionalShareMessage('Ya va bajando')).toBe(true);
     });
   });
 
@@ -499,6 +506,33 @@ describe('sessionRetentionHints', () => {
         crisis: { riskLevel: 'LOW' }
       });
       expect(responseHasSessionClosureBridge(out)).toBe(true);
+    });
+
+    it('elimina cierre repetido en crisis de pánico (hilo corto)', () => {
+      const raw =
+        'Bien, eso ya indica que está cediendo; si quieres, dime qué fue lo que más te ayudó a que bajara. Si te sirve, podemos cerrar aquí este tramo y retomarlo cuando quieras desde este punto.';
+      const out = stripPrematureSessionClosurePhrases(raw, {
+        userMessage: 'Ya va bajando',
+        crisis: { riskLevel: 'LOW' },
+        sessionRetention: { userTurnCount: 5 },
+        sessionPhase: 'default',
+        conversationHistory: [
+          { role: 'assistant', content: 'Entonces tu cuerpo sigue en alerta. Si te sirve, podemos cerrar aquí este tramo y retomarlo cuando quieras desde este punto.' },
+        ],
+      });
+      expect(responseHasSessionClosureBridge(out)).toBe(false);
+      expect(out).toMatch(/cediendo/i);
+    });
+  });
+
+  describe('stripRepeatedSessionClosurePhrase', () => {
+    it('quita puente si el turno anterior del asistente ya lo usó', () => {
+      const raw =
+        'Bien, eso ya indica que está cediendo. Si te sirve, podemos cerrar aquí este tramo y retomarlo cuando quieras desde este punto.';
+      const out = stripRepeatedSessionClosurePhrase(raw, [
+        'Entonces tu cuerpo sigue en alerta. Si te sirve, podemos cerrar aquí este tramo y retomarlo cuando quieras desde este punto.',
+      ]);
+      expect(responseHasSessionClosureBridge(out)).toBe(false);
     });
   });
 
