@@ -27,6 +27,9 @@ export const PREMATURE_CLOSURE_PHRASE_RES = [
 const GREETING_CHECKIN_RES =
   /^(?:hi|hello|hey|hola|buenos?\s+d[ií]as|buenas?\s+tardes|buenas?\s+noches|good\s+(?:morning|afternoon|evening|night)|howdy|yo|what(?:'s| is) up)[\s!.?]*$/iu;
 
+const ONGOING_CRISIS_RECOVERY_RES =
+  /\b(crisis de p[aá]nico|ataque de p[aá]nico|p[aá]nico|acaba de pasar|ya va (?:bajando|mejor)|respiraci[oó]n|mejorando|cediendo)\b/i;
+
 /**
  * Saludo o check-in breve: no debe orientar cierre de tramo.
  * @param {string} [content]
@@ -142,18 +145,54 @@ export function evaluateConversationClosureReadiness({
  * @param {object} [contexto]
  * @returns {string}
  */
-export function stripPrematureSessionClosurePhrases(respuesta, contexto = {}) {
-  if (!respuesta || typeof respuesta !== 'string') return respuesta;
-  if (shouldOrientSessionClosure(contexto)) return respuesta;
-
-  let out = respuesta;
-  for (const re of PREMATURE_CLOSURE_PHRASE_RES) {
-    out = out.replace(re, '');
-  }
-  return out
+function normalizeClosureStrippedText(respuesta) {
+  return String(respuesta || '')
     .replace(/\s{2,}/g, ' ')
     .replace(/\s+([.!?])/g, '$1')
     .trim();
+}
+
+function removeSessionClosurePhrases(respuesta) {
+  let out = String(respuesta || '');
+  for (const re of PREMATURE_CLOSURE_PHRASE_RES) {
+    out = out.replace(re, '');
+  }
+  return normalizeClosureStrippedText(out);
+}
+
+/**
+ * Evita repetir el mismo puente de cierre en turnos consecutivos del asistente.
+ * @param {string} respuesta
+ * @param {string[]} [recentAssistantMessages]
+ * @returns {string}
+ */
+export function stripRepeatedSessionClosurePhrase(respuesta, recentAssistantMessages = []) {
+  if (!respuesta || typeof respuesta !== 'string') return respuesta;
+  const recent = (Array.isArray(recentAssistantMessages) ? recentAssistantMessages : [])
+    .map((t) => String(t || '').trim())
+    .filter(Boolean)
+    .slice(-2);
+  if (!recent.some((t) => responseHasSessionClosureBridge(t))) return respuesta;
+  if (!responseHasSessionClosureBridge(respuesta)) return respuesta;
+  return removeSessionClosurePhrases(respuesta);
+}
+
+export function stripPrematureSessionClosurePhrases(respuesta, contexto = {}) {
+  if (!respuesta || typeof respuesta !== 'string') return respuesta;
+  let out = respuesta;
+  if (!shouldOrientSessionClosure(contexto)) {
+    out = removeSessionClosurePhrases(out);
+  }
+  const recentAssistantMessages =
+    contexto?.recentAssistantMessages ||
+    (Array.isArray(contexto?.conversationHistory)
+      ? contexto.conversationHistory
+          .filter((m) => m?.role === 'assistant')
+          .map((m) => String(m.content || '').trim())
+          .filter(Boolean)
+          .slice(-2)
+      : []);
+  return stripRepeatedSessionClosurePhrase(out, recentAssistantMessages);
 }
 
 /**
@@ -248,6 +287,7 @@ export function isOngoingEmotionalShareMessage(content) {
   if (!t || t.length > 140) return false;
   if (isGreetingOrCheckInMessage(t)) return false;
   if (detectLikelyFarewell(t)) return false;
+  if (ONGOING_CRISIS_RECOVERY_RES.test(t)) return true;
   return /\b(feel(?:ing)?|i'?m|me siento|estoy|hoy|today|good|well|okay|ok|bad|anxious|sad|happy|bien|mal|cansad|triste|ansios|contento|agotad|grateful|stressed|worried|calm|better|worse)\b/i.test(
     t
   );
