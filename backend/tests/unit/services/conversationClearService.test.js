@@ -47,9 +47,19 @@ describe('conversationClearService', () => {
     expect(mockDeleteMany).not.toHaveBeenCalled();
   });
 
-  it('limpia rollingSummary y eventos del grafo', async () => {
+  it('limpia rollingSummary, estado de crisis/TCC y eventos del grafo', async () => {
     await resetConversationSessionState('507f1f77bcf86cd799439011');
-    expect(mockUpdateOne).toHaveBeenCalled();
+    expect(mockUpdateOne).toHaveBeenCalledWith(
+      { _id: expect.anything() },
+      expect.objectContaining({
+        $unset: expect.objectContaining({
+          rollingSummary: '',
+          tccLiteState: '',
+          crisisProtocolState: '',
+          softCrisisCheckInState: '',
+        }),
+      }),
+    );
     expect(mockDeleteMany).toHaveBeenCalledWith(
       expect.objectContaining({ conversationId: expect.anything() }),
     );

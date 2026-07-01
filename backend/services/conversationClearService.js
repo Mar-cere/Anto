@@ -34,6 +34,10 @@ export async function resetConversationSessionState(conversationId, { full = tru
         rollingSummary: '',
         sessionIntention: '',
         lastMessage: '',
+        tccLiteState: '',
+        sessionEmotionalState: '',
+        crisisProtocolState: '',
+        softCrisisCheckInState: '',
       },
     },
   );
