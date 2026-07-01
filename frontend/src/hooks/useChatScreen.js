@@ -72,7 +72,7 @@ import {
   peekPendingTccLiteResume,
   setPendingTccLiteResume,
 } from '../utils/chatTccLiteResume';
-import { countNonemptyUserTurns } from '../utils/chatTurnUtils';
+import { countNonemptyUserTurns, hasNonemptyUserTurns } from '../utils/chatTurnUtils';
 import {
   buildAssistantMetadataFromTurnPayload,
   resolveTccLiteAtHandoffFromPayload,
@@ -157,6 +157,8 @@ export function useChatScreen() {
   const crisisResourcesDismissedRef = useRef(false);
   const softCrisisCheckInDismissedRef = useRef(false);
   const pendingTccLiteResumeRef = useRef(null);
+  /** Invalida respuestas en vuelo de loadTccContinuity (p. ej. tras borrar el chat). */
+  const tccContinuityRequestIdRef = useRef(0);
   const handleSendRef = useRef(null);
   /** Evita doble POST / doble respuesta del asistente si el usuario envía dos veces muy rápido. */
   const sendRequestInFlightRef = useRef(false);
@@ -1428,8 +1430,11 @@ export function useChatScreen() {
     const texts = textsRef.current;
     try {
       cancelActiveStream();
+      tccContinuityRequestIdRef.current += 1;
       historyPageRef.current = 1;
       setHistoryHasMore(false);
+      setMessages([]);
+      messagesRef.current = [];
       await clearOfflinePendingMessage();
       setOfflinePendingMessage(null);
       dismissedContinuityIdsRef.current = [];
@@ -1453,6 +1458,12 @@ export function useChatScreen() {
     } catch (err) {
       console.error('Error al borrar la conversación:', err);
       setError(texts.ERROR_CLEAR);
+      tccContinuityRequestIdRef.current += 1;
+      try {
+        await initializeConversation();
+      } catch (_) {
+        /* mejor esfuerzo: rehidratar desde servidor */
+      }
     }
   }, [initializeConversation, cancelActiveStream]);
 
@@ -1719,6 +1730,8 @@ export function useChatScreen() {
   }, [navigation]);
 
   const loadTccContinuity = useCallback(async () => {
+    const requestId = tccContinuityRequestIdRef.current + 1;
+    tccContinuityRequestIdRef.current = requestId;
     try {
       if (dismissedContinuityIdsRef.current.length === 0) {
         const stored = await loadDismissedContinuityIds();
@@ -1729,17 +1742,20 @@ export function useChatScreen() {
       }
       const convId = await AsyncStorage.getItem(CHAT_SESSION_KEYS.CONVERSATION_ID);
       const items = await chatService.fetchTccContinuity(convId);
+      if (requestId !== tccContinuityRequestIdRef.current) return;
+      if (!hasNonemptyUserTurns(messagesRef.current)) {
+        setTccContinuityItems([]);
+        return;
+      }
       setTccContinuityItems(Array.isArray(items) ? items : []);
     } catch {
+      if (requestId !== tccContinuityRequestIdRef.current) return;
       setTccContinuityItems([]);
     }
   }, []);
 
   const hasUserMessagesInChat = useMemo(
-    () =>
-      (messages || []).some(
-        (m) => m?.role === MESSAGE_ROLES.USER && m?.type !== 'quickReplies',
-      ),
+    () => hasNonemptyUserTurns(messages),
     [messages],
   );
 
@@ -1839,13 +1855,15 @@ export function useChatScreen() {
           setTrialInfo(null);
         } else {
           loadTrialInfo();
-          loadTccContinuity();
         }
         const p = await getOfflinePendingMessage();
         setOfflinePendingMessage(p);
         await initializeConversation();
         if (captureVisitBaselineRef.current) {
           captureUserTurnBaseline(messagesRef.current);
+        }
+        if (!(await chatService.isGuestChatMode())) {
+          await loadTccContinuity();
         }
       })();
       const handoffTimer = setTimeout(() => {

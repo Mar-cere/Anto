@@ -179,8 +179,8 @@ export async function loadAbcContinuityFocus(userId, language = 'es') {
 }
 
 async function conversationHasUserMessages(conversationId, userId) {
-  if (!conversationId || !userId) return true;
-  if (!mongoose.Types.ObjectId.isValid(String(conversationId))) return true;
+  if (!conversationId || !userId) return false;
+  if (!mongoose.Types.ObjectId.isValid(String(conversationId))) return false;
   const cid = new mongoose.Types.ObjectId(String(conversationId));
   const uid = new mongoose.Types.ObjectId(String(userId));
   return Boolean(
@@ -188,6 +188,7 @@ async function conversationHasUserMessages(conversationId, userId) {
       conversationId: cid,
       userId: uid,
       role: 'user',
+      content: { $regex: /\S/ },
     }),
   );
 }

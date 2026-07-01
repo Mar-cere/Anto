@@ -39,4 +39,14 @@ describe('TCC continuity transport parity', () => {
     expect(hookSrc).toMatch(/tccContinuityDismissStorage|persistDismissedContinuityId/);
     expect(stripSrc).toMatch(/onDismiss/);
   });
+
+  it('blindaje tras borrar: invalidación en vuelo y carga tras init', () => {
+    expect(hookSrc).toMatch(/tccContinuityRequestIdRef/);
+    expect(hookSrc).toMatch(/await initializeConversation\(\)/);
+    expect(hookSrc).toMatch(/await loadTccContinuity\(\)/);
+    expect(hookSrc).toMatch(/hasNonemptyUserTurns/);
+    expect(hookSrc).toMatch(/setMessages\(\[\]\)/);
+    expect(serviceSrc).toMatch(/conversationHasUserMessages/);
+    expect(serviceSrc).toMatch(/\$regex: \/\\S\//);
+  });
 });

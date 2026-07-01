@@ -71,5 +71,32 @@ describe('Chat TCC continuity routes guards', () => {
     expect(response.body.data.items).toHaveLength(1);
     expect(response.body.data.items[0].screen).toBe('BehavioralActivation');
     expect(recordContinuityItemsShown).toHaveBeenCalled();
+    expect(buildChatTccContinuity).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId,
+        conversationId,
+      }),
+    );
+  });
+
+  it('GET tcc-continuity sin conversationId delega vacío al servicio', async () => {
+    buildChatTccContinuity.mockResolvedValue({
+      items: [],
+      generatedAt: '2026-06-17T12:00:00.000Z',
+    });
+
+    const response = await request(app)
+      .get('/api/chat/tcc-continuity')
+      .set('X-App-Language', 'es');
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.items).toEqual([]);
+    expect(buildChatTccContinuity).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId,
+        conversationId: null,
+      }),
+    );
+    expect(recordContinuityItemsShown).not.toHaveBeenCalled();
   });
 });
