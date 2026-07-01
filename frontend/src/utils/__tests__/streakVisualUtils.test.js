@@ -31,4 +31,13 @@ describe('streakVisualUtils', () => {
       expect(visual.sparkleColor).toMatch(/^#/);
     });
   });
+
+  it('intensifica colores al avanzar dentro del nivel', () => {
+    const early = getStreakVisual(3, { primary: '#1E83D3' }, 'dark');
+    const late = getStreakVisual(6, { primary: '#1E83D3' }, 'dark');
+    expect(early.tier).toBe('warm');
+    expect(late.tier).toBe('warm');
+    expect(late.progress).toBeGreaterThan(early.progress);
+    expect(late.heroGradientBottom).not.toBe(early.heroGradientBottom);
+  });
 });
