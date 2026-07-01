@@ -1009,12 +1009,12 @@ export function useChatScreen() {
         },
         onDone(payload) {
           applyCrisisResourcesFromTurn(payload);
-          // Asegurar que no se pierdan chunks pendientes.
+          // Descartar chunks en bruto del stream: el servidor envía la versión saneada en onDone.
+          pendingChunk = '';
           if (flushTimer) {
             clearTimeout(flushTimer);
             flushTimer = null;
           }
-          flushPendingChunk();
 
           if (payload.guest) {
             setGuestQuota({

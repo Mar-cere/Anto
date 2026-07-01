@@ -96,4 +96,46 @@ describe('openaiService.generarRespuestaStream (#168 / #59)', () => {
     expect(events[0].context?.degraded).toBe(true);
     expect(events[0].context?.degradedReason).toBe('openai_breaker_open');
   });
+
+  it('post-procesa y elimina cierre de tramo en recuperación de pánico', async () => {
+    const closureTail =
+      ' Si te sirve, podemos cerrar aquí este tramo y retomarlo cuando quieras desde este punto.';
+    async function* fakeStream() {
+      yield {
+        choices: [
+          {
+            delta: {
+              content: `Bien, eso ya indica que está cediendo.${closureTail}`,
+            },
+            finish_reason: 'stop',
+          },
+        ],
+        usage: { completion_tokens: 20, prompt_tokens: 8, total_tokens: 28 },
+      };
+    }
+
+    jest.spyOn(openaiService, 'createChatCompletionResilient').mockResolvedValue(fakeStream());
+
+    const events = [];
+    for await (const ev of openaiService.generarRespuestaStream(
+      { ...baseMessage, content: 'Ya va bajando' },
+      {
+        ...baseContext,
+        sessionPhase: 'default',
+        crisis: { riskLevel: 'LOW' },
+        sessionRetention: { userTurnCount: 5, likelyFarewell: false },
+        safetyHistory: [
+          { role: 'user', content: 'Todo, tuve crisis de panico' },
+          { role: 'assistant', content: 'Eso puede dejarte muy sacudido.' },
+          { role: 'user', content: 'Acaba de pasar' },
+        ],
+      },
+    )) {
+      events.push(ev);
+    }
+
+    const done = events.find((e) => e.type === 'done');
+    expect(done?.content || '').toMatch(/cediendo/i);
+    expect(done?.content || '').not.toMatch(/cerrar aqu[ií] este tramo/i);
+  });
 });
