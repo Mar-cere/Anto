@@ -4,6 +4,8 @@
  * Initial baseline to start multilingual support.
  */
 
+import { ONBOARDING_FOCUS_LABELS } from '../onboardingFocusLabels.js';
+
 export const HOME = {
   BRAND_NAME: 'Anto',
   BADGE: '1 day free · no card required',
@@ -158,13 +160,7 @@ export const ONBOARDING = {
     'Too many attempts. Please wait a moment and try again.',
   QUESTIONS_CONNECTION_ERROR:
     'No connection. Please check your internet and try again.',
-  QUESTIONS_FOCUS_OPTIONS: [
-    'Emotional support',
-    'Anxiety or stress',
-    'Sleep and rest',
-    'Habits and routines',
-    'Focus and organization',
-  ],
+  QUESTIONS_FOCUS_OPTIONS: ONBOARDING_FOCUS_LABELS.en,
 };
 
 export const DASH = {
