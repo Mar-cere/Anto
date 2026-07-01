@@ -4,6 +4,7 @@
 import { jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
+import { getAvailableTopics } from '../../../constants/psychoeducation.js';
 
 await jest.unstable_mockModule('../../../middleware/auth.js', () => ({
   authenticateToken: (req, _res, next) => {
@@ -70,7 +71,8 @@ describe('Therapeutic Techniques Routes i18n', () => {
     expect(Array.isArray(response.body.data)).toBe(true);
     expect(response.body.data.some((m) => m.topic === 'anxiety')).toBe(true);
     expect(response.body.topics).toContain('anxiety');
-    expect(response.body.data.length).toBe(9);
+    expect(response.body.data.length).toBe(getAvailableTopics('en').length);
+    expect(response.body.topics.sort()).toEqual(getAvailableTopics('en').sort());
     response.body.data.forEach((item) => {
       expect(item.topic).toBeTruthy();
       expect(item.title).toBeTruthy();
@@ -91,17 +93,7 @@ describe('Therapeutic Techniques Routes i18n', () => {
     expect(response.body.data.title).not.toBe(response.body.data.whatIs);
   });
 
-  const allTopics = [
-    'anxiety',
-    'depression',
-    'stress',
-    'anger',
-    'sleep',
-    'emotionRegulation',
-    'trauma',
-    'grief',
-    'burnout',
-  ];
+  const allTopics = getAvailableTopics('es');
 
   it('GET /micro-guides lista guías en español', async () => {
     const response = await request(app)
