@@ -54,8 +54,8 @@
 Scripts de blindaje en backend y frontend:
 
 ```bash
-cd backend && npm run validate:release-1.5.0
-cd frontend && npm run validate:release-1.5.0
+cd backend && npm run validate:release-1.5.2
+cd frontend && npm run validate:release-1.5.2
 ```
 
 ---
@@ -403,7 +403,7 @@ Anto/
 ### Estado General: **Listo para Producción** ✅
 
 **Última actualización del README:** 2026-06-23  
-**Versión publicada (app):** 1.5.1 (ver `frontend/app.json`, iOS build 40, Android versionCode 26)
+**Versión publicada (app):** 1.5.2 (ver `frontend/app.json`, iOS build 41, Android versionCode 27)
 
 ### Completado ✅
 

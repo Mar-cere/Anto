@@ -1,6 +1,6 @@
 {
   "name": "proyectoanto-backend",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Backend API para AntoApp - Aplicación de asistente AI terapéutico",
   "type": "module",
   "main": "server.js",
@@ -59,6 +59,7 @@
     "test:release-1.4.6": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit/services/healthProbeService.test.js tests/unit/routes/healthRoutes.test.js tests/unit/utils/sentry.test.js --coverage=false --forceExit",
     "test:release-1.5.0": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit/services/personalPatternRagService.test.js tests/unit/services/crisisHardStopService.test.js tests/unit/services/topicFreeVectorSearchService.test.js tests/unit/services/chatTurnEnhancementsService.test.js tests/unit/services/healthProbeService.test.js tests/unit/services/chatProductActionProposalService.test.js tests/unit/services/conversationProductProposalCapService.test.js tests/unit/constants/app.test.js --coverage=false --forceExit",
     "validate:release-1.5.0": "npm run smoke:release-1.5.0 && npm run test:release-1.5.0",
+    "validate:release-1.5.2": "npm run smoke:release-1.5.0 && npm run test:release-1.5.0",
     "test:ba-week-plan": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit/services/behavioralActivationWeekPlanService.test.js tests/unit/services/behavioralActivationProductBridgeService.test.js tests/unit/services/activeTccProtocolsContextService.test.js tests/unit/routes/behavioralActivationRoutes.i18n.test.js --coverage=false",
     "test:tcc-continuity": "NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit/services/chatTccContinuityService.test.js tests/unit/utils/tccContinuityCopy.test.js tests/unit/utils/tccContinuityTransportParity.test.js tests/unit/routes/chatTccContinuityRoutes.guards.test.js --coverage=false --forceExit",
     "test:tcc-continuity-suite": "npm run test:tcc-continuity && npm run smoke:tcc-continuity",

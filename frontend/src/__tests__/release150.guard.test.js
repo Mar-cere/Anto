@@ -16,20 +16,20 @@ function readSrc(relativePath) {
 }
 
 describe('release 1.5.x guard', () => {
-  it('frontend alinea versión 1.5.1 y builds de tienda mínimos', () => {
+  it('frontend alinea versión 1.5.2 y builds de tienda mínimos', () => {
     const app = JSON.parse(readRepo('frontend/app.json'));
     const pkg = JSON.parse(readRepo('frontend/package.json'));
-    expect(app.expo.version).toBe('1.5.1');
-    expect(pkg.version).toBe('1.5.1');
-    expect(Number.parseInt(app.expo.ios.buildNumber, 10)).toBeGreaterThanOrEqual(40);
-    expect(app.expo.android.versionCode).toBeGreaterThanOrEqual(26);
+    expect(app.expo.version).toBe('1.5.2');
+    expect(pkg.version).toBe('1.5.2');
+    expect(Number.parseInt(app.expo.ios.buildNumber, 10)).toBeGreaterThanOrEqual(41);
+    expect(app.expo.android.versionCode).toBeGreaterThanOrEqual(27);
   });
 
-  it('backend expone APP_VERSION 1.5.1 en health y package', () => {
+  it('backend expone APP_VERSION 1.5.2 en health y package', () => {
     const server = readRepo('backend/server.js');
     const pkg = JSON.parse(readRepo('backend/package.json'));
-    expect(server).toMatch(/const APP_VERSION = '1\.5\.1'/);
-    expect(pkg.version).toBe('1.5.1');
+    expect(server).toMatch(/const APP_VERSION = '1\.5\.2'/);
+    expect(pkg.version).toBe('1.5.2');
   });
 
   it('DashScreen no bloquea UI por WebSocket y throttlea refresh al volver', () => {
