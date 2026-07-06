@@ -8,6 +8,7 @@ const mockCreate = jest.fn();
 const mockCountDocuments = jest.fn();
 const mockFindOneAndUpdate = jest.fn();
 const mockConversationFindOne = jest.fn();
+const mockConversationFindById = jest.fn();
 
 await jest.unstable_mockModule('../../../models/SessionCommitment.js', () => ({
   __esModule: true,
@@ -21,7 +22,11 @@ await jest.unstable_mockModule('../../../models/SessionCommitment.js', () => ({
 
 await jest.unstable_mockModule('../../../models/Conversation.js', () => ({
   __esModule: true,
-  default: { findOne: mockConversationFindOne },
+  default: {
+    findOne: mockConversationFindOne,
+    findById: mockConversationFindById,
+    updateOne: jest.fn().mockResolvedValue({}),
+  },
 }));
 
 const {
@@ -29,6 +34,9 @@ const {
   listSessionCommitments,
   updateSessionCommitment,
   sanitizeCommitmentSourceMeta,
+  sanitizeCommitmentPatch,
+  isFollowUpDue,
+  pickPendingCommitmentForChatFollowUp,
 } = await import('../../../services/sessionCommitmentService.js');
 
 const userId = '507f1f77bcf86cd799439011';
@@ -160,5 +168,112 @@ describe('sessionCommitmentService (#202)', () => {
 
     expect(result.commitment?.status).toBe('completed');
     expect(mockFindOneAndUpdate).toHaveBeenCalled();
+  });
+
+  it('sanitizeCommitmentPatch ignora campos internos', () => {
+    expect(
+      sanitizeCommitmentPatch({
+        label: 'Paso pequeño',
+        recordFollowUpShown: true,
+        extra: 'x',
+      }),
+    ).toEqual({ label: 'Paso pequeño' });
+  });
+
+  it('isFollowUpDue respeta ventana de 48 h y tope de intentos', () => {
+    const now = Date.now();
+    expect(
+      isFollowUpDue(
+        {
+          status: 'active',
+          followUpAnswer: 'pending',
+          followUpAt: new Date(now - 1000),
+          createdAt: new Date(now - 50 * 60 * 60 * 1000),
+          followUpAttempts: 0,
+        },
+        now,
+      ),
+    ).toBe(true);
+    expect(
+      isFollowUpDue(
+        {
+          status: 'active',
+          followUpAnswer: 'pending',
+          followUpAt: new Date(now + 60 * 60 * 1000),
+          createdAt: new Date(now - 50 * 60 * 60 * 1000),
+          followUpAttempts: 0,
+        },
+        now,
+      ),
+    ).toBe(false);
+    expect(
+      isFollowUpDue(
+        {
+          status: 'active',
+          followUpAnswer: 'pending',
+          followUpAt: new Date(now - 1000),
+          createdAt: new Date(now - 50 * 60 * 60 * 1000),
+          followUpAttempts: 2,
+        },
+        now,
+      ),
+    ).toBe(false);
+  });
+
+  it('pickPendingCommitmentForChatFollowUp respeta cooldown de conversación', async () => {
+    const old = new Date(Date.now() - 50 * 60 * 60 * 1000);
+    mockFind.mockReturnValue({
+      sort: () => ({
+        limit: () => ({
+          lean: async () => [
+            {
+              _id: '507f1f77bcf86cd799439012',
+              label: 'Caminar',
+              status: 'active',
+              followUpAnswer: 'pending',
+              followUpAt: new Date(Date.now() - 1000),
+              createdAt: old,
+              followUpAttempts: 0,
+            },
+          ],
+        }),
+      }),
+    });
+    mockConversationFindOne.mockReturnValue({
+      select: () => ({
+        lean: async () => ({
+          commitmentFollowUpShownAt: new Date(),
+        }),
+      }),
+    });
+
+    const picked = await pickPendingCommitmentForChatFollowUp(userId, {
+      conversationId: '507f1f77bcf86cd799439099',
+    });
+    expect(picked).toBeNull();
+  });
+
+  it('renegociación reinicia followUpAttempts', async () => {
+    const updated = {
+      _id: '507f1f77bcf86cd799439012',
+      label: 'Paso más pequeño',
+      status: 'active',
+      followUpAnswer: 'pending',
+      followUpAttempts: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    mockFindOneAndUpdate.mockReturnValue({
+      lean: async () => updated,
+    });
+
+    await updateSessionCommitment(userId, '507f1f77bcf86cd799439012', {
+      label: 'Paso más pequeño',
+    });
+
+    const updateArg = mockFindOneAndUpdate.mock.calls[0][1];
+    expect(updateArg.$set.label).toBe('Paso más pequeño');
+    expect(updateArg.$set.followUpAttempts).toBe(0);
+    expect(updateArg.$set.lastFollowUpAt).toBeNull();
   });
 });

@@ -1,10 +1,7 @@
 /**
  * Snippet de prompt para follow-up suave de compromisos en chat (#202).
  */
-import {
-  pickPendingCommitmentForChatFollowUp,
-  markCommitmentFollowUpShown,
-} from './sessionCommitmentService.js';
+import { pickPendingCommitmentForChatFollowUp } from './sessionCommitmentService.js';
 import { shouldOfferCommitmentProposals } from './chatCommitmentProposalService.js';
 
 const SNIPPETS = {
@@ -44,13 +41,7 @@ export async function buildSessionCommitmentPromptSnippet(opts = {}) {
 
   const lang = String(language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es';
   const label = String(pending.label).slice(0, 120);
-  const snippet = SNIPPETS[lang](label);
-
-  if (pending.id) {
-    await markCommitmentFollowUpShown(userId, pending.id, conversationId).catch(() => {});
-  }
-
-  return { snippet, commitmentId: pending.id };
+  return { snippet: SNIPPETS[lang](label), commitmentId: pending.id };
 }
 
 export default { buildSessionCommitmentPromptSnippet };

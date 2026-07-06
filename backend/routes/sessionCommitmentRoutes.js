@@ -8,9 +8,11 @@ import { validateObjectId } from '../middleware/validation.js';
 import { createRateLimiter } from '../utils/createRateLimiter.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { sessionCommitmentApiCopy } from '../utils/sessionCommitmentApiCopy.js';
+import metricsService from '../services/metricsService.js';
 import {
   createSessionCommitment,
   listSessionCommitments,
+  sanitizeCommitmentPatch,
   updateSessionCommitment,
 } from '../services/sessionCommitmentService.js';
 
@@ -36,6 +38,30 @@ const writeLimiter = createRateLimiter({
 
 router.use(authenticateToken);
 
+function recordCommitmentFollowUpAnswer(userId, patch) {
+  if (patch.followUpAnswer) {
+    metricsService
+      .recordMetric(
+        'commitment_follow_up_answered',
+        { answer: patch.followUpAnswer },
+        String(userId),
+      )
+      .catch(() => {});
+  } else if (patch.status === 'skipped') {
+    metricsService
+      .recordMetric(
+        'commitment_follow_up_answered',
+        { answer: 'skipped' },
+        String(userId),
+      )
+      .catch(() => {});
+  } else if (patch.label != null) {
+    metricsService
+      .recordMetric('commitment_renegotiated', {}, String(userId))
+      .catch(() => {});
+  }
+}
+
 router.get('/', listLimiter, async (req, res) => {
   try {
     const status = String(req.query.status || 'active').trim();
@@ -57,6 +83,13 @@ router.post('/', writeLimiter, async (req, res) => {
         result.error === 'tooManyActive' ? 409 : 400;
       return res.status(status).json({ success: false, message: msg, code: result.error });
     }
+    metricsService
+      .recordMetric(
+        'commitment_created',
+        { source: result.commitment?.source || 'unknown' },
+        String(req.user._id),
+      )
+      .catch(() => {});
     return res.status(201).json({ success: true, commitment: result.commitment });
   } catch (error) {
     console.error('[sessionCommitmentRoutes] POST /:', error);
@@ -66,12 +99,14 @@ router.post('/', writeLimiter, async (req, res) => {
 
 router.patch('/:id', validateObjectId, writeLimiter, async (req, res) => {
   try {
-    const result = await updateSessionCommitment(req.user._id, req.params.id, req.body || {});
+    const patch = sanitizeCommitmentPatch(req.body);
+    const result = await updateSessionCommitment(req.user._id, req.params.id, patch);
     if (result.error) {
       const msg = req.apiCopy[result.error] || req.apiCopy.updateError;
       const status = result.error === 'notFound' ? 404 : 400;
       return res.status(status).json({ success: false, message: msg, code: result.error });
     }
+    recordCommitmentFollowUpAnswer(req.user._id, patch);
     return res.json({ success: true, commitment: result.commitment });
   } catch (error) {
     console.error('[sessionCommitmentRoutes] PATCH /:id:', error);

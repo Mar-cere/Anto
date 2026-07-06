@@ -1874,6 +1874,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   contextualAnalysis,
                   userContent: content,
                   riskLevel,
+                  commitmentFollowUpCommitmentId: turnEnhancements.commitmentFollowUpCommitmentId,
                 }).catch(() => {});
 
                 scheduleRollingSummaryRefresh({
@@ -1993,20 +1994,22 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 }
 
                 const proposedCommitments =
-                  await chatCommitmentProposalService.resolveProposedCommitmentsForTurn(
-                    {
-                      userId: req.user._id,
-                      riskLevel,
-                      isCrisis,
-                      userContent: content,
-                      assistantContent: response.content,
-                      sessionIntention: conversation?.sessionIntention,
-                      conversationId,
-                      assistantMessageId: assistantMessage._id,
-                      interventionId: suggestionPlan.primaryPsychoeducationId || null,
-                    },
-                    { transport: 'sse' },
-                  );
+                  proposedProductActions.length > 0
+                    ? []
+                    : await chatCommitmentProposalService.resolveProposedCommitmentsForTurn(
+                        {
+                          userId: req.user._id,
+                          riskLevel,
+                          isCrisis,
+                          userContent: content,
+                          assistantContent: response.content,
+                          sessionIntention: conversation?.sessionIntention,
+                          conversationId,
+                          assistantMessageId: assistantMessage._id,
+                          interventionId: suggestionPlan.primaryPsychoeducationId || null,
+                        },
+                        { transport: 'sse' },
+                      );
 
                 res.write('data: ' + JSON.stringify(attachTurnCrisisResources({
                   done: true,
@@ -2237,6 +2240,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           contextualAnalysis,
           userContent: content,
           riskLevel,
+          commitmentFollowUpCommitmentId: turnEnhancements.commitmentFollowUpCommitmentId,
         }).catch(() => {});
 
         scheduleRollingSummaryRefresh({
@@ -2468,20 +2472,22 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         }
 
         const proposedCommitments =
-          await chatCommitmentProposalService.resolveProposedCommitmentsForTurn(
-            {
-              userId: req.user._id,
-              riskLevel,
-              isCrisis,
-              userContent: content,
-              assistantContent: response.content,
-              sessionIntention: conversation?.sessionIntention,
-              conversationId,
-              assistantMessageId: assistantMessage._id,
-              interventionId: suggestionPlan.primaryPsychoeducationId || null,
-            },
-            { transport: 'http' },
-          );
+          proposedProductActions.length > 0
+            ? []
+            : await chatCommitmentProposalService.resolveProposedCommitmentsForTurn(
+                {
+                  userId: req.user._id,
+                  riskLevel,
+                  isCrisis,
+                  userContent: content,
+                  assistantContent: response.content,
+                  sessionIntention: conversation?.sessionIntention,
+                  conversationId,
+                  assistantMessageId: assistantMessage._id,
+                  interventionId: suggestionPlan.primaryPsychoeducationId || null,
+                },
+                { transport: 'http' },
+              );
         
         // Registrar métrica de tiempo de respuesta de forma asíncrona
         metricsService.recordMetric('response_generation', {

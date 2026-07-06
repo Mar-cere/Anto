@@ -23,6 +23,8 @@ import {
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import Message from '../models/Message.js';
 import { buildSessionCommitmentPromptSnippet } from './sessionCommitmentPromptSnippet.js';
+import { markCommitmentFollowUpShown } from './sessionCommitmentService.js';
+import metricsService from './metricsService.js';
 
 const CHAT_CONTEXT_SNIPPET_TIMEOUT_MS = 2500;
 
@@ -180,6 +182,7 @@ export async function planChatTurnEnhancements({
   }
 
   let sessionCommitmentPromptSnippet = null;
+  let commitmentFollowUpCommitmentId = null;
   if (!blockCrisisExtras) {
     try {
       const commitmentCtx = await buildSessionCommitmentPromptSnippet({
@@ -190,8 +193,10 @@ export async function planChatTurnEnhancements({
         isCrisis,
       });
       sessionCommitmentPromptSnippet = commitmentCtx.snippet;
+      commitmentFollowUpCommitmentId = commitmentCtx.commitmentId;
     } catch {
       sessionCommitmentPromptSnippet = null;
+      commitmentFollowUpCommitmentId = null;
     }
   }
 
@@ -204,6 +209,7 @@ export async function planChatTurnEnhancements({
     recentAbcPromptSnippet,
     personalPatternRagPromptSnippet,
     sessionCommitmentPromptSnippet,
+    commitmentFollowUpCommitmentId,
   };
 }
 
@@ -245,11 +251,30 @@ export async function finalizeChatTurnEnhancements({
   contextualAnalysis,
   userContent,
   riskLevel,
+  commitmentFollowUpCommitmentId = null,
 }) {
   await saveTccLiteStateToConversation(conversationId, tccLitePlan).catch(() => {});
 
   const formatted = suggestionPlan?.formatted;
   const crisisBlocked = isLlmCrisisTherapeuticExtrasBlocked({ riskLevel, userMessage: userContent });
+  if (
+    !crisisBlocked &&
+    commitmentFollowUpCommitmentId &&
+    userId &&
+    conversationId
+  ) {
+    await markCommitmentFollowUpShown(userId, commitmentFollowUpCommitmentId, conversationId).catch(
+      () => {},
+    );
+    metricsService
+      .recordMetric(
+        'commitment_follow_up_shown',
+        { surface: 'chat' },
+        String(userId),
+        { conversationId: String(conversationId) },
+      )
+      .catch(() => {});
+  }
   if (
     !crisisBlocked &&
     Array.isArray(formatted) &&

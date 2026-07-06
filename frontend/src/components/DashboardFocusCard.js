@@ -595,14 +595,17 @@ const DashboardFocusCard = ({
             {commitments.map((item) => {
               const commitmentTitle = buildCommitmentDisplayTitle(item, DASH);
               const followUpPrompt = buildCommitmentFollowUpPrompt(item, DASH);
+              const maxFollowUpAttempts = 2;
               const showFollowUp =
                 item.followUpAnswer === 'pending' &&
-                (item.followUpDue === true || item.followUpDue == null);
+                item.followUpDue === true &&
+                Number(item.followUpAttempts || 0) < maxFollowUpAttempts;
               const showRenegotiate =
-                renegotiateId === item.id ||
-                (item.followUpAnswer === 'no' &&
-                  item.status === 'active' &&
-                  Number(item.followUpAttempts || 0) < 2);
+                item.status === 'active' &&
+                (renegotiateId === item.id ||
+                  (item.followUpAnswer === 'no' &&
+                    Number(item.followUpAttempts || 0) >= 1 &&
+                    Number(item.followUpAttempts || 0) < maxFollowUpAttempts));
               return (
               <View key={item.id} style={styles.commitmentRow}>
                 <Text style={styles.commitmentLabel} numberOfLines={2}>

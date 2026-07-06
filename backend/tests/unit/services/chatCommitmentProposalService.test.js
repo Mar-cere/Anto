@@ -66,6 +66,20 @@ describe('chatCommitmentProposalService (#202)', () => {
     expect(items[0].id).toBeTruthy();
   });
 
+  it('no propone texto genérico sin señales de acuerdo', async () => {
+    const items = await buildProposedCommitments({
+      userId,
+      riskLevel: 'LOW',
+      isCrisis: false,
+      userContent: 'necesito ordenar mi semana porque tengo muchas cosas encima',
+      assistantContent: 'Podemos ir paso a paso.',
+      sessionIntention: 'organize',
+      conversationId,
+      assistantMessageId,
+    });
+    expect(items).toEqual([]);
+  });
+
   it('no propone si ya hay 3 compromisos activos visibles', async () => {
     mockCountDocuments.mockResolvedValue(3);
     const items = await buildProposedCommitments({

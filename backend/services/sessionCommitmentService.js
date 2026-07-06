@@ -165,6 +165,8 @@ export async function updateSessionCommitment(userId, commitmentId, patch = {}) 
     if (error) return { error };
     update.label = label;
     update.followUpAnswer = 'pending';
+    update.followUpAttempts = 0;
+    update.lastFollowUpAt = null;
   }
 
   if (patch.status) {
@@ -239,7 +241,10 @@ export async function pickPendingCommitmentForChatFollowUp(userId, { conversatio
   if (!due.length) return null;
 
   if (conversationId && mongoose.Types.ObjectId.isValid(String(conversationId))) {
-    const conv = await Conversation.findById(conversationId)
+    const conv = await Conversation.findOne({
+      _id: new mongoose.Types.ObjectId(String(conversationId)),
+      userId: uid,
+    })
       .select('commitmentFollowUpShownAt')
       .lean();
     const shownAt = conv?.commitmentFollowUpShownAt
@@ -261,6 +266,15 @@ export async function markCommitmentFollowUpShown(userId, commitmentId, conversa
       { $set: { commitmentFollowUpShownAt: new Date() } },
     );
   }
+}
+
+export function sanitizeCommitmentPatch(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const patch = {};
+  if (raw.label != null) patch.label = raw.label;
+  if (raw.status != null) patch.status = raw.status;
+  if (raw.followUpAnswer != null) patch.followUpAnswer = raw.followUpAnswer;
+  return patch;
 }
 
 export { FOCUS_VISIBLE_LIMIT, DEFAULT_FOLLOW_UP_HOURS, MAX_FOLLOW_UP_ATTEMPTS, isFollowUpDue };

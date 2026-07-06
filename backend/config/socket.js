@@ -734,6 +734,7 @@ export const setupSocketIO = (server) => {
           contextualAnalysis,
           userContent: messageText,
           riskLevel,
+          commitmentFollowUpCommitmentId: turnEnhancements.commitmentFollowUpCommitmentId,
         }).catch(() => {});
         
         // 8. Actualizar última conversación
@@ -816,20 +817,22 @@ export const setupSocketIO = (server) => {
         }
 
         const proposedCommitments =
-          await chatCommitmentProposalService.resolveProposedCommitmentsForTurn(
-            {
-              userId,
-              riskLevel,
-              isCrisis,
-              userContent: messageText,
-              assistantContent: response.content,
-              sessionIntention: conversation?.sessionIntention,
-              conversationId: conversation._id,
-              assistantMessageId: assistantMessage._id,
-              interventionId: turnEnhancements.suggestionPlan?.primaryPsychoeducationId || null,
-            },
-            { transport: 'socket' },
-          );
+          proposedProductActions.length > 0
+            ? []
+            : await chatCommitmentProposalService.resolveProposedCommitmentsForTurn(
+                {
+                  userId,
+                  riskLevel,
+                  isCrisis,
+                  userContent: messageText,
+                  assistantContent: response.content,
+                  sessionIntention: conversation?.sessionIntention,
+                  conversationId: conversation._id,
+                  assistantMessageId: assistantMessage._id,
+                  interventionId: turnEnhancements.suggestionPlan?.primaryPsychoeducationId || null,
+                },
+                { transport: 'socket' },
+              );
         
         const clientTurn = buildClientTurnPayload({
           tccLitePlan: turnEnhancements.tccLitePlan,

@@ -61,7 +61,7 @@ function deriveCommitmentLabel(userContent, assistantContent) {
 
   const candidates = [userLine, assistantLine].filter(Boolean);
   for (const line of candidates) {
-    if (COMMITMENT_AGREEMENT_CUES.test(line) || line.length >= 12) {
+    if (COMMITMENT_AGREEMENT_CUES.test(line)) {
       const label = clampLabel(line);
       if (label) return label;
     }
