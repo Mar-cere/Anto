@@ -205,6 +205,17 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       color: t.FOCUS_META,
       marginBottom: 8,
     },
+    commitmentRenegotiateInput: {
+      fontSize: 13,
+      color: colors.text,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.FOCUS_ACCENT_BORDER,
+      borderRadius: 10,
+      paddingVertical: 8,
+      paddingHorizontal: 10,
+      marginBottom: 8,
+      backgroundColor: colors.chromeInputDisabled ?? colors.surface,
+    },
     commitmentButtons: {
       flexDirection: 'row',
       flexWrap: 'wrap',

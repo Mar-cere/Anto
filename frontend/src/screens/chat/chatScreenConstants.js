@@ -134,6 +134,11 @@ export const TEXTS = {
   PRODUCT_PROPOSAL_WHEN_PLACEHOLDER: 'Fecha/hora opcional (YYYY-MM-DD HH:mm)',
   PRODUCT_PROPOSAL_CREATE: 'Crear',
   PRODUCT_PROPOSAL_DISMISS: 'No aplica',
+  CHAT_COMMITMENT_PROPOSE_TITLE: '¿Lo dejamos para retomar?',
+  CHAT_COMMITMENT_SAVE: 'Guardar',
+  CHAT_COMMITMENT_EDIT_SAVE: 'Editar y guardar',
+  CHAT_COMMITMENT_DISMISS: 'Ahora no',
+  CHAT_COMMITMENT_LABEL_PLACEHOLDER: 'Texto del acuerdo',
   PRODUCT_STATUS_COOLDOWN_WITH_MIN:
     'Sugerencias en pausa unos minutos ({minutes} min) para no saturar la conversación.',
   PRODUCT_STATUS_COOLDOWN:

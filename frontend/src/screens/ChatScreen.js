@@ -317,6 +317,8 @@ const ChatScreen = () => {
     retryOfflinePending,
     handleProductProposalPress,
     handleProductProposalReject,
+    handleCommitmentProposalPress,
+    handleCommitmentProposalReject,
     showSessionIntentionPrompt,
     sessionIntentionSubmitting,
     selectSessionIntention,
@@ -500,6 +502,8 @@ const ChatScreen = () => {
         onSuggestionDismiss={handleSuggestionDismiss}
         onProductProposalPress={handleProductProposalPress}
         onProductProposalReject={handleProductProposalReject}
+        onCommitmentProposalPress={handleCommitmentProposalPress}
+        onCommitmentProposalReject={handleCommitmentProposalReject}
         onEmergencyContactAlertConfirm={handleEmergencyContactAlertConfirm}
         onEmergencyContactAlertReject={handleEmergencyContactAlertReject}
         emergencyContactAlertConfirmingId={emergencyContactAlertConfirmingId}
@@ -511,6 +515,8 @@ const ChatScreen = () => {
       handleSuggestionDismiss,
       handleProductProposalPress,
       handleProductProposalReject,
+      handleCommitmentProposalPress,
+      handleCommitmentProposalReject,
       handleEmergencyContactAlertConfirm,
       handleEmergencyContactAlertReject,
       emergencyContactAlertConfirmingId,

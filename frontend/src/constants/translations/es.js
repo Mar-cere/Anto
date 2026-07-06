@@ -214,6 +214,10 @@ export const DASH = {
   FOCUS_COMMITMENT_YES: 'Sí',
   FOCUS_COMMITMENT_PARTIAL: 'En parte',
   FOCUS_COMMITMENT_NO: 'Aún no',
+  FOCUS_COMMITMENT_OMIT: 'Omitir por ahora',
+  FOCUS_COMMITMENT_RENEGOTIATE: 'Ajustar compromiso',
+  FOCUS_COMMITMENT_RENEGOTIATE_HINT: '¿Lo hacemos más pequeño o lo dejamos para otro momento?',
+  FOCUS_COMMITMENT_RENEGOTIATE_SAVE: 'Guardar ajuste',
   FOCUS_REMINDER_SECTION: 'Lo principal ahora',
   FOCUS_REMINDER_TAP_CHAT: 'Toca para ir al chat',
   FOCUS_PROTOCOL: 'Próximo paso (seguimiento)',
@@ -1144,6 +1148,11 @@ export const CHAT = {
   PRODUCT_PROPOSAL_WHEN_PLACEHOLDER: 'Fecha/hora opcional (YYYY-MM-DD HH:mm)',
   PRODUCT_PROPOSAL_CREATE: 'Crear',
   PRODUCT_PROPOSAL_DISMISS: 'No aplica',
+  CHAT_COMMITMENT_PROPOSE_TITLE: '¿Lo dejamos para retomar?',
+  CHAT_COMMITMENT_SAVE: 'Guardar',
+  CHAT_COMMITMENT_EDIT_SAVE: 'Editar y guardar',
+  CHAT_COMMITMENT_DISMISS: 'Ahora no',
+  CHAT_COMMITMENT_LABEL_PLACEHOLDER: 'Texto del acuerdo',
   PRODUCT_STATUS_COOLDOWN_WITH_MIN:
     'Sugerencias en pausa unos minutos ({minutes} min) para no saturar la conversación.',
   PRODUCT_STATUS_COOLDOWN:

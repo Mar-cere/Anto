@@ -90,6 +90,16 @@ const conversationSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
+  /** Última propuesta de compromiso (#202) sin pedido explícito en este hilo */
+  lastCommitmentProposalAt: {
+    type: Date,
+    default: null,
+  },
+  /** Último follow-up de compromiso mostrado en chat (evita repetir en 24 h) */
+  commitmentFollowUpShownAt: {
+    type: Date,
+    default: null,
+  },
   /** Marco TCC lite in-chat (#201): paso activo en el hilo */
   tccLiteState: {
     type: {

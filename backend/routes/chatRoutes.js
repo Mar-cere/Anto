@@ -44,6 +44,7 @@ import chatProductActionLlmService from '../services/chatProductActionLlmService
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
 import clinicalScalesService from '../services/clinicalScalesService.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
+import chatCommitmentProposalService from '../services/chatCommitmentProposalService.js';
 import { scheduleRollingSummaryRefresh } from '../services/conversationRollingSummaryService.js';
 import { buildCrisisRoutingMetricData } from '../utils/crisisRoutingMetricPayload.js';
 import crisisBackgroundActionsService from '../services/crisisBackgroundActionsService.js';
@@ -1479,6 +1480,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           language: appLanguageForChat,
           resumeTccLite:
             resumeTccLite && typeof resumeTccLite === 'object' ? resumeTccLite : null,
+          isCrisis,
         });
         const { suggestionPlan, tccLitePlan } = turnEnhancements;
         const blockCrisisExtras = isLlmCrisisTherapeuticExtrasBlocked({
@@ -1536,6 +1538,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           digitalPhenotypePromptSnippet: promptSnippets.digitalPhenotypePromptSnippet,
           recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
           personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
+          sessionCommitmentPromptSnippet: promptSnippets.sessionCommitmentPromptSnippet,
           crisisMetricTransport: req.query.stream === 'true' ? 'sse' : 'http',
         };
 
@@ -1631,6 +1634,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                       suggestions: clientTurnHardStop.suggestions,
                       suggestionsPersonalized: clientTurnHardStop.suggestionsPersonalized,
                       proposedProductActions: [],
+                      proposedCommitments: [],
                       productActionStatus: { paused: false, reason: null, askFirst: false },
                       clinicalScale: null,
                       cognitiveDistortions: null,
@@ -1659,6 +1663,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 suggestions: clientTurnHardStop.suggestions,
                 suggestionsPersonalized: clientTurnHardStop.suggestionsPersonalized,
                 proposedProductActions: [],
+                proposedCommitments: [],
                 productActionStatus: { paused: false, reason: null, askFirst: false },
                 clinicalScale: null,
                 cognitiveDistortions: null,
@@ -1987,6 +1992,22 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     );
                 }
 
+                const proposedCommitments =
+                  await chatCommitmentProposalService.resolveProposedCommitmentsForTurn(
+                    {
+                      userId: req.user._id,
+                      riskLevel,
+                      isCrisis,
+                      userContent: content,
+                      assistantContent: response.content,
+                      sessionIntention: conversation?.sessionIntention,
+                      conversationId,
+                      assistantMessageId: assistantMessage._id,
+                      interventionId: suggestionPlan.primaryPsychoeducationId || null,
+                    },
+                    { transport: 'sse' },
+                  );
+
                 res.write('data: ' + JSON.stringify(attachTurnCrisisResources({
                   done: true,
                   messageId: assistantMessage._id?.toString(),
@@ -1995,6 +2016,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   suggestions: clientTurn.suggestions,
                   suggestionsPersonalized: clientTurn.suggestionsPersonalized,
                   proposedProductActions,
+                  proposedCommitments,
                   productActionStatus,
                   clinicalScale: scaleSuggestion ? { ...scaleSuggestion, suggestion: clinicalScalesService.generateScaleSuggestion(scaleSuggestion.scale, scaleSuggestion.reason), automaticResult: null } : null,
                   cognitiveDistortions: cognitiveDistortions?.length > 0 ? { detected: cognitiveDistortions, primary: primaryDistortion, intervention: distortionIntervention } : null,
@@ -2444,6 +2466,22 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               console.warn('[ChatRoutes] product proposal cap inc (non-stream):', incErr?.message || incErr)
             );
         }
+
+        const proposedCommitments =
+          await chatCommitmentProposalService.resolveProposedCommitmentsForTurn(
+            {
+              userId: req.user._id,
+              riskLevel,
+              isCrisis,
+              userContent: content,
+              assistantContent: response.content,
+              sessionIntention: conversation?.sessionIntention,
+              conversationId,
+              assistantMessageId: assistantMessage._id,
+              interventionId: suggestionPlan.primaryPsychoeducationId || null,
+            },
+            { transport: 'http' },
+          );
         
         // Registrar métrica de tiempo de respuesta de forma asíncrona
         metricsService.recordMetric('response_generation', {
@@ -2463,6 +2501,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           suggestions: clientTurn.suggestions,
           suggestionsPersonalized: clientTurn.suggestionsPersonalized,
           proposedProductActions,
+          proposedCommitments,
           productActionStatus,
           // NUEVO: Información de escalas clínicas y distorsiones cognitivas
           clinicalScale: scaleSuggestion ? {

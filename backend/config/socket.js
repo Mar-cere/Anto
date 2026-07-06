@@ -27,6 +27,7 @@ import { ENGAGEMENT_SIGNAL } from '../utils/engagementStreakWeights.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
+import chatCommitmentProposalService from '../services/chatCommitmentProposalService.js';
 import metricsService from '../services/metricsService.js';
 import { buildCrisisRoutingMetricData } from '../utils/crisisRoutingMetricPayload.js';
 import crisisBackgroundActionsService from '../services/crisisBackgroundActionsService.js';
@@ -435,6 +436,7 @@ export const setupSocketIO = (server) => {
             data?.resumeTccLite && typeof data.resumeTccLite === 'object'
               ? data.resumeTccLite
               : null,
+          isCrisis,
         });
         const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements, {
           blockCrisisExtras: isLlmCrisisTherapeuticExtrasBlocked({
@@ -527,6 +529,7 @@ export const setupSocketIO = (server) => {
             timestamp: new Date(),
             crisisHardStop: true,
             proposedProductActions: [],
+            proposedCommitments: [],
             productActionStatus: { paused: false, reason: null, askFirst: false },
             suggestions: clientTurn.suggestions,
             suggestionsPersonalized: clientTurn.suggestionsPersonalized,
@@ -586,6 +589,7 @@ export const setupSocketIO = (server) => {
           digitalPhenotypePromptSnippet: promptSnippets.digitalPhenotypePromptSnippet,
           recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
           personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
+          sessionCommitmentPromptSnippet: promptSnippets.sessionCommitmentPromptSnippet,
           crisis: buildOpenaiCrisisContext({
             riskLevel,
             isCrisis,
@@ -810,6 +814,22 @@ export const setupSocketIO = (server) => {
               console.warn('[SocketIO] product proposal cap inc:', incErr?.message || incErr)
             );
         }
+
+        const proposedCommitments =
+          await chatCommitmentProposalService.resolveProposedCommitmentsForTurn(
+            {
+              userId,
+              riskLevel,
+              isCrisis,
+              userContent: messageText,
+              assistantContent: response.content,
+              sessionIntention: conversation?.sessionIntention,
+              conversationId: conversation._id,
+              assistantMessageId: assistantMessage._id,
+              interventionId: turnEnhancements.suggestionPlan?.primaryPsychoeducationId || null,
+            },
+            { transport: 'socket' },
+          );
         
         const clientTurn = buildClientTurnPayload({
           tccLitePlan: turnEnhancements.tccLitePlan,
@@ -846,6 +866,7 @@ export const setupSocketIO = (server) => {
           conversationId: conversation._id.toString(),
           timestamp: new Date(),
           proposedProductActions,
+          proposedCommitments,
           productActionStatus,
           suggestions: clientTurn.suggestions,
           suggestionsPersonalized: clientTurn.suggestionsPersonalized,

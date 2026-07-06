@@ -323,6 +323,8 @@ function ChatMessageItem({
   onSuggestionDismiss,
   onProductProposalPress,
   onProductProposalReject,
+  onCommitmentProposalPress,
+  onCommitmentProposalReject,
   onEmergencyContactAlertConfirm,
   onEmergencyContactAlertReject,
   emergencyContactAlertConfirmingId = null,
@@ -420,6 +422,55 @@ function ChatMessageItem({
             </TouchableOpacity>
           </View>
         </View>
+      </View>
+    );
+  }
+
+  if (message.type === 'commitment_proposals' && message.proposedCommitments?.length) {
+    return (
+      <View style={styles.suggestionsContainer}>
+        <Text style={styles.suggestionsTitle}>{TEXTS.CHAT_COMMITMENT_PROPOSE_TITLE}</Text>
+        {message.proposedCommitments.map((proposal) => (
+          <View key={proposal.id} style={styles.productProposalCard}>
+            {proposal.rationaleShort ? (
+              <Text style={styles.productProposalWhy}>{proposal.rationaleShort}</Text>
+            ) : null}
+            <TextInput
+              style={styles.proposalEditInput}
+              placeholder={TEXTS.CHAT_COMMITMENT_LABEL_PLACEHOLDER}
+              placeholderTextColor={colors.textMuted ?? colors.textSecondary}
+              value={proposalDraftEdits[proposal.id]?.label ?? proposal.label ?? ''}
+              onChangeText={(value) =>
+                setProposalDraftEdits((prev) => ({
+                  ...prev,
+                  [proposal.id]: { ...(prev[proposal.id] || {}), label: value },
+                }))
+              }
+            />
+            <View style={styles.proposalActionsRow}>
+              <TouchableOpacity
+                style={styles.proposalPrimaryBtn}
+                onPress={() => {
+                  const edit = proposalDraftEdits[proposal.id] || {};
+                  onCommitmentProposalPress?.(
+                    { ...proposal, label: edit.label || proposal.label },
+                    message,
+                  );
+                }}
+                accessibilityRole="button"
+              >
+                <Text style={styles.proposalPrimaryBtnText}>{TEXTS.CHAT_COMMITMENT_SAVE}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.proposalGhostBtn}
+                onPress={() => onCommitmentProposalReject?.(message)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.proposalGhostBtnText}>{TEXTS.CHAT_COMMITMENT_DISMISS}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
       </View>
     );
   }

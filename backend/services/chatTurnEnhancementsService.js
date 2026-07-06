@@ -22,6 +22,7 @@ import {
 } from '../utils/chatObservationalContext.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import Message from '../models/Message.js';
+import { buildSessionCommitmentPromptSnippet } from './sessionCommitmentPromptSnippet.js';
 
 const CHAT_CONTEXT_SNIPPET_TIMEOUT_MS = 2500;
 
@@ -53,6 +54,7 @@ export async function planChatTurnEnhancements({
   sessionIntention,
   language = 'es',
   resumeTccLite = null,
+  isCrisis = false,
 }) {
   const lang = normalizeApiLanguage(language);
   const blockObservationalSnippets = isChatObservationalContextBlocked(riskLevel);
@@ -177,6 +179,22 @@ export async function planChatTurnEnhancements({
     }
   }
 
+  let sessionCommitmentPromptSnippet = null;
+  if (!blockCrisisExtras) {
+    try {
+      const commitmentCtx = await buildSessionCommitmentPromptSnippet({
+        userId,
+        conversationId,
+        language: lang,
+        riskLevel,
+        isCrisis,
+      });
+      sessionCommitmentPromptSnippet = commitmentCtx.snippet;
+    } catch {
+      sessionCommitmentPromptSnippet = null;
+    }
+  }
+
   return {
     suggestionPlan,
     tccLitePlan,
@@ -185,6 +203,7 @@ export async function planChatTurnEnhancements({
     digitalPhenotypePromptSnippet,
     recentAbcPromptSnippet,
     personalPatternRagPromptSnippet,
+    sessionCommitmentPromptSnippet,
   };
 }
 
@@ -203,6 +222,9 @@ export function buildOpenaiEnhancementSnippets(enhancements, options = {}) {
     digitalPhenotypePromptSnippet: enhancements.digitalPhenotypePromptSnippet || null,
     recentAbcPromptSnippet: enhancements.recentAbcPromptSnippet || null,
     personalPatternRagPromptSnippet: enhancements.personalPatternRagPromptSnippet || null,
+    sessionCommitmentPromptSnippet: blockTherapeutic
+      ? null
+      : enhancements.sessionCommitmentPromptSnippet || null,
   };
 }
 
