@@ -47,9 +47,16 @@ await jest.unstable_mockModule('../../../services/sessionCommitmentPromptSnippet
   buildSessionCommitmentPromptSnippet: jest.fn().mockResolvedValue({ snippet: null, commitmentId: null }),
 }));
 
+await jest.unstable_mockModule('../../../services/commitmentFollowUpService.js', () => ({
+  buildCommitmentFollowUpPlan: jest.fn().mockResolvedValue(null),
+  detectCommitmentFollowUpAnswer: jest.fn().mockResolvedValue(undefined),
+  markCommitmentFollowUpAsked: jest.fn().mockResolvedValue(undefined),
+}));
+
 const mockMarkCommitmentFollowUpShown = jest.fn().mockResolvedValue(undefined);
 await jest.unstable_mockModule('../../../services/sessionCommitmentService.js', () => ({
   markCommitmentFollowUpShown: mockMarkCommitmentFollowUpShown,
+  updateSessionCommitment: jest.fn().mockResolvedValue({}),
 }));
 
 const mockRecordMetric = jest.fn().mockResolvedValue(undefined);

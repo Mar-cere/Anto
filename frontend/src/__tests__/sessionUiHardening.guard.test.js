@@ -53,7 +53,7 @@ describe('sessionUi hardening guard', () => {
     it('DashboardFocusCard oculta BA duplicado y contextualiza follow-up', () => {
       const src = readSrc('components/DashboardFocusCard.js');
       expect(src).toMatch(/filterDashboardCommitments/);
-      expect(src).toMatch(/formatCommitmentFollowUpPrompt/);
+      expect(src).toMatch(/buildCommitmentFollowUpPrompt/);
       expect(src).toMatch(/visibleCommitments/);
     });
   });

@@ -75,6 +75,6 @@ describe('dashboardFocusCard guard', () => {
     const src = readSrc('components/DashboardFocusCard.js');
     expect(src).toMatch(/filterDashboardCommitments/);
     expect(src).toMatch(/visibleCommitments/);
-    expect(src).toMatch(/formatCommitmentFollowUpPrompt/);
+    expect(src).toMatch(/buildCommitmentFollowUpPrompt/);
   });
 });
