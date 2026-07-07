@@ -39,6 +39,7 @@ import {
   buildOpenaiEnhancementSnippets,
   buildAssistantMetadataWithEnhancements,
   finalizeChatTurnEnhancements,
+  persistProposedCommitmentsOnMessage,
   buildClientTurnPayload,
 } from '../services/chatTurnEnhancementsService.js';
 import {
@@ -833,6 +834,11 @@ export const setupSocketIO = (server) => {
                 },
                 { transport: 'socket' },
               );
+
+        await persistProposedCommitmentsOnMessage(
+          assistantMessage._id,
+          proposedCommitments,
+        ).catch(() => {});
         
         const clientTurn = buildClientTurnPayload({
           tccLitePlan: turnEnhancements.tccLitePlan,

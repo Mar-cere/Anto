@@ -40,6 +40,7 @@ const DEFAULT_NOTIFICATION_PREFERENCES = {
     taskReminders: true,
     motivationalMessages: true,
     betweenSessionsMessages: true,
+    commitmentWeeklyReminders: false,
   },
 };
 

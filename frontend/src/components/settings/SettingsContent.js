@@ -184,6 +184,7 @@ export default function SettingsContent({
         taskReminders: base?.types?.taskReminders !== false,
         motivationalMessages: base?.types?.motivationalMessages !== false,
         betweenSessionsMessages: base?.types?.betweenSessionsMessages !== false,
+        commitmentWeeklyReminders: base?.types?.commitmentWeeklyReminders === true,
       },
     };
   }, [user]);
@@ -1060,6 +1061,26 @@ export default function SettingsContent({
                     disabled: !allNotificationsEnabled || prefsControlsLocked,
                     checked:
                       notificationPreferences.types.betweenSessionsMessages,
+                  }}
+                />
+              </View>
+              <View style={styles.subItem}>
+                <Text style={styles.subItemText}>
+                  {TEXTS.NOTIFICATIONS_TYPE_COMMITMENT_WEEKLY}
+                </Text>
+                <Switch
+                  value={notificationPreferences.types.commitmentWeeklyReminders}
+                  onValueChange={(v) => setType('commitmentWeeklyReminders', v)}
+                  disabled={!allNotificationsEnabled || prefsControlsLocked}
+                  thumbColor={
+                    notificationPreferences.types.commitmentWeeklyReminders
+                      ? COLORS.PRIMARY
+                      : COLORS.SWITCH_DISABLED
+                  }
+                  accessibilityLabel={TEXTS.NOTIFICATIONS_TYPE_COMMITMENT_WEEKLY}
+                  accessibilityState={{
+                    disabled: !allNotificationsEnabled || prefsControlsLocked,
+                    checked: notificationPreferences.types.commitmentWeeklyReminders,
                   }}
                 />
               </View>

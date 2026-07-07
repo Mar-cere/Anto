@@ -316,6 +316,21 @@ export async function finalizeChatTurnEnhancements({
   }
 }
 
+/**
+ * Persiste propuestas de compromiso mostradas para reconstruir tarjetas al reabrir el hilo.
+ * @param {unknown} assistantMessageId
+ * @param {unknown[]} proposedCommitments
+ */
+export async function persistProposedCommitmentsOnMessage(assistantMessageId, proposedCommitments) {
+  if (!assistantMessageId || !Array.isArray(proposedCommitments) || proposedCommitments.length === 0) {
+    return;
+  }
+  await Message.updateOne(
+    { _id: assistantMessageId },
+    { $set: { 'metadata.proposedCommitments': proposedCommitments } },
+  ).catch(() => {});
+}
+
 export function buildClientTurnPayload({
   tccLitePlan,
   suggestionPlan,
@@ -344,5 +359,6 @@ export default {
   buildOpenaiEnhancementSnippets,
   buildAssistantMetadataWithEnhancements,
   finalizeChatTurnEnhancements,
+  persistProposedCommitmentsOnMessage,
   buildClientTurnPayload,
 };

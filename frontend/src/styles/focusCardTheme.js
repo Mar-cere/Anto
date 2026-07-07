@@ -197,6 +197,12 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       lineHeight: 20,
       fontWeight: '500',
     },
+    commitmentLinkHint: {
+      marginTop: 4,
+      fontSize: 11.5,
+      color: t.FOCUS_META,
+      fontWeight: '500',
+    },
     commitmentActions: {
       marginTop: 8,
     },

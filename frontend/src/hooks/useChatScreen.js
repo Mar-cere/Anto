@@ -51,6 +51,7 @@ import { isValidMongoObjectId24 } from '../utils/mongoId';
 import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
 import { sanitizeProposedCommitments } from '../utils/sanitizeProposedCommitments';
 import { createSessionCommitment } from '../services/sessionCommitmentsService';
+import { postCommitmentTelemetry } from '../utils/commitmentTelemetry';
 import {
   parseGuestHandoffPendingFromStorage,
   parseUserIdFromUserDataStorage,
@@ -799,6 +800,7 @@ export function useChatScreen() {
   );
 
   const handleCommitmentProposalReject = useCallback(async (proposalsMessage) => {
+    void postCommitmentTelemetry({ event: 'create_dismissed', surface: 'chat' });
     setMessages((prev) =>
       prev.filter((m) => {
         const id = m.id || m._id;

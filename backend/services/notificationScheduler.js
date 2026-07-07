@@ -19,6 +19,7 @@ import NotificationEngagement from '../models/NotificationEngagement.js';
 import Task from '../models/Task.js';
 import User from '../models/User.js';
 import pushNotificationService from './pushNotificationService.js';
+import { processWeeklyCommitmentNudges } from './sessionCommitmentWeeklyNudgeService.js';
 import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
 import { routinePushSlotLabel } from '../utils/focusDashboardCopy.js';
 
@@ -57,6 +58,16 @@ class NotificationScheduler {
     const bsCoolRaw = parseInt(process.env.NOTIFICATION_BETWEEN_SESSIONS_COOLDOWN_HOURS || '48', 10);
     this.BETWEEN_SESSIONS_COOLDOWN_HOURS =
       Number.isFinite(bsCoolRaw) && bsCoolRaw >= 6 ? Math.min(168, bsCoolRaw) : 48;
+
+    const weeklyCommitmentHoursRaw = parseInt(
+      process.env.NOTIFICATION_COMMITMENT_WEEKLY_POLL_HOURS || '6',
+      10,
+    );
+    const weeklyCommitmentHours =
+      Number.isFinite(weeklyCommitmentHoursRaw) && weeklyCommitmentHoursRaw >= 1
+        ? Math.min(24, weeklyCommitmentHoursRaw)
+        : 6;
+    this.COMMITMENT_WEEKLY_CHECK_INTERVAL_MS = weeklyCommitmentHours * 60 * 60 * 1000;
 
     const T = pushNotificationService.NOTIFICATION_TYPES;
     /** Tipos de rutina/bienestar que comparten el espaciado mínimo entre sí (no incluye tareas). */
@@ -484,9 +495,12 @@ class NotificationScheduler {
       }
       const opts = { ...options, language };
 
-      const canSend = await this._canSendMoreToday(userId);
-      if (!canSend) {
-        return false;
+      const T = pushNotificationService.NOTIFICATION_TYPES;
+      if (notificationType !== T.COMMITMENT_WEEKLY_NUDGE) {
+        const canSend = await this._canSendMoreToday(userId);
+        if (!canSend) {
+          return false;
+        }
       }
 
       const spacingOk = await this._routineSpacingAllows(userId, notificationType);
@@ -515,6 +529,9 @@ class NotificationScheduler {
           break;
         case pushNotificationService.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE:
           result = await pushNotificationService.sendBetweenSessionsNudge(pushToken, opts);
+          break;
+        case pushNotificationService.NOTIFICATION_TYPES.COMMITMENT_WEEKLY_NUDGE:
+          result = await pushNotificationService.sendCommitmentWeeklyNudge(pushToken, opts);
           break;
         case pushNotificationService.NOTIFICATION_TYPES.HYDRATION_REMINDER:
           result = await pushNotificationService.sendHydrationReminder(pushToken, opts);
@@ -707,6 +724,7 @@ class NotificationScheduler {
       [pushNotificationService.NOTIFICATION_TYPES.MORNING_MOTIVATION]: 'motivationalMessages',
       [pushNotificationService.NOTIFICATION_TYPES.EVENING_REFLECTION]: 'motivationalMessages',
       [pushNotificationService.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE]: 'betweenSessionsMessages',
+      [pushNotificationService.NOTIFICATION_TYPES.COMMITMENT_WEEKLY_NUDGE]: 'commitmentWeeklyReminders',
       [pushNotificationService.NOTIFICATION_TYPES.PROGRESS_POSITIVE]: 'motivationalMessages',
       [pushNotificationService.NOTIFICATION_TYPES.HABIT_REMINDER]: 'habitReminders',
       [pushNotificationService.NOTIFICATION_TYPES.TASK_REMINDER]: 'taskReminders',
@@ -822,6 +840,16 @@ class NotificationScheduler {
 
     this.checkInactiveUsers().catch(err => {
       console.error('[NotificationScheduler] Error en verificación inicial de inactivos:', err);
+    });
+
+    setInterval(() => {
+      processWeeklyCommitmentNudges().catch(err => {
+        console.error('[NotificationScheduler] Error en recordatorios semanales de compromisos:', err);
+      });
+    }, this.COMMITMENT_WEEKLY_CHECK_INTERVAL_MS);
+
+    processWeeklyCommitmentNudges().catch(err => {
+      console.error('[NotificationScheduler] Error en verificación inicial de compromisos semanales:', err);
     });
 
     console.log('[NotificationScheduler] ✅ Servicio de programación de notificaciones iniciado');

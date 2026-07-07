@@ -768,6 +768,18 @@ export const PUSH_NOTIFICATION_COPY_EN = {
       "If today you are without energy, it is also worth going back to just saying \"here I am.\""
     ]
   },
+  commitmentWeeklyNudge: {
+    titles: [
+      "🫶 To revisit when it suits you",
+      "🫶 Something we left for later",
+      "🫶 No rush"
+    ],
+    bodies: [
+      "You have something we left to revisit when it feels right.",
+      "If it helps, check focus for what we left open from conversation.",
+      "A gentle reminder: there is an active agreement to pick up when you want."
+    ]
+  },
   breathing: {
     titles: [
       "🌬️ Time to breathe",

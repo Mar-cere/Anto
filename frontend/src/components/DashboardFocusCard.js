@@ -14,6 +14,7 @@ import { getLastSessionDisplayText } from '../utils/dashboardHomeUtils';
 import {
   buildCommitmentDisplayTitle,
   buildCommitmentFollowUpPrompt,
+  buildCommitmentLinkHint,
 } from '../utils/commitmentDisplayCopy';
 import {
   buildFocusTaskOpenPayload,
@@ -595,6 +596,7 @@ const DashboardFocusCard = ({
             {commitments.map((item) => {
               const commitmentTitle = buildCommitmentDisplayTitle(item, DASH);
               const followUpPrompt = buildCommitmentFollowUpPrompt(item, DASH);
+              const linkHint = buildCommitmentLinkHint(item, DASH);
               const maxFollowUpAttempts = 2;
               const showFollowUp =
                 item.followUpAnswer === 'pending' &&
@@ -611,6 +613,9 @@ const DashboardFocusCard = ({
                 <Text style={styles.commitmentLabel} numberOfLines={2}>
                   {commitmentTitle}
                 </Text>
+                {linkHint ? (
+                  <Text style={styles.commitmentLinkHint}>{linkHint}</Text>
+                ) : null}
                 {showFollowUp ? (
                   <View style={styles.commitmentActions}>
                     <Text style={styles.commitmentPrompt}>{followUpPrompt}</Text>

@@ -37,6 +37,10 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { isAuthError } from '../utils/apiErrorHandler';
 import { isValidClientRequestId } from '../utils/clientRequestId';
 import { postProductActionTelemetry } from '../utils/productActionTelemetry';
+import CommitmentBridgeOffer from '../components/CommitmentBridgeOffer';
+import { createSessionCommitment } from '../services/sessionCommitmentsService';
+import { buildCommitmentLabelFromProductTitle } from '../utils/commitmentBridgeUtils';
+import { postCommitmentTelemetry } from '../utils/commitmentTelemetry';
 import BrandGradientFab from '../components/tasksAndHabits/BrandGradientFab';
 import TasksSummaryStrip from '../components/tasksAndHabits/TasksSummaryStrip';
 import { buildTaskSections } from '../utils/taskDateSections';
@@ -221,6 +225,8 @@ const TaskScreen = ({
     [translated]
   );
   const [internalSearchQuery, setInternalSearchQuery] = useState('');
+  const [commitmentBridgeOffer, setCommitmentBridgeOffer] = useState(null);
+  const [commitmentBridgeSaving, setCommitmentBridgeSaving] = useState(false);
   const searchQuery = embedded && externalSearchQuery !== undefined
     ? externalSearchQuery
     : internalSearchQuery;
@@ -550,6 +556,7 @@ const TaskScreen = ({
 
   // Crear tarea o recordatorio
   const handleSubmit = async (data) => {
+    const chatOriginSnapshot = pendingChatOriginRef.current;
     try {
       const requestData = {
         title: data.title,
@@ -610,6 +617,18 @@ const TaskScreen = ({
         message: creationMessage,
         type: 'success',
       });
+
+      if (chatOriginSnapshot && createdTask?._id && !response.idempotentReplay) {
+        const label = buildCommitmentLabelFromProductTitle(data.title);
+        if (label) {
+          setCommitmentBridgeOffer({
+            label,
+            taskId: String(createdTask._id),
+            interventionId: chatOriginSnapshot?.interventionId || null,
+            conversationId: chatOriginSnapshot?.conversationId || null,
+          });
+        }
+      }
     } catch (error) {
       console.error('Error creando tarea:', error);
       if (pendingChatOriginRef.current || pendingClientRequestIdRef.current) {
@@ -628,6 +647,34 @@ const TaskScreen = ({
       });
     }
   };
+
+  const handleCommitmentBridgeSave = useCallback(async () => {
+    if (!commitmentBridgeOffer?.label || commitmentBridgeSaving) return;
+    setCommitmentBridgeSaving(true);
+    try {
+      const sourceMeta = { taskId: commitmentBridgeOffer.taskId };
+      if (commitmentBridgeOffer.interventionId) {
+        sourceMeta.interventionId = commitmentBridgeOffer.interventionId;
+      }
+      await createSessionCommitment({
+        label: commitmentBridgeOffer.label,
+        conversationId: commitmentBridgeOffer.conversationId || undefined,
+        source: 'chat_action',
+        sourceMeta,
+      });
+      showToast({ message: unifiedTexts.COMMITMENT_BRIDGE_SAVED, type: 'success' });
+      setCommitmentBridgeOffer(null);
+    } catch (err) {
+      console.warn('[TaskScreen] commitment bridge:', err?.message || err);
+    } finally {
+      setCommitmentBridgeSaving(false);
+    }
+  }, [commitmentBridgeOffer, commitmentBridgeSaving, showToast, unifiedTexts]);
+
+  const handleCommitmentBridgeDismiss = useCallback(() => {
+    void postCommitmentTelemetry({ event: 'bridge_dismissed', surface: 'task_modal' });
+    setCommitmentBridgeOffer(null);
+  }, []);
 
   const handleToggleComplete = useCallback(
     async (id) => {
@@ -971,6 +1018,17 @@ const TaskScreen = ({
   const renderListHeader = useCallback(() => {
     return (
       <View>
+        {commitmentBridgeOffer ? (
+          <CommitmentBridgeOffer
+            title={unifiedTexts.COMMITMENT_BRIDGE_TITLE_TASK}
+            subtitle={unifiedTexts.COMMITMENT_BRIDGE_SUBTITLE}
+            saveLabel={unifiedTexts.COMMITMENT_BRIDGE_SAVE}
+            dismissLabel={unifiedTexts.COMMITMENT_BRIDGE_DISMISS}
+            saving={commitmentBridgeSaving}
+            onSave={handleCommitmentBridgeSave}
+            onDismiss={handleCommitmentBridgeDismiss}
+          />
+        ) : null}
         {unifiedView && !showSkeleton ? (
           <TasksSummaryStrip
             todayCount={tasksSummaryCounts.todayCount}
@@ -990,6 +1048,11 @@ const TaskScreen = ({
       </View>
     );
   }, [
+    commitmentBridgeOffer,
+    commitmentBridgeSaving,
+    handleCommitmentBridgeSave,
+    handleCommitmentBridgeDismiss,
+    unifiedTexts,
     unifiedView,
     showSkeleton,
     tasksSummaryCounts,

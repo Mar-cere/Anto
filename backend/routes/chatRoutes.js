@@ -114,6 +114,7 @@ import {
   buildOpenaiEnhancementSnippets,
   buildAssistantMetadataWithEnhancements,
   finalizeChatTurnEnhancements,
+  persistProposedCommitmentsOnMessage,
   buildClientTurnPayload,
 } from '../services/chatTurnEnhancementsService.js';
 import { toTccLiteClientPayload } from '../services/chatTccLiteService.js';
@@ -2011,6 +2012,11 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                         { transport: 'sse' },
                       );
 
+                await persistProposedCommitmentsOnMessage(
+                  assistantMessage._id,
+                  proposedCommitments,
+                ).catch(() => {});
+
                 res.write('data: ' + JSON.stringify(attachTurnCrisisResources({
                   done: true,
                   messageId: assistantMessage._id?.toString(),
@@ -2488,6 +2494,11 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 },
                 { transport: 'http' },
               );
+
+        await persistProposedCommitmentsOnMessage(
+          assistantMessage._id,
+          proposedCommitments,
+        ).catch(() => {});
         
         // Registrar métrica de tiempo de respuesta de forma asíncrona
         metricsService.recordMetric('response_generation', {

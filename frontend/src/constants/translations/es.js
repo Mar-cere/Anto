@@ -218,6 +218,8 @@ export const DASH = {
   FOCUS_COMMITMENT_RENEGOTIATE: 'Ajustar compromiso',
   FOCUS_COMMITMENT_RENEGOTIATE_HINT: '¿Lo hacemos más pequeño o lo dejamos para otro momento?',
   FOCUS_COMMITMENT_RENEGOTIATE_SAVE: 'Guardar ajuste',
+  FOCUS_COMMITMENT_LINKED_TASK: 'También en tus tareas',
+  FOCUS_COMMITMENT_LINKED_HABIT: 'También en tus hábitos',
   FOCUS_REMINDER_SECTION: 'Lo principal ahora',
   FOCUS_REMINDER_TAP_CHAT: 'Toca para ir al chat',
   FOCUS_PROTOCOL: 'Próximo paso (seguimiento)',
@@ -462,6 +464,7 @@ export const SETTINGS = {
   NOTIFICATIONS_TYPE_DAILY: 'Diarios y motivación',
   NOTIFICATIONS_TYPE_TASKS: 'Tareas y hábitos',
   NOTIFICATIONS_TYPE_BETWEEN_SESSIONS: 'Invitación a retomar el chat',
+  NOTIFICATIONS_TYPE_COMMITMENT_WEEKLY: 'Recordarme compromisos pendientes',
   NOTIFICATIONS_ADVANCED_TITLE: 'Avanzado',
   NOTIFICATIONS_ADVANCED_SUB: 'Horarios y ajustes extra (opcional)',
   NOTIFICATIONS_ADVANCED_A11Y_EXPANDED: 'Avanzado de notificaciones, expandido',
@@ -1434,6 +1437,13 @@ export const TASKS_AND_HABITS = {
   GRATITUDE_TITLE: 'Diario de Gratitud',
   GRATITUDE_SUBTITLE: 'Escribe sobre lo que agradeces hoy',
   OPEN_GRATITUDE_A11Y: 'Abrir diario de gratitud',
+  COMMITMENT_BRIDGE_TITLE_TASK: '¿También como compromiso de sesión?',
+  COMMITMENT_BRIDGE_TITLE_HABIT: '¿También como compromiso de sesión?',
+  COMMITMENT_BRIDGE_SUBTITLE:
+    'Si te sirve, lo dejamos anotado para retomarlo entre conversaciones.',
+  COMMITMENT_BRIDGE_SAVE: 'Guardar como compromiso',
+  COMMITMENT_BRIDGE_DISMISS: 'Ahora no',
+  COMMITMENT_BRIDGE_SAVED: 'Compromiso guardado',
 };
 
 export const POMODORO = {
@@ -3107,6 +3117,8 @@ export const SESSION_INSIGHT = {
   CTA_SAVE_COMMITMENT: 'Guardar como compromiso',
   CTA_COMMITMENT_SAVED: 'Compromiso guardado',
   CTA_COMMITMENT_ERROR: 'No se pudo guardar el compromiso. Prueba con una acción concreta.',
+  CTA_COMMITMENT_TO_TASK: 'Añadir como tarea',
+  CTA_COMMITMENT_TO_HABIT: 'Convertir en hábito',
   CTA_TCC_LITE_CHAT: 'Explorar en el chat',
   CTA_TCC_LITE_CHAT_HINT: 'Marco TCC paso a paso con Anto, sin salir de la conversación.',
   MESSAGES_COUNT: '{n} mensajes tuyos',

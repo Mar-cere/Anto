@@ -148,6 +148,56 @@ if (snippet.snippet === null && snippet.commitmentId === null) {
   fail('prompt snippet sin userId');
 }
 
+const weeklySrc = fs.readFileSync(
+  path.join(root, 'backend/services/sessionCommitmentWeeklyNudgeService.js'),
+  'utf8',
+);
+if (weeklySrc.includes('processWeeklyCommitmentNudges')) {
+  pass('servicio push semanal compromisos');
+} else {
+  fail('servicio push semanal compromisos');
+}
+
+const schedulerSrc = fs.readFileSync(
+  path.join(root, 'backend/services/notificationScheduler.js'),
+  'utf8',
+);
+if (
+  schedulerSrc.includes('processWeeklyCommitmentNudges') &&
+  schedulerSrc.includes('COMMITMENT_WEEKLY_CHECK_INTERVAL_MS')
+) {
+  pass('scheduler intervalo compromisos semanales');
+} else {
+  fail('scheduler intervalo compromisos semanales');
+}
+
+const metricsRoutesSrc = fs.readFileSync(path.join(root, 'backend/routes/metricsRoutes.js'), 'utf8');
+if (metricsRoutesSrc.includes("router.post('/commitment'")) {
+  pass('POST /api/metrics/commitment');
+} else {
+  fail('POST /api/metrics/commitment');
+}
+
+const finalizeV11 = fs.readFileSync(
+  path.join(root, 'backend/services/chatTurnEnhancementsService.js'),
+  'utf8',
+);
+if (finalizeV11.includes('persistProposedCommitmentsOnMessage')) {
+  pass('persistencia metadata proposedCommitments');
+} else {
+  fail('persistencia metadata proposedCommitments');
+}
+
+const greetingSrc = fs.readFileSync(
+  path.join(root, 'frontend/src/utils/chatWelcomeGreeting.js'),
+  'utf8',
+);
+if (greetingSrc.includes('reconstructPersistedCommitmentProposals')) {
+  pass('reconstrucción tarjetas compromiso en chat');
+} else {
+  fail('reconstrucción tarjetas compromiso en chat');
+}
+
 const failed = checks.filter((c) => !c.ok);
 for (const c of checks) {
   console.log(c.ok ? `✅ ${c.name}` : `❌ ${c.name}${c.detail ? `: ${c.detail}` : ''}`);

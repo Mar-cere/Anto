@@ -19,6 +19,9 @@ import {
 } from '../screens/habits/habitsScreenConstants';
 import { isValidClientRequestId } from '../utils/clientRequestId';
 import { postProductActionTelemetry } from '../utils/productActionTelemetry';
+import { postCommitmentTelemetry } from '../utils/commitmentTelemetry';
+import { createSessionCommitment } from '../services/sessionCommitmentsService';
+import { buildCommitmentLabelFromProductTitle } from '../utils/commitmentBridgeUtils';
 import { useToast } from '../context/ToastContext';
 
 const DELETE_DELAY = 2200;
@@ -36,6 +39,8 @@ export function useHabitsScreen({ route, navigation }) {
   const habitToggleReqIdRef = useRef({});
   const { showToast } = useToast();
   const [habitModalReminderIso, setHabitModalReminderIso] = useState(null);
+  const [commitmentBridgeOffer, setCommitmentBridgeOffer] = useState(null);
+  const [commitmentBridgeSaving, setCommitmentBridgeSaving] = useState(false);
 
   const [habits, setHabits] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -149,6 +154,7 @@ export function useHabitsScreen({ route, navigation }) {
   const handleAddHabit = useCallback(
     async (data) => {
       const texts = textsRef.current;
+      const chatOriginSnapshot = habitChatOriginRef.current;
       try {
         const newHabit = {
           title: data.title.trim(),
@@ -180,6 +186,17 @@ export function useHabitsScreen({ route, navigation }) {
         if (!result.idempotentReplay) {
           await scheduleHabitNotification(createdHabit);
         }
+        if (chatOriginSnapshot && createdHabit?._id && !result.idempotentReplay) {
+          const label = buildCommitmentLabelFromProductTitle(data.title);
+          if (label) {
+            setCommitmentBridgeOffer({
+              label,
+              habitId: String(createdHabit._id),
+              interventionId: chatOriginSnapshot?.interventionId || null,
+              conversationId: chatOriginSnapshot?.conversationId || null,
+            });
+          }
+        }
       } catch (err) {
         console.error('Error al crear hábito:', err);
         if (habitChatOriginRef.current || habitClientRequestIdRef.current) {
@@ -197,6 +214,37 @@ export function useHabitsScreen({ route, navigation }) {
     },
     []
   );
+
+  const handleCommitmentBridgeSave = useCallback(async () => {
+    if (!commitmentBridgeOffer?.label || commitmentBridgeSaving) return;
+    setCommitmentBridgeSaving(true);
+    try {
+      const sourceMeta = { habitId: commitmentBridgeOffer.habitId };
+      if (commitmentBridgeOffer.interventionId) {
+        sourceMeta.interventionId = commitmentBridgeOffer.interventionId;
+      }
+      await createSessionCommitment({
+        label: commitmentBridgeOffer.label,
+        conversationId: commitmentBridgeOffer.conversationId || undefined,
+        source: 'chat_action',
+        sourceMeta,
+      });
+      showToast({
+        message: textsRef.current.COMMITMENT_BRIDGE_SAVED || 'Compromiso guardado',
+        type: 'success',
+      });
+      setCommitmentBridgeOffer(null);
+    } catch (err) {
+      console.warn('[useHabitsScreen] commitment bridge:', err?.message || err);
+    } finally {
+      setCommitmentBridgeSaving(false);
+    }
+  }, [commitmentBridgeOffer, commitmentBridgeSaving, showToast]);
+
+  const handleCommitmentBridgeDismiss = useCallback(() => {
+    void postCommitmentTelemetry({ event: 'bridge_dismissed', surface: 'habit_modal' });
+    setCommitmentBridgeOffer(null);
+  }, []);
 
   const toggleHabitComplete = useCallback(
     async (habitId) => {
@@ -419,5 +467,9 @@ export function useHabitsScreen({ route, navigation }) {
     openModal,
     handleHabitModalClose,
     habitModalReminderIso,
+    commitmentBridgeOffer,
+    commitmentBridgeSaving,
+    handleCommitmentBridgeSave,
+    handleCommitmentBridgeDismiss,
   };
 }

@@ -86,10 +86,24 @@ router.post('/', writeLimiter, async (req, res) => {
     metricsService
       .recordMetric(
         'commitment_created',
-        { source: result.commitment?.source || 'unknown' },
+        {
+          source: result.commitment?.source || 'unknown',
+          linkedTask: Boolean(result.commitment?.sourceMeta?.taskId),
+          linkedHabit: Boolean(result.commitment?.sourceMeta?.habitId),
+        },
         String(req.user._id),
       )
       .catch(() => {});
+    if (result.commitment?.sourceMeta?.taskId) {
+      metricsService
+        .recordMetric('commitment_linked_task', {}, String(req.user._id))
+        .catch(() => {});
+    }
+    if (result.commitment?.sourceMeta?.habitId) {
+      metricsService
+        .recordMetric('commitment_linked_habit', {}, String(req.user._id))
+        .catch(() => {});
+    }
     return res.status(201).json({ success: true, commitment: result.commitment });
   } catch (error) {
     console.error('[sessionCommitmentRoutes] POST /:', error);
