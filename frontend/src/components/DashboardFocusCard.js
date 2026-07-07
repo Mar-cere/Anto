@@ -622,7 +622,11 @@ const DashboardFocusCard = ({
                   <Text style={styles.commitmentLinkHint}>{linkHint}</Text>
                 ) : null}
                 {showFollowUp ? (
-                  <View style={styles.commitmentActions}>
+                  <View
+                    style={styles.commitmentActions}
+                    accessibilityRole="group"
+                    accessibilityLabel={`${commitmentTitle}. ${followUpPrompt}`}
+                  >
                     <Text style={styles.commitmentPrompt}>{followUpPrompt}</Text>
                     <View style={styles.commitmentButtons}>
                       <Pressable
@@ -646,14 +650,14 @@ const DashboardFocusCard = ({
                       >
                         <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_NO}</Text>
                       </Pressable>
-                      <Pressable
-                        onPress={() => handleCommitmentOmit(item.id)}
-                        style={({ pressed }) => [styles.commitmentChip, pressed && { opacity: 0.88 }]}
-                        accessibilityRole="button"
-                      >
-                        <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_OMIT}</Text>
-                      </Pressable>
                     </View>
+                    <Pressable
+                      onPress={() => handleCommitmentOmit(item.id)}
+                      style={({ pressed }) => [styles.commitmentOmitLink, pressed && { opacity: 0.72 }]}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.commitmentOmitLinkText}>{DASH.FOCUS_COMMITMENT_OMIT}</Text>
+                    </Pressable>
                   </View>
                 ) : null}
                 {showRenegotiate && !showFollowUp ? (

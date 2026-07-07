@@ -240,6 +240,17 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       fontWeight: '600',
       color: colors.primary,
     },
+    commitmentOmitLink: {
+      alignSelf: 'flex-start',
+      marginTop: 4,
+      paddingVertical: 4,
+    },
+    commitmentOmitLinkText: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: t.FOCUS_META,
+      textDecorationLine: 'underline',
+    },
     ctaSecondary: {
       flexDirection: 'row',
       alignItems: 'center',

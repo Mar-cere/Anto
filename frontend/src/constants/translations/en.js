@@ -199,6 +199,7 @@ export const DASH = {
   FOCUS_NO_CHATS: 'No conversations yet.',
   FOCUS_NO_COMMITMENTS: 'No saved commitments yet.',
   FOCUS_COMMITMENT_FOLLOW_UP: 'Were you able to do «{label}»?',
+  FOCUS_COMMITMENT_FOLLOW_UP_SHORT: 'Were you able to do it?',
   FOCUS_COMMITMENT_FOLLOW_UP_NAMED: 'How did it go with “{label}”?',
   FOCUS_COMMITMENT_FOLLOW_UP_GENERIC: 'Were you able to make progress on “{label}”?',
   FOCUS_COMMITMENT_FOLLOW_UP_BA: 'Were you able to take a small behavioral activation step?',

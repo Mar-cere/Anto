@@ -62,10 +62,13 @@ export function isConcreteCommitmentLabel(label, stepLabel = '') {
  * Oculta seguimiento en dashboard cuando el compromiso BA duplica la fila del plan semanal.
  */
 export function shouldHideDashboardCommitmentFollowUp(commitment, { hasBaWeekRow = false } = {}) {
-  if (!commitment || !hasBaWeekRow) return false;
+  if (!commitment) return false;
   if (commitment.followUpAnswer && commitment.followUpAnswer !== 'pending') return false;
-  if (commitment.interventionId === 'behavioral_activation') return true;
-  return isBehavioralActivationLabel(commitment.label);
+  if (hasBaWeekRow && commitment.interventionId === 'behavioral_activation') return true;
+  if (hasBaWeekRow && isBehavioralActivationLabel(commitment.label)) return true;
+  // Sin acción concreta, el seguimiento en dashboard no aporta contexto útil.
+  if (isGenericInterventionLabel(commitment.label)) return true;
+  return false;
 }
 
 export function filterDashboardCommitments(commitments, options = {}) {

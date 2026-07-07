@@ -21,17 +21,17 @@ describe('commitmentLabelUtils', () => {
       interventionId: 'behavioral_activation',
     };
     expect(shouldHideDashboardCommitmentFollowUp(commitment, { hasBaWeekRow: true })).toBe(true);
-    expect(shouldHideDashboardCommitmentFollowUp(commitment, { hasBaWeekRow: false })).toBe(false);
+    expect(shouldHideDashboardCommitmentFollowUp(commitment, { hasBaWeekRow: false })).toBe(true);
   });
 
-  it('filtra compromisos duplicados de BA en dashboard', () => {
+  it('filtra compromisos genéricos y duplicados de BA en dashboard', () => {
     const items = [
       { id: '1', label: 'Activación conductual', followUpAnswer: 'pending', interventionId: 'behavioral_activation' },
       { id: '2', label: 'Respirar antes de dormir', followUpAnswer: 'pending' },
     ];
-    const visible = filterDashboardCommitments(items, { hasBaWeekRow: true });
-    expect(visible).toHaveLength(1);
-    expect(visible[0].id).toBe('2');
+    expect(filterDashboardCommitments(items, { hasBaWeekRow: true })).toHaveLength(1);
+    expect(filterDashboardCommitments(items, { hasBaWeekRow: false })).toHaveLength(1);
+    expect(filterDashboardCommitments(items, { hasBaWeekRow: false })[0].id).toBe('2');
   });
 
   it('inserta el label en el prompt de seguimiento', () => {

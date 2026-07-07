@@ -62,14 +62,22 @@ function resolveInterventionId(item) {
 /**
  * @param {{ label?: string, sourceMeta?: { interventionId?: string } }} item
  * @param {Record<string, string>} texts sección DASH
+ * @param {{ pairedWithTitle?: boolean }} [options] en dashboard el título ya da contexto
  */
-export function buildCommitmentFollowUpPrompt(item, texts = {}) {
+export function buildCommitmentFollowUpPrompt(item, texts = {}, options = {}) {
+  const pairedWithTitle = options.pairedWithTitle !== false;
   const label = String(item?.label || '').trim();
-  if (!label) return texts.FOCUS_COMMITMENT_FOLLOW_UP || '';
+  if (!label) {
+    return texts.FOCUS_COMMITMENT_FOLLOW_UP_SHORT || texts.FOCUS_COMMITMENT_FOLLOW_UP || '';
+  }
+
+  if (pairedWithTitle) {
+    return texts.FOCUS_COMMITMENT_FOLLOW_UP_SHORT || '¿Pudiste hacerlo?';
+  }
 
   const interventionId = resolveInterventionId(item);
   const genericKey = interventionId ? INTERVENTION_FOLLOW_UP_KEYS[interventionId] : null;
-  if (genericKey && texts[genericKey]) {
+  if (genericKey && isGenericCommitmentLabel(label) && texts[genericKey]) {
     return texts[genericKey];
   }
 
@@ -92,15 +100,9 @@ export function buildCommitmentDisplayTitle(item, texts = {}) {
 
   if (!isGenericCommitmentLabel(label)) return label;
 
-  const interventionId = resolveInterventionId(item);
-  if (interventionId === 'behavioral_activation' && texts.FOCUS_COMMITMENT_TITLE_BA) {
-    return texts.FOCUS_COMMITMENT_TITLE_BA;
-  }
-  if (interventionId === 'exposure_hierarchy' && texts.FOCUS_COMMITMENT_TITLE_EXPOSURE) {
-    return texts.FOCUS_COMMITMENT_TITLE_EXPOSURE;
-  }
-
-  return label;
+  // Etiqueta genérica de técnica: el dashboard muestra la acción concreta en el título
+  // o un fallback neutro; evita repetir jerga en título + pregunta.
+  return texts.FOCUS_COMMITMENT_FALLBACK_TITLE || 'Tu compromiso';
 }
 
 /**
