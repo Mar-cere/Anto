@@ -197,6 +197,12 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       lineHeight: 20,
       fontWeight: '500',
     },
+    commitmentLinkHint: {
+      marginTop: 4,
+      fontSize: 11.5,
+      color: t.FOCUS_META,
+      fontWeight: '500',
+    },
     commitmentActions: {
       marginTop: 8,
     },
@@ -204,6 +210,17 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       fontSize: 12,
       color: t.FOCUS_META,
       marginBottom: 8,
+    },
+    commitmentRenegotiateInput: {
+      fontSize: 13,
+      color: colors.text,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: t.FOCUS_ACCENT_BORDER,
+      borderRadius: 10,
+      paddingVertical: 8,
+      paddingHorizontal: 10,
+      marginBottom: 8,
+      backgroundColor: colors.chromeInputDisabled ?? colors.surface,
     },
     commitmentButtons: {
       flexDirection: 'row',

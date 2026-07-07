@@ -102,3 +102,18 @@ export function buildCommitmentDisplayTitle(item, texts = {}) {
 
   return label;
 }
+
+/**
+ * @param {{ sourceMeta?: { taskId?: string, habitId?: string } }} item
+ * @param {Record<string, string>} texts sección DASH
+ * @returns {string|null}
+ */
+export function buildCommitmentLinkHint(item, texts = {}) {
+  if (item?.sourceMeta?.habitId) {
+    return texts.FOCUS_COMMITMENT_LINKED_HABIT || null;
+  }
+  if (item?.sourceMeta?.taskId) {
+    return texts.FOCUS_COMMITMENT_LINKED_TASK || null;
+  }
+  return null;
+}

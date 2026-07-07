@@ -30,7 +30,11 @@ import {
 import { findWeekPlanForUser } from './behavioralActivationWeekPlanService.js';
 import { loadExposureFocus } from './chatTccContinuityService.js';
 import { pickBaFocusSlot } from './activeTccProtocolsContextService.js';
-import { listSessionCommitments } from './sessionCommitmentService.js';
+import {
+  FOCUS_VISIBLE_LIMIT,
+  isFollowUpDue,
+  listSessionCommitments,
+} from './sessionCommitmentService.js';
 import { buildHomeRotatingInsightForUser } from './homeRotatingInsightService.js';
 
 function cacheTtlSecondsUntilUtcEndOfDay() {
@@ -654,12 +658,23 @@ export async function buildDashboardFocus(userId, opts = {}) {
           reminderAt: habitReminder.nextAt ? habitReminder.nextAt.toISOString() : null
         }
       : null,
-    commitments: (commitments.items || []).slice(0, 5).map((c) => ({
+    commitments: (commitments.items || []).slice(0, FOCUS_VISIBLE_LIMIT).map((c) => ({
       id: c.id,
       label: c.label,
       status: c.status,
       followUpAt: c.followUpAt,
       followUpAnswer: c.followUpAnswer,
+      followUpAttempts: c.followUpAttempts ?? 0,
+      followUpDue: isFollowUpDue(
+        {
+          status: c.status,
+          followUpAnswer: c.followUpAnswer,
+          followUpAt: c.followUpAt,
+          followUpAttempts: c.followUpAttempts,
+          createdAt: c.createdAt,
+          lastFollowUpAt: c.lastFollowUpAt,
+        },
+      ),
       createdAt: c.createdAt,
       sourceMeta: c.sourceMeta || null,
     })),

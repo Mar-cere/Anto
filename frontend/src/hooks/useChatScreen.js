@@ -49,6 +49,9 @@ import {
 import { newClientRequestId } from '../utils/clientRequestId';
 import { isValidMongoObjectId24 } from '../utils/mongoId';
 import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
+import { sanitizeProposedCommitments } from '../utils/sanitizeProposedCommitments';
+import { createSessionCommitment } from '../services/sessionCommitmentsService';
+import { postCommitmentTelemetry } from '../utils/commitmentTelemetry';
 import {
   parseGuestHandoffPendingFromStorage,
   parseUserIdFromUserDataStorage,
@@ -761,6 +764,52 @@ export function useChatScreen() {
     }
   }, []);
 
+  const handleCommitmentProposalPress = useCallback(
+    async (proposal, proposalsMessage) => {
+      try {
+        const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+        const assistantMessageId = proposalsMessage?.metadata?.assistantMessageId;
+        const label = String(proposal?.label || '').trim();
+        if (!label || label.length < 2) return;
+        await createSessionCommitment({
+          label,
+          conversationId:
+            convId && isValidMongoObjectId24(convId) ? String(convId) : undefined,
+          source: 'chat_proposed',
+          sourceMeta: {
+            ...(proposal?.sourceMeta && typeof proposal.sourceMeta === 'object'
+              ? proposal.sourceMeta
+              : {}),
+            ...(assistantMessageId && isValidMongoObjectId24(assistantMessageId)
+              ? { proposedMessageId: String(assistantMessageId) }
+              : {}),
+          },
+        });
+        setMessages((prev) =>
+          prev.filter((m) => {
+            const id = m.id || m._id;
+            const targetId = proposalsMessage?.id || proposalsMessage?._id;
+            return String(id) !== String(targetId);
+          }),
+        );
+      } catch (e) {
+        console.warn('[useChatScreen] commitment proposal:', e?.message || e);
+      }
+    },
+    [],
+  );
+
+  const handleCommitmentProposalReject = useCallback(async (proposalsMessage) => {
+    void postCommitmentTelemetry({ event: 'create_dismissed', surface: 'chat' });
+    setMessages((prev) =>
+      prev.filter((m) => {
+        const id = m.id || m._id;
+        const targetId = proposalsMessage?.id || proposalsMessage?._id;
+        return String(id) !== String(targetId);
+      }),
+    );
+  }, []);
+
   const handleEmergencyContactAlertConfirm = useCallback(async (offerMessage) => {
     const offer = offerMessage?.proposedEmergencyContactAlert;
     const offerKey = offerMessage?.id || offerMessage?._id || offer?.id;
@@ -1062,6 +1111,19 @@ export function useChatScreen() {
                 role: 'suggestions',
                 type: 'product_proposals',
                 proposedProductActions: ppa,
+                metadata: {
+                  timestamp: new Date().toISOString(),
+                  assistantMessageId: payload.messageId,
+                },
+              });
+            }
+            const pc = sanitizeProposedCommitments(payload.proposedCommitments);
+            if (pc.length > 0) {
+              next.push({
+                id: `commitment-proposals-${Date.now()}`,
+                role: 'suggestions',
+                type: 'commitment_proposals',
+                proposedCommitments: pc,
                 metadata: {
                   timestamp: new Date().toISOString(),
                   assistantMessageId: payload.messageId,
@@ -1929,6 +1991,8 @@ export function useChatScreen() {
     retryOfflinePending,
     handleProductProposalPress,
     handleProductProposalReject,
+    handleCommitmentProposalPress,
+    handleCommitmentProposalReject,
     showSessionIntentionPrompt,
     sessionIntentionSubmitting,
     selectSessionIntention,

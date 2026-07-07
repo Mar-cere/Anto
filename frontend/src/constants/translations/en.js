@@ -213,6 +213,12 @@ export const DASH = {
   FOCUS_COMMITMENT_YES: 'Yes',
   FOCUS_COMMITMENT_PARTIAL: 'Partly',
   FOCUS_COMMITMENT_NO: 'Not yet',
+  FOCUS_COMMITMENT_OMIT: 'Skip for now',
+  FOCUS_COMMITMENT_RENEGOTIATE: 'Adjust commitment',
+  FOCUS_COMMITMENT_RENEGOTIATE_HINT: 'We can make it smaller or leave it for another time.',
+  FOCUS_COMMITMENT_RENEGOTIATE_SAVE: 'Save adjustment',
+  FOCUS_COMMITMENT_LINKED_TASK: 'Also in your tasks',
+  FOCUS_COMMITMENT_LINKED_HABIT: 'Also in your habits',
   FOCUS_REMINDER_SECTION: 'Main focus now',
   FOCUS_REMINDER_TAP_CHAT: 'Tap to go to chat',
   FOCUS_PROTOCOL: 'Next step (follow-up)',
@@ -457,6 +463,7 @@ export const SETTINGS = {
   NOTIFICATIONS_TYPE_DAILY: 'Daily and motivation',
   NOTIFICATIONS_TYPE_TASKS: 'Tasks and habits',
   NOTIFICATIONS_TYPE_BETWEEN_SESSIONS: 'Prompt to return to chat',
+  NOTIFICATIONS_TYPE_COMMITMENT_WEEKLY: 'Remind me about pending commitments',
   NOTIFICATIONS_ADVANCED_TITLE: 'Advanced',
   NOTIFICATIONS_ADVANCED_SUB: 'Schedules and extra settings (optional)',
   NOTIFICATIONS_ADVANCED_A11Y_EXPANDED:
@@ -1139,6 +1146,11 @@ export const CHAT = {
   PRODUCT_PROPOSAL_WHEN_PLACEHOLDER: 'Optional date/time (YYYY-MM-DD HH:mm)',
   PRODUCT_PROPOSAL_CREATE: 'Create',
   PRODUCT_PROPOSAL_DISMISS: 'Not relevant',
+  CHAT_COMMITMENT_PROPOSE_TITLE: 'Save this to revisit later?',
+  CHAT_COMMITMENT_SAVE: 'Save',
+  CHAT_COMMITMENT_EDIT_SAVE: 'Edit and save',
+  CHAT_COMMITMENT_DISMISS: 'Not now',
+  CHAT_COMMITMENT_LABEL_PLACEHOLDER: 'Agreement text',
   PRODUCT_STATUS_COOLDOWN_WITH_MIN:
     'Suggestions are paused for a few minutes ({minutes} min) to avoid overwhelming the conversation.',
   PRODUCT_STATUS_COOLDOWN:
@@ -1420,6 +1432,13 @@ export const TASKS_AND_HABITS = {
   GRATITUDE_TITLE: 'Gratitude Journal',
   GRATITUDE_SUBTITLE: 'Write about what you are grateful for today',
   OPEN_GRATITUDE_A11Y: 'Open gratitude journal',
+  COMMITMENT_BRIDGE_TITLE_TASK: 'Also save as a session commitment?',
+  COMMITMENT_BRIDGE_TITLE_HABIT: 'Also save as a session commitment?',
+  COMMITMENT_BRIDGE_SUBTITLE:
+    'If it helps, we can note it to revisit between conversations.',
+  COMMITMENT_BRIDGE_SAVE: 'Save as commitment',
+  COMMITMENT_BRIDGE_DISMISS: 'Not now',
+  COMMITMENT_BRIDGE_SAVED: 'Commitment saved',
 };
 
 export const POMODORO = {
@@ -3082,6 +3101,8 @@ export const SESSION_INSIGHT = {
   CTA_SAVE_COMMITMENT: 'Save as commitment',
   CTA_COMMITMENT_SAVED: 'Commitment saved',
   CTA_COMMITMENT_ERROR: 'Could not save the commitment. Try a concrete action.',
+  CTA_COMMITMENT_TO_TASK: 'Add as task',
+  CTA_COMMITMENT_TO_HABIT: 'Turn into habit',
   CTA_TCC_LITE_CHAT: 'Explore in chat',
   CTA_TCC_LITE_CHAT_HINT: 'A step-by-step CBT frame with Anto, without leaving the conversation.',
   MESSAGES_COUNT: '{n} messages from you',

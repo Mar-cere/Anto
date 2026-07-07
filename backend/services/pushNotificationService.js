@@ -63,6 +63,7 @@ class PushNotificationService {
       JOURNALING_PROMPT: 'journaling_prompt',
       WEEKLY_REFLECTION: 'weekly_reflection',
       BETWEEN_SESSIONS_NUDGE: 'between_sessions_nudge',
+      COMMITMENT_WEEKLY_NUDGE: 'commitment_weekly_nudge',
       
       // Motivación y apoyo
       MOTIVATIONAL_MESSAGE: 'motivational_message',
@@ -550,6 +551,21 @@ class PushNotificationService {
       },
       this.NOTIFICATION_TYPES.BETWEEN_SESSIONS_NUDGE,
     options
+    );
+  }
+
+  async sendCommitmentWeeklyNudge(pushToken, options = {}) {
+    const pool = poolFor(options).commitmentWeeklyNudge || poolFor(options).betweenSessionsNudge;
+    return this._send(
+      pushToken,
+      pickRandom(pool.titles),
+      pickRandom(pool.bodies),
+      {
+        action: 'open_dashboard_focus',
+        commitmentWeekly: true,
+      },
+      this.NOTIFICATION_TYPES.COMMITMENT_WEEKLY_NUDGE,
+      options,
     );
   }
 

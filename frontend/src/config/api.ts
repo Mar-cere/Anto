@@ -63,6 +63,7 @@ export const ENDPOINTS = {
   ME: '/api/users/me',
   /** Telemetría §8 contrato chat → tarea/hábito (dismiss / fallo cliente). */
   METRICS_PRODUCT_ACTION: '/api/metrics/product-action',
+  METRICS_COMMITMENT: '/api/metrics/commitment',
   PROFILE: '/api/users/me',
   UPDATE_PROFILE: '/api/users/me',
   ONBOARDING_PREFERENCES: '/api/users/me/onboarding-preferences',

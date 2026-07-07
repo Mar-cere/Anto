@@ -809,6 +809,18 @@ export const PUSH_NOTIFICATION_COPY = {
       'Si hoy estás sin energía, también vale volver solo a decir "aquí estoy".',
     ],
   },
+  commitmentWeeklyNudge: {
+    titles: [
+      '🫶 Para retomar cuando te venga bien',
+      '🫶 Algo que habíamos dejado',
+      '🫶 Sin prisa',
+    ],
+    bodies: [
+      'Tienes algo que habíamos dejado para retomar cuando te venga bien.',
+      'Si te sirve, puedes revisar en el foco lo que quedó pendiente de conversación.',
+      'Un recordatorio suave: hay un acuerdo activo para retomar cuando quieras.',
+    ],
+  },
   breathing: {
     titles: [
       '🌬️ Momento de respirar',

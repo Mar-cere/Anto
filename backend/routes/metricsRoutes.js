@@ -8,6 +8,13 @@ import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 import metricsService from '../services/metricsService.js';
 import { metricsApiCopy } from '../utils/metricsApiCopy.js';
 
+const commitmentMetricSchema = Joi.object({
+  event: Joi.string().valid('create_dismissed', 'bridge_dismissed').required(),
+  surface: Joi.string()
+    .valid('chat', 'task_modal', 'habit_modal', 'session_insight')
+    .required(),
+});
+
 const productActionMetricSchema = Joi.object({
   event: Joi.string().valid('confirm_dismissed', 'create_failed').required(),
   surface: Joi.string().valid('task_modal', 'habit_modal').required(),
@@ -77,6 +84,37 @@ router.get('/health', authenticateToken, isAdmin, async (req, res) => {
       success: false,
       message: copy.healthStatsError,
       error: error.message,
+    });
+  }
+});
+
+router.post('/commitment', authenticateToken, async (req, res) => {
+  const copy = req.apiCopy;
+  try {
+    const { error, value } = commitmentMetricSchema.validate(req.body, {
+      stripUnknown: true,
+    });
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details[0]?.message || copy.invalidData,
+      });
+    }
+    const metricName =
+      value.event === 'bridge_dismissed'
+        ? 'commitment_bridge_dismissed'
+        : 'commitment_create_dismissed';
+    await metricsService.recordMetric(
+      metricName,
+      { surface: value.surface },
+      req.user._id.toString(),
+    );
+    return res.status(200).json({ success: true });
+  } catch (e) {
+    console.error('POST /api/metrics/commitment', e);
+    return res.status(500).json({
+      success: false,
+      message: copy.recordMetricError,
     });
   }
 });

@@ -105,6 +105,7 @@ export function getUpdateProfileSchema(copy) {
         taskReminders: Joi.boolean(),
         motivationalMessages: Joi.boolean(),
         betweenSessionsMessages: Joi.boolean(),
+        commitmentWeeklyReminders: Joi.boolean(),
       }),
     }).optional(),
   });
