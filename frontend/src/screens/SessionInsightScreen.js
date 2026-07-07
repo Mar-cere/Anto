@@ -36,6 +36,7 @@ import { newClientRequestId } from '../utils/clientRequestId';
 import { skipSessionWai, submitSessionWai } from '../services/sessionWaiService';
 import SessionWaiCard from '../components/sessionInsight/SessionWaiCard';
 import { useToast } from '../context/ToastContext';
+import { resolveSessionInsightEmotionIcon } from '../utils/sessionInsightEmotionVisual';
 
 function IntensityBar({ value, colors, sx }) {
   const pct = Math.min(100, Math.max(0, (Number(value) || 0) * 10));
@@ -124,8 +125,15 @@ export default function SessionInsightScreen() {
           paddingTop: 12,
           paddingBottom: 20,
         },
-        heroEmoji: {
-          fontSize: 44,
+        heroIconOrb: {
+          width: 56,
+          height: 56,
+          borderRadius: 18,
+          backgroundColor: colors.accentLineSoft,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.accentLine ?? colors.border,
+          justifyContent: 'center',
+          alignItems: 'center',
           marginBottom: 12,
         },
         kicker: {
@@ -600,7 +608,17 @@ export default function SessionInsightScreen() {
         ) : null}
         <View style={styles.hero}>
           <Text style={styles.kicker}>{TEXTS.KICKER}</Text>
-          <Text style={styles.heroEmoji}>{emotion?.emoji || '✨'}</Text>
+          <View
+            style={styles.heroIconOrb}
+            accessibilityRole="image"
+            accessibilityLabel={emotion?.label || TEXTS.EMOTION_TITLE}
+          >
+            <Ionicons
+              name={resolveSessionInsightEmotionIcon(emotion?.key)}
+              size={28}
+              color={colors.primary}
+            />
+          </View>
           <Text style={styles.headline}>{insight.headline}</Text>
           <Text style={styles.reflection}>{insight.reflection}</Text>
           {insight.intentionLine ? (
