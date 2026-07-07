@@ -76,5 +76,14 @@ describe('dashboardFocusCard guard', () => {
     expect(src).toMatch(/filterDashboardCommitments/);
     expect(src).toMatch(/visibleCommitments/);
     expect(src).toMatch(/buildCommitmentFollowUpPrompt/);
+    expect(src).toMatch(/visibleCommitments\.length > 0/);
+    expect(src).toMatch(/item\.followUpDue === true/);
+  });
+
+  it('filterDashboardCommitments solo expone compromisos accionables', () => {
+    const src = readSrc('utils/commitmentLabelUtils.js');
+    expect(src).toMatch(/isDashboardCommitmentActionable/);
+    expect(src).toMatch(/followUpDue === true/);
+    expect(src).toMatch(/MAX_DASHBOARD_FOLLOW_UP_ATTEMPTS = 2/);
   });
 });

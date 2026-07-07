@@ -2,6 +2,7 @@ import {
   filterDashboardCommitments,
   formatCommitmentFollowUpPrompt,
   isConcreteCommitmentLabel,
+  isDashboardCommitmentActionable,
   shouldHideDashboardCommitmentFollowUp,
 } from '../commitmentLabelUtils';
 
@@ -17,7 +18,9 @@ describe('commitmentLabelUtils', () => {
     const commitment = {
       id: '1',
       label: 'Activación conductual',
+      status: 'active',
       followUpAnswer: 'pending',
+      followUpDue: true,
       interventionId: 'behavioral_activation',
     };
     expect(shouldHideDashboardCommitmentFollowUp(commitment, { hasBaWeekRow: true })).toBe(true);
@@ -26,12 +29,101 @@ describe('commitmentLabelUtils', () => {
 
   it('filtra compromisos genéricos y duplicados de BA en dashboard', () => {
     const items = [
-      { id: '1', label: 'Activación conductual', followUpAnswer: 'pending', interventionId: 'behavioral_activation' },
-      { id: '2', label: 'Respirar antes de dormir', followUpAnswer: 'pending' },
+      { id: '1', label: 'Activación conductual', status: 'active', followUpAnswer: 'pending', followUpDue: true, interventionId: 'behavioral_activation' },
+      { id: '2', label: 'Respirar antes de dormir', status: 'active', followUpAnswer: 'pending', followUpDue: true },
     ];
     expect(filterDashboardCommitments(items, { hasBaWeekRow: true })).toHaveLength(1);
     expect(filterDashboardCommitments(items, { hasBaWeekRow: false })).toHaveLength(1);
     expect(filterDashboardCommitments(items, { hasBaWeekRow: false })[0].id).toBe('2');
+  });
+
+  it('oculta compromisos sin seguimiento accionable en dashboard', () => {
+    const ghost = {
+      id: 'ghost',
+      label: '',
+      status: 'active',
+      followUpAnswer: 'pending',
+      followUpDue: false,
+    };
+    const answered = {
+      id: 'done',
+      label: 'Caminar 10 minutos',
+      status: 'active',
+      followUpAnswer: 'yes',
+      followUpDue: false,
+    };
+    const actionable = {
+      id: 'due',
+      label: 'Caminar 10 minutos',
+      status: 'active',
+      followUpAnswer: 'pending',
+      followUpDue: true,
+    };
+    expect(isDashboardCommitmentActionable(ghost)).toBe(false);
+    expect(isDashboardCommitmentActionable(answered)).toBe(false);
+    expect(isDashboardCommitmentActionable(actionable)).toBe(true);
+    expect(filterDashboardCommitments([ghost, answered, actionable])).toEqual([actionable]);
+  });
+
+  it('muestra renegociación tras responder no', () => {
+    const item = {
+      id: 'reneg',
+      label: 'Caminar 10 minutos',
+      status: 'active',
+      followUpAnswer: 'no',
+      followUpAttempts: 1,
+      followUpDue: false,
+    };
+    expect(isDashboardCommitmentActionable(item)).toBe(true);
+  });
+
+  it('oculta compromisos completados, omitidos o sin plazo vencido', () => {
+    expect(
+      isDashboardCommitmentActionable({
+        id: '1',
+        label: 'X',
+        status: 'completed',
+        followUpAnswer: 'yes',
+        followUpDue: true,
+      }),
+    ).toBe(false);
+    expect(
+      isDashboardCommitmentActionable({
+        id: '2',
+        label: 'X',
+        status: 'skipped',
+        followUpAnswer: 'pending',
+        followUpDue: true,
+      }),
+    ).toBe(false);
+    expect(
+      isDashboardCommitmentActionable({
+        id: '3',
+        label: 'X',
+        status: 'active',
+        followUpAnswer: 'partial',
+        followUpDue: true,
+      }),
+    ).toBe(false);
+    expect(
+      isDashboardCommitmentActionable({
+        id: '4',
+        label: 'X',
+        status: 'active',
+        followUpAnswer: 'pending',
+        followUpDue: false,
+      }),
+    ).toBe(false);
+    expect(
+      isDashboardCommitmentActionable({
+        id: '5',
+        label: 'X',
+        status: 'active',
+        followUpAnswer: 'pending',
+        followUpDue: true,
+        followUpAttempts: 2,
+      }),
+    ).toBe(false);
   });
 
   it('inserta el label en el prompt de seguimiento', () => {

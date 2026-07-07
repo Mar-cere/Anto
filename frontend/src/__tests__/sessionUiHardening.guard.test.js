@@ -56,6 +56,23 @@ describe('sessionUi hardening guard', () => {
       expect(src).toMatch(/buildCommitmentFollowUpPrompt/);
       expect(src).toMatch(/visibleCommitments/);
     });
+
+    it('commitmentLabelUtils evita tarjetas fantasma sin seguimiento', () => {
+      const src = readSrc('utils/commitmentLabelUtils.js');
+      expect(src).toMatch(/isDashboardCommitmentActionable/);
+      expect(src).toMatch(/followUpDue === true/);
+      expect(src).not.toMatch(/followUpAnswer !== 'pending'\) return false/);
+    });
+  });
+
+  describe('insight de sesión — iconos iOS', () => {
+    it('SessionInsightScreen no usa emojis en pasos ni TCC lite', () => {
+      const src = readSrc('screens/SessionInsightScreen.js');
+      expect(src).toMatch(/resolveSessionInsightStepVisual/);
+      expect(src).toMatch(/resolveTccLiteResumeVisual/);
+      expect(src).not.toMatch(/🧠/);
+      expect(src).not.toMatch(/step\.icon/);
+    });
   });
 
   describe('FirstSessionHint overlay', () => {

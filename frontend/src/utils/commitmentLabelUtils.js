@@ -59,22 +59,47 @@ export function isConcreteCommitmentLabel(label, stepLabel = '') {
 }
 
 /**
- * Oculta seguimiento en dashboard cuando el compromiso BA duplica la fila del plan semanal.
+ * Oculta seguimiento en dashboard cuando el compromiso BA duplica la fila del plan semanal
+ * o la etiqueta es genérica (sin acción concreta).
  */
 export function shouldHideDashboardCommitmentFollowUp(commitment, { hasBaWeekRow = false } = {}) {
-  if (!commitment) return false;
-  if (commitment.followUpAnswer && commitment.followUpAnswer !== 'pending') return false;
+  if (!commitment) return true;
   if (hasBaWeekRow && commitment.interventionId === 'behavioral_activation') return true;
   if (hasBaWeekRow && isBehavioralActivationLabel(commitment.label)) return true;
-  // Sin acción concreta, el seguimiento en dashboard no aporta contexto útil.
   if (isGenericInterventionLabel(commitment.label)) return true;
   return false;
 }
 
+const MAX_DASHBOARD_FOLLOW_UP_ATTEMPTS = 2; // alineado con backend MAX_FOLLOW_UP_ATTEMPTS
+
+/**
+ * Solo mostrar en dashboard cuando hay seguimiento o renegociación accionable.
+ * Evita filas vacías con solo «Tu compromiso».
+ */
+export function isDashboardCommitmentActionable(commitment, options = {}) {
+  if (!commitment || commitment.status !== 'active') return false;
+  if (shouldHideDashboardCommitmentFollowUp(commitment, options)) return false;
+
+  const attempts = Number(commitment.followUpAttempts || 0);
+  if (attempts >= MAX_DASHBOARD_FOLLOW_UP_ATTEMPTS) return false;
+
+  if (commitment.followUpAnswer === 'pending' && commitment.followUpDue === true) {
+    return true;
+  }
+
+  if (
+    commitment.followUpAnswer === 'no' &&
+    attempts >= 1 &&
+    attempts < MAX_DASHBOARD_FOLLOW_UP_ATTEMPTS
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 export function filterDashboardCommitments(commitments, options = {}) {
-  return (commitments || []).filter(
-    (item) => !shouldHideDashboardCommitmentFollowUp(item, options),
-  );
+  return (commitments || []).filter((item) => isDashboardCommitmentActionable(item, options));
 }
 
 export function formatCommitmentFollowUpPrompt(template, label) {

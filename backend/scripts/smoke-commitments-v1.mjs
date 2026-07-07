@@ -127,6 +127,34 @@ if (dashSrc.includes('item.followUpDue === true') && dashSrc.includes('FOCUS_COM
   fail('dashboard follow-up estricto + omitir');
 }
 
+const commitmentUtilsSrc = fs.readFileSync(
+  path.join(root, 'frontend/src/utils/commitmentLabelUtils.js'),
+  'utf8',
+);
+if (
+  commitmentUtilsSrc.includes('isDashboardCommitmentActionable') &&
+  commitmentUtilsSrc.includes('followUpDue === true')
+) {
+  pass('dashboard solo compromisos accionables');
+} else {
+  fail('dashboard solo compromisos accionables');
+}
+
+const insightSrc = fs.readFileSync(
+  path.join(root, 'frontend/src/screens/SessionInsightScreen.js'),
+  'utf8',
+);
+if (
+  insightSrc.includes('resolveSessionInsightStepVisual') &&
+  insightSrc.includes('resolveTccLiteResumeVisual') &&
+  !insightSrc.includes('step.icon') &&
+  !insightSrc.includes('🧠')
+) {
+  pass('insight sesión iconos vectoriales');
+} else {
+  fail('insight sesión iconos vectoriales');
+}
+
 const sanitized = sanitizeProposedCommitments([
   { id: '1', label: 'Retomar respiración' },
   { id: '2', label: 'Otro' },

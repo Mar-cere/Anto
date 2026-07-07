@@ -36,7 +36,8 @@ import { newClientRequestId } from '../utils/clientRequestId';
 import { skipSessionWai, submitSessionWai } from '../services/sessionWaiService';
 import SessionWaiCard from '../components/sessionInsight/SessionWaiCard';
 import { useToast } from '../context/ToastContext';
-import { resolveSessionInsightEmotionIcon } from '../utils/sessionInsightEmotionVisual';
+import { resolveSessionInsightEmotionIcon, resolveSessionInsightStepVisual, resolveTccLiteResumeVisual } from '../utils/sessionInsightEmotionVisual';
+import { resolveVisualAccent } from '../constants/interventionVisuals';
 
 function IntensityBar({ value, colors, sx }) {
   const pct = Math.min(100, Math.max(0, (Number(value) || 0) * 10));
@@ -274,9 +275,14 @@ export default function SessionInsightScreen() {
           borderWidth: 1,
           borderColor: colors.chromeCardBorder,
         },
-        stepIcon: {
-          fontSize: 28,
+        stepIconOrb: {
+          width: 44,
+          height: 44,
+          borderRadius: 14,
+          justifyContent: 'center',
+          alignItems: 'center',
           marginRight: 12,
+          borderWidth: StyleSheet.hairlineWidth,
         },
         stepTitle: {
           fontSize: 16,
@@ -595,6 +601,20 @@ export default function SessionInsightScreen() {
   const step = isCrisisInsight ? null : insight.suggestedStep;
   const tccLiteResume = isCrisisInsight ? null : insight.tccLiteResume;
 
+  const renderStepIconOrb = (visual) => {
+    const { accent, iconBg } = resolveVisualAccent(colors, visual.accentKey || 'primary');
+    return (
+      <View
+        style={[
+          styles.stepIconOrb,
+          { backgroundColor: iconBg, borderColor: colors.accentLine ?? colors.border },
+        ]}
+      >
+        <MaterialCommunityIcons name={visual.mciIcon} size={22} color={accent} />
+      </View>
+    );
+  };
+
   return (
     <View style={styles.root}>
       <StatusBar barStyle={statusBarStyle} />
@@ -695,7 +715,7 @@ export default function SessionInsightScreen() {
               accessibilityRole="button"
               accessibilityLabel={step.label}
             >
-              <Text style={styles.stepIcon}>{step.icon || '💡'}</Text>
+              {renderStepIconOrb(resolveSessionInsightStepVisual(step))}
               <View style={{ flex: 1 }}>
                 <Text style={styles.stepTitle}>{step.label}</Text>
                 <Text style={styles.stepReason}>{step.reason}</Text>
@@ -717,7 +737,7 @@ export default function SessionInsightScreen() {
               accessibilityRole="button"
               accessibilityLabel={TEXTS.CTA_TCC_LITE_CHAT}
             >
-              <Text style={styles.stepIcon}>🧠</Text>
+              {renderStepIconOrb(resolveTccLiteResumeVisual())}
               <View style={{ flex: 1 }}>
                 <Text style={styles.stepTitle}>{TEXTS.CTA_TCC_LITE_CHAT}</Text>
                 {tccLiteResume.distortionLabel ? (
