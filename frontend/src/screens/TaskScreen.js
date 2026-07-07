@@ -618,7 +618,7 @@ const TaskScreen = ({
         type: 'success',
       });
 
-      if (chatOriginSnapshot && createdTask?._id && !response.idempotentReplay) {
+      if (chatOriginSnapshot && createdTask?._id && !response.idempotentReplay && data.itemType === ITEM_TYPES.TASK) {
         const label = buildCommitmentLabelFromProductTitle(data.title);
         if (label) {
           setCommitmentBridgeOffer({

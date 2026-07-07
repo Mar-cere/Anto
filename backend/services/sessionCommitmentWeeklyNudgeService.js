@@ -17,6 +17,7 @@ export async function userHasPendingCommitmentFollowUp(userId) {
     userId,
     status: 'active',
     followUpAnswer: 'pending',
+    followUpAttempts: { $lt: 2 },
   });
   return count > 0;
 }

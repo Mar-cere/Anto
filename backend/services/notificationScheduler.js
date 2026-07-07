@@ -496,6 +496,18 @@ class NotificationScheduler {
       const opts = { ...options, language };
 
       const T = pushNotificationService.NOTIFICATION_TYPES;
+      if (notificationType === T.COMMITMENT_WEEKLY_NUDGE) {
+        const prefUser = await User.findById(userId)
+          .select('notificationPreferences')
+          .lean();
+        if (prefUser?.notificationPreferences?.enabled === false) {
+          return false;
+        }
+        if (prefUser?.notificationPreferences?.types?.commitmentWeeklyReminders !== true) {
+          return false;
+        }
+      }
+
       if (notificationType !== T.COMMITMENT_WEEKLY_NUDGE) {
         const canSend = await this._canSendMoreToday(userId);
         if (!canSend) {

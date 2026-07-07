@@ -22,6 +22,7 @@ import {
 } from '../utils/chatObservationalContext.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import Message from '../models/Message.js';
+import { sanitizeProposedCommitments } from '../utils/sanitizeProposedCommitments.js';
 import { buildSessionCommitmentPromptSnippet } from './sessionCommitmentPromptSnippet.js';
 import { markCommitmentFollowUpShown } from './sessionCommitmentService.js';
 import metricsService from './metricsService.js';
@@ -322,12 +323,13 @@ export async function finalizeChatTurnEnhancements({
  * @param {unknown[]} proposedCommitments
  */
 export async function persistProposedCommitmentsOnMessage(assistantMessageId, proposedCommitments) {
-  if (!assistantMessageId || !Array.isArray(proposedCommitments) || proposedCommitments.length === 0) {
+  const sanitized = sanitizeProposedCommitments(proposedCommitments);
+  if (!assistantMessageId || sanitized.length === 0) {
     return;
   }
   await Message.updateOne(
     { _id: assistantMessageId },
-    { $set: { 'metadata.proposedCommitments': proposedCommitments } },
+    { $set: { 'metadata.proposedCommitments': sanitized } },
   ).catch(() => {});
 }
 

@@ -1146,7 +1146,7 @@ export const CHAT = {
   PRODUCT_PROPOSAL_WHEN_PLACEHOLDER: 'Optional date/time (YYYY-MM-DD HH:mm)',
   PRODUCT_PROPOSAL_CREATE: 'Create',
   PRODUCT_PROPOSAL_DISMISS: 'Not relevant',
-  CHAT_COMMITMENT_PROPOSE_TITLE: 'Shall we save this to revisit?',
+  CHAT_COMMITMENT_PROPOSE_TITLE: 'Save this to revisit later?',
   CHAT_COMMITMENT_SAVE: 'Save',
   CHAT_COMMITMENT_EDIT_SAVE: 'Edit and save',
   CHAT_COMMITMENT_DISMISS: 'Not now',

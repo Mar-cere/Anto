@@ -9,6 +9,8 @@ const mockCountDocuments = jest.fn();
 const mockFindOneAndUpdate = jest.fn();
 const mockConversationFindOne = jest.fn();
 const mockConversationFindById = jest.fn();
+const mockTaskFindOne = jest.fn();
+const mockHabitFindOne = jest.fn();
 
 await jest.unstable_mockModule('../../../models/SessionCommitment.js', () => ({
   __esModule: true,
@@ -26,6 +28,20 @@ await jest.unstable_mockModule('../../../models/Conversation.js', () => ({
     findOne: mockConversationFindOne,
     findById: mockConversationFindById,
     updateOne: jest.fn().mockResolvedValue({}),
+  },
+}));
+
+await jest.unstable_mockModule('../../../models/Task.js', () => ({
+  __esModule: true,
+  default: {
+    findOne: mockTaskFindOne,
+  },
+}));
+
+await jest.unstable_mockModule('../../../models/Habit.js', () => ({
+  __esModule: true,
+  default: {
+    findOne: mockHabitFindOne,
   },
 }));
 
@@ -69,6 +85,50 @@ describe('sessionCommitmentService (#202)', () => {
       interventionId: 'step-1',
     });
     expect(sanitizeCommitmentSourceMeta({})).toBeNull();
+  });
+
+  it('rechaza chat_action con taskId que no pertenece al usuario', async () => {
+    mockTaskFindOne.mockReturnValue({
+      select: () => ({ lean: async () => null }),
+    });
+    const result = await createSessionCommitment(userId, {
+      label: 'Caminar 10 minutos',
+      source: 'chat_action',
+      sourceMeta: { taskId: '507f1f77bcf86cd799439099' },
+    });
+    expect(result.error).toBe('invalidProductLink');
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
+  it('acepta chat_action con taskId propio', async () => {
+    mockTaskFindOne.mockReturnValue({
+      select: () => ({ lean: async () => ({ _id: '507f1f77bcf86cd799439099' }) }),
+    });
+    const created = {
+      _id: '507f1f77bcf86cd799439012',
+      label: 'Caminar 10 minutos',
+      status: 'active',
+      source: 'chat_action',
+      conversationId: null,
+      followUpAt: new Date(),
+      followUpAnswer: 'pending',
+      followUpAttempts: 0,
+      lastFollowUpAt: null,
+      sourceMeta: { taskId: '507f1f77bcf86cd799439099' },
+      completedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    mockCreate.mockResolvedValue({ toObject: () => created });
+
+    const result = await createSessionCommitment(userId, {
+      label: 'Caminar 10 minutos',
+      source: 'chat_action',
+      sourceMeta: { taskId: '507f1f77bcf86cd799439099' },
+    });
+
+    expect(result.commitment?.sourceMeta?.taskId).toBe('507f1f77bcf86cd799439099');
+    expect(mockCreate).toHaveBeenCalled();
   });
 
   it('crea compromiso con follow-up por defecto', async () => {

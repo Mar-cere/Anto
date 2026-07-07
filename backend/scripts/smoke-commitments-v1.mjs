@@ -16,7 +16,7 @@ import {
   isExplicitCommitmentRequest,
 } from '../services/chatCommitmentProposalService.js';
 import { buildSessionCommitmentPromptSnippet } from '../services/sessionCommitmentPromptSnippet.js';
-import { sanitizeProposedCommitments } from '../../frontend/src/utils/sanitizeProposedCommitments.js';
+import { sanitizeProposedCommitments } from '../utils/sanitizeProposedCommitments.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..', '..');
@@ -196,6 +196,26 @@ if (greetingSrc.includes('reconstructPersistedCommitmentProposals')) {
   pass('reconstrucción tarjetas compromiso en chat');
 } else {
   fail('reconstrucción tarjetas compromiso en chat');
+}
+
+const commitmentSvcSrc = fs.readFileSync(
+  path.join(root, 'backend/services/sessionCommitmentService.js'),
+  'utf8',
+);
+if (commitmentSvcSrc.includes('validateOwnedProductSourceMeta')) {
+  pass('validación ownership task/habit en chat_action');
+} else {
+  fail('validación ownership task/habit en chat_action');
+}
+
+const schedulerSrc2 = fs.readFileSync(
+  path.join(root, 'backend/services/notificationScheduler.js'),
+  'utf8',
+);
+if (schedulerSrc2.includes('commitmentWeeklyReminders !== true')) {
+  pass('push semanal exige opt-in en scheduler');
+} else {
+  fail('push semanal exige opt-in en scheduler');
 }
 
 const failed = checks.filter((c) => !c.ok);

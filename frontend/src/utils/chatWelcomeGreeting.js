@@ -1,6 +1,7 @@
 /**
  * Saludos iniciales del chat (es/en) por franja horaria — alineado a backend GREETING_VARIATIONS.
  */
+import { sanitizeProposedCommitments } from './sanitizeProposedCommitments.js';
 
 const GREETING_VARIATIONS_ES = {
   morning: [
@@ -162,7 +163,7 @@ export function reconstructPersistedCommitmentProposals(messages) {
     id: `commitment-proposals-loaded-${assistantMessageId || lastIdx}`,
     role: 'suggestions',
     type: 'commitment_proposals',
-    proposedCommitments: source.metadata.proposedCommitments,
+    proposedCommitments: sanitizeProposedCommitments(source.metadata.proposedCommitments),
     metadata: {
       timestamp: source.metadata?.timestamp || new Date().toISOString(),
       assistantMessageId: assistantMessageId ? String(assistantMessageId) : undefined,

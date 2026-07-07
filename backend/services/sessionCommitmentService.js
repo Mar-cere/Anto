@@ -3,7 +3,9 @@
  */
 import mongoose from 'mongoose';
 import Conversation from '../models/Conversation.js';
+import Habit from '../models/Habit.js';
 import SessionCommitment from '../models/SessionCommitment.js';
+import Task from '../models/Task.js';
 import {
   failsClinicalGuardrails,
   sanitizeObservationalText,
@@ -31,6 +33,29 @@ export function sanitizeCommitmentSourceMeta(raw) {
   const proposedMessageId = String(raw.proposedMessageId || '').trim().slice(0, 64);
   if (proposedMessageId) meta.proposedMessageId = proposedMessageId;
   return Object.keys(meta).length > 0 ? meta : null;
+}
+
+async function validateOwnedProductSourceMeta(userId, raw) {
+  const meta = sanitizeCommitmentSourceMeta(raw);
+  if (!meta) {
+    if (raw?.taskId || raw?.habitId) {
+      return { error: 'invalidProductLink' };
+    }
+    return { sourceMeta: null };
+  }
+
+  const uid = new mongoose.Types.ObjectId(String(userId));
+  if (raw?.taskId) {
+    if (!meta.taskId) return { error: 'invalidProductLink' };
+    const task = await Task.findOne({ _id: meta.taskId, userId: uid }).select('_id').lean();
+    if (!task) return { error: 'invalidProductLink' };
+  }
+  if (raw?.habitId) {
+    if (!meta.habitId) return { error: 'invalidProductLink' };
+    const habit = await Habit.findOne({ _id: meta.habitId, userId: uid }).select('_id').lean();
+    if (!habit) return { error: 'invalidProductLink' };
+  }
+  return { sourceMeta: meta };
 }
 
 function normalizeLabel(raw) {
@@ -134,6 +159,13 @@ export async function createSessionCommitment(userId, payload = {}) {
 
   const source = ALLOWED_SOURCES.has(payload.source) ? payload.source : 'session_insight';
 
+  let sourceMeta = sanitizeCommitmentSourceMeta(payload.sourceMeta);
+  if (source === 'chat_action' && (payload.sourceMeta?.taskId || payload.sourceMeta?.habitId)) {
+    const validated = await validateOwnedProductSourceMeta(userId, payload.sourceMeta);
+    if (validated.error) return { error: validated.error };
+    sourceMeta = validated.sourceMeta;
+  }
+
   const doc = await SessionCommitment.create({
     userId: uid,
     conversationId,
@@ -144,7 +176,7 @@ export async function createSessionCommitment(userId, payload = {}) {
     followUpAnswer: 'pending',
     followUpAttempts: 0,
     lastFollowUpAt: null,
-    sourceMeta: sanitizeCommitmentSourceMeta(payload.sourceMeta),
+    sourceMeta,
     renegotiatedFrom: mongoose.Types.ObjectId.isValid(String(payload.renegotiatedFrom || ''))
       ? new mongoose.Types.ObjectId(String(payload.renegotiatedFrom))
       : null,
