@@ -71,7 +71,26 @@ describe('crisisHardStopService', () => {
       language: 'es',
     });
     expect(out).toContain('133');
-    expect(out).toContain('600 360 7777');
+    expect(out).toContain('*4141');
+  });
+
+  it('modo compacto no repite números cuando el panel lleva los recursos', () => {
+    const full = buildHardStopCrisisAssistantContent({
+      riskLevel: 'HIGH',
+      preferences: { regionCountry: 'CL' },
+      language: 'es',
+    });
+    const compact = buildHardStopCrisisAssistantContent({
+      riskLevel: 'HIGH',
+      preferences: { regionCountry: 'CL' },
+      language: 'es',
+      resourcesDeliveredInPanel: true,
+    });
+    expect(full).toContain('133');
+    expect(compact).not.toContain('133');
+    expect(compact).not.toContain('*4141');
+    expect(compact).toMatch(/Abajo tienes líneas de emergencia/i);
+    expect(compact).toContain('¿Te sientes a salvo ahora?');
   });
 
   it('buildHardStopCrisisAssistantContent usa líneas de España', () => {

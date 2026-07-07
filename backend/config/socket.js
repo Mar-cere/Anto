@@ -461,6 +461,7 @@ export const setupSocketIO = (server) => {
                 ...(socketUser?.preferences || {}),
               },
               phone: socketUser?.phone || null,
+              resourcesDeliveredInPanel: true,
             })
           : null;
 

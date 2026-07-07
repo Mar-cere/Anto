@@ -33,6 +33,8 @@ function buildHardStopCrisisBody({
   language = 'es',
   preferences = null,
   phone = null,
+  /** Si el cliente muestra CrisisResourcesStrip, no repetir números ni límites en el texto. */
+  resourcesDeliveredInPanel = false,
 } = {}) {
   const lang = normalizeApiLanguage(language);
   const en = lang === 'en';
@@ -55,6 +57,10 @@ function buildHardStopCrisisBody({
     ? 'If you need human help right now:'
     : 'Si necesitas ayuda humana ahora:';
 
+  const panelPointer = en
+    ? 'Below you will find local emergency and crisis lines for your country—you can call with one tap.'
+    : 'Abajo tienes líneas de emergencia y prevención de tu país; puedes llamar con un toque.';
+
   const appLimits = en
     ? 'About this chat: I cannot place calls or send messages for you. Emergency contacts in the app are only notified if you configured them and the app activates alerts according to its rules.'
     : 'Sobre este chat: no puedo llamar ni enviar mensajes por ti. Los contactos de emergencia de la app solo reciben avisos si los configuraste y el sistema los activa según las reglas de la aplicación.';
@@ -62,6 +68,10 @@ function buildHardStopCrisisBody({
   const closing = en
     ? 'When you can, you may reply here. You do not have to go through this alone.'
     : 'Cuando puedas, puedes responder aquí. No tienes que pasar esto solo/a.';
+
+  if (resourcesDeliveredInPanel) {
+    return [safetyQuestions.join('\n'), panelPointer, closing].join('\n\n');
+  }
 
   return [
     safetyQuestions.join('\n'),
@@ -77,6 +87,7 @@ export function buildHardStopCrisisAssistantContent({
   language = 'es',
   preferences = null,
   phone = null,
+  resourcesDeliveredInPanel = false,
   /** @deprecated usar preferences + phone */
   country = null,
 } = {}) {
@@ -98,6 +109,7 @@ export function buildHardStopCrisisAssistantContent({
     language: lang,
     preferences: mergedPreferences,
     phone,
+    resourcesDeliveredInPanel,
   });
   return `${opening}\n\n${body}`;
 }

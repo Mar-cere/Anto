@@ -6,6 +6,7 @@ import {
   crisisResourcesForTurn,
   extractDialableNumber,
   parseCrisisResourcesCountryQuery,
+  resolveCrisisResourceDial,
   sanitizeDialableNumber,
   shouldExposeCrisisResourcesPanel,
 } from '../../../services/crisisResourcesService.js';
@@ -30,6 +31,11 @@ describe('crisisResourcesService', () => {
     expect(shouldExposeCrisisResourcesPanel({ riskLevel: 'LOW', hardStop: true })).toBe(true);
   });
 
+  it('resolveCrisisResourceDial conserva códigos cortos con asterisco', () => {
+    expect(resolveCrisisResourceDial('*4141')).toBe('*4141');
+    expect(resolveCrisisResourceDial('*4141', null)).toBe('*4141');
+  });
+
   it('extractDialableNumber obtiene dígitos marcables', () => {
     expect(extractDialableNumber('600 360 7777')).toBe('6003607777');
     expect(extractDialableNumber('112')).toBe('112');
@@ -45,7 +51,8 @@ describe('crisisResourcesService', () => {
     });
     expect(payload.countryIso).toBe('CL');
     expect(payload.items.some((i) => i.id === 'emergency' && i.dial === '133')).toBe(true);
-    expect(payload.items.some((i) => i.id === 'suicide_prevention')).toBe(true);
+    expect(payload.items.some((i) => i.id === 'suicide_prevention' && i.dial === '*4141')).toBe(true);
+    expect(payload.items.some((i) => i.id === 'suicide_prevention' && i.value === '*4141')).toBe(true);
     expect(payload.disclaimer).toMatch(/no es un servicio de emergencias/i);
   });
 

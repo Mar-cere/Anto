@@ -61,6 +61,7 @@ describe('crisisResources utils', () => {
 
   it('buildTelUri genera enlace tel', () => {
     expect(buildTelUri('133')).toBe('tel:133');
+    expect(buildTelUri('*4141')).toBe('tel:%2A4141');
     expect(buildTelUri('ab')).toBeNull();
     expect(buildTelUri('1'.repeat(20))).toBeNull();
   });

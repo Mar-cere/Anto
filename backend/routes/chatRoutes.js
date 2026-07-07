@@ -1556,6 +1556,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               language: appLanguageForChat,
               preferences: combinedProfile?.preferences,
               phone: user?.phone || null,
+              resourcesDeliveredInPanel: true,
             })
           : null;
 

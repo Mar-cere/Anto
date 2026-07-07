@@ -73,7 +73,7 @@ if (hardStop && hardStop.length > 80 && hardStop.includes('112') && !/plan de se
 }
 
 const chileLines = getEmergencyLines({ preferences: { regionCountry: 'CL' } });
-if (chileLines?.EMERGENCY === '133' && chileLines?.SUICIDE_PREVENTION?.includes('600')) {
+if (chileLines?.EMERGENCY === '133' && chileLines?.SUICIDE_PREVENTION === '*4141') {
   pass('getEmergencyLines unificado (regionCountry CL)');
 } else {
   fail('getEmergencyLines unificado (regionCountry CL)');
@@ -115,10 +115,10 @@ const androidCode = frontendApp.expo?.android?.versionCode;
 if (
   frontendApp.expo?.version === '1.5.2' &&
   frontendPkg.version === '1.5.2' &&
-  iosBuild >= 41 &&
-  androidCode >= 27
+  iosBuild >= 42 &&
+  androidCode >= 28
 ) {
-  pass('frontend app 1.5.2 + builds tienda (iOS ≥41, Android ≥27)');
+  pass('frontend app 1.5.2 + builds tienda (iOS ≥42, Android ≥28)');
 } else {
   fail('frontend app 1.5.2 + builds tienda', `version=${frontendApp.expo?.version} ios=${iosBuild} android=${androidCode}`);
 }

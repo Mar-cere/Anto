@@ -63,11 +63,33 @@ function clipResourceText(value, maxLen = MAX_RESOURCE_TEXT_LEN) {
   return String(value || '').trim().slice(0, maxLen);
 }
 
-function buildResourceItem(id, label, value) {
+/**
+ * Resuelve número marcable, incluyendo códigos cortos con asterisco (p. ej. *4141 en Chile).
+ */
+export function resolveCrisisResourceDial(value, dialOverride = null) {
+  const tryStarCode = (raw) => {
+    const trimmed = String(raw || '').trim();
+    if (!trimmed.startsWith('*')) return null;
+    const code = trimmed.slice(1).replace(/\D/g, '');
+    if (code.length < MIN_DIAL_LEN || code.length > MAX_DIAL_LEN) return null;
+    return `*${code}`;
+  };
+
+  if (dialOverride != null && String(dialOverride).trim()) {
+    return tryStarCode(dialOverride) || sanitizeDialableNumber(dialOverride);
+  }
+
+  const starFromValue = tryStarCode(value);
+  if (starFromValue) return starFromValue;
+
+  return sanitizeDialableNumber(extractDialableNumber(value));
+}
+
+function buildResourceItem(id, label, value, dialOverride = null) {
   if (value == null || String(value).trim() === '') return null;
   const safeLabel = clipResourceText(label, 120);
   const safeValue = clipResourceText(value);
-  const dial = sanitizeDialableNumber(extractDialableNumber(safeValue));
+  const dial = resolveCrisisResourceDial(safeValue, dialOverride);
   return {
     id: clipResourceText(id, 40),
     label: safeLabel,
@@ -109,8 +131,15 @@ export function buildCrisisResourcesClientPayload({
     buildResourceItem('emergency', en ? 'Emergency' : 'Emergencias', emergencyInfo?.emergency),
     buildResourceItem(
       'suicide_prevention',
-      en ? 'Crisis / suicide prevention' : 'Línea de crisis / prevención',
+      countryIso === 'CL'
+        ? en
+          ? 'Suicide prevention (24 h)'
+          : 'Prevención del suicidio (24 h)'
+        : en
+          ? 'Crisis / suicide prevention'
+          : 'Línea de crisis / prevención',
       emergencyInfo?.suicidePrevention,
+      emergencyInfo?.suicidePreventionDial,
     ),
     buildResourceItem(
       'crisis_text',
@@ -205,6 +234,7 @@ export default {
   shouldExposeCrisisResourcesPanel,
   extractDialableNumber,
   sanitizeDialableNumber,
+  resolveCrisisResourceDial,
   parseCrisisResourcesCountryQuery,
   buildCrisisResourcesClientPayload,
   crisisResourcesForTurn,

@@ -21,8 +21,8 @@ describe('release 1.5.x guard', () => {
     const pkg = JSON.parse(readRepo('frontend/package.json'));
     expect(app.expo.version).toBe('1.5.2');
     expect(pkg.version).toBe('1.5.2');
-    expect(Number.parseInt(app.expo.ios.buildNumber, 10)).toBeGreaterThanOrEqual(41);
-    expect(app.expo.android.versionCode).toBeGreaterThanOrEqual(27);
+    expect(Number.parseInt(app.expo.ios.buildNumber, 10)).toBeGreaterThanOrEqual(42);
+    expect(app.expo.android.versionCode).toBeGreaterThanOrEqual(28);
   });
 
   it('backend expone APP_VERSION 1.5.2 en health y package', () => {

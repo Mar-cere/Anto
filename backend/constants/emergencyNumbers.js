@@ -23,9 +23,11 @@ export const EMERGENCY_NUMBERS_BY_COUNTRY = {
     emergency: '133', // Carabineros
     medical: '131', // SAMU (Servicio de Atención Médica de Urgencia)
     fire: '132', // Bomberos
-    suicidePrevention: '600 360 7777', // Línea de Prevención del Suicidio
-    crisisText: null, // No hay servicio de texto de crisis en Chile
-    notes: 'En Chile, el número único de emergencias es 133 (Carabineros). Para emergencias médicas: 131 (SAMU).'
+    suicidePrevention: '*4141', // Línea Prevención del Suicidio — MINSAL, 24 h
+    suicidePreventionDial: '*4141',
+    crisisText: null,
+    notes:
+      'En Chile, emergencias: 133 (Carabineros). Urgencias médicas: 131 (SAMU). Prevención del suicidio (24 h): *4141 desde móvil o fijo. Salud Responde: 600 360 7777.',
   },
   
   // Argentina
@@ -491,7 +493,7 @@ export const GENERAL_CRISIS_LINES = {
   EMERGENCY:
     'el número oficial de tu país (112 en España; 911 en varios países de América Latina; 133 en Chile; 123 en Colombia)',
   SUICIDE_PREVENTION:
-    'la línea pública de tu país (024 en España; 135 en Argentina; 800 911 2000 en México; 106 en Colombia; 600 360 7777 en Chile)',
+    'la línea pública de tu país (024 en España; 135 en Argentina; 800 911 2000 en México; 106 en Colombia; *4141 en Chile)',
   MENTAL_HEALTH: 'urgencias o salud mental del país donde te encuentres',
   CRISIS_TEXT: null,
 };

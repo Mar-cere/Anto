@@ -1,6 +1,6 @@
 # Release 1.5.2 — Estabilidad, crisis, continuidad y dashboard
 
-**Versión app:** 1.5.2 · **iOS build** 41 · **Android versionCode** 27  
+**Versión app:** 1.5.2 · **iOS build** 42 · **Android versionCode** 28  
 **Base:** 1.5.1 (jun 2026)  
 **Backend:** desplegar antes o junto con builds de tienda (streaming, crisis v1, continuidad TCC).
 

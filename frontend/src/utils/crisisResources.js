@@ -13,6 +13,12 @@ const MIN_DIAL_LEN = 3;
 const MAX_DIAL_LEN = 15;
 
 export function sanitizeDial(dial) {
+  const raw = String(dial || '').trim();
+  if (raw.startsWith('*')) {
+    const code = raw.slice(1).replace(/\D/g, '');
+    if (code.length < MIN_DIAL_LEN || code.length > MAX_DIAL_LEN) return null;
+    return `*${code}`;
+  }
   const digits = String(dial || '').replace(/\D/g, '');
   if (digits.length < MIN_DIAL_LEN || digits.length > MAX_DIAL_LEN) return null;
   return digits;
@@ -102,6 +108,12 @@ export function findLatestCrisisContextFromMessages(messages) {
 }
 
 export function buildTelUri(dial) {
+  const raw = String(dial || '').trim();
+  if (raw.startsWith('*')) {
+    const code = raw.slice(1).replace(/\D/g, '');
+    if (code.length < MIN_DIAL_LEN || code.length > MAX_DIAL_LEN) return null;
+    return `tel:%2A${code}`;
+  }
   const digits = sanitizeDial(dial);
   return digits ? `tel:${digits}` : null;
 }

@@ -48,7 +48,7 @@ describe('getEmergencyLines', () => {
   it('resuelve legacy CHILE desde catálogo unificado', () => {
     const lines = getEmergencyLines('CHILE');
     expect(lines.EMERGENCY).toBe('133');
-    expect(lines.SUICIDE_PREVENTION).toBe('600 360 7777');
+    expect(lines.SUICIDE_PREVENTION).toBe('*4141');
   });
 
   it('resuelve desde preferencias con regionCountry', () => {
@@ -106,6 +106,6 @@ describe('generateCrisisMessage unificado', () => {
       preferences: { regionCountry: 'CL' },
     });
     expect(msg).toContain('133');
-    expect(msg).toContain('600 360 7777');
+    expect(msg).toContain('*4141');
   });
 });
