@@ -31,10 +31,37 @@ export async function submitTypingTelemetry({ conversationId = null, sessionId =
 }
 
 export async function syncDigitalPhenotype(payload = null) {
-  const snapshot = payload || (await collectDailyPhenotypeSnapshot());
-  if (!snapshot) return { synced: false };
-  const res = await api.post(ENDPOINTS.SIGNALS_DIGITAL_PHENOTYPE_SYNC, snapshot);
-  return res?.data ?? res;
+  if (payload) {
+    const res = await api.post(ENDPOINTS.SIGNALS_DIGITAL_PHENOTYPE_SYNC, payload);
+    return res?.data ?? res;
+  }
+  const snapshot = await collectDailyPhenotypeSnapshot();
+  if (!snapshot) return { synced: false, syncedCount: 0 };
+  return syncDigitalPhenotypeBatch([snapshot]);
+}
+
+export async function syncDigitalPhenotypeBatch(snapshots = []) {
+  const rows = Array.isArray(snapshots) ? snapshots.filter(Boolean) : [];
+  if (!rows.length) return { synced: false, syncedCount: 0, dayKeys: [] };
+  try {
+    const res = await api.post(ENDPOINTS.SIGNALS_DIGITAL_PHENOTYPE_SYNC, {
+      snapshots: rows,
+    });
+    const data = res?.data ?? res;
+    return {
+      synced: data?.synced === true,
+      syncedCount: Number(data?.syncedCount) || 0,
+      dayKeys: Array.isArray(data?.dayKeys) ? data.dayKeys : [],
+      dayKey: data?.dayKey || null,
+    };
+  } catch (error) {
+    if (error?.response?.status === 403) {
+      const err = new Error('consent_or_subscription_required');
+      err.response = error.response;
+      throw err;
+    }
+    throw error;
+  }
 }
 
 export async function fetchWeeklyInsight({ weekKey = null } = {}) {
@@ -65,6 +92,7 @@ export default {
   updateSignalConsent,
   submitTypingTelemetry,
   syncDigitalPhenotype,
+  syncDigitalPhenotypeBatch,
   fetchWeeklyInsight,
   fetchMonthlyInsight,
   scheduleWeeklyInsight,

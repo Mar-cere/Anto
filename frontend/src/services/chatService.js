@@ -74,7 +74,7 @@ async function ensureChatSocketTransport() {
   return connected && websocketService.getConnected();
 }
 
-async function sendMessageViaSocket(text, { onChunk, onDone, resumeTccLite, signal, registerAbort } = {}) {
+async function sendMessageViaSocket(text, { onChunk, onDone, resumeTccLite, resumeCommitmentFollowUp, signal, registerAbort } = {}) {
   const trimmed = String(text || '').trim();
   if (!trimmed) {
     const err = new Error('El mensaje no puede estar vacío');
@@ -102,6 +102,7 @@ async function sendMessageViaSocket(text, { onChunk, onDone, resumeTccLite, sign
     conversationId,
     language: appLanguage,
     resumeTccLite,
+    resumeCommitmentFollowUp: resumeCommitmentFollowUp === true,
     signal,
   });
 
@@ -342,7 +343,7 @@ async function postGuestMessage(text, conversationId, token, language) {
   return data;
 }
 
-export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite, signal, registerAbort } = {}) => {
+export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite, resumeCommitmentFollowUp, signal, registerAbort } = {}) => {
   if (await isGuestChatMode()) {
     const guestLang = await getAppLanguage();
     const conversationId = await AsyncStorage.getItem(GUEST_KEYS.GUEST_CONVERSATION_ID);
@@ -381,7 +382,7 @@ export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite, 
   }
 
   try {
-    await sendMessageViaSocket(text, { onChunk, onDone, resumeTccLite, signal, registerAbort });
+    await sendMessageViaSocket(text, { onChunk, onDone, resumeTccLite, resumeCommitmentFollowUp, signal, registerAbort });
     return;
   } catch (socketErr) {
     if (!shouldFallbackChatTransportToSse(socketErr)) {
@@ -406,6 +407,7 @@ export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite, 
     content: text,
     role: 'user',
     conversationId,
+    ...(resumeCommitmentFollowUp === true ? { resumeCommitmentFollowUp: true } : {}),
     ...(resumeTccLite?.distortionType
       ? {
           resumeTccLite: {

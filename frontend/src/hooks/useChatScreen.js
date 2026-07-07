@@ -62,6 +62,7 @@ import {
   normalizeCrisisResourcesPayload,
 } from '../utils/crisisResources';
 import { fetchCrisisResources } from '../services/crisisResourcesService';
+import { updateSessionCommitment } from '../services/sessionCommitmentsService';
 import {
   clearPendingTccLiteResume,
   peekPendingTccLiteResume,
@@ -147,6 +148,9 @@ export function useChatScreen() {
   const [crisisResourcesPanel, setCrisisResourcesPanel] = useState(null);
   const crisisResourcesDismissedRef = useRef(false);
   const pendingTccLiteResumeRef = useRef(null);
+  // Señal #202: al abrir desde "retomar conversación", forzar el follow-up de
+  // compromiso en el primer mensaje aunque el hilo ya tenga historial.
+  const pendingResumeCommitmentFollowUpRef = useRef(false);
   const handleSendRef = useRef(null);
   /** Evita doble POST / doble respuesta del asistente si el usuario envía dos veces muy rápido. */
   const sendRequestInFlightRef = useRef(false);
@@ -420,8 +424,11 @@ export function useChatScreen() {
         if (paramOpenId && isValidMongoObjectId24(String(paramOpenId))) {
           const cidParam = String(paramOpenId);
           await AsyncStorage.setItem(STORAGE_KEYS.CONVERSATION_ID, cidParam);
+          if (route.params?.resumeCommitmentFollowUp === true) {
+            pendingResumeCommitmentFollowUpRef.current = true;
+          }
           try {
-            navigation.setParams({ openConversationId: undefined });
+            navigation.setParams({ openConversationId: undefined, resumeCommitmentFollowUp: undefined });
           } catch (_) {}
         }
         let conversationId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
@@ -510,6 +517,7 @@ export function useChatScreen() {
   }, [
     navigation,
     route.params?.openConversationId,
+    route.params?.resumeCommitmentFollowUp,
     applyMessagePagination,
     hydrateCrisisResourcesFromMessages,
     captureUserTurnBaseline,
@@ -668,6 +676,25 @@ export function useChatScreen() {
     },
     [navigation]
   );
+
+  const handleCommitmentFollowUpAnswer = useCallback(async (commitmentId, answer, followUpMessage) => {
+    if (!commitmentId) return;
+    // Optimista: quitar el bloque de chips de inmediato (#202).
+    setMessages((prev) =>
+      prev.filter((m) => {
+        if (m.type !== 'commitment_follow_up') return true;
+        const id = m.id || m._id;
+        const targetId = followUpMessage?.id || followUpMessage?._id;
+        if (targetId) return String(id) !== String(targetId);
+        return m.commitmentFollowUp?.id !== commitmentId;
+      }),
+    );
+    try {
+      await updateSessionCommitment(commitmentId, { followUpAnswer: answer });
+    } catch (e) {
+      console.warn('[useChatScreen] commitment follow-up answer:', e?.message || e);
+    }
+  }, []);
 
   const handleProductProposalReject = useCallback(async (proposalsMessage) => {
     try {
@@ -877,8 +904,12 @@ export function useChatScreen() {
       const streamController = new AbortController();
       streamAbortControllerRef.current = streamController;
 
+      const resumeCommitmentFollowUp = pendingResumeCommitmentFollowUpRef.current === true;
+      pendingResumeCommitmentFollowUpRef.current = false;
+
       await chatService.sendMessageStream(messageText, {
         resumeTccLite: resumePayload,
+        resumeCommitmentFollowUp,
         signal: streamController.signal,
         registerAbort: (fn) => {
           activeStreamAbortRef.current = fn;
@@ -955,6 +986,15 @@ export function useChatScreen() {
                 type: MESSAGE_TYPES.TEXT,
                 content: payload.productActionStatus.askFirstPrompt,
                 metadata: { timestamp: new Date().toISOString() }
+              });
+            }
+            if (payload.commitmentFollowUp?.id) {
+              next.push({
+                id: `commitment-follow-up-${Date.now()}`,
+                role: 'suggestions',
+                type: 'commitment_follow_up',
+                commitmentFollowUp: payload.commitmentFollowUp,
+                metadata: { timestamp: new Date().toISOString() },
               });
             }
             const handoff = resolveTccLiteAtHandoffFromPayload(payload);
@@ -1768,6 +1808,7 @@ export function useChatScreen() {
     retryOfflinePending,
     handleProductProposalPress,
     handleProductProposalReject,
+    handleCommitmentFollowUpAnswer,
     showSessionIntentionPrompt,
     sessionIntentionSubmitting,
     selectSessionIntention,

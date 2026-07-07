@@ -340,6 +340,7 @@ export const setupSocketIO = (server) => {
             data?.resumeTccLite && typeof data.resumeTccLite === 'object'
               ? data.resumeTccLite
               : null,
+          resumeCommitmentFollowUp: data?.resumeCommitmentFollowUp === true,
         });
         const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements, {
           blockCrisisExtras: isLlmCrisisTherapeuticExtrasBlocked({
@@ -504,6 +505,7 @@ export const setupSocketIO = (server) => {
             digitalPhenotypePromptSnippet: promptSnippets.digitalPhenotypePromptSnippet,
             recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
             personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
+            commitmentFollowUpPromptSnippet: promptSnippets.commitmentFollowUpPromptSnippet,
             crisis: buildOpenaiCrisisContext({
               riskLevel,
               isCrisis,
@@ -567,6 +569,7 @@ export const setupSocketIO = (server) => {
           contextualAnalysis,
           userContent: messageText,
           riskLevel,
+          commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
         }).catch(() => {});
         
         // 8. Actualizar última conversación
@@ -654,6 +657,7 @@ export const setupSocketIO = (server) => {
           language: socketLanguage,
           riskLevel,
           userMessage: messageText,
+          commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
         });
         const socketPreferences = {
           ...(userProfile?.preferences || {}),
@@ -681,6 +685,7 @@ export const setupSocketIO = (server) => {
           suggestions: clientTurn.suggestions,
           suggestionsPersonalized: clientTurn.suggestionsPersonalized,
           tccLite: clientTurn.tccLite,
+          commitmentFollowUp: clientTurn.commitmentFollowUp,
           ...(crisisResources ? { crisisResources } : {}),
         });
         

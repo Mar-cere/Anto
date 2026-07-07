@@ -10,8 +10,19 @@ import {
   SdkAvailabilityStatus,
 } from 'react-native-health-connect';
 
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
+const DEFAULT_SYNC_DAYS = 14;
+
+function todayKey(date = new Date()) {
+  return date.toISOString().slice(0, 10);
+}
+
+function dayWindow(dayOffset = 0) {
+  const end = new Date();
+  end.setDate(end.getDate() - dayOffset);
+  end.setHours(23, 59, 59, 999);
+  const start = new Date(end);
+  start.setHours(0, 0, 0, 0);
+  return { start, end, dayKey: todayKey(start) };
 }
 
 async function isHealthConnectReady() {
@@ -43,6 +54,7 @@ async function ensurePermissions() {
     const granted = await requestPermission([
       { accessType: 'read', recordType: 'Steps' },
       { accessType: 'read', recordType: 'SleepSession' },
+      { accessType: 'read', recordType: 'ExerciseSession' },
       { accessType: 'read', recordType: 'ActiveCaloriesBurned' },
     ]);
     return Array.isArray(granted) && granted.length > 0;
@@ -89,6 +101,65 @@ async function readSleepHours(start, end) {
   }
 }
 
+async function readActiveMinutes(start, end) {
+  try {
+    const result = await readRecords('ExerciseSession', {
+      timeRangeFilter: {
+        operator: 'between',
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+      },
+    });
+    const records = result?.records || [];
+    const ms = records.reduce((sum, row) => {
+      const a = new Date(row.startTime).getTime();
+      const b = new Date(row.endTime).getTime();
+      return sum + Math.max(0, b - a);
+    }, 0);
+    if (ms > 0) return Math.round(ms / 60000);
+  } catch {
+    // fallback a calorías activas
+  }
+
+  try {
+    const result = await readRecords('ActiveCaloriesBurned', {
+      timeRangeFilter: {
+        operator: 'between',
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+      },
+    });
+    const records = result?.records || [];
+    const kcal = records.reduce((sum, row) => {
+      const energy = row.energy?.inKilocalories ?? row.energy ?? row.activeCalories ?? 0;
+      return sum + Number(energy || 0);
+    }, 0);
+    if (!Number.isFinite(kcal) || kcal <= 0) return null;
+    return Math.min(1440, Math.round(kcal / 5));
+  } catch {
+    return null;
+  }
+}
+
+async function collectDaySnapshot(dayOffset = 0) {
+  const { start, end, dayKey } = dayWindow(dayOffset);
+  const [steps, sleepHours, activeMinutes] = await Promise.all([
+    readSteps(start, end),
+    readSleepHours(start, end),
+    readActiveMinutes(start, end),
+  ]);
+  if (steps == null && sleepHours == null && activeMinutes == null) return null;
+  return {
+    dayKey,
+    steps,
+    sleepHours,
+    screenTimeMinutes: null,
+    socialScreenRatio: null,
+    activeMinutes,
+    inactivityHours: null,
+  };
+}
+
 export async function getNativeHealthAvailability() {
   try {
     const ready = await isHealthConnectReady();
@@ -98,38 +169,39 @@ export async function getNativeHealthAvailability() {
   }
 }
 
+export async function requestNativeHealthPermissions() {
+  try {
+    return ensurePermissions();
+  } catch {
+    return false;
+  }
+}
+
 export async function collectNativeDailySnapshot() {
+  const snapshots = await collectNativeDailySnapshots({ days: 1 });
+  return snapshots[0] || null;
+}
+
+export async function collectNativeDailySnapshots({ days = DEFAULT_SYNC_DAYS } = {}) {
   try {
     const granted = await ensurePermissions();
-    if (!granted) return null;
+    if (!granted) return [];
 
-    const end = new Date();
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-
-    const [steps, sleepHours] = await Promise.all([
-      readSteps(start, end),
-      readSleepHours(start, end),
-    ]);
-
-    if (steps == null && sleepHours == null) return null;
-
-    return {
-      dayKey: todayKey(),
-      steps,
-      sleepHours,
-      screenTimeMinutes: null,
-      socialScreenRatio: null,
-      activeMinutes: null,
-      inactivityHours: null,
-      source: 'manual',
-    };
+    const safeDays = Math.max(1, Math.min(Number(days) || 1, DEFAULT_SYNC_DAYS));
+    const snapshots = [];
+    for (let offset = 0; offset < safeDays; offset += 1) {
+      const row = await collectDaySnapshot(offset);
+      if (row) snapshots.push(row);
+    }
+    return snapshots;
   } catch {
-    return null;
+    return [];
   }
 }
 
 export default {
   getNativeHealthAvailability,
+  requestNativeHealthPermissions,
   collectNativeDailySnapshot,
+  collectNativeDailySnapshots,
 };

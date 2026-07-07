@@ -58,6 +58,14 @@ export function resolveClientPhenotypeSource(source) {
   return CLIENT_PHENOTYPE_SOURCES.has(s) ? s : 'stub';
 }
 
+/** Asigna source confiable según plataforma nativa verificada por header de app. */
+export function resolveServerPhenotypeSource(clientPlatform) {
+  const platform = String(clientPlatform || '').trim().toLowerCase();
+  if (platform === 'ios') return 'healthkit';
+  if (platform === 'android') return 'health_connect';
+  return 'manual';
+}
+
 export function isTrustedPhenotypeSource(source) {
   return TRUSTED_PHENOTYPE_SOURCES.has(String(source || '').trim().toLowerCase());
 }
@@ -68,5 +76,6 @@ export default {
   normalizeIsoWeekKey,
   extractTypingMetricsPayload,
   resolveClientPhenotypeSource,
+  resolveServerPhenotypeSource,
   isTrustedPhenotypeSource,
 };

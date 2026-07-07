@@ -8,6 +8,7 @@ import {
   failsClinicalGuardrails,
   sanitizeObservationalText,
 } from '../utils/clinicalContentGuardrails.js';
+import { isGenericInterventionCatalogLabel } from '../utils/commitmentLabelUtils.js';
 
 const MAX_LABEL = 240;
 const MAX_ACTIVE_COMMITMENTS = 12;
@@ -30,6 +31,7 @@ function normalizeLabel(raw) {
   if (failsClinicalGuardrails(label)) return { error: 'labelClinical' };
   const safe = sanitizeObservationalText(label, MAX_LABEL);
   if (!safe) return { error: 'labelClinical' };
+  if (isGenericInterventionCatalogLabel(safe)) return { error: 'labelGeneric' };
   return { label: safe };
 }
 
@@ -51,6 +53,9 @@ function toClientCommitment(doc) {
     completedAt: doc.completedAt || null,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
+    interventionId: doc.sourceMeta?.interventionId
+      ? String(doc.sourceMeta.interventionId)
+      : null,
   };
 }
 

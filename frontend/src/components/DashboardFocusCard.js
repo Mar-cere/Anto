@@ -21,6 +21,10 @@ import {
   resolveFocusNextHabit,
   resolveFocusNextHabitSubtitle,
 } from '../utils/focusNextHabitNavigation';
+import {
+  filterDashboardCommitments,
+  formatCommitmentFollowUpPrompt,
+} from '../utils/commitmentLabelUtils';
 
 const COMPACT_WIDTH = 400;
 
@@ -215,6 +219,10 @@ const DashboardFocusCard = ({
   const baWeekNext = data?.baWeekNext;
   const exposureNext = data?.exposureNext;
   const commitments = Array.isArray(data?.commitments) ? data.commitments : [];
+  const visibleCommitments = useMemo(
+    () => filterDashboardCommitments(commitments, { hasBaWeekRow: Boolean(baWeekNext) }),
+    [commitments, baWeekNext],
+  );
 
   const handleCommitmentAnswer = useCallback(
     async (id, answer) => {
@@ -540,17 +548,19 @@ const DashboardFocusCard = ({
           </Pressable>
         ) : null}
 
-        {commitments.length > 0 ? (
+        {visibleCommitments.length > 0 ? (
           <View style={styles.insetSection}>
             <Text style={styles.insetLabel}>{DASH.FOCUS_COMMITMENTS}</Text>
-            {commitments.map((item) => (
+            {visibleCommitments.map((item) => (
               <View key={item.id} style={styles.commitmentRow}>
                 <Text style={styles.commitmentLabel} numberOfLines={2}>
                   {item.label}
                 </Text>
                 {item.followUpAnswer === 'pending' ? (
                   <View style={styles.commitmentActions}>
-                    <Text style={styles.commitmentPrompt}>{DASH.FOCUS_COMMITMENT_FOLLOW_UP}</Text>
+                    <Text style={styles.commitmentPrompt}>
+                      {formatCommitmentFollowUpPrompt(DASH.FOCUS_COMMITMENT_FOLLOW_UP, item.label)}
+                    </Text>
                     <View style={styles.commitmentButtons}>
                       <Pressable
                         onPress={() => handleCommitmentAnswer(item.id, 'yes')}

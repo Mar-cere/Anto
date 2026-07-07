@@ -4,6 +4,8 @@ const COPY = {
     labelRequired: 'El compromiso debe tener al menos 2 caracteres.',
     labelTooLong: 'El compromiso no puede exceder 240 caracteres.',
     labelClinical: 'Ese texto no encaja como compromiso de bienestar. Prueba con una acción concreta.',
+    labelGeneric:
+      'Describe una acción concreta (por ejemplo, «caminar 10 minutos»), no solo el nombre de la técnica.',
     tooManyActive: 'Ya tienes varios compromisos activos. Completa o archiva alguno antes de añadir otro.',
     notFound: 'Compromiso no encontrado.',
     invalidStatus: 'Estado no válido.',
@@ -17,6 +19,8 @@ const COPY = {
     labelRequired: 'Commitment must be at least 2 characters.',
     labelTooLong: 'Commitment cannot exceed 240 characters.',
     labelClinical: 'That text does not fit as a wellbeing commitment. Try a concrete action.',
+    labelGeneric:
+      'Describe a concrete action (for example, "walk for 10 minutes"), not just the technique name.',
     tooManyActive: 'You already have several active commitments. Complete or archive one before adding another.',
     notFound: 'Commitment not found.',
     invalidStatus: 'Invalid status.',

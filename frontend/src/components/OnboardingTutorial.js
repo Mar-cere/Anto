@@ -95,9 +95,9 @@ const DEFAULT_TEXTS = {
   ],
   STEP_4_LABEL: 'Paso 4 · Seguimiento',
   STEP_4_HIGHLIGHTS: [
-    'Tu resumen y progreso en Perfil',
-    'Patrones en tu bienestar semanal',
-    'Contactos de confianza y recursos de crisis',
+    'Tu resumen',
+    'Patrones',
+    'Contactos de confianza',
   ],
 };
 
@@ -510,6 +510,7 @@ const OnboardingTutorial = ({
         onPress={handleNext}
         flex={1}
         showChevron={!isWelcomeScreen && currentStep < totalSteps - 1}
+        variant={currentStep === totalSteps - 1 ? 'commit' : 'default'}
       />
     </View>
   );

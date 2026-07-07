@@ -18,6 +18,7 @@ describe('profileProgress guard', () => {
     expect(src).toMatch(/WeeklyInsight/);
     expect(src).toMatch(/InterventionGraph/);
     expect(src).toMatch(/SignalConsentPanel/);
+    expect(src).toMatch(/DigitalHealthStatusCard/);
   });
 
   it('ProfileScreen muestra Progreso antes de Estadísticas', () => {

@@ -27,7 +27,6 @@ import {
 } from '../utils/firstSessionHintStorage';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
-import { getFocusTheme } from '../styles/focusCardTheme';
 import { SPACING } from '../constants/ui';
 
 export { getFirstSessionHintDismissedKey, isFirstSessionHintDismissed, setFirstSessionHintDismissed };
@@ -57,8 +56,8 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null, userCreatedAt = n
   );
   const navigation = useNavigation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const { colors, resolvedScheme } = useTheme();
-  const t = useMemo(() => getFocusTheme(colors, resolvedScheme), [colors, resolvedScheme]);
+  const cardScale = useRef(new Animated.Value(0.96)).current;
+  const { colors } = useTheme();
 
   const styles = useMemo(
     () =>
@@ -68,10 +67,11 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null, userCreatedAt = n
           justifyContent: 'center',
           alignItems: 'center',
           padding: 24,
+          zIndex: 1100,
         },
         backdrop: {
           ...StyleSheet.absoluteFillObject,
-          backgroundColor: colors.overlay,
+          backgroundColor: colors.backdropStrong ?? colors.overlay,
         },
         cardWrapper: {
           width: '100%',
@@ -79,12 +79,20 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null, userCreatedAt = n
           alignSelf: 'center',
         },
         card: {
-          ...t.FOCUS_PANEL,
+          backgroundColor: colors.modalSurface ?? colors.surface,
+          borderRadius: 22,
+          borderWidth: 1,
+          borderColor: colors.border,
           marginBottom: 0,
           paddingVertical: 22,
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
           width: '100%',
           maxWidth: 340,
+          shadowColor: colors.glassShadow ?? colors.shadowAmbient,
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.28,
+          shadowRadius: 24,
+          elevation: 12,
         },
         iconRow: {
           alignItems: 'center',
@@ -140,20 +148,31 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null, userCreatedAt = n
           fontSize: 15,
         },
       }),
-    [colors, t],
+    [colors],
   );
 
   useEffect(() => {
     if (visible) {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      fadeAnim.setValue(0);
+      cardScale.setValue(0.96);
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(cardScale, {
+          toValue: 1,
+          friction: 8,
+          tension: 80,
+          useNativeDriver: true,
+        }),
+      ]).start();
     } else {
       fadeAnim.setValue(0);
+      cardScale.setValue(0.96);
     }
-  }, [visible, fadeAnim]);
+  }, [visible, fadeAnim, cardScale]);
 
   const handleGoToChat = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -202,10 +221,10 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null, userCreatedAt = n
   if (!visible) return null;
 
   return (
-    <Animated.View style={[styles.overlay, { opacity: fadeAnim }]} pointerEvents="auto">
-      <View style={styles.backdrop} />
+    <View style={styles.overlay} pointerEvents="auto">
+      <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]} />
       <View style={styles.cardWrapper}>
-        <View style={styles.card}>
+        <Animated.View style={[styles.card, { transform: [{ scale: cardScale }] }]}>
         <View style={styles.iconRow}>
           <View style={styles.iconCircle}>
             <MaterialCommunityIcons name="message-text-outline" size={24} color={colors.primary} />
@@ -229,9 +248,9 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null, userCreatedAt = n
             <Text style={styles.secondaryButtonText}>{TEXTS.GOT_IT}</Text>
           </TouchableOpacity>
         </View>
+      </Animated.View>
       </View>
-      </View>
-    </Animated.View>
+    </View>
   );
 };
 

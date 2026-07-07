@@ -3,7 +3,10 @@
  */
 import { hasExplicitSuicidalOrSelfHarmLexicon } from '../constants/crisis.js';
 
-const BLOCKED_RISK_LEVELS = new Set(['HIGH', 'MEDIUM', 'WARNING']);
+/** Niveles que bloquean contexto observacional (fenotipo/ABC) y alertas educativas. */
+export const OBSERVATIONAL_BLOCKED_RISK_LEVELS = ['HIGH', 'MEDIUM', 'WARNING'];
+
+const BLOCKED_RISK_LEVELS = new Set(OBSERVATIONAL_BLOCKED_RISK_LEVELS);
 
 export function isChatObservationalContextBlocked(riskLevel) {
   const level = String(riskLevel || 'LOW').trim().toUpperCase();

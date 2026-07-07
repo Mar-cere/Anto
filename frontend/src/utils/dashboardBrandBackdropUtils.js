@@ -5,15 +5,15 @@
 export const BRAND_HALO_KEYS = ['blue', 'indigo', 'rose'];
 
 const LIGHT_HALO_COLORS = {
-  blue: 'rgba(30, 131, 211, 0.11)',
-  indigo: 'rgba(29, 27, 112, 0.07)',
-  rose: 'rgba(232, 155, 184, 0.10)',
+  blue: 'rgba(30, 131, 211, 0.07)',
+  indigo: 'rgba(29, 27, 112, 0.045)',
+  rose: 'rgba(232, 155, 184, 0.065)',
 };
 
 const DARK_HALO_COLORS = {
-  blue: 'rgba(68, 215, 251, 0.14)',
-  indigo: 'rgba(29, 27, 112, 0.32)',
-  rose: 'rgba(232, 155, 184, 0.15)',
+  blue: 'rgba(68, 215, 251, 0.09)',
+  indigo: 'rgba(29, 27, 112, 0.19)',
+  rose: 'rgba(232, 155, 184, 0.09)',
 };
 
 /**

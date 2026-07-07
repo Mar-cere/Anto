@@ -17,6 +17,7 @@ export function normalizeChatSocketTurnPayload(raw) {
     proposedProductActions: sanitizeProposedProductActions(raw.proposedProductActions),
     productActionStatus: raw.productActionStatus || null,
     tccLite: raw.tccLite ?? null,
+    commitmentFollowUp: raw.commitmentFollowUp ?? null,
     crisisResources: raw.crisisResources ?? null,
     crisisHardStop: raw.crisisHardStop === true,
     transport: 'socket',

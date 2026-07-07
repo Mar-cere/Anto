@@ -17,6 +17,11 @@ import { buildDigitalPhenotypeChatSnippet } from './digitalPhenotypeChatContextS
 import { buildRecentAbcChatSnippet } from './recentAbcChatContextService.js';
 import { buildPersonalPatternRagSnippet } from './personalPatternRagService.js';
 import {
+  buildCommitmentFollowUpPlan,
+  detectCommitmentFollowUpAnswer,
+  markCommitmentFollowUpAsked,
+} from './commitmentFollowUpService.js';
+import {
   isChatObservationalContextBlocked,
   isLlmCrisisTherapeuticExtrasBlocked,
 } from '../utils/chatObservationalContext.js';
@@ -53,6 +58,7 @@ export async function planChatTurnEnhancements({
   sessionIntention,
   language = 'es',
   resumeTccLite = null,
+  resumeCommitmentFollowUp = false,
 }) {
   const lang = normalizeApiLanguage(language);
   const blockObservationalSnippets = isChatObservationalContextBlocked(riskLevel);
@@ -177,6 +183,30 @@ export async function planChatTurnEnhancements({
     }
   }
 
+  // Respaldo de inferencia (#202): si el usuario respondió por texto a un
+  // follow-up reciente, cerrar el lazo. Best-effort, no bloquea el turno.
+  try {
+    await detectCommitmentFollowUpAnswer({ userId, userContent: String(userContent || '') });
+  } catch {
+    // best-effort
+  }
+
+  // Plan de follow-up de compromiso (#202): solo inicio de hilo, fuera de crisis.
+  let commitmentFollowUpPlan = null;
+  if (!blockCrisisExtras) {
+    try {
+      commitmentFollowUpPlan = await buildCommitmentFollowUpPlan({
+        userId,
+        conversationHistory,
+        riskLevel,
+        language: lang,
+        forceFollowUp: resumeCommitmentFollowUp === true,
+      });
+    } catch {
+      commitmentFollowUpPlan = null;
+    }
+  }
+
   return {
     suggestionPlan,
     tccLitePlan,
@@ -185,6 +215,7 @@ export async function planChatTurnEnhancements({
     digitalPhenotypePromptSnippet,
     recentAbcPromptSnippet,
     personalPatternRagPromptSnippet,
+    commitmentFollowUpPlan,
   };
 }
 
@@ -203,6 +234,9 @@ export function buildOpenaiEnhancementSnippets(enhancements, options = {}) {
     digitalPhenotypePromptSnippet: enhancements.digitalPhenotypePromptSnippet || null,
     recentAbcPromptSnippet: enhancements.recentAbcPromptSnippet || null,
     personalPatternRagPromptSnippet: enhancements.personalPatternRagPromptSnippet || null,
+    commitmentFollowUpPromptSnippet: blockTherapeutic
+      ? null
+      : enhancements.commitmentFollowUpPlan?.promptSnippet || null,
   };
 }
 
@@ -223,8 +257,28 @@ export async function finalizeChatTurnEnhancements({
   contextualAnalysis,
   userContent,
   riskLevel,
+  commitmentFollowUpPlan = null,
 }) {
   await saveTccLiteStateToConversation(conversationId, tccLitePlan).catch(() => {});
+
+  // Follow-up de compromiso (#202): marcar como preguntado (una sola vez) y
+  // persistir en el mensaje asistente para rehidratar los chips al recargar.
+  if (commitmentFollowUpPlan?.commitmentId) {
+    await markCommitmentFollowUpAsked(commitmentFollowUpPlan.commitmentId).catch(() => {});
+    if (assistantMessageId) {
+      await Message.updateOne(
+        { _id: assistantMessageId },
+        {
+          $set: {
+            'metadata.commitmentFollowUp': {
+              id: commitmentFollowUpPlan.commitmentId,
+              label: commitmentFollowUpPlan.label,
+            },
+          },
+        },
+      ).catch(() => {});
+    }
+  }
 
   const formatted = suggestionPlan?.formatted;
   const crisisBlocked = isLlmCrisisTherapeuticExtrasBlocked({ riskLevel, userMessage: userContent });
@@ -275,6 +329,7 @@ export function buildClientTurnPayload({
   language = 'es',
   riskLevel = 'LOW',
   userMessage = '',
+  commitmentFollowUpPlan = null,
 }) {
   const lang = normalizeApiLanguage(language);
   if (isLlmCrisisTherapeuticExtrasBlocked({ riskLevel, userMessage })) {
@@ -282,6 +337,7 @@ export function buildClientTurnPayload({
       suggestions: [],
       suggestionsPersonalized: false,
       tccLite: toTccLiteClientPayload({ active: false }, lang),
+      commitmentFollowUp: null,
     };
   }
   const formatted = suggestionPlan?.shouldShow ? suggestionPlan.formatted || [] : [];
@@ -289,6 +345,9 @@ export function buildClientTurnPayload({
     suggestions: formatted,
     suggestionsPersonalized: suggestionPlan?.rankingPersonalized === true,
     tccLite: toTccLiteClientPayload(tccLitePlan || { active: false }, lang),
+    commitmentFollowUp: commitmentFollowUpPlan
+      ? { id: commitmentFollowUpPlan.commitmentId, label: commitmentFollowUpPlan.label }
+      : null,
   };
 }
 

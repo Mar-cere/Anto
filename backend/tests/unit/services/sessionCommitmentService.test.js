@@ -50,6 +50,12 @@ describe('sessionCommitmentService (#202)', () => {
     expect(mockCreate).not.toHaveBeenCalled();
   });
 
+  it('rechaza etiquetas genéricas del catálogo de técnicas', async () => {
+    const result = await createSessionCommitment(userId, { label: 'Activación conductual' });
+    expect(result.error).toBe('labelGeneric');
+    expect(mockCreate).not.toHaveBeenCalled();
+  });
+
   it('rechaza cuando hay demasiados compromisos activos', async () => {
     mockCountDocuments.mockResolvedValue(12);
     const result = await createSessionCommitment(userId, { label: 'Caminar 10 minutos' });

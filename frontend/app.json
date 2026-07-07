@@ -45,6 +45,7 @@
         "VIBRATE",
         "android.permission.health.READ_STEPS",
         "android.permission.health.READ_SLEEP",
+        "android.permission.health.READ_EXERCISE",
         "android.permission.health.READ_ACTIVE_CALORIES_BURNED"
       ],
       "edgeToEdgeEnabled": true,

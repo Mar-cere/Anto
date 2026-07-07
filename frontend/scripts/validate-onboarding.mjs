@@ -110,6 +110,7 @@ const orb = read('src/components/onboarding/OnboardingBrandOrb.js');
 if (
   orb.includes('welcomeTheme.logo') &&
   orb.includes('styles.chip') &&
+  orb.includes('chipOrbitRadius') &&
   !orb.includes('ambientGlow')
 ) {
   pass('onboarding: orb con logo de marca y chip del paso');
@@ -129,10 +130,10 @@ if (
   fail('onboarding: eyebrow unificado, beneficio y highlights por paso');
 }
 
-if (brand.includes('accentWarm')) {
-  pass('onboarding: gradientes con rosa de marca (accentWarm)');
+if (brand.includes('getOnboardingConicSegments')) {
+  pass('onboarding: conic-gradient de marca en orb');
 } else {
-  fail('onboarding: gradientes con rosa de marca (accentWarm)');
+  fail('onboarding: conic-gradient de marca en orb');
 }
 
 const backendSub = fs.readFileSync(

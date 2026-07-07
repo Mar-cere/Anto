@@ -5,7 +5,35 @@ import {
   localizeChatWelcomeMessages,
   pickChatWelcomeGreeting,
   reconstructPersistedSuggestions,
+  reconstructPersistedCommitmentFollowUp,
 } from '../chatWelcomeGreeting';
+
+describe('reconstructPersistedCommitmentFollowUp', () => {
+  it('reconstruye el bloque desde metadata del último asistente', () => {
+    const messages = [
+      { id: 'a1', role: 'assistant', metadata: { commitmentFollowUp: { id: 'c1', label: 'caminar' } } },
+    ];
+    const out = reconstructPersistedCommitmentFollowUp(messages);
+    expect(out).toHaveLength(2);
+    expect(out[1]).toMatchObject({
+      type: 'commitment_follow_up',
+      commitmentFollowUp: { id: 'c1', label: 'caminar' },
+    });
+  });
+
+  it('no duplica si ya hay un bloque en vivo', () => {
+    const messages = [
+      { id: 'a1', role: 'assistant', metadata: { commitmentFollowUp: { id: 'c1', label: 'x' } } },
+      { id: 'b1', type: 'commitment_follow_up', commitmentFollowUp: { id: 'c1', label: 'x' } },
+    ];
+    expect(reconstructPersistedCommitmentFollowUp(messages)).toHaveLength(2);
+  });
+
+  it('devuelve igual si no hay metadata de follow-up', () => {
+    const messages = [{ id: 'a1', role: 'assistant', metadata: {} }];
+    expect(reconstructPersistedCommitmentFollowUp(messages)).toHaveLength(1);
+  });
+});
 
 describe('chatWelcomeGreeting', () => {
   it('pickChatWelcomeGreeting devuelve inglés con language en', () => {

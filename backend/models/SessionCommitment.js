@@ -40,6 +40,12 @@ const sessionCommitmentSchema = new mongoose.Schema(
       default: null,
       index: true,
     },
+    // Marca cuándo el chat ya preguntó por este compromiso (#202): se pregunta
+    // una sola vez por compromiso para no insistir sesión tras sesión.
+    followUpAskedAt: {
+      type: Date,
+      default: null,
+    },
     followUpAnswer: {
       type: String,
       enum: ['pending', 'yes', 'partial', 'no'],

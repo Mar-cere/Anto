@@ -872,7 +872,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
   let assistantMessage = null;
   
   try {
-    const { conversationId, content, resumeTccLite = null } = req.body;
+    const { conversationId, content, resumeTccLite = null, resumeCommitmentFollowUp = false } = req.body;
 
     if (req.body?.role != null && req.body.role !== 'user') {
       metricsService.bumpChatFriction('message_invalid_role', {
@@ -1407,6 +1407,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           language: appLanguageForChat,
           resumeTccLite:
             resumeTccLite && typeof resumeTccLite === 'object' ? resumeTccLite : null,
+          resumeCommitmentFollowUp: resumeCommitmentFollowUp === true,
         });
         const { suggestionPlan, tccLitePlan } = turnEnhancements;
         const blockCrisisExtras = isLlmCrisisTherapeuticExtrasBlocked({
@@ -1464,6 +1465,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           digitalPhenotypePromptSnippet: promptSnippets.digitalPhenotypePromptSnippet,
           recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
           personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
+          commitmentFollowUpPromptSnippet: promptSnippets.commitmentFollowUpPromptSnippet,
           crisisMetricTransport: req.query.stream === 'true' ? 'sse' : 'http',
         };
 
@@ -1794,6 +1796,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   contextualAnalysis,
                   userContent: content,
                   riskLevel,
+                  commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
                 }).catch(() => {});
 
                 scheduleRollingSummaryRefresh({
@@ -1824,6 +1827,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   language: appLanguageForChat,
                   riskLevel,
                   userMessage: content.trim(),
+                  commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
                 });
                 if (suggestionPlan.actionIds?.length > 0) {
                   suggestionPlan.actionIds.forEach((suggestionType) => {
@@ -1924,6 +1928,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   clinicalScale: scaleSuggestion ? { ...scaleSuggestion, suggestion: clinicalScalesService.generateScaleSuggestion(scaleSuggestion.scale, scaleSuggestion.reason), automaticResult: null } : null,
                   cognitiveDistortions: cognitiveDistortions?.length > 0 ? { detected: cognitiveDistortions, primary: primaryDistortion, intervention: distortionIntervention } : null,
                   tccLite: clientTurn.tccLite,
+                  commitmentFollowUp: clientTurn.commitmentFollowUp,
                   processingTime: responseTime
                 })) + '\n\n');
 
@@ -2140,6 +2145,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           contextualAnalysis,
           userContent: content,
           riskLevel,
+          commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
         }).catch(() => {});
 
         scheduleRollingSummaryRefresh({
@@ -2282,6 +2288,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           language: appLanguageForChat,
           riskLevel,
           userMessage: content.trim(),
+          commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
         });
         if (suggestionPlan.actionIds?.length > 0) {
           suggestionPlan.actionIds.forEach((suggestionType) => {
@@ -2401,6 +2408,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             intervention: distortionIntervention
           } : null,
           tccLite: clientTurn.tccLite,
+          commitmentFollowUp: clientTurn.commitmentFollowUp,
           processingTime: responseTime
         }));
 

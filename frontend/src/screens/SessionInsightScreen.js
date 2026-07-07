@@ -11,6 +11,7 @@ import {
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -29,6 +30,7 @@ import { recordInterventionClicked } from '../utils/recordInterventionCompleted'
 import { setPendingTccLiteResume } from '../utils/chatTccLiteResume';
 import chatService from '../services/chatService';
 import { createSessionCommitment } from '../services/sessionCommitmentsService';
+import { isConcreteCommitmentLabel } from '../utils/commitmentLabelUtils';
 import { skipSessionWai, submitSessionWai } from '../services/sessionWaiService';
 import SessionWaiCard from '../components/sessionInsight/SessionWaiCard';
 import { useToast } from '../context/ToastContext';
@@ -60,6 +62,7 @@ export default function SessionInsightScreen() {
   );
   const [commitmentSaving, setCommitmentSaving] = useState(false);
   const [commitmentSaved, setCommitmentSaved] = useState(false);
+  const [commitmentDraft, setCommitmentDraft] = useState('');
   const [waiSubmitting, setWaiSubmitting] = useState(false);
   const [waiHandled, setWaiHandled] = useState(false);
   const [waiNotice, setWaiNotice] = useState(null);
@@ -275,6 +278,23 @@ export default function SessionInsightScreen() {
           marginTop: 4,
           lineHeight: 18,
         },
+        commitmentHint: {
+          fontSize: 14,
+          lineHeight: 20,
+          color: colors.textSecondary,
+          marginBottom: 10,
+        },
+        commitmentInput: {
+          borderWidth: 1,
+          borderColor: colors.chromeCardBorder,
+          borderRadius: 12,
+          paddingHorizontal: 14,
+          paddingVertical: 12,
+          fontSize: 15,
+          color: colors.text,
+          backgroundColor: colors.chromeInput,
+          marginBottom: 12,
+        },
         ctaPrimary: {
           marginTop: 8,
           backgroundColor: colors.primary,
@@ -369,8 +389,15 @@ export default function SessionInsightScreen() {
 
   const saveCommitment = useCallback(async () => {
     const step = insight?.suggestedStep;
-    const label = String(step?.label || insight?.headline || '').trim();
+    const label = String(commitmentDraft || '').trim();
     if (!label || commitmentSaving || commitmentSaved) return;
+    if (!isConcreteCommitmentLabel(label, step?.label)) {
+      showToast({
+        message: TEXTS.COMMITMENT_GENERIC_ERROR || TEXTS.CTA_COMMITMENT_ERROR,
+        type: 'warning',
+      });
+      return;
+    }
     setCommitmentSaving(true);
     try {
       const saved = await createSessionCommitment({
@@ -395,11 +422,13 @@ export default function SessionInsightScreen() {
   }, [
     insight,
     conversationId,
+    commitmentDraft,
     commitmentSaving,
     commitmentSaved,
     showToast,
     TEXTS.CTA_COMMITMENT_SAVED,
     TEXTS.CTA_COMMITMENT_ERROR,
+    TEXTS.COMMITMENT_GENERIC_ERROR,
   ]);
 
   const sessionWai = insight?.sessionWai;
@@ -633,20 +662,34 @@ export default function SessionInsightScreen() {
         ) : null}
 
         {step ? (
-          <TouchableOpacity
-            style={[styles.ctaSecondary, commitmentSaved && { opacity: 0.6 }]}
-            onPress={saveCommitment}
-            disabled={commitmentSaving || commitmentSaved}
-            accessibilityRole="button"
-          >
-            <Text style={styles.ctaSecondaryText}>
-              {commitmentSaved
-                ? TEXTS.CTA_COMMITMENT_SAVED
-                : commitmentSaving
-                  ? TEXTS.LOADING
-                  : TEXTS.CTA_SAVE_COMMITMENT}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.card}>
+            <Text style={styles.cardKicker}>{TEXTS.COMMITMENT_TITLE}</Text>
+            <Text style={styles.commitmentHint}>{TEXTS.COMMITMENT_HINT}</Text>
+            <TextInput
+              style={styles.commitmentInput}
+              value={commitmentDraft}
+              onChangeText={setCommitmentDraft}
+              placeholder={TEXTS.COMMITMENT_PLACEHOLDER}
+              placeholderTextColor={colors.textMuted}
+              editable={!commitmentSaving && !commitmentSaved}
+              maxLength={240}
+              accessibilityLabel={TEXTS.COMMITMENT_PLACEHOLDER}
+            />
+            <TouchableOpacity
+              style={[styles.ctaSecondary, commitmentSaved && { opacity: 0.6 }]}
+              onPress={saveCommitment}
+              disabled={commitmentSaving || commitmentSaved || !commitmentDraft.trim()}
+              accessibilityRole="button"
+            >
+              <Text style={styles.ctaSecondaryText}>
+                {commitmentSaved
+                  ? TEXTS.CTA_COMMITMENT_SAVED
+                  : commitmentSaving
+                    ? TEXTS.LOADING
+                    : TEXTS.CTA_SAVE_COMMITMENT}
+              </Text>
+            </TouchableOpacity>
+          </View>
         ) : null}
 
         {showWaiCard ? (

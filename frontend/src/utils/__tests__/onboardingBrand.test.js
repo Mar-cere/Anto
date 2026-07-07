@@ -1,5 +1,7 @@
 import {
+  buildConicWedgePath,
   buildOnboardingStepHighlights,
+  getOnboardingConicSegments,
   resolveOnboardingBrandAccent,
   resolveOnboardingGradient,
 } from '../onboardingBrand';
@@ -27,6 +29,19 @@ describe('onboardingBrand', () => {
     const dark = resolveOnboardingGradient(COLORS, true);
     expect(dark.indigo).toBe('#5B4BD4');
     expect(dark.warm).toBe('#E89BB8');
+  });
+
+  it('getOnboardingConicSegments expone cuatro paradas de marca', () => {
+    const gradient = resolveOnboardingGradient(COLORS, false);
+    const segments = getOnboardingConicSegments(gradient);
+    expect(segments).toHaveLength(4);
+    expect(segments.map((s) => s.color)).toEqual([
+      '#44D7FB',
+      '#1E83D3',
+      '#5B4BD4',
+      '#E89BB8',
+    ]);
+    expect(buildConicWedgePath(50, 50, 40, 0, 90)).toMatch(/^M 50 50 L /);
   });
 
   it('buildOnboardingStepHighlights filtra líneas vacías', () => {

@@ -4,9 +4,8 @@
 import { Platform } from 'react-native';
 import AppleHealthKit from 'react-native-health';
 
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
+const DEFAULT_SYNC_DAYS = 14;
+const ASLEEP_VALUES = new Set(['ASLEEP', 'CORE', 'DEEP', 'REM']);
 
 const PERMISSIONS = {
   permissions: {
@@ -20,6 +19,19 @@ const PERMISSIONS = {
 };
 
 let permissionsGranted = false;
+
+function todayKey(date = new Date()) {
+  return date.toISOString().slice(0, 10);
+}
+
+function dayWindow(dayOffset = 0) {
+  const end = new Date();
+  end.setDate(end.getDate() - dayOffset);
+  end.setHours(23, 59, 59, 999);
+  const start = new Date(end);
+  start.setHours(0, 0, 0, 0);
+  return { start, end, dayKey: todayKey(start) };
+}
 
 function probeHealthKitAvailable() {
   return new Promise((resolve) => {
@@ -73,7 +85,7 @@ function getSleepHours(start, end) {
         }
         const asleep = results.filter((row) => {
           const value = String(row.value || '').toUpperCase();
-          return value.includes('ASLEEP') || value === 'INBED';
+          return ASLEEP_VALUES.has(value);
         });
         const ms = asleep.reduce((sum, row) => {
           const a = new Date(row.startDate).getTime();
@@ -106,6 +118,25 @@ function getActiveMinutes(start, end) {
   });
 }
 
+async function collectDaySnapshot(dayOffset = 0) {
+  const { start, end, dayKey } = dayWindow(dayOffset);
+  const [steps, sleepHours, activeMinutes] = await Promise.all([
+    getSteps(start, end),
+    getSleepHours(start, end),
+    getActiveMinutes(start, end),
+  ]);
+  if (steps == null && sleepHours == null && activeMinutes == null) return null;
+  return {
+    dayKey,
+    steps,
+    sleepHours,
+    screenTimeMinutes: null,
+    socialScreenRatio: null,
+    activeMinutes,
+    inactivityHours: null,
+  };
+}
+
 /** Solo comprueba si HealthKit está disponible — sin pedir permisos. */
 export async function getNativeHealthAvailability() {
   try {
@@ -116,42 +147,44 @@ export async function getNativeHealthAvailability() {
   }
 }
 
-export async function collectNativeDailySnapshot() {
+export async function requestNativeHealthPermissions() {
   try {
     const available = await probeHealthKitAvailable();
-    if (!available) return null;
+    if (!available) return false;
+    return ensurePermissions();
+  } catch {
+    return false;
+  }
+}
+
+export async function collectNativeDailySnapshot() {
+  const snapshots = await collectNativeDailySnapshots({ days: 1 });
+  return snapshots[0] || null;
+}
+
+export async function collectNativeDailySnapshots({ days = DEFAULT_SYNC_DAYS } = {}) {
+  try {
+    const available = await probeHealthKitAvailable();
+    if (!available) return [];
 
     const granted = await ensurePermissions();
-    if (!granted) return null;
+    if (!granted) return [];
 
-    const end = new Date();
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-
-    const [steps, sleepHours, activeMinutes] = await Promise.all([
-      getSteps(start, end),
-      getSleepHours(start, end),
-      getActiveMinutes(start, end),
-    ]);
-
-    if (steps == null && sleepHours == null && activeMinutes == null) return null;
-
-    return {
-      dayKey: todayKey(),
-      steps,
-      sleepHours,
-      screenTimeMinutes: null,
-      socialScreenRatio: null,
-      activeMinutes,
-      inactivityHours: null,
-      source: 'manual',
-    };
+    const safeDays = Math.max(1, Math.min(Number(days) || 1, DEFAULT_SYNC_DAYS));
+    const snapshots = [];
+    for (let offset = 0; offset < safeDays; offset += 1) {
+      const row = await collectDaySnapshot(offset);
+      if (row) snapshots.push(row);
+    }
+    return snapshots;
   } catch {
-    return null;
+    return [];
   }
 }
 
 export default {
   getNativeHealthAvailability,
+  requestNativeHealthPermissions,
   collectNativeDailySnapshot,
+  collectNativeDailySnapshots,
 };

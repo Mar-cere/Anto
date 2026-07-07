@@ -89,7 +89,9 @@ describe('onboarding guard', () => {
     expect(src).toMatch(/STEP_2_TITLE: 'Herramientas con respaldo'/);
     expect(src).toMatch(/STEP_3_TITLE: 'Tu día en un vistazo'/);
     expect(src).toMatch(/STEP_4_TITLE: 'Progreso y seguridad'/);
-    expect(src).toMatch(/Patrones en tu bienestar semanal/);
+    expect(src).toMatch(/'Tu resumen'/);
+    expect(src).toMatch(/'Patrones'/);
+    expect(src).toMatch(/'Contactos de confianza'/);
     expect(src).toMatch(/DISCLAIMER:/);
     expect(src).toMatch(/sustituye terapia profesional/i);
     expect(src).toMatch(/PHQ-9, GAD-7/);
@@ -103,7 +105,9 @@ describe('onboarding guard', () => {
     expect(src).toMatch(/STEP_2_TITLE: 'Tools backed by evidence'/);
     expect(src).toMatch(/STEP_3_TITLE: 'Your day at a glance'/);
     expect(src).toMatch(/STEP_4_TITLE: 'Progress and safety'/);
-    expect(src).toMatch(/Patterns in your weekly wellbeing/);
+    expect(src).toMatch(/'Your summary'/);
+    expect(src).toMatch(/'Patterns'/);
+    expect(src).toMatch(/'Trusted contacts'/);
     expect(src).not.toMatch(/^\s+STEP_5_TITLE:/m);
   });
 
@@ -168,6 +172,8 @@ describe('onboarding guard', () => {
     expect(es).toMatch(/QUESTIONS_BENEFITS_HEADING:/);
     expect(es).toMatch(/BENEFIT_2: 'Técnicas de TCC/);
     const questions = readSrc('components/OnboardingQuestions.js');
+    expect(questions).toMatch(/OnboardingGradientButton/);
+    expect(questions).toMatch(/variant="commit"/);
     expect(questions).toMatch(/OnboardingBenefitList/);
     expect(questions).toMatch(/OnboardingBrandShell/);
     expect(questions).toMatch(/buildOnboardingBenefits/);
@@ -189,9 +195,13 @@ describe('onboarding guard', () => {
     expect(orb).toMatch(/styles\.chip/);
     expect(orb).not.toMatch(/stepIcon \? \([\s\S]*MaterialCommunityIcons[\s\S]*\) : \(/);
 
+    expect(orb).toMatch(/getOnboardingConicSegments/);
+    expect(orb).toMatch(/chipOpacity/);
+    expect(orb).toMatch(/duration: 200/);
+
     const cta = readSrc('components/onboarding/OnboardingGradientButton.js');
     expect(cta).toMatch(/resolveOnboardingGradient/);
-    expect(cta).toMatch(/LinearGradient/);
+    expect(cta).toMatch(/variant === 'commit'/);
 
     const card = readSrc('components/onboarding/OnboardingBenefitCard.js');
     expect(card).toMatch(/name="check"/);
@@ -204,6 +214,7 @@ describe('onboarding guard', () => {
     expect(tutorial).toMatch(/primaryBright \|\| brandAccent/);
     expect(tutorial).toMatch(/styles\.backButton/);
     expect(tutorial).not.toMatch(/styles\.dot/);
+    expect(tutorial).toMatch(/variant=\{currentStep === totalSteps - 1 \? 'commit' : 'default'\}/);
     expect(tutorial).not.toMatch(/colors\.warning/);
     expect(tutorial).not.toMatch(/colors\.success/);
   });

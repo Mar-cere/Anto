@@ -176,7 +176,7 @@ class WebSocketService {
   /**
    * Envía mensaje de chat y espera message:received (un turno).
    */
-  sendChatMessage({ text, conversationId, resumeTccLite, language, signal } = {}) {
+  sendChatMessage({ text, conversationId, resumeTccLite, resumeCommitmentFollowUp, language, signal } = {}) {
     return new Promise((resolve, reject) => {
       if (!this.socket?.connected) {
         const err = new Error('Socket no conectado');
@@ -275,6 +275,7 @@ class WebSocketService {
         conversationId: conversationId ? String(conversationId) : undefined,
         language: language || undefined,
         ...(resumePayload ? { resumeTccLite: resumePayload } : {}),
+        ...(resumeCommitmentFollowUp === true ? { resumeCommitmentFollowUp: true } : {}),
       });
     });
   }

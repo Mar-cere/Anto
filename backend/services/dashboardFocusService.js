@@ -32,6 +32,7 @@ import { loadExposureFocus } from './chatTccContinuityService.js';
 import { pickBaFocusSlot } from './activeTccProtocolsContextService.js';
 import { listSessionCommitments } from './sessionCommitmentService.js';
 import { buildHomeRotatingInsightForUser } from './homeRotatingInsightService.js';
+import { buildDigitalPhenotypeFocusAlert } from './digitalPhenotypePatternAlertService.js';
 
 function cacheTtlSecondsUntilUtcEndOfDay() {
   const now = Date.now();
@@ -547,7 +548,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
     language
   });
 
-  const [focusLine, homeInsight] = await Promise.all([
+  const [focusLine, homeInsight, phenotypeAlert] = await Promise.all([
     maybeLlmFocusLine(
       userId,
       {
@@ -567,6 +568,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
       summary,
       timezone: userTimezone,
     }).catch(() => null),
+    buildDigitalPhenotypeFocusAlert({ userId }).catch(() => null),
   ]);
 
   let focusLineText = String(focusLine?.text || '').trim();
@@ -588,6 +590,9 @@ export async function buildDashboardFocus(userId, opts = {}) {
         }
       : null,
     homeInsight,
+    phenotypeAlert: phenotypeAlert
+      ? { kind: phenotypeAlert.kind, daysWithData: phenotypeAlert.daysWithData }
+      : null,
     focus: {
       line: focusLineText,
       lineSource: focusLine.mode,
@@ -653,6 +658,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
       followUpAt: c.followUpAt,
       followUpAnswer: c.followUpAnswer,
       createdAt: c.createdAt,
+      interventionId: c.interventionId || null,
     })),
     dailyMood: dailyMood || null,
     engagementStreak,

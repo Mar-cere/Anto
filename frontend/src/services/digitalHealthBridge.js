@@ -1,16 +1,19 @@
 /**
  * Puente de fenotipado digital (#216).
- * Delega en módulo nativo por plataforma cuando react-native-health / Health Connect están instalados.
  */
 import { Platform } from 'react-native';
 import {
-  getNativeHealthAvailability,
   collectNativeDailySnapshot,
+  collectNativeDailySnapshots,
+  getNativeHealthAvailability,
+  requestNativeHealthPermissions,
 } from './digitalHealthNative';
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10);
 }
+
+export { requestNativeHealthPermissions, collectNativeDailySnapshots };
 
 /**
  * @returns {Promise<{ available: boolean, platform: string }>}
@@ -28,6 +31,23 @@ export async function collectDailyPhenotypeSnapshot() {
   const availability = await getDigitalHealthAvailability();
   if (!availability.available) return null;
   return collectNativeDailySnapshot();
+}
+
+/**
+ * Solicita permisos nativos y recoge snapshots de los últimos días.
+ * @returns {Promise<{ permissionsGranted: boolean, snapshots: object[] }>}
+ */
+export async function collectDigitalHealthSnapshots({ days = 14 } = {}) {
+  const availability = await getDigitalHealthAvailability();
+  if (!availability.available) {
+    return { permissionsGranted: false, snapshots: [] };
+  }
+  const permissionsGranted = await requestNativeHealthPermissions();
+  if (!permissionsGranted) {
+    return { permissionsGranted: false, snapshots: [] };
+  }
+  const snapshots = await collectNativeDailySnapshots({ days });
+  return { permissionsGranted: true, snapshots };
 }
 
 /**
@@ -49,5 +69,8 @@ export function buildStubPhenotypeSnapshot(overrides = {}) {
 export default {
   getDigitalHealthAvailability,
   collectDailyPhenotypeSnapshot,
+  collectDigitalHealthSnapshots,
+  requestNativeHealthPermissions,
+  collectNativeDailySnapshots,
   buildStubPhenotypeSnapshot,
 };

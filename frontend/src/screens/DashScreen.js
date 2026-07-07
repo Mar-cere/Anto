@@ -37,6 +37,7 @@ import DashboardHomeHeader from '../components/dashboard/DashboardHomeHeader';
 import DashboardBrandBackdrop from '../components/dashboard/DashboardBrandBackdrop';
 import MoodCheckInCard from '../components/dashboard/MoodCheckInCard';
 import DashboardRotatingInsightCard from '../components/dashboard/DashboardRotatingInsightCard';
+import DigitalHealthProdromeAlert from '../components/dashboard/DigitalHealthProdromeAlert';
 import DashboardStreakHero from '../components/dashboard/DashboardStreakHero';
 import DashboardStatsRow from '../components/dashboard/DashboardStatsRow';
 import DashboardHabitsSection from '../components/dashboard/DashboardHabitsSection';
@@ -650,12 +651,17 @@ const DashScreen = () => {
       } catch (_) {
         /* noop */
       }
+      // #202: al retomar la conversación desde el foco, forzar el follow-up de
+      // compromiso vencido en el primer mensaje (aunque el hilo ya tenga historial).
       const state = navigation.getState?.();
       if (state?.type === 'tab') {
-        navigation.navigate('Chat', { openConversationId: cid });
+        navigation.navigate('Chat', { openConversationId: cid, resumeCommitmentFollowUp: true });
         return;
       }
-      navigation.navigate('MainTabs', { screen: 'Chat', params: { openConversationId: cid } });
+      navigation.navigate('MainTabs', {
+        screen: 'Chat',
+        params: { openConversationId: cid, resumeCommitmentFollowUp: true },
+      });
     },
     [navigation]
   );
@@ -849,6 +855,7 @@ const DashScreen = () => {
             streakOnly
           />
           <DashboardRotatingInsightCard insight={focusPayload?.homeInsight} />
+          <DigitalHealthProdromeAlert alert={focusPayload?.phenotypeAlert} />
           {hasActiveHabits ? (
             <DashboardStatsRow
               streakDays={dashboardStats.streakDays}

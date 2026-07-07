@@ -216,6 +216,7 @@ const getAuthHeaders = async (): Promise<Record<string, string>> => {
     Accept: 'application/json',
     Authorization: token ? `Bearer ${token}` : '',
     'X-App-Language': appLanguage,
+    'X-Client-Platform': Platform.OS,
   };
 };
 

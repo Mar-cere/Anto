@@ -28,7 +28,7 @@ import {
 import ChatHeader from '../components/chat/ChatHeader';
 import ChatInput from '../components/chat/ChatInput';
 import ChatMessageItem from '../components/chat/ChatMessageItem';
-import SessionIntentionBanner from '../components/chat/SessionIntentionBanner';
+import SessionIntentionSheet from '../components/chat/SessionIntentionSheet';
 import TccContinuityStrip from '../components/chat/TccContinuityStrip';
 import TccLiteAtHandoffStrip from '../components/chat/TccLiteAtHandoffStrip';
 import CrisisResourcesStrip from '../components/chat/CrisisResourcesStrip';
@@ -315,6 +315,7 @@ const ChatScreen = () => {
     retryOfflinePending,
     handleProductProposalPress,
     handleProductProposalReject,
+    handleCommitmentFollowUpAnswer,
     showSessionIntentionPrompt,
     sessionIntentionSubmitting,
     selectSessionIntention,
@@ -337,6 +338,8 @@ const ChatScreen = () => {
   } = useChatScreen();
   const hasTccContinuity = visibleTccContinuityItems.length > 0;
   const showTccLiteHandoff = Boolean(tccLiteAtHandoff?.screen) && !hasTccContinuity;
+  const showSessionIntentionSheet =
+    showSessionIntentionPrompt && guestQuota === null && !isLoading;
   const [showAIDisclosure, setShowAIDisclosure] = React.useState(false);
   const [showChatOptions, setShowChatOptions] = React.useState(false);
 
@@ -460,6 +463,7 @@ const ChatScreen = () => {
         onSuggestionDismiss={handleSuggestionDismiss}
         onProductProposalPress={handleProductProposalPress}
         onProductProposalReject={handleProductProposalReject}
+        onCommitmentFollowUpAnswer={handleCommitmentFollowUpAnswer}
       />
     ),
     [
@@ -467,6 +471,7 @@ const ChatScreen = () => {
       handleSuggestionDismiss,
       handleProductProposalPress,
       handleProductProposalReject,
+      handleCommitmentFollowUpAnswer,
     ]
   );
 
@@ -482,7 +487,9 @@ const ChatScreen = () => {
   }, []);
 
   const listEmptyComponent = useCallback(
-    () => (
+    () => {
+      if (showSessionIntentionSheet) return null;
+      return (
       <View
         style={styles.emptyContainer}
         accessibilityRole="text"
@@ -498,8 +505,16 @@ const ChatScreen = () => {
         <Text style={styles.emptyText}>{TEXTS.EMPTY}</Text>
         <Text style={styles.emptySubtext}>{TEXTS.EMPTY_SUBTITLE}</Text>
       </View>
-    ),
-    [chatColors.PRIMARY, styles, TEXTS.EMPTY, TEXTS.EMPTY_KICKER, TEXTS.EMPTY_SUBTITLE],
+      );
+    },
+    [
+      showSessionIntentionSheet,
+      chatColors.PRIMARY,
+      styles,
+      TEXTS.EMPTY,
+      TEXTS.EMPTY_KICKER,
+      TEXTS.EMPTY_SUBTITLE,
+    ],
   );
 
   const listHeaderComponent = useCallback(() => {
@@ -632,8 +647,8 @@ const ChatScreen = () => {
         )}
       </Animated.View>
 
-      <SessionIntentionBanner
-        visible={showSessionIntentionPrompt && guestQuota === null && !isLoading}
+      <SessionIntentionSheet
+        visible={showSessionIntentionSheet}
         submitting={sessionIntentionSubmitting}
         onSelect={selectSessionIntention}
         onSkip={skipSessionIntention}

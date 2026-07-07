@@ -70,4 +70,11 @@ describe('dashboardFocusCard guard', () => {
     expect(src).toMatch(/resolveFocusNextTask\(data\)/);
     expect(src).toMatch(/useMemo\(\(\) => resolveFocusNextTask/);
   });
+
+  it('DashboardFocusCard oculta compromisos BA duplicados cuando hay plan semanal', () => {
+    const src = readSrc('components/DashboardFocusCard.js');
+    expect(src).toMatch(/filterDashboardCommitments/);
+    expect(src).toMatch(/visibleCommitments/);
+    expect(src).toMatch(/formatCommitmentFollowUpPrompt/);
+  });
 });

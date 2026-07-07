@@ -5,11 +5,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Switch, Text, View } from 'react-native';
 import { SPACING } from '../../constants/ui';
+import { useToast } from '../../context/ToastContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
-import signalsService from '../../services/signalsService';
 import { getDigitalHealthAvailability } from '../../services/digitalHealthBridge';
+import { SYNC_REASON, syncDigitalHealthWithNative } from '../../services/digitalHealthSync';
+import signalsService from '../../services/signalsService';
 
 const ICON_SIZE = 24;
 const ICON_GAP = 16;
@@ -18,8 +20,14 @@ const DEFAULTS_ES = {
   TITLE: 'Señales opcionales',
   TYPING: 'Ritmo al escribir (sin guardar más palabras)',
   TYPING_HINT: 'Mide pausas y retoques del borrador para detectar carga cognitiva.',
-  HEALTH: 'Salud digital (pasos, sueño, pantalla)',
-  HEALTH_HINT: 'Requiere permisos del dispositivo cuando estén disponibles.',
+  HEALTH: 'Salud digital (pasos, sueño, actividad)',
+  HEALTH_HINT: 'Pide permisos de Salud o Health Connect solo si lo activas.',
+  HEALTH_UNAVAILABLE:
+    'Requiere la app nativa (no Expo Go). Ritmo al escribir e informes semanales sí están disponibles.',
+  HEALTH_PERMISSION_DENIED:
+    'No se concedieron permisos de salud. Puedes activarlos en Ajustes del dispositivo.',
+  HEALTH_NO_DATA:
+    'Permisos concedidos. Aún no hay datos de pasos o sueño en este periodo.',
   WEEKLY: 'Informe semanal de patrones',
   WEEKLY_HINT: 'Resumen observacional, no diagnóstico.',
   SAVING: 'Guardando…',
@@ -29,8 +37,14 @@ const DEFAULTS_EN = {
   TITLE: 'Optional signals',
   TYPING: 'Writing pace (no extra words stored)',
   TYPING_HINT: 'Measures pauses and edits in drafts to detect cognitive load.',
-  HEALTH: 'Digital health (steps, sleep, screen)',
-  HEALTH_HINT: 'Requires device permissions when available.',
+  HEALTH: 'Digital health (steps, sleep, activity)',
+  HEALTH_HINT: 'Requests Health or Health Connect permissions only when you turn this on.',
+  HEALTH_UNAVAILABLE:
+    'Requires the native app (not Expo Go). Writing pace and weekly reports are available now.',
+  HEALTH_PERMISSION_DENIED:
+    'Health permissions were not granted. You can enable them in device Settings.',
+  HEALTH_NO_DATA:
+    'Permissions granted. No step or sleep data in this period yet.',
   WEEKLY: 'Weekly pattern report',
   WEEKLY_HINT: 'Observational summary, not a diagnosis.',
   SAVING: 'Saving…',
@@ -67,7 +81,7 @@ const ROWS = [
         enabled,
         steps: enabled,
         sleep: enabled,
-        screenTime: enabled,
+        screenTime: false,
       },
     }),
   },
@@ -84,6 +98,7 @@ const ROWS = [
 export default function SignalConsentPanel({ compact = false, embedded = false }) {
   const { colors } = useTheme();
   const { language } = useLanguage();
+  const { showToast } = useToast();
   const translated = useSectionTranslations('TECHNIQUES');
   const TEXTS = useMemo(() => {
     const base = language === 'en' ? DEFAULTS_EN : DEFAULTS_ES;
@@ -118,18 +133,57 @@ export default function SignalConsentPanel({ compact = false, embedded = false }
       .catch(() => setHealthAvailable(false));
   }, [load]);
 
-  const patchConsent = useCallback(async (patch) => {
-    try {
-      setSaving(true);
-      const next = await signalsService.updateSignalConsent(patch);
-      setConsent(next);
-      if (patch?.digitalHealth?.enabled === true) {
-        void signalsService.syncDigitalPhenotype().catch(() => {});
+  const patchConsent = useCallback(
+    async (patch) => {
+      try {
+        setSaving(true);
+        const next = await signalsService.updateSignalConsent(patch);
+        setConsent(next);
+        return next;
+      } finally {
+        setSaving(false);
       }
-    } finally {
-      setSaving(false);
-    }
-  }, []);
+    },
+    [],
+  );
+
+  const handleRowToggle = useCallback(
+    async (row, enabled) => {
+      if (row.key === 'health' && enabled) {
+        if (!healthAvailable) {
+          showToast({ message: TEXTS.HEALTH_UNAVAILABLE, type: 'info' });
+          return;
+        }
+        const { requestNativeHealthPermissions } = await import(
+          '../../services/digitalHealthBridge'
+        );
+        const granted = await requestNativeHealthPermissions();
+        if (!granted) {
+          showToast({ message: TEXTS.HEALTH_PERMISSION_DENIED, type: 'warning' });
+          return;
+        }
+        await patchConsent(row.buildPatch(true));
+        const sync = await syncDigitalHealthWithNative({ days: 14 });
+        if (sync.reason === SYNC_REASON.PERMISSIONS_DENIED) {
+          showToast({ message: TEXTS.HEALTH_PERMISSION_DENIED, type: 'warning' });
+        } else if (sync.reason === SYNC_REASON.NO_DATA) {
+          showToast({ message: TEXTS.HEALTH_NO_DATA, type: 'info' });
+        } else if (!sync.ok && sync.reason === SYNC_REASON.SUBSCRIPTION_REQUIRED) {
+          showToast({
+            message:
+              language === 'en'
+                ? 'An active plan is required to sync health data.'
+                : 'Se requiere un plan activo para sincronizar datos de salud.',
+            type: 'warning',
+          });
+        }
+        return;
+      }
+
+      await patchConsent(row.buildPatch(enabled));
+    },
+    [TEXTS, healthAvailable, language, patchConsent, showToast],
+  );
 
   const styles = useMemo(
     () =>
@@ -233,15 +287,13 @@ export default function SignalConsentPanel({ compact = false, embedded = false }
             <Text style={styles.label}>{TEXTS[row.labelKey]}</Text>
             <Text style={styles.hint}>
               {row.key === 'health' && !healthAvailable
-                ? language === 'en'
-                  ? 'Coming soon on this device. Writing pace and weekly reports are available now.'
-                  : 'Próximamente en este dispositivo. Ritmo al escribir e informes semanales sí están disponibles.'
+                ? TEXTS.HEALTH_UNAVAILABLE
                 : TEXTS[row.hintKey]}
             </Text>
           </View>
           <Switch
             value={row.getValue(consent)}
-            onValueChange={(enabled) => patchConsent(row.buildPatch(enabled))}
+            onValueChange={(enabled) => handleRowToggle(row, enabled)}
             trackColor={{ true: colors.primary, false: colors.border }}
             accessibilityLabel={TEXTS[row.labelKey]}
             accessibilityHint={TEXTS[row.hintKey]}

@@ -905,6 +905,40 @@ export const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emoci
  * @param {Object} contexto - Contexto (emotional, contextual, profile, therapeutic, memory, history, sessionTrends, sessionRetention, currentMessage, currentConversationId, crisis, safetyHistory, sessionPhase, rollingSummary, sessionIntention)
  * @returns {Promise<{ systemMessage: string, contextMessages: Array }>}
  */
+/**
+ * Snippets de enhancement que viajan en el contexto de generación y deben
+ * reenviarse al contexto del prompt builder. Centralizado para evitar que los
+ * call sites de generación (stream / no-stream) diverjan y omitan snippets.
+ */
+export const ENHANCEMENT_PROMPT_SNIPPET_KEYS = [
+  'psychoeducationPromptSnippet',
+  'activeTccProtocolsPromptSnippet',
+  'tccLitePromptSnippet',
+  'digitalPhenotypePromptSnippet',
+  'recentAbcPromptSnippet',
+  'personalPatternRagPromptSnippet',
+  'commitmentFollowUpPromptSnippet',
+];
+
+/**
+ * Reenvía los snippets de enhancement desde el contexto de generación al
+ * contexto del prompt builder. Sin esto, los snippets (fenotipo #216, RAG #203,
+ * psicoed, ABC, follow-up #202) nunca llegan al system message.
+ *
+ * @param {object} promptContext Contexto explícito que se pasa a buildContextualizedPrompt.
+ * @param {object} generationContext Contexto recibido por generarRespuesta(Stream).
+ * @returns {object} promptContext con los snippets presentes reenviados.
+ */
+export function applyEnhancementSnippetsToPromptContext(promptContext, generationContext = {}) {
+  const out = { ...promptContext };
+  for (const key of ENHANCEMENT_PROMPT_SNIPPET_KEYS) {
+    if (generationContext[key] != null) {
+      out[key] = generationContext[key];
+    }
+  }
+  return out;
+}
+
 export async function buildContextualizedPrompt(mensaje, contexto) {
   const language = resolveChatLanguage(contexto);
   const timeOfDay = getTimeOfDay();
@@ -1167,6 +1201,11 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   const personalPatternRagSnippet = String(contexto.personalPatternRagPromptSnippet || '').trim();
   if (personalPatternRagSnippet) {
     systemMessage += personalPatternRagSnippet;
+  }
+
+  const commitmentFollowUpSnippet = String(contexto.commitmentFollowUpPromptSnippet || '').trim();
+  if (commitmentFollowUpSnippet) {
+    systemMessage += commitmentFollowUpSnippet;
   }
 
   if (contexto.crisis?.riskLevel && shouldAttachCrisisContextToPrompt(contexto.crisis.riskLevel)) {

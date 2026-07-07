@@ -6,6 +6,7 @@ import {
   isTrustedPhenotypeSource,
   isValidDayKey,
   resolveClientPhenotypeSource,
+  resolveServerPhenotypeSource,
 } from '../utils/signalValidators.js';
 
 function dayKeyFromDate(date = new Date()) {
@@ -14,7 +15,10 @@ function dayKeyFromDate(date = new Date()) {
   return d.toISOString().slice(0, 10);
 }
 
-export function sanitizeDigitalPhenotypePayload(payload = {}, { fromClient = true } = {}) {
+export function sanitizeDigitalPhenotypePayload(
+  payload = {},
+  { fromClient = true, clientPlatform = null } = {},
+) {
   const dayKey = String(payload.dayKey || dayKeyFromDate() || '').slice(0, 10);
   if (!isValidDayKey(dayKey)) return null;
 
@@ -26,7 +30,12 @@ export function sanitizeDigitalPhenotypePayload(payload = {}, { fromClient = tru
 
   let source = String(payload.source || 'stub').trim().toLowerCase();
   if (fromClient) {
-    source = resolveClientPhenotypeSource(source);
+    const platform = String(clientPlatform || '').trim().toLowerCase();
+    if (platform === 'ios' || platform === 'android') {
+      source = resolveServerPhenotypeSource(platform);
+    } else {
+      source = resolveClientPhenotypeSource(source);
+    }
   } else if (!isTrustedPhenotypeSource(source) && source !== 'manual' && source !== 'stub') {
     source = 'stub';
   }
@@ -43,9 +52,14 @@ export function sanitizeDigitalPhenotypePayload(payload = {}, { fromClient = tru
   };
 }
 
-export async function upsertDigitalPhenotypeSnapshot({ userId, payload = {}, fromClient = true } = {}) {
+export async function upsertDigitalPhenotypeSnapshot({
+  userId,
+  payload = {},
+  fromClient = true,
+  clientPlatform = null,
+} = {}) {
   if (!userId) return null;
-  const sanitized = sanitizeDigitalPhenotypePayload(payload, { fromClient });
+  const sanitized = sanitizeDigitalPhenotypePayload(payload, { fromClient, clientPlatform });
   if (!sanitized) return null;
 
   const hasSignal =

@@ -25,6 +25,7 @@ import {
     VALIDATION_LIMITS
 } from '../constants/openai.js';
 import {
+  applyEnhancementSnippetsToPromptContext,
   buildContextualizedPrompt,
   resolveChatLanguage,
 } from './openai/openaiPromptBuilder.js';
@@ -359,28 +360,31 @@ class OpenAIService {
       const sessionTrends = isGuest ? null : sessionEmotionalMemory.analyzeTrends(mensaje.userId);
       const prompt = await buildContextualizedPrompt(
         { ...mensaje, content: contenidoNormalizado },
-        {
-          emotional: analisisEmocional,
-          contextual: analisisContextual,
-          profile: perfilUsuario,
-          therapeutic: registroTerapeutico,
-          memory: memoriaContextual,
-          history: contexto.history || [],
-          currentMessage: contenidoNormalizado,
-          currentConversationId: contexto.currentConversationId,
-          sessionTrends,
-          conversationContext: contexto.conversationContext,
-          depthPreference: contexto.depthPreference,
-          inferredWritingStyle: contexto.inferredWritingStyle,
-          preferredResponseLength: contexto.preferredResponseLength,
-          forceShortMode: contexto.forceShortMode,
-          forceFactualMode: contexto.forceFactualMode,
-          crisis: contexto.crisis,
-          isGuest,
-          sessionRetention: contexto.sessionRetention,
-          sessionIntention: contexto.sessionIntention,
-          conversationPattern: contexto.conversationPattern
-        }
+        applyEnhancementSnippetsToPromptContext(
+          {
+            emotional: analisisEmocional,
+            contextual: analisisContextual,
+            profile: perfilUsuario,
+            therapeutic: registroTerapeutico,
+            memory: memoriaContextual,
+            history: contexto.history || [],
+            currentMessage: contenidoNormalizado,
+            currentConversationId: contexto.currentConversationId,
+            sessionTrends,
+            conversationContext: contexto.conversationContext,
+            depthPreference: contexto.depthPreference,
+            inferredWritingStyle: contexto.inferredWritingStyle,
+            preferredResponseLength: contexto.preferredResponseLength,
+            forceShortMode: contexto.forceShortMode,
+            forceFactualMode: contexto.forceFactualMode,
+            crisis: contexto.crisis,
+            isGuest,
+            sessionRetention: contexto.sessionRetention,
+            sessionIntention: contexto.sessionIntention,
+            conversationPattern: contexto.conversationPattern
+          },
+          contexto,
+        )
       );
 
       // 4. Generar Respuesta con OpenAI
@@ -860,28 +864,31 @@ class OpenAIService {
     const sessionTrends = sessionEmotionalMemory.analyzeTrends(mensaje.userId);
     const prompt = await buildContextualizedPrompt(
       { ...mensaje, content: contenidoNormalizado },
-      {
-        emotional: analisisEmocional,
-        contextual: analisisContextual,
-        profile: perfilUsuario,
-        therapeutic: registroTerapeutico,
-        memory: memoriaContextual,
-        history: contexto.history || [],
-        currentMessage: contenidoNormalizado,
-        currentConversationId: contexto.currentConversationId,
-        sessionTrends,
-        conversationContext: contexto.conversationContext,
-        depthPreference: contexto.depthPreference,
-        inferredWritingStyle: contexto.inferredWritingStyle,
-        preferredResponseLength: contexto.preferredResponseLength,
-        forceShortMode: contexto.forceShortMode,
-        forceFactualMode: contexto.forceFactualMode,
-        crisis: contexto.crisis,
-        isGuest: contexto.isGuest === true,
-        sessionRetention: contexto.sessionRetention,
-        sessionIntention: contexto.sessionIntention,
-        conversationPattern: contexto.conversationPattern
-      }
+      applyEnhancementSnippetsToPromptContext(
+        {
+          emotional: analisisEmocional,
+          contextual: analisisContextual,
+          profile: perfilUsuario,
+          therapeutic: registroTerapeutico,
+          memory: memoriaContextual,
+          history: contexto.history || [],
+          currentMessage: contenidoNormalizado,
+          currentConversationId: contexto.currentConversationId,
+          sessionTrends,
+          conversationContext: contexto.conversationContext,
+          depthPreference: contexto.depthPreference,
+          inferredWritingStyle: contexto.inferredWritingStyle,
+          preferredResponseLength: contexto.preferredResponseLength,
+          forceShortMode: contexto.forceShortMode,
+          forceFactualMode: contexto.forceFactualMode,
+          crisis: contexto.crisis,
+          isGuest: contexto.isGuest === true,
+          sessionRetention: contexto.sessionRetention,
+          sessionIntention: contexto.sessionIntention,
+          conversationPattern: contexto.conversationPattern
+        },
+        contexto,
+      )
     );
 
     const maxTokens = this.determinarLongitudRespuesta(analisisContextual, contenidoNormalizado, perfilUsuario?.preferences?.responseStyle || 'balanced');

@@ -21,6 +21,7 @@ describe('normalizeChatSocketTurnPayload', () => {
       tccLite: { step: 2 },
       crisisResources: { country: 'AR' },
       crisisHardStop: true,
+      commitmentFollowUp: { id: '507f1f77bcf86cd799439022', label: 'salir a caminar' },
     };
 
     const out = normalizeChatSocketTurnPayload(raw);
@@ -36,8 +37,14 @@ describe('normalizeChatSocketTurnPayload', () => {
       tccLite: { step: 2 },
       crisisResources: { country: 'AR' },
       crisisHardStop: true,
+      commitmentFollowUp: { id: '507f1f77bcf86cd799439022', label: 'salir a caminar' },
       transport: 'socket',
     });
     expect(out.proposedProductActions).toEqual([]);
+  });
+
+  it('commitmentFollowUp es null si no viene en el raw', () => {
+    const out = normalizeChatSocketTurnPayload({ id: 'x', text: 'hola' });
+    expect(out.commitmentFollowUp).toBeNull();
   });
 });

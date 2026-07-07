@@ -51,6 +51,16 @@ jest.mock('../onboarding/OnboardingBenefitList', () => {
     React.createElement('View', null, (items || []).map((item) => React.createElement('Text', { key: item }, item)));
 });
 
+jest.mock('../onboarding/OnboardingGradientButton', () => {
+  const React = require('react');
+  return ({ label, onPress, disabled, loading }) =>
+    React.createElement(
+      'TouchableOpacity',
+      { onPress, disabled: disabled || loading },
+      React.createElement('Text', null, label),
+    );
+});
+
 jest.mock('../../context/ThemeContext', () => ({
   useTheme: () => ({
     colors: {

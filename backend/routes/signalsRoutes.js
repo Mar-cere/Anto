@@ -159,15 +159,30 @@ router.post(
         return res.status(403).json({ success: false, message: req.apiCopy?.consentRequired });
       }
 
-      const doc = await upsertDigitalPhenotypeSnapshot({
-        userId: req.user._id,
-        payload: req.body || {},
-        fromClient: true,
-      });
-      if (!doc) {
+      const platform = String(req.headers['x-client-platform'] || '').trim().toLowerCase();
+      const items = Array.isArray(req.body?.snapshots)
+        ? req.body.snapshots
+        : [req.body || {}];
+      const dayKeys = [];
+      for (const payload of items.slice(0, 14)) {
+        const doc = await upsertDigitalPhenotypeSnapshot({
+          userId: req.user._id,
+          payload,
+          fromClient: true,
+          clientPlatform: platform,
+        });
+        if (doc?.dayKey) dayKeys.push(doc.dayKey);
+      }
+      if (!dayKeys.length) {
         return res.status(400).json({ success: false, message: req.apiCopy?.invalidPayload });
       }
-      res.json({ success: true, synced: true, dayKey: doc.dayKey || null });
+      res.json({
+        success: true,
+        synced: true,
+        syncedCount: dayKeys.length,
+        dayKey: dayKeys[0] || null,
+        dayKeys,
+      });
     } catch (error) {
       console.error('[SignalsRoutes] POST /digital-phenotype/sync:', error);
       res.status(500).json({ success: false, message: req.apiCopy?.serverError });

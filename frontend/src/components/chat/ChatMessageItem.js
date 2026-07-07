@@ -313,7 +313,50 @@ const createStyles = (themeColors, c) =>
     paddingVertical: 4,
     paddingHorizontal: 6,
   },
+  commitmentFollowUpCard: {
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: themeColors.border,
+    backgroundColor: themeColors.cardBackground || themeColors.surface || themeColors.background,
+    padding: SPACING.md,
+    marginTop: SPACING.xs,
+  },
+  commitmentFollowUpLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: themeColors.text,
+    marginBottom: 4,
+  },
+  commitmentFollowUpPrompt: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: themeColors.textSecondary,
+    marginBottom: 10,
+  },
+  commitmentFollowUpChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  commitmentFollowUpChip: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: themeColors.primary,
+    backgroundColor: themeColors.accentLineSoft || 'transparent',
+  },
+  commitmentFollowUpChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: themeColors.primary,
+  },
   });
+
+const COMMITMENT_FOLLOW_UP_COPY = {
+  es: { prompt: '¿Cómo te fue con esto que quedó la última vez?', yes: 'Lo hice', partial: 'A medias', no: 'Aún no' },
+  en: { prompt: 'How did it go with what you set out last time?', yes: 'I did it', partial: 'Partly', no: 'Not yet' },
+};
 
 function ChatMessageItem({
   item,
@@ -321,6 +364,7 @@ function ChatMessageItem({
   onSuggestionDismiss,
   onProductProposalPress,
   onProductProposalReject,
+  onCommitmentFollowUpAnswer,
 }) {
   const { language } = useLanguage();
   const TEXTS = useChatTexts();
@@ -512,6 +556,41 @@ function ChatMessageItem({
             />
           );
         })}
+      </View>
+    );
+  }
+
+  if (message.type === 'commitment_follow_up' && message.commitmentFollowUp?.id) {
+    const cf = message.commitmentFollowUp;
+    const L = COMMITMENT_FOLLOW_UP_COPY[language === 'en' ? 'en' : 'es'];
+    const options = [
+      ['yes', L.yes],
+      ['partial', L.partial],
+      ['no', L.no],
+    ];
+    return (
+      <View style={styles.suggestionsContainer}>
+        <View style={styles.commitmentFollowUpCard} accessibilityRole="summary">
+          {cf.label ? (
+            <Text style={styles.commitmentFollowUpLabel} numberOfLines={2}>
+              {cf.label}
+            </Text>
+          ) : null}
+          <Text style={styles.commitmentFollowUpPrompt}>{L.prompt}</Text>
+          <View style={styles.commitmentFollowUpChips}>
+            {options.map(([answer, label]) => (
+              <TouchableOpacity
+                key={answer}
+                style={styles.commitmentFollowUpChip}
+                onPress={() => onCommitmentFollowUpAnswer?.(cf.id, answer, message)}
+                accessibilityRole="button"
+                accessibilityLabel={label}
+              >
+                <Text style={styles.commitmentFollowUpChipText}>{label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
       </View>
     );
   }

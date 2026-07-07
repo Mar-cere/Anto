@@ -3,6 +3,7 @@ import {
   isValidDayKey,
   isValidIsoWeekKey,
   resolveClientPhenotypeSource,
+  resolveServerPhenotypeSource,
 } from '../../../utils/signalValidators.js';
 import { normalizeSignalConsent } from '../../../services/signalConsentService.js';
 import { sanitizeDigitalPhenotypePayload } from '../../../services/digitalPhenotypeService.js';
@@ -30,6 +31,12 @@ describe('signalValidators', () => {
     expect(resolveClientPhenotypeSource('healthkit')).toBe('stub');
     expect(resolveClientPhenotypeSource('manual')).toBe('manual');
   });
+
+  it('resolveServerPhenotypeSource asigna fuente por plataforma', () => {
+    expect(resolveServerPhenotypeSource('ios')).toBe('healthkit');
+    expect(resolveServerPhenotypeSource('android')).toBe('health_connect');
+    expect(resolveServerPhenotypeSource('web')).toBe('manual');
+  });
 });
 
 describe('sanitizeDigitalPhenotypePayload', () => {
@@ -37,7 +44,15 @@ describe('sanitizeDigitalPhenotypePayload', () => {
     expect(sanitizeDigitalPhenotypePayload({ dayKey: 'bad', steps: 100 }, { fromClient: true })).toBeNull();
   });
 
-  it('fuerza source seguro desde cliente', () => {
+  it('asigna source healthkit desde cliente iOS', () => {
+    const row = sanitizeDigitalPhenotypePayload(
+      { dayKey: '2026-06-02', steps: 1000, source: 'healthkit' },
+      { fromClient: true, clientPlatform: 'ios' },
+    );
+    expect(row.source).toBe('healthkit');
+  });
+
+  it('fuerza source seguro desde cliente sin plataforma', () => {
     const row = sanitizeDigitalPhenotypePayload(
       { dayKey: '2026-06-02', steps: 1000, source: 'healthkit' },
       { fromClient: true },

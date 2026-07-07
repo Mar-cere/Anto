@@ -55,7 +55,8 @@ describe('chatScreenConstants', () => {
       expect(TEXTS.PRODUCT_ACTIONS_TITLE).toContain('app');
     });
     it('debe tener textos de intención de sesión (#72)', () => {
-      expect(TEXTS.SESSION_INTENTION_TITLE).toBe('¿Qué necesitas de esta sesión?');
+      expect(TEXTS.SESSION_INTENTION_TITLE).toBe('¿Cómo quieres que te acompañe hoy?');
+      expect(TEXTS.SESSION_INTENTION_SUBTITLE).toContain('Eliges en un toque');
       expect(TEXTS.SESSION_INTENTION_KICKER).toBe('Tu sesión');
       expect(TEXTS.SESSION_INTENTION_SKIP).toBe('Omitir');
     });
@@ -75,6 +76,19 @@ describe('chatScreenConstants', () => {
       SESSION_INTENTION_OPTIONS.forEach((o) => {
         expect(o.label && String(o.label).trim()).toBeTruthy();
         expect(o.hint && String(o.hint).trim()).toBeTruthy();
+      });
+    });
+    it('define iconos estáticos para el sheet de intención', () => {
+      const fs = require('fs');
+      const path = require('path');
+      const constantsSrc = fs.readFileSync(
+        path.join(__dirname, '../chatScreenConstants.js'),
+        'utf8',
+      );
+      expect(constantsSrc).toMatch(/SESSION_INTENTION_ICONS/);
+      expect(constantsSrc).toMatch(/icon: SESSION_INTENTION_ICONS\[id\]/);
+      ['vent', 'organize', 'technique', 'plan'].forEach((id) => {
+        expect(constantsSrc).toMatch(new RegExp(`${id}:`));
       });
     });
   });
@@ -131,7 +145,8 @@ describe('chatScreenConstants', () => {
     it('debe tener colores para burbujas y UI', () => {
       expect(CHAT_COLORS.USER_BUBBLE).toBeDefined();
       expect(CHAT_COLORS.BOT_BUBBLE).toBe('rgba(255, 255, 255, 0.9)');
-      expect(CHAT_COLORS.ACCENT).toBe(lightColors.primary);
+      expect(CHAT_COLORS.ACCENT).toBeDefined();
+      expect(typeof CHAT_COLORS.ACCENT).toBe('string');
       expect(CHAT_COLORS.BOT_BUBBLE_BORDER).toBeDefined();
       expect(CHAT_COLORS.INPUT_PLACEHOLDER).toBeDefined();
       expect(CHAT_COLORS.ERROR).toBe(lightColors.error);

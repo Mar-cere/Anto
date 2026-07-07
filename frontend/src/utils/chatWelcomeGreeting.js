@@ -138,8 +138,44 @@ export function reconstructPersistedSuggestions(messages) {
 }
 
 /**
+ * Reconstruye el bloque de follow-up de compromiso (#202) desde el último
+ * mensaje del asistente con metadata.commitmentFollowUp, para que los chips no
+ * desaparezcan al recargar. Solo el último, como en vivo.
+ * @param {object[]} messages
+ * @returns {object[]}
+ */
+export function reconstructPersistedCommitmentFollowUp(messages) {
+  if (!Array.isArray(messages) || messages.length === 0) return messages;
+  if (messages.some((m) => m?.type === 'commitment_follow_up')) return messages;
+
+  let lastIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const cf = messages[i]?.metadata?.commitmentFollowUp;
+    if (cf?.id) {
+      lastIdx = i;
+      break;
+    }
+  }
+  if (lastIdx === -1) return messages;
+
+  const source = messages[lastIdx];
+  const block = {
+    id: `commitment-follow-up-loaded-${source._id || source.id || lastIdx}`,
+    role: 'suggestions',
+    type: 'commitment_follow_up',
+    commitmentFollowUp: source.metadata.commitmentFollowUp,
+    metadata: {
+      timestamp: source.metadata?.timestamp || new Date().toISOString(),
+    },
+  };
+  const next = [...messages];
+  next.splice(lastIdx + 1, 0, block);
+  return next;
+}
+
+/**
  * Filtra quickReplies, aplica idioma al welcome persistido y reconstruye las
- * sugerencias del último turno guardadas en metadata.
+ * sugerencias y el follow-up de compromiso del último turno guardados en metadata.
  * @param {object[]} messages
  * @param {string} language
  * @returns {object[]}
@@ -147,5 +183,5 @@ export function reconstructPersistedSuggestions(messages) {
 export function finalizeLoadedChatMessages(messages, language = 'es') {
   const filtered = (messages || []).filter((m) => m.type !== 'quickReplies');
   const localized = localizeChatWelcomeMessages(filtered, language);
-  return reconstructPersistedSuggestions(localized);
+  return reconstructPersistedCommitmentFollowUp(reconstructPersistedSuggestions(localized));
 }

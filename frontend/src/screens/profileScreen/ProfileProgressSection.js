@@ -6,6 +6,7 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import SignalConsentPanel from '../../components/signals/SignalConsentPanel';
+import DigitalHealthStatusCard from '../../components/signals/DigitalHealthStatusCard';
 import { useProfileScreenStyles } from './profileScreenStyles';
 import { ICON_SIZE, useProfileTexts } from './profileScreenConstants';
 
@@ -73,6 +74,7 @@ export function ProfileProgressSection({ navigation }) {
       </View>
 
       <View style={styles.progressSignalsWrap}>
+        <DigitalHealthStatusCard compact />
         <SignalConsentPanel embedded />
       </View>
     </View>

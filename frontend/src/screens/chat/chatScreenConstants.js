@@ -12,6 +12,13 @@ import { useSectionTranslations } from '../../hooks/useTranslations';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { lightColors } from '../../styles/themePalettes';
 
+const SESSION_INTENTION_ICONS = {
+  vent: 'hand-heart-outline',
+  organize: 'puzzle-outline',
+  technique: 'weather-windy',
+  plan: 'clipboard-check-outline',
+};
+
 const { width } = Dimensions.get('window');
 
 /** Mismo inset horizontal que el resto de la app (`SPACING.SCREEN_EDGE_INSET`). */
@@ -82,7 +89,8 @@ export const TEXTS = {
   FEEDBACK_ERROR: 'No se pudo guardar tu valoración. Intenta de nuevo.',
   FEEDBACK_OFFLINE: 'Necesitas conexión para enviar la valoración.',
   /** Intención de sesión (#72) */
-  SESSION_INTENTION_TITLE: '¿Qué necesitas de esta sesión?',
+  SESSION_INTENTION_TITLE: '¿Cómo quieres que te acompañe hoy?',
+  SESSION_INTENTION_SUBTITLE: 'Eliges en un toque. Siempre puedes escribir libremente.',
   SESSION_INTENTION_KICKER: 'Tu sesión',
   SESSION_INTENTION_SKIP: 'Omitir',
   SESSION_INTENTION_SKIP_HINT: 'Continúa el chat sin elegir un enfoque',
@@ -162,6 +170,7 @@ export function useSessionIntentionOptions() {
   const T = useChatTexts();
   return SESSION_INTENTION_VALUES.map((id) => ({
     id,
+    icon: SESSION_INTENTION_ICONS[id] || 'circle-outline',
     label:
       T[`SESSION_INTENTION_${id.toUpperCase()}_LABEL`] ||
       TEXTS[`SESSION_INTENTION_${id.toUpperCase()}_LABEL`] ||

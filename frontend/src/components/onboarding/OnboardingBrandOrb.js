@@ -1,13 +1,18 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React, { useId, useMemo } from 'react';
+import React, { useEffect, useId, useMemo, useRef } from 'react';
 import { Animated, Image, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, Path } from 'react-native-svg';
 import { useTheme } from '../../context/ThemeContext';
-import { resolveOnboardingGradient } from '../../utils/onboardingBrand';
+import {
+  buildConicRingArcPath,
+  buildConicWedgePath,
+  getOnboardingConicSegments,
+  resolveOnboardingGradient,
+} from '../../utils/onboardingBrand';
 import { getWelcomeScreenTheme } from '../../utils/welcomeScreenTheme';
 
 /**
- * Orbe de marca Anto: gradiente relleno + logo siempre visible; chip opcional del paso.
+ * Orbe de marca Anto: conic-gradient de 4 paradas + logo; chip del paso fuera del relleno.
  */
 export default function OnboardingBrandOrb({
   stepIcon = null,
@@ -24,25 +29,49 @@ export default function OnboardingBrandOrb({
     () => resolveOnboardingGradient(colors, dark),
     [colors, dark],
   );
-  const gradId = useId().replace(/:/g, '');
-  const fillGradId = `${gradId}-fill`;
-
-  const renderOrbGradient = (id) => (
-    <LinearGradient id={id} x1="8%" y1="6%" x2="92%" y2="94%">
-      <Stop offset="0%" stopColor={gradient.start} />
-      <Stop offset="32%" stopColor={gradient.mid} />
-      <Stop offset="68%" stopColor={gradient.indigo} />
-      <Stop offset="100%" stopColor={gradient.warm} />
-    </LinearGradient>
+  const conicSegments = useMemo(
+    () => getOnboardingConicSegments(gradient),
+    [gradient],
   );
+  const gradId = useId().replace(/:/g, '');
+  const chipOpacity = useRef(new Animated.Value(stepIcon ? 1 : 0)).current;
+  const chipScale = useRef(new Animated.Value(stepIcon ? 1 : 0.88)).current;
 
   const compact = size === 'compact';
   const orbSize = compact ? 88 : 104;
-  const logoSize = compact ? 52 : 62;
+  const logoSize = compact ? 60 : 72;
   const ringPad = 18;
   const wrapSize = orbSize + ringPad;
   const strokeWidth = 3;
   const ringRadius = orbSize / 2 + strokeWidth / 2 + 2;
+  const center = wrapSize / 2;
+  const fillRadius = orbSize / 2 - 1;
+  const chipOrbitRadius = orbSize / 2 + strokeWidth + 10;
+  const chipAngleDeg = 52;
+  const chipRad = (chipAngleDeg * Math.PI) / 180;
+  const chipSize = 30;
+
+  useEffect(() => {
+    if (!stepIcon) {
+      chipOpacity.setValue(0);
+      chipScale.setValue(0.88);
+      return;
+    }
+    chipOpacity.setValue(0);
+    chipScale.setValue(0.88);
+    Animated.parallel([
+      Animated.timing(chipOpacity, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(chipScale, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [chipOpacity, chipScale, stepIcon]);
 
   const styles = useMemo(
     () =>
@@ -83,22 +112,32 @@ export default function OnboardingBrandOrb({
         },
         chip: {
           position: 'absolute',
-          right: -4,
-          bottom: -4,
-          width: 32,
-          height: 32,
-          borderRadius: 16,
+          left: center + Math.cos(chipRad) * chipOrbitRadius - chipSize / 2,
+          top: center + Math.sin(chipRad) * chipOrbitRadius - chipSize / 2,
+          width: chipSize,
+          height: chipSize,
+          borderRadius: chipSize / 2,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: dark ? colors.chromeCard : colors.surface,
           borderWidth: 2,
           borderColor: colors.primaryBright || colors.primary,
+          zIndex: 3,
         },
       }),
-    [colors, dark, logoSize, orbSize, wrapSize],
+    [
+      center,
+      chipOrbitRadius,
+      chipRad,
+      chipSize,
+      colors,
+      compact,
+      dark,
+      logoSize,
+      orbSize,
+      wrapSize,
+    ],
   );
-
-  const center = wrapSize / 2;
 
   return (
     <View style={styles.root}>
@@ -110,36 +149,45 @@ export default function OnboardingBrandOrb({
           style={StyleSheet.absoluteFillObject}
           pointerEvents="none"
         >
-          <Defs>{renderOrbGradient(gradId)}</Defs>
-          <Circle
-            cx={center}
-            cy={center}
-            r={ringRadius}
-            stroke={`url(#${gradId})`}
-            strokeWidth={strokeWidth}
-            fill="transparent"
-          />
+          <Defs />
+          {conicSegments.map((segment, index) => (
+            <Path
+              key={`${gradId}-ring-${index}`}
+              d={buildConicRingArcPath(
+                center,
+                center,
+                ringRadius,
+                segment.from,
+                segment.to,
+              )}
+              stroke={segment.color}
+              strokeWidth={strokeWidth}
+              strokeLinecap="round"
+              fill="transparent"
+            />
+          ))}
         </Svg>
         <View style={styles.orbShell}>
           <Svg width={orbSize} height={orbSize} style={StyleSheet.absoluteFillObject}>
-            <Defs>{renderOrbGradient(fillGradId)}</Defs>
-            <Circle
-              cx={orbSize / 2}
-              cy={orbSize / 2}
-              r={orbSize / 2 - 1}
-              fill={`url(#${fillGradId})`}
-            />
-            <Circle
-              cx={orbSize * 0.72}
-              cy={orbSize * 0.78}
-              r={orbSize * 0.09}
-              fill="rgba(232, 155, 184, 0.35)"
-            />
+            <Defs />
+            {conicSegments.map((segment, index) => (
+              <Path
+                key={`${gradId}-fill-${index}`}
+                d={buildConicWedgePath(
+                  orbSize / 2,
+                  orbSize / 2,
+                  fillRadius,
+                  segment.from,
+                  segment.to,
+                )}
+                fill={segment.color}
+              />
+            ))}
             <Circle
               cx={orbSize * 0.28}
               cy={orbSize * 0.22}
               r={orbSize * 0.1}
-              fill="rgba(255,255,255,0.28)"
+              fill="rgba(255,255,255,0.22)"
             />
           </Svg>
           <Image
@@ -149,13 +197,21 @@ export default function OnboardingBrandOrb({
           />
         </View>
         {stepIcon ? (
-          <View style={styles.chip}>
+          <Animated.View
+            style={[
+              styles.chip,
+              {
+                opacity: chipOpacity,
+                transform: [{ scale: chipScale }],
+              },
+            ]}
+          >
             <MaterialCommunityIcons
               name={stepIcon}
-              size={16}
+              size={15}
               color={colors.primary}
             />
-          </View>
+          </Animated.View>
         ) : null}
       </Animated.View>
     </View>

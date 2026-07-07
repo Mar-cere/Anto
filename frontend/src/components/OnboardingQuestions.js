@@ -4,7 +4,6 @@
 import * as Haptics from 'expo-haptics';
 import React, { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Modal,
   ScrollView,
   StyleSheet,
@@ -19,6 +18,7 @@ import { useSectionTranslations } from '../hooks/useTranslations';
 import { buildOnboardingBenefits } from '../utils/onboardingSteps';
 import OnboardingBenefitList from './onboarding/OnboardingBenefitList';
 import OnboardingBrandShell from './onboarding/OnboardingBrandShell';
+import OnboardingGradientButton from './onboarding/OnboardingGradientButton';
 
 const DEFAULT_TEXTS = {
   TITLE: '¿En qué quieres enfocarte primero?',
@@ -195,17 +195,6 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
         footer: {
           gap: 12,
         },
-        primaryButton: {
-          backgroundColor: colors.primary,
-          borderRadius: 16,
-          paddingVertical: 15,
-          alignItems: 'center',
-        },
-        primaryButtonText: {
-          color: colors.textOnPrimary,
-          fontSize: 15,
-          fontWeight: '700',
-        },
         footerLinks: {
           flexDirection: 'row',
           justifyContent: 'center',
@@ -314,18 +303,13 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
 
   const footer = (
     <View style={styles.footer}>
-      <TouchableOpacity
-        style={styles.primaryButton}
+      <OnboardingGradientButton
+        label={TEXTS.SUBMIT}
         onPress={handleSubmit}
         disabled={loading}
-        activeOpacity={0.88}
-      >
-        {loading ? (
-          <ActivityIndicator color={colors.textOnPrimary} size="small" />
-        ) : (
-          <Text style={styles.primaryButtonText}>{TEXTS.SUBMIT}</Text>
-        )}
-      </TouchableOpacity>
+        loading={loading}
+        variant="commit"
+      />
 
       <View style={styles.footerLinks}>
         <TouchableOpacity
