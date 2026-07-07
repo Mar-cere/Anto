@@ -27,6 +27,72 @@ export const PREMATURE_CLOSURE_PHRASE_RES = [
 const GREETING_CHECKIN_RES =
   /^(?:hi|hello|hey|hola|buenos?\s+d[ií]as|buenas?\s+tardes|buenas?\s+noches|good\s+(?:morning|afternoon|evening|night)|howdy|yo|what(?:'s| is) up)[\s!.?]*$/iu;
 
+const ONGOING_CRISIS_RECOVERY_RES =
+  /\b(crisis de p[aá]nico|ataque de p[aá]nico|p[aá]nico|acaba de pasar|ya va (?:bajando|mejor)|respiraci[oó]n|mejorando|cediendo|en alerta|muy sacudid)\b/i;
+
+/**
+ * @param {Array<{ role?: string, content?: string }>} [conversationHistory]
+ * @param {number} [limit]
+ * @returns {string[]}
+ */
+export function extractRecentUserMessagesFromHistory(conversationHistory = [], limit = 5) {
+  return (Array.isArray(conversationHistory) ? conversationHistory : [])
+    .filter((m) => m?.role === 'user')
+    .map((m) => String(m.content || '').trim())
+    .filter(Boolean)
+    .slice(-limit);
+}
+
+/**
+ * @param {Array<{ role?: string, content?: string }>} [conversationHistory]
+ * @param {number} [limit]
+ * @returns {string[]}
+ */
+export function extractRecentAssistantMessagesFromHistory(conversationHistory = [], limit = 2) {
+  return (Array.isArray(conversationHistory) ? conversationHistory : [])
+    .filter((m) => m?.role === 'assistant')
+    .map((m) => String(m.content || '').trim())
+    .filter(Boolean)
+    .slice(-limit);
+}
+
+/**
+ * Hilo con crisis de pánico o recuperación reciente: no orientar cierre de tramo.
+ * @param {string} [userMessage]
+ * @param {Array<{ role?: string, content?: string }>} [conversationHistory]
+ */
+export function hasActiveCrisisRecoveryInThread(userMessage, conversationHistory = []) {
+  const texts = [
+    String(userMessage || '').trim(),
+    ...extractRecentUserMessagesFromHistory(conversationHistory, 5),
+  ].filter(Boolean);
+  return texts.some((t) => isOngoingEmotionalShareMessage(t) || ONGOING_CRISIS_RECOVERY_RES.test(t));
+}
+
+/**
+ * @param {object} [contexto]
+ * @returns {boolean}
+ */
+export function shouldSuppressSessionClosure(contexto = {}) {
+  const riskLevel = String(contexto?.crisis?.riskLevel || '').toUpperCase();
+  if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') return true;
+
+  const sessionPhase = String(contexto?.sessionPhase || '').trim();
+  if (sessionPhase === 'acute' && contexto?.sessionRetention?.likelyFarewell !== true) {
+    return true;
+  }
+
+  const intent = contexto?.contextual?.intencion?.tipo;
+  if (intent === MESSAGE_INTENTS.CRISIS || intent === MESSAGE_INTENTS.GREETING) return true;
+
+  if (isGreetingOrCheckInMessage(contexto?.userMessage)) return true;
+  if (hasActiveCrisisRecoveryInThread(contexto?.userMessage, contexto?.conversationHistory)) {
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * Saludo o check-in breve: no debe orientar cierre de tramo.
  * @param {string} [content]
@@ -77,7 +143,8 @@ export function evaluateConversationClosureReadiness({
   conversationPattern = null,
   sessionPhase = 'default',
   contextual = null,
-  userMessage = null
+  userMessage = null,
+  conversationHistory = [],
 } = {}) {
   const retention = sessionRetention && typeof sessionRetention === 'object' ? sessionRetention : {};
   const pattern = conversationPattern && typeof conversationPattern === 'object' ? conversationPattern : {};
@@ -88,9 +155,11 @@ export function evaluateConversationClosureReadiness({
 
   if (
     intent === MESSAGE_INTENTS.GREETING ||
+    intent === MESSAGE_INTENTS.CRISIS ||
     retention.suggestReturningUserWarmOpen === true ||
     isGreetingOrCheckInMessage(userMessage) ||
-    isOngoingEmotionalShareMessage(userMessage)
+    isOngoingEmotionalShareMessage(userMessage) ||
+    hasActiveCrisisRecoveryInThread(userMessage, conversationHistory)
   ) {
     return { phase: 'opening', reasons: ['saludo_o_apertura'] };
   }
@@ -142,18 +211,49 @@ export function evaluateConversationClosureReadiness({
  * @param {object} [contexto]
  * @returns {string}
  */
-export function stripPrematureSessionClosurePhrases(respuesta, contexto = {}) {
-  if (!respuesta || typeof respuesta !== 'string') return respuesta;
-  if (shouldOrientSessionClosure(contexto)) return respuesta;
-
-  let out = respuesta;
-  for (const re of PREMATURE_CLOSURE_PHRASE_RES) {
-    out = out.replace(re, '');
-  }
-  return out
+function normalizeClosureStrippedText(respuesta) {
+  return String(respuesta || '')
     .replace(/\s{2,}/g, ' ')
     .replace(/\s+([.!?])/g, '$1')
     .trim();
+}
+
+function removeSessionClosurePhrases(respuesta) {
+  let out = String(respuesta || '');
+  for (const re of PREMATURE_CLOSURE_PHRASE_RES) {
+    out = out.replace(re, '');
+  }
+  return normalizeClosureStrippedText(out);
+}
+
+/**
+ * Evita repetir el mismo puente de cierre en turnos consecutivos del asistente.
+ * @param {string} respuesta
+ * @param {string[]} [recentAssistantMessages]
+ * @returns {string}
+ */
+export function stripRepeatedSessionClosurePhrase(respuesta, recentAssistantMessages = []) {
+  if (!respuesta || typeof respuesta !== 'string') return respuesta;
+  const recent = (Array.isArray(recentAssistantMessages) ? recentAssistantMessages : [])
+    .map((t) => String(t || '').trim())
+    .filter(Boolean)
+    .slice(-2);
+  if (!recent.some((t) => responseHasSessionClosureBridge(t))) return respuesta;
+  if (!responseHasSessionClosureBridge(respuesta)) return respuesta;
+  return removeSessionClosurePhrases(respuesta);
+}
+
+export function stripPrematureSessionClosurePhrases(respuesta, contexto = {}) {
+  if (!respuesta || typeof respuesta !== 'string') return respuesta;
+  const recentAssistantMessages =
+    contexto?.recentAssistantMessages ||
+    extractRecentAssistantMessagesFromHistory(contexto?.conversationHistory, 2);
+
+  let out = respuesta;
+  if (shouldSuppressSessionClosure(contexto) || !shouldOrientSessionClosure(contexto)) {
+    out = removeSessionClosurePhrases(out);
+  }
+  return stripRepeatedSessionClosurePhrase(out, recentAssistantMessages);
 }
 
 /**
@@ -178,21 +278,15 @@ export function responseHasSessionClosureBridge(respuesta) {
  * @returns {boolean}
  */
 export function shouldOrientSessionClosure(contexto = {}) {
-  const riskLevel = String(contexto?.crisis?.riskLevel || '').toUpperCase();
-  if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') return false;
-
-  if (isGreetingOrCheckInMessage(contexto?.userMessage)) return false;
-  if (isOngoingEmotionalShareMessage(contexto?.userMessage)) return false;
-
-  const intent = contexto?.contextual?.intencion?.tipo;
-  if (intent === MESSAGE_INTENTS.GREETING) return false;
+  if (shouldSuppressSessionClosure(contexto)) return false;
 
   const { phase } = evaluateConversationClosureReadiness({
     sessionRetention: contexto?.sessionRetention,
     conversationPattern: contexto?.conversationPattern,
     sessionPhase: contexto?.sessionPhase,
     contextual: contexto?.contextual,
-    userMessage: contexto?.userMessage
+    userMessage: contexto?.userMessage,
+    conversationHistory: contexto?.conversationHistory,
   });
   return phase === 'may_close';
 }
@@ -203,11 +297,7 @@ export function shouldOrientSessionClosure(contexto = {}) {
  * @returns {boolean}
  */
 export function shouldForceSessionClosureBridge(contexto = {}) {
-  const riskLevel = String(contexto?.crisis?.riskLevel || '').toUpperCase();
-  if (riskLevel === 'MEDIUM' || riskLevel === 'HIGH') return false;
-
-  if (isGreetingOrCheckInMessage(contexto?.userMessage)) return false;
-  if (isOngoingEmotionalShareMessage(contexto?.userMessage)) return false;
+  if (shouldSuppressSessionClosure(contexto)) return false;
 
   const retention = contexto?.sessionRetention || {};
   const pattern = contexto?.conversationPattern || {};
@@ -248,6 +338,7 @@ export function isOngoingEmotionalShareMessage(content) {
   if (!t || t.length > 140) return false;
   if (isGreetingOrCheckInMessage(t)) return false;
   if (detectLikelyFarewell(t)) return false;
+  if (ONGOING_CRISIS_RECOVERY_RES.test(t)) return true;
   return /\b(feel(?:ing)?|i'?m|me siento|estoy|hoy|today|good|well|okay|ok|bad|anxious|sad|happy|bien|mal|cansad|triste|ansios|contento|agotad|grateful|stressed|worried|calm|better|worse)\b/i.test(
     t
   );

@@ -49,7 +49,9 @@ const DEFAULTS = {
   MAP_SOURCE_COL: 'Lo que compartes',
   MAP_TARGET_COL: 'Técnicas',
   ORIGINAL_SNIPPET: 'Tal como lo escribiste',
-  MAP_TAP_HINT: 'Toca una conexión para ver más detalle.',
+  MAP_TAP_HINT: 'Toca un tema o una técnica para ver el detalle.',
+  CONNECTION_HELP: 'Esta técnica aparece porque conecta con lo que has compartido en el chat.',
+  STATUS_NOT_YET: 'Aún no la has probado — puedes abrirla cuando quieras',
 };
 
 const KEY_MAP = {
@@ -95,8 +97,10 @@ const KEY_MAP = {
   MAP_A11Y: 'INTERVENTION_GRAPH_MAP_A11Y',
   MAP_SOURCE_COL: 'INTERVENTION_GRAPH_MAP_SOURCE_COL',
   MAP_TARGET_COL: 'INTERVENTION_GRAPH_MAP_TARGET_COL',
-  MAP_TAP_HINT: 'INTERVENTION_GRAPH_MAP_TAP_HINT',
   ORIGINAL_SNIPPET: 'INTERVENTION_GRAPH_ORIGINAL_SNIPPET',
+  MAP_TAP_HINT: 'INTERVENTION_GRAPH_MAP_TAP_HINT',
+  CONNECTION_HELP: 'INTERVENTION_GRAPH_CONNECTION_HELP',
+  STATUS_NOT_YET: 'INTERVENTION_GRAPH_STATUS_NOT_YET',
 };
 
 export function useInterventionGraphTexts() {
@@ -157,7 +161,7 @@ export function formatGraphHumanStatus(texts, edge) {
   if (clicked > 0) return texts.STATUS_EXPLORED || DEFAULTS.STATUS_EXPLORED;
   if (dismissed > 0) return texts.STATUS_DISMISSED || DEFAULTS.STATUS_DISMISSED;
   if (shown > 0) return texts.STATUS_SUGGESTED || DEFAULTS.STATUS_SUGGESTED;
-  return '';
+  return texts.STATUS_NOT_YET || DEFAULTS.STATUS_NOT_YET;
 }
 
 export function formatCorrelationInsight(texts, row, language = 'es') {
@@ -195,7 +199,27 @@ export function formatCorrelationInsight(texts, row, language = 'es') {
     .replace('{intervention}', intervention);
 }
 
-function formatTopicTagLabel(topicTag, language) {
+/**
+ * @param {object} edge
+ * @param {'es'|'en'} [language]
+ */
+export function resolveGraphEdgeTopicLabel(edge, language = 'es') {
+  if (!edge) return '';
+  const rawTopic = String(edge.topicFree || edge.conceptLabel || '').trim();
+  const displayTopic = String(edge.displayLabel || rawTopic).trim();
+  if (displayTopic) {
+    return displayTopic.length > 72 ? `${displayTopic.slice(0, 71)}…` : displayTopic;
+  }
+  if (edge.topicTag) return formatTopicTagLabel(edge.topicTag, language);
+  return '';
+}
+
+export function formatGraphListInterventionTitle(interventionLabel, interventionId) {
+  const label = resolveGraphInterventionLabel(interventionLabel, interventionId);
+  return stripTechnicalInterventionSuffix(label);
+}
+
+export function formatTopicTagLabel(topicTag, language = 'es') {
   const tag = String(topicTag || 'general').trim().toLowerCase();
   const labels = {
     es: {

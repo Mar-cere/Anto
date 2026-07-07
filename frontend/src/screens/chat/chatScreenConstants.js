@@ -46,6 +46,7 @@ export const TEXTS = {
   CHAT_OPTIONS_LAST_MESSAGE: 'Ir al último mensaje',
   CHAT_OPTIONS_CUSTOMIZE: 'Personalización del chat',
   CHAT_OPTIONS_AI_PRIVACY: 'Privacidad e IA',
+  CHAT_OPTIONS_AI_LIMITS: 'Límites de la IA',
   CHAT_OPTIONS_AI_INFO: 'Uso de la inteligencia artificial',
   CHAT_OPTIONS_CLEAR: 'Borrar esta conversación',
   CHAT_OPTIONS_CANCEL: 'Cerrar',
@@ -141,6 +142,11 @@ export const TEXTS = {
   PRODUCT_PROPOSAL_WHEN_PLACEHOLDER: 'Fecha/hora opcional (YYYY-MM-DD HH:mm)',
   PRODUCT_PROPOSAL_CREATE: 'Crear',
   PRODUCT_PROPOSAL_DISMISS: 'No aplica',
+  CHAT_COMMITMENT_PROPOSE_TITLE: '¿Lo dejamos para retomar?',
+  CHAT_COMMITMENT_SAVE: 'Guardar',
+  CHAT_COMMITMENT_EDIT_SAVE: 'Editar y guardar',
+  CHAT_COMMITMENT_DISMISS: 'Ahora no',
+  CHAT_COMMITMENT_LABEL_PLACEHOLDER: 'Texto del acuerdo',
   PRODUCT_STATUS_COOLDOWN_WITH_MIN:
     'Sugerencias en pausa unos minutos ({minutes} min) para no saturar la conversación.',
   PRODUCT_STATUS_COOLDOWN:

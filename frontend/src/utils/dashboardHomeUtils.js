@@ -240,11 +240,30 @@ export function buildMoodAckCopy({
 /** Texto visible de continuidad del último chat en el foco del dashboard. */
 export function getLastSessionDisplayText(lastSession) {
   if (!lastSession) return '';
-  const snippet = String(lastSession.snippet || '').trim();
+  const hasPayload =
+    lastSession.conversationId ||
+    lastSession.placeholder === true ||
+    lastSession.recentActivityPending === true ||
+    String(lastSession.displaySubtitle || '').trim() ||
+    String(lastSession.snippet || '').trim() ||
+    String(lastSession.bridge || '').trim();
+  if (!hasPayload) return '';
+
+  const display = String(lastSession.displaySubtitle || '').trim();
+  if (display) return display;
+
   const bridge = String(lastSession.bridge || '').trim();
+  const snippet = String(lastSession.snippet || '').trim();
   if (lastSession.placeholder && bridge) return bridge;
-  if (snippet) return snippet;
-  return bridge;
+
+  const closureRe =
+    /\b(chau|adi[oó]s|cu[ií]date|hasta (luego|pronto)|goodbye|take care|whenever you want|i.?ll be here)\b/i;
+  if (snippet && !closureRe.test(snippet)) return snippet;
+  if (bridge && !closureRe.test(bridge)) return bridge;
+
+  return lastSession.language === 'en'
+    ? 'Your conversation is still in chat, privately. Pick it up whenever you want.'
+    : 'Tu conversación sigue en el chat, en privado. Retoma cuando quieras.';
 }
 
 export function hasDashboardChatContinuity(lastSession) {

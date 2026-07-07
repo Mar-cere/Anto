@@ -184,6 +184,7 @@ export default function SettingsContent({
         taskReminders: base?.types?.taskReminders !== false,
         motivationalMessages: base?.types?.motivationalMessages !== false,
         betweenSessionsMessages: base?.types?.betweenSessionsMessages !== false,
+        commitmentWeeklyReminders: base?.types?.commitmentWeeklyReminders === true,
       },
     };
   }, [user]);
@@ -1063,6 +1064,26 @@ export default function SettingsContent({
                   }}
                 />
               </View>
+              <View style={styles.subItem}>
+                <Text style={styles.subItemText}>
+                  {TEXTS.NOTIFICATIONS_TYPE_COMMITMENT_WEEKLY}
+                </Text>
+                <Switch
+                  value={notificationPreferences.types.commitmentWeeklyReminders}
+                  onValueChange={(v) => setType('commitmentWeeklyReminders', v)}
+                  disabled={!allNotificationsEnabled || prefsControlsLocked}
+                  thumbColor={
+                    notificationPreferences.types.commitmentWeeklyReminders
+                      ? COLORS.PRIMARY
+                      : COLORS.SWITCH_DISABLED
+                  }
+                  accessibilityLabel={TEXTS.NOTIFICATIONS_TYPE_COMMITMENT_WEEKLY}
+                  accessibilityState={{
+                    disabled: !allNotificationsEnabled || prefsControlsLocked,
+                    checked: notificationPreferences.types.commitmentWeeklyReminders,
+                  }}
+                />
+              </View>
 
               <View style={styles.subSeparator} />
               <View style={styles.subSectionToggleRow}>
@@ -1642,7 +1663,7 @@ export default function SettingsContent({
               </View>
             </TouchableOpacity>
             <TouchableOpacity activeOpacity={LIST_PRESS_OPACITY}
-              style={[styles.settingsLinkRow, styles.settingsLinkRowLast]}
+              style={styles.settingsLinkRow}
               onPress={() => navigation.navigate(NAVIGATION_ROUTES.AI_PRIVACY)}
               accessibilityLabel={TEXTS.AI_PRIVACY}
               testID='button-ai-privacy'
@@ -1654,6 +1675,28 @@ export default function SettingsContent({
               />
               <View style={styles.itemContent}>
                 <Text style={styles.itemTextNested}>{TEXTS.AI_PRIVACY}</Text>
+              </View>
+              <View style={styles.rowTrailing}>
+                <MaterialCommunityIcons
+                  name='chevron-right'
+                  size={22}
+                  color={COLORS.ACCENT}
+                />
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity activeOpacity={LIST_PRESS_OPACITY}
+              style={[styles.settingsLinkRow, styles.settingsLinkRowLast]}
+              onPress={() => navigation.navigate(NAVIGATION_ROUTES.AI_PRIVACY, { focusLimits: true })}
+              accessibilityLabel={TEXTS.AI_LIMITS_LIBRARY}
+              testID='button-ai-limits-library'
+            >
+              <MaterialCommunityIcons
+                name='shield-alert-outline'
+                size={ICON_SIZE}
+                color={COLORS.PRIMARY}
+              />
+              <View style={styles.itemContent}>
+                <Text style={styles.itemTextNested}>{TEXTS.AI_LIMITS_LIBRARY}</Text>
               </View>
               <View style={styles.rowTrailing}>
                 <MaterialCommunityIcons

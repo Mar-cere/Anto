@@ -1,4 +1,4 @@
-import { ONBOARDING_FOCUS_LABELS } from '../../../../../backend/constants/onboardingFocusLabels.js';
+import { ONBOARDING_FOCUS_LABELS } from '../../onboardingFocusLabels.js';
 import { getTranslations } from '../index';
 
 describe('onboarding focus parity frontend/backend', () => {

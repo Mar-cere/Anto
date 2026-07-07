@@ -3,14 +3,19 @@
  * recordatorio priorizado (metadatos), línea de foco, opcional siguiente tarea y CTA al chat.
  */
 import { Ionicons } from '@expo/vector-icons';
-import React, { memo, useCallback, useMemo } from 'react';
-import { Text, Pressable, View, useWindowDimensions } from 'react-native';
+import React, { memo, useCallback, useMemo, useState } from 'react';
+import { Text, Pressable, View, useWindowDimensions, TextInput } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { createDashboardFocusStyles } from '../styles/focusCardTheme';
 import { updateSessionCommitment } from '../services/sessionCommitmentsService';
 import { getLastSessionDisplayText } from '../utils/dashboardHomeUtils';
+import {
+  buildCommitmentDisplayTitle,
+  buildCommitmentFollowUpPrompt,
+  buildCommitmentLinkHint,
+} from '../utils/commitmentDisplayCopy';
 import {
   buildFocusTaskOpenPayload,
   formatFocusNextTaskDue,
@@ -21,10 +26,7 @@ import {
   resolveFocusNextHabit,
   resolveFocusNextHabitSubtitle,
 } from '../utils/focusNextHabitNavigation';
-import {
-  filterDashboardCommitments,
-  formatCommitmentFollowUpPrompt,
-} from '../utils/commitmentLabelUtils';
+import { filterDashboardCommitments } from '../utils/commitmentLabelUtils';
 
 const COMPACT_WIDTH = 400;
 
@@ -223,18 +225,59 @@ const DashboardFocusCard = ({
     () => filterDashboardCommitments(commitments, { hasBaWeekRow: Boolean(baWeekNext) }),
     [commitments, baWeekNext],
   );
+  const [renegotiateId, setRenegotiateId] = useState(null);
+  const [renegotiateLabel, setRenegotiateLabel] = useState('');
 
   const handleCommitmentAnswer = useCallback(
     async (id, answer) => {
       if (!id) return;
       try {
         await updateSessionCommitment(id, { followUpAnswer: answer });
+        if (answer === 'no') {
+          const item = commitments.find((c) => c.id === id);
+          setRenegotiateId(id);
+          setRenegotiateLabel(String(item?.label || ''));
+        } else {
+          setRenegotiateId(null);
+          setRenegotiateLabel('');
+        }
+        onCommitmentsChanged?.();
+      } catch (_) {
+        /* silencioso */
+      }
+    },
+    [onCommitmentsChanged, commitments],
+  );
+
+  const handleCommitmentOmit = useCallback(
+    async (id) => {
+      if (!id) return;
+      try {
+        await updateSessionCommitment(id, { status: 'skipped' });
+        setRenegotiateId(null);
+        setRenegotiateLabel('');
         onCommitmentsChanged?.();
       } catch (_) {
         /* silencioso */
       }
     },
     [onCommitmentsChanged],
+  );
+
+  const handleCommitmentRenegotiate = useCallback(
+    async (id) => {
+      const label = String(renegotiateLabel || '').trim();
+      if (!id || label.length < 2) return;
+      try {
+        await updateSessionCommitment(id, { label });
+        setRenegotiateId(null);
+        setRenegotiateLabel('');
+        onCommitmentsChanged?.();
+      } catch (_) {
+        /* silencioso */
+      }
+    },
+    [onCommitmentsChanged, renegotiateLabel],
   );
 
   const baWeekCopy = useMemo(() => {
@@ -452,7 +495,11 @@ const DashboardFocusCard = ({
         icon: 'reader-outline',
         title: lastSession?.headline || DASH.FOCUS_CHAT_CONTINUITY_HEADLINE,
         subtitle: lastSessionText,
-        badge: lastSession?.placeholder ? DASH.FOCUS_CHAT_CONTINUITY_BADGE : null,
+        badge: lastSession?.recentActivityPending
+          ? DASH.FOCUS_CHAT_CONTINUITY_RECENT_BADGE
+          : lastSession?.placeholder
+            ? DASH.FOCUS_CHAT_CONTINUITY_BADGE
+            : null,
         onPress: onLastSessionPress,
         showChevron: true,
         a11yLabel: `${lastSession?.headline || DASH.FOCUS_CHAT_CONTINUITY_HEADLINE}. ${lastSessionText}`,
@@ -551,16 +598,32 @@ const DashboardFocusCard = ({
         {visibleCommitments.length > 0 ? (
           <View style={styles.insetSection}>
             <Text style={styles.insetLabel}>{DASH.FOCUS_COMMITMENTS}</Text>
-            {visibleCommitments.map((item) => (
+            {visibleCommitments.map((item) => {
+              const commitmentTitle = buildCommitmentDisplayTitle(item, DASH);
+              const followUpPrompt = buildCommitmentFollowUpPrompt(item, DASH);
+              const linkHint = buildCommitmentLinkHint(item, DASH);
+              const maxFollowUpAttempts = 2;
+              const showFollowUp =
+                item.followUpAnswer === 'pending' &&
+                item.followUpDue === true &&
+                Number(item.followUpAttempts || 0) < maxFollowUpAttempts;
+              const showRenegotiate =
+                item.status === 'active' &&
+                (renegotiateId === item.id ||
+                  (item.followUpAnswer === 'no' &&
+                    Number(item.followUpAttempts || 0) >= 1 &&
+                    Number(item.followUpAttempts || 0) < maxFollowUpAttempts));
+              return (
               <View key={item.id} style={styles.commitmentRow}>
                 <Text style={styles.commitmentLabel} numberOfLines={2}>
-                  {item.label}
+                  {commitmentTitle}
                 </Text>
-                {item.followUpAnswer === 'pending' ? (
+                {linkHint ? (
+                  <Text style={styles.commitmentLinkHint}>{linkHint}</Text>
+                ) : null}
+                {showFollowUp ? (
                   <View style={styles.commitmentActions}>
-                    <Text style={styles.commitmentPrompt}>
-                      {formatCommitmentFollowUpPrompt(DASH.FOCUS_COMMITMENT_FOLLOW_UP, item.label)}
-                    </Text>
+                    <Text style={styles.commitmentPrompt}>{followUpPrompt}</Text>
                     <View style={styles.commitmentButtons}>
                       <Pressable
                         onPress={() => handleCommitmentAnswer(item.id, 'yes')}
@@ -583,11 +646,49 @@ const DashboardFocusCard = ({
                       >
                         <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_NO}</Text>
                       </Pressable>
+                      <Pressable
+                        onPress={() => handleCommitmentOmit(item.id)}
+                        style={({ pressed }) => [styles.commitmentChip, pressed && { opacity: 0.88 }]}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_OMIT}</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                ) : null}
+                {showRenegotiate && !showFollowUp ? (
+                  <View style={styles.commitmentActions}>
+                    <Text style={styles.commitmentPrompt}>{DASH.FOCUS_COMMITMENT_RENEGOTIATE_HINT}</Text>
+                    <TextInput
+                      style={styles.commitmentRenegotiateInput}
+                      value={renegotiateId === item.id ? renegotiateLabel : String(item.label || '')}
+                      onChangeText={(v) => {
+                        setRenegotiateId(item.id);
+                        setRenegotiateLabel(v);
+                      }}
+                      placeholder={DASH.FOCUS_COMMITMENT_RENEGOTIATE}
+                    />
+                    <View style={styles.commitmentButtons}>
+                      <Pressable
+                        onPress={() => handleCommitmentRenegotiate(item.id)}
+                        style={({ pressed }) => [styles.commitmentChip, pressed && { opacity: 0.88 }]}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_RENEGOTIATE_SAVE}</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => handleCommitmentOmit(item.id)}
+                        style={({ pressed }) => [styles.commitmentChip, pressed && { opacity: 0.88 }]}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.commitmentChipText}>{DASH.FOCUS_COMMITMENT_OMIT}</Text>
+                      </Pressable>
                     </View>
                   </View>
                 ) : null}
               </View>
-            ))}
+            );
+            })}
           </View>
         ) : null}
 

@@ -23,12 +23,14 @@ const mockGoBack = jest.fn();
 const mockNavigation = { replace: mockReplace, goBack: mockGoBack };
 const mockLogout = jest.fn();
 const mockRefreshSession = jest.fn();
+const mockApplyLocalUser = jest.fn().mockResolvedValue(undefined);
 const mockAuth = {
   user: {
     id: '1',
     preferences: { responseStyle: 'balanced', timezone: 'Etc/UTC' },
   },
   refreshSession: mockRefreshSession,
+  applyLocalUser: mockApplyLocalUser,
   logout: mockLogout,
 };
 
@@ -79,6 +81,7 @@ describe('useSettingsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockShowToast.mockClear();
+    mockApplyLocalUser.mockClear();
     mockAuth.user = {
       id: '1',
       preferences: { responseStyle: 'balanced', timezone: 'Etc/UTC' },
@@ -280,6 +283,58 @@ describe('useSettingsScreen', () => {
         await result.current.handleSetResponseStyle('no-existe');
       });
       expect(api.put).not.toHaveBeenCalled();
+    });
+
+    it('aplica usuario local tras PUT sin refreshSession', async () => {
+      const { result } = renderHook(() =>
+        useSettingsScreen({ navigation: mockNavigation }),
+      );
+      await act(async () => {
+        await result.current.handleSetResponseStyle('brief');
+      });
+      expect(mockApplyLocalUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+          preferences: expect.objectContaining({ responseStyle: 'balanced' }),
+        }),
+      );
+      expect(mockRefreshSession).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handleSetCountryPreference', () => {
+    it('envía PUT con country ISO y aplica usuario local', async () => {
+      mockAuth.user = {
+        id: '1',
+        preferences: { regionCountry: 'AR', timezone: 'Etc/UTC' },
+      };
+      api.put.mockResolvedValueOnce({
+        message: 'ok',
+        user: {
+          id: '1',
+          preferences: { country: 'CL', regionCountry: 'AR' },
+        },
+      });
+
+      const { result } = renderHook(() =>
+        useSettingsScreen({ navigation: mockNavigation }),
+      );
+
+      await act(async () => {
+        await result.current.handleSetCountryPreference('CL');
+      });
+
+      expect(api.put).toHaveBeenCalledWith(
+        '/api/users/me',
+        expect.objectContaining({
+          preferences: expect.objectContaining({ country: 'CL' }),
+        }),
+      );
+      expect(mockApplyLocalUser).toHaveBeenCalledWith(
+        expect.objectContaining({
+          preferences: expect.objectContaining({ country: 'CL' }),
+        }),
+      );
+      expect(mockRefreshSession).not.toHaveBeenCalled();
     });
   });
 });

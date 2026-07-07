@@ -2,6 +2,7 @@
  * Normalización de topic, hidratación de sugerencias de chat (#85 / #78 / i18n).
  */
 import { INTERVENTION_LABELS_EN } from '../constants/interventionCatalogLabels.en';
+import { resolveInterventionVisual } from '../constants/interventionVisuals';
 import { getDefaultClinicalReview } from './psychoeducationClinicalReview';
 
 const TOPIC_BY_KEY = {
@@ -22,8 +23,11 @@ const TOPIC_BY_KEY = {
 
 const ID_TO_TOPIC = {
   psychoeducation_anxiety: 'anxiety',
+  psychoeducation_anxiety_advanced: 'anxietyAdvanced',
   psychoeducation_depression: 'depression',
+  psychoeducation_depression_advanced: 'depressionAdvanced',
   psychoeducation_stress: 'stress',
+  psychoeducation_work_stress: 'workStress',
   psychoeducation_anger: 'anger',
   psychoeducation_sleep: 'sleep',
   psychoeducation_emotion_regulation: 'emotionRegulation',
@@ -263,6 +267,12 @@ export function hydrateInterventionSuggestion(suggestion, language = 'es') {
   } else if (next.cardVariant === 'micro_guide_native' && !next.screen) {
     next = applyMicroGuideCardFields(next);
   }
+
+  const visual = resolveInterventionVisual(next.id);
+  if (!next.icon) next = { ...next, icon: visual.emoji };
+  if (!next.vectorIcon) next = { ...next, vectorIcon: visual.mciIcon };
+  if (!next.accentKey) next = { ...next, accentKey: visual.accentKey };
+
   return next;
 }
 

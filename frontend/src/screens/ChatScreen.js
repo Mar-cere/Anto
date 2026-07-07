@@ -32,6 +32,7 @@ import SessionIntentionSheet from '../components/chat/SessionIntentionSheet';
 import TccContinuityStrip from '../components/chat/TccContinuityStrip';
 import TccLiteAtHandoffStrip from '../components/chat/TccLiteAtHandoffStrip';
 import CrisisResourcesStrip from '../components/chat/CrisisResourcesStrip';
+import SoftCrisisCheckInStrip from '../components/chat/SoftCrisisCheckInStrip';
 import ChatTypingIndicator from '../components/chat/ChatTypingIndicator';
 import ChatOptionsSheet from '../components/chat/ChatOptionsSheet';
 import ClearConversationModal from '../components/chat/ClearConversationModal';
@@ -49,6 +50,7 @@ import {
 } from '../utils/recordInterventionCompleted';
 import { topicFromInterventionId } from '../utils/psychoeducationTopic';
 import { SPACING } from '../constants/ui';
+import { estimateChatStripReserveHeight } from '../utils/chatStripStyles';
 import {
   formatGuestQuotaBanner,
   ICON_SIZES,
@@ -316,6 +318,8 @@ const ChatScreen = () => {
     handleProductProposalPress,
     handleProductProposalReject,
     handleCommitmentFollowUpAnswer,
+    handleCommitmentProposalPress,
+    handleCommitmentProposalReject,
     showSessionIntentionPrompt,
     sessionIntentionSubmitting,
     selectSessionIntention,
@@ -327,9 +331,16 @@ const ChatScreen = () => {
     handleOpenTccLiteAtHandoff,
     handleDismissTccLiteAtHandoff,
     crisisResourcesPanel,
+    softCrisisCheckInPanel,
+    crisisContactAlertNotice,
     dismissCrisisResourcesPanel,
+    dismissSoftCrisisCheckInPanel,
+    handleOpenSoftCrisisTechnique,
     openCrisisResourcesPanel,
     openEmergencyContactsFromChat,
+    handleEmergencyContactAlertConfirm,
+    handleEmergencyContactAlertReject,
+    emergencyContactAlertConfirmingId,
     historyHasMore,
     loadingOlderMessages,
     loadOlderMessages,
@@ -340,6 +351,29 @@ const ChatScreen = () => {
   const showTccLiteHandoff = Boolean(tccLiteAtHandoff?.screen) && !hasTccContinuity;
   const showSessionIntentionSheet =
     showSessionIntentionPrompt && guestQuota === null && !isLoading;
+  const showSoftCrisisStrip =
+    !immersiveMode && Boolean(softCrisisCheckInPanel) && !crisisResourcesPanel;
+  const showCrisisStrip = !immersiveMode && Boolean(crisisResourcesPanel);
+
+  const messagesListStyle = useMemo(() => {
+    const stripReserve = estimateChatStripReserveHeight({
+      tccContinuityCount: !immersiveMode ? visibleTccContinuityItems.length : 0,
+      softCrisisActive: showSoftCrisisStrip,
+      tccLiteHandoff: !immersiveMode && showTccLiteHandoff,
+      crisisResources: showCrisisStrip,
+    });
+    return [
+      styles.messagesList,
+      stripReserve > 0 ? { paddingBottom: LAYOUT.MESSAGES_LIST_PADDING_BOTTOM + stripReserve } : null,
+    ];
+  }, [
+    styles.messagesList,
+    immersiveMode,
+    visibleTccContinuityItems.length,
+    showSoftCrisisStrip,
+    showTccLiteHandoff,
+    showCrisisStrip,
+  ]);
   const [showAIDisclosure, setShowAIDisclosure] = React.useState(false);
   const [showChatOptions, setShowChatOptions] = React.useState(false);
 
@@ -385,6 +419,14 @@ const ChatScreen = () => {
   const handleOpenAIDetails = useCallback(() => {
     try {
       navigation.navigate('AIPrivacy');
+    } catch (error) {
+      console.warn(TEXTS.PRIVACY_SCREEN_WARN, error);
+    }
+  }, [navigation, TEXTS.PRIVACY_SCREEN_WARN]);
+
+  const handleOpenAiLimitsLibrary = useCallback(() => {
+    try {
+      navigation.navigate('AIPrivacy', { focusLimits: true });
     } catch (error) {
       console.warn(TEXTS.PRIVACY_SCREEN_WARN, error);
     }
@@ -464,6 +506,12 @@ const ChatScreen = () => {
         onProductProposalPress={handleProductProposalPress}
         onProductProposalReject={handleProductProposalReject}
         onCommitmentFollowUpAnswer={handleCommitmentFollowUpAnswer}
+        onCommitmentProposalPress={handleCommitmentProposalPress}
+        onCommitmentProposalReject={handleCommitmentProposalReject}
+        onEmergencyContactAlertConfirm={handleEmergencyContactAlertConfirm}
+        onEmergencyContactAlertReject={handleEmergencyContactAlertReject}
+        emergencyContactAlertConfirmingId={emergencyContactAlertConfirmingId}
+        onOpenAiLimitsLibrary={handleOpenAiLimitsLibrary}
       />
     ),
     [
@@ -472,6 +520,12 @@ const ChatScreen = () => {
       handleProductProposalPress,
       handleProductProposalReject,
       handleCommitmentFollowUpAnswer,
+      handleCommitmentProposalPress,
+      handleCommitmentProposalReject,
+      handleEmergencyContactAlertConfirm,
+      handleEmergencyContactAlertReject,
+      emergencyContactAlertConfirmingId,
+      handleOpenAiLimitsLibrary,
     ]
   );
 
@@ -552,6 +606,7 @@ const ChatScreen = () => {
         onScrollToBottom={() => scrollToBottom(true, { force: true })}
         onOpenCustomization={handleOpenChatCustomization}
         onOpenPrivacy={handleOpenAIDetails}
+        onOpenAiLimits={handleOpenAiLimitsLibrary}
         onOpenAiInfo={() => setShowAIDisclosure(true)}
         onOpenCrisisResources={openCrisisResourcesPanel}
         onRequestClearConversation={() => setShowClearModal(true)}
@@ -623,7 +678,7 @@ const ChatScreen = () => {
             data={messages}
             renderItem={renderMessage}
             keyExtractor={keyExtractor}
-            contentContainerStyle={styles.messagesList}
+            contentContainerStyle={messagesListStyle}
             onContentSizeChange={handleMessagesContentSizeChange}
             onLayout={handleMessagesListLayout}
             extraData={messages}
@@ -670,13 +725,23 @@ const ChatScreen = () => {
         />
       ) : null}
 
+      {!immersiveMode && softCrisisCheckInPanel && !crisisResourcesPanel ? (
+        <SoftCrisisCheckInStrip
+          checkIn={softCrisisCheckInPanel}
+          onOpenTechnique={handleOpenSoftCrisisTechnique}
+          onDismiss={dismissSoftCrisisCheckInPanel}
+        />
+      ) : null}
+
       {!immersiveMode && crisisResourcesPanel ? (
         <CrisisResourcesStrip
           resources={crisisResourcesPanel}
+          contactAlertNotice={crisisContactAlertNotice}
           onDismiss={dismissCrisisResourcesPanel}
           onOpenEmergencyContacts={
             guestQuota === null ? openEmergencyContactsFromChat : null
           }
+          onOpenAiLimitsLibrary={handleOpenAiLimitsLibrary}
         />
       ) : null}
 

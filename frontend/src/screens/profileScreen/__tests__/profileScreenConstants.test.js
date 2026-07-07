@@ -79,7 +79,7 @@ describe('profileScreenConstants', () => {
       expect(COLORS.HEADER_BACKGROUND).toBeDefined();
       expect(COLORS.LOGOUT_BUTTON_BACKGROUND).toBeDefined();
       expect(COLORS.STAT_ICON_HABITS).toBe(lightColors.primary);
-      expect(COLORS.STAT_ICON_STREAK).toBe(lightColors.warning);
+      expect(COLORS.STAT_ICON_STREAK).toBe(lightColors.accentWarm);
     });
     it('debe mapear texto semántico del tema', () => {
       expect(COLORS.TEXT).toBe(lightColors.text);

@@ -130,6 +130,7 @@ export function postChatSseWithXHR({
     if (signal) {
       if (signal.aborted) {
         abortRequest();
+        resolve();
         return;
       }
       signal.addEventListener('abort', abortRequest, { once: true });

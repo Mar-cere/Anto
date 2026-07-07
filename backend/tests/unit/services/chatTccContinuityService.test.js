@@ -7,6 +7,7 @@ const mockFindWeekPlanForUser = jest.fn();
 const mockExposureFindByUser = jest.fn();
 const mockAbcFindByUser = jest.fn();
 const mockAtFindByUser = jest.fn();
+const mockMessageExists = jest.fn();
 
 function normalizeWeekStart(input) {
   const d =
@@ -41,6 +42,11 @@ await jest.unstable_mockModule('../../../models/AutomaticThoughtLog.js', () => (
   default: { findByUser: mockAtFindByUser },
 }));
 
+await jest.unstable_mockModule('../../../models/Message.js', () => ({
+  __esModule: true,
+  default: { exists: mockMessageExists },
+}));
+
 const { getTodayDayOffsetInWeek } = await import('../../../services/activeTccProtocolsContextService.js');
 
 const {
@@ -71,6 +77,49 @@ describe('chatTccContinuityService', () => {
     mockExposureFindByUser.mockResolvedValue([]);
     mockAbcFindByUser.mockResolvedValue([]);
     mockAtFindByUser.mockResolvedValue([]);
+    mockMessageExists.mockResolvedValue(true);
+  });
+
+  it('devuelve vacío sin conversationId aunque haya protocolos activos', async () => {
+    mockFindWeekPlanForUser.mockResolvedValue(weekPlanWithTodaySlot('Caminar'));
+
+    const result = await buildChatTccContinuity({
+      userId: '507f1f77bcf86cd799439011',
+      language: 'es',
+      conversationId: null,
+    });
+
+    expect(result.items).toEqual([]);
+    expect(mockFindWeekPlanForUser).not.toHaveBeenCalled();
+    expect(mockMessageExists).not.toHaveBeenCalled();
+  });
+
+  it('devuelve vacío con conversationId inválido', async () => {
+    mockFindWeekPlanForUser.mockResolvedValue(weekPlanWithTodaySlot('Caminar'));
+
+    const result = await buildChatTccContinuity({
+      userId: '507f1f77bcf86cd799439011',
+      language: 'es',
+      conversationId: 'not-a-valid-id',
+    });
+
+    expect(result.items).toEqual([]);
+    expect(mockMessageExists).not.toHaveBeenCalled();
+    expect(mockFindWeekPlanForUser).not.toHaveBeenCalled();
+  });
+
+  it('devuelve vacío si la conversación no tiene mensajes del usuario', async () => {
+    mockMessageExists.mockResolvedValue(false);
+    mockFindWeekPlanForUser.mockResolvedValue(weekPlanWithTodaySlot('Caminar'));
+
+    const result = await buildChatTccContinuity({
+      userId: '507f1f77bcf86cd799439011',
+      language: 'es',
+      conversationId: '507f1f77bcf86cd799439022',
+    });
+
+    expect(result.items).toEqual([]);
+    expect(mockFindWeekPlanForUser).not.toHaveBeenCalled();
   });
 
   it('devuelve vacío sin userId', async () => {
@@ -91,6 +140,7 @@ describe('chatTccContinuityService', () => {
     const result = await buildChatTccContinuity({
       userId: '507f1f77bcf86cd799439011',
       language: 'es',
+      conversationId: '507f1f77bcf86cd799439022',
     });
 
     expect(result.items).toHaveLength(1);
@@ -119,6 +169,7 @@ describe('chatTccContinuityService', () => {
     const result = await buildChatTccContinuity({
       userId: '507f1f77bcf86cd799439011',
       language: 'es',
+      conversationId: '507f1f77bcf86cd799439022',
     });
 
     expect(result.items).toHaveLength(1);
@@ -146,6 +197,7 @@ describe('chatTccContinuityService', () => {
     const result = await buildChatTccContinuity({
       userId: '507f1f77bcf86cd799439011',
       language: 'en',
+      conversationId: '507f1f77bcf86cd799439022',
     });
 
     expect(result.items).toHaveLength(2);
@@ -166,6 +218,7 @@ describe('chatTccContinuityService', () => {
     const result = await buildChatTccContinuity({
       userId: '507f1f77bcf86cd799439011',
       language: 'es',
+      conversationId: '507f1f77bcf86cd799439022',
     });
     expect(result.items).toEqual([]);
   });
@@ -184,6 +237,7 @@ describe('chatTccContinuityService', () => {
     const result = await buildChatTccContinuity({
       userId: '507f1f77bcf86cd799439011',
       language: 'es',
+      conversationId: '507f1f77bcf86cd799439022',
     });
 
     expect(result.items).toHaveLength(1);
@@ -206,6 +260,7 @@ describe('chatTccContinuityService', () => {
     const result = await buildChatTccContinuity({
       userId: '507f1f77bcf86cd799439011',
       language: 'es',
+      conversationId: '507f1f77bcf86cd799439022',
     });
 
     expect(result.items).toHaveLength(1);

@@ -13,7 +13,19 @@ import {
 describe('crisisResourcesService', () => {
   it('shouldExposeCrisisResourcesPanel en WARNING/MEDIUM/HIGH y hard-stop', () => {
     expect(shouldExposeCrisisResourcesPanel({ riskLevel: 'LOW' })).toBe(false);
-    expect(shouldExposeCrisisResourcesPanel({ riskLevel: 'WARNING' })).toBe(true);
+    expect(shouldExposeCrisisResourcesPanel({ riskLevel: 'WARNING' })).toBe(false);
+    expect(
+      shouldExposeCrisisResourcesPanel({
+        riskLevel: 'WARNING',
+        hasBatterySignal: true,
+      }),
+    ).toBe(true);
+    expect(
+      shouldExposeCrisisResourcesPanel({
+        riskLevel: 'WARNING',
+        crisisProtocolActive: true,
+      }),
+    ).toBe(true);
     expect(shouldExposeCrisisResourcesPanel({ riskLevel: 'HIGH' })).toBe(true);
     expect(shouldExposeCrisisResourcesPanel({ riskLevel: 'LOW', hardStop: true })).toBe(true);
   });
@@ -37,8 +49,27 @@ describe('crisisResourcesService', () => {
     expect(payload.disclaimer).toMatch(/no es un servicio de emergencias/i);
   });
 
+  it('buildCrisisResourcesClientPayload incluye transparencia T1–T5', () => {
+    const base = buildCrisisResourcesClientPayload({
+      preferences: { country: 'ES' },
+      language: 'es',
+      riskLevel: 'MEDIUM',
+    });
+    expect(base.transparency.length).toBe(4);
+    expect(base.transparency.some((b) => b.id === 'why')).toBe(true);
+
+    const withAlert = buildCrisisResourcesClientPayload({
+      preferences: { country: 'ES' },
+      language: 'es',
+      riskLevel: 'HIGH',
+      showContactAlertNotice: true,
+    });
+    expect(withAlert.transparency.some((b) => b.id === 'contact_alert')).toBe(true);
+  });
+
   it('crisisResourcesForTurn retorna null en LOW sin hard-stop', () => {
     expect(crisisResourcesForTurn({ riskLevel: 'LOW' })).toBeNull();
+    expect(crisisResourcesForTurn({ riskLevel: 'WARNING' })).toBeNull();
     expect(crisisResourcesForTurn({ riskLevel: 'MEDIUM', preferences: { country: 'ES' } })).not.toBeNull();
   });
 

@@ -31,6 +31,8 @@ import { setPendingTccLiteResume } from '../utils/chatTccLiteResume';
 import chatService from '../services/chatService';
 import { createSessionCommitment } from '../services/sessionCommitmentsService';
 import { isConcreteCommitmentLabel } from '../utils/commitmentLabelUtils';
+import { suggestProductTypeForCommitment } from '../utils/commitmentBridgeUtils';
+import { newClientRequestId } from '../utils/clientRequestId';
 import { skipSessionWai, submitSessionWai } from '../services/sessionWaiService';
 import SessionWaiCard from '../components/sessionInsight/SessionWaiCard';
 import { useToast } from '../context/ToastContext';
@@ -63,6 +65,7 @@ export default function SessionInsightScreen() {
   const [commitmentSaving, setCommitmentSaving] = useState(false);
   const [commitmentSaved, setCommitmentSaved] = useState(false);
   const [commitmentDraft, setCommitmentDraft] = useState('');
+  const [savedCommitmentLabel, setSavedCommitmentLabel] = useState('');
   const [waiSubmitting, setWaiSubmitting] = useState(false);
   const [waiHandled, setWaiHandled] = useState(false);
   const [waiNotice, setWaiNotice] = useState(null);
@@ -408,6 +411,7 @@ export default function SessionInsightScreen() {
       });
       if (saved) {
         setCommitmentSaved(true);
+        setSavedCommitmentLabel(label);
         showToast({ message: TEXTS.CTA_COMMITMENT_SAVED, type: 'success' });
       }
     } catch (err) {
@@ -431,12 +435,58 @@ export default function SessionInsightScreen() {
     TEXTS.COMMITMENT_GENERIC_ERROR,
   ]);
 
+  const commitmentProductType = useMemo(() => {
+    if (!commitmentSaved) return null;
+    const step = insight?.suggestedStep;
+    return suggestProductTypeForCommitment({
+      title: savedCommitmentLabel || step?.label || insight?.headline,
+      interventionId: step?.id,
+    });
+  }, [commitmentSaved, savedCommitmentLabel, insight]);
+
+  const openCommitmentAsProduct = useCallback(() => {
+    const step = insight?.suggestedStep;
+    const title = String(savedCommitmentLabel || step?.label || insight?.headline || '').trim();
+    if (!title || !commitmentProductType) return;
+    const convId = conversationId || insight?.conversationId;
+    const origin = convId
+      ? { conversationId: String(convId), source: 'session_insight_v1' }
+      : null;
+    if (commitmentProductType === 'habit') {
+      navigation.navigate('Tasks', {
+        tab: 'habits',
+        chatHabitDraft: { title, description: '', icon: 'meditation', frequency: 'daily' },
+        habitChatOrigin: origin,
+        habitClientRequestId: newClientRequestId(),
+      });
+      return;
+    }
+    navigation.navigate('Tasks', {
+      mode: 'create',
+      initialTaskDraft: {
+        title,
+        description: '',
+        priority: 'medium',
+        itemType: 'task',
+      },
+      taskChatOrigin: origin,
+      taskClientRequestId: newClientRequestId(),
+    });
+  }, [
+    insight,
+    savedCommitmentLabel,
+    commitmentProductType,
+    conversationId,
+    navigation,
+  ]);
+
   const sessionWai = insight?.sessionWai;
   const showWaiCard =
     Boolean(sessionWai?.eligible) &&
     !sessionWai?.alreadyRecorded &&
     !waiHandled;
   const showWaiReminder = Boolean(sessionWai?.reminder?.show) && showWaiCard;
+  const waiBlocksFooter = showWaiCard;
 
   const applySessionWaiPayload = useCallback((payload) => {
     if (payload?.sessionWai) {
@@ -692,6 +742,20 @@ export default function SessionInsightScreen() {
           </View>
         ) : null}
 
+        {commitmentSaved && commitmentProductType ? (
+          <TouchableOpacity
+            style={styles.ctaSecondary}
+            onPress={openCommitmentAsProduct}
+            accessibilityRole="button"
+          >
+            <Text style={styles.ctaSecondaryText}>
+              {commitmentProductType === 'habit'
+                ? TEXTS.CTA_COMMITMENT_TO_HABIT
+                : TEXTS.CTA_COMMITMENT_TO_TASK}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+
         {showWaiCard ? (
           <SessionWaiCard
             onSubmit={handleWaiSubmit}
@@ -702,11 +766,13 @@ export default function SessionInsightScreen() {
 
         {waiNotice ? <Text style={styles.waiNotice}>{waiNotice}</Text> : null}
 
-        <TouchableOpacity style={styles.ctaPrimary} onPress={finish} accessibilityRole="button">
-          <Text style={styles.ctaPrimaryText}>{TEXTS.CTA_DONE}</Text>
-        </TouchableOpacity>
+        {!waiBlocksFooter ? (
+          <TouchableOpacity style={styles.ctaPrimary} onPress={finish} accessibilityRole="button">
+            <Text style={styles.ctaPrimaryText}>{TEXTS.CTA_DONE}</Text>
+          </TouchableOpacity>
+        ) : null}
 
-        {step ? (
+        {step && !waiBlocksFooter ? (
           <TouchableOpacity style={styles.ctaSecondary} onPress={finish} accessibilityRole="button">
             <Text style={styles.ctaSecondaryText}>{TEXTS.CTA_SKIP_STEP}</Text>
           </TouchableOpacity>

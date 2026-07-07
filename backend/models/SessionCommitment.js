@@ -26,7 +26,7 @@ const sessionCommitmentSchema = new mongoose.Schema(
     },
     source: {
       type: String,
-      enum: ['session_insight', 'manual', 'chat_action'],
+      enum: ['session_insight', 'manual', 'chat_action', 'chat_proposed'],
       default: 'session_insight',
     },
     status: {
@@ -51,8 +51,22 @@ const sessionCommitmentSchema = new mongoose.Schema(
       enum: ['pending', 'yes', 'partial', 'no'],
       default: 'pending',
     },
+    followUpAttempts: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    lastFollowUpAt: {
+      type: Date,
+      default: null,
+    },
     completedAt: {
       type: Date,
+      default: null,
+    },
+    renegotiatedFrom: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'SessionCommitment',
       default: null,
     },
     sourceMeta: {

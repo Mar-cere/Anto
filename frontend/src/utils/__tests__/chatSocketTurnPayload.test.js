@@ -20,8 +20,16 @@ describe('normalizeChatSocketTurnPayload', () => {
       productActionStatus: { status: 'pending' },
       tccLite: { step: 2 },
       crisisResources: { country: 'AR' },
+      softCrisisCheckIn: {
+        active: true,
+        techniques: [{ id: 'breathing', label: 'Respiración', screen: 'BreathingExercise' }],
+      },
       crisisHardStop: true,
       commitmentFollowUp: { id: '507f1f77bcf86cd799439022', label: 'salir a caminar' },
+      proposedEmergencyContactAlert: {
+        id: 'offer-abc12345',
+        message: '¿Quieres que avise?',
+      },
     };
 
     const out = normalizeChatSocketTurnPayload(raw);
@@ -36,8 +44,16 @@ describe('normalizeChatSocketTurnPayload', () => {
       productActionStatus: { status: 'pending' },
       tccLite: { step: 2 },
       crisisResources: { country: 'AR' },
+      softCrisisCheckIn: {
+        active: true,
+        techniques: [{ id: 'breathing', label: 'Respiración', screen: 'BreathingExercise' }],
+      },
       crisisHardStop: true,
       commitmentFollowUp: { id: '507f1f77bcf86cd799439022', label: 'salir a caminar' },
+      proposedEmergencyContactAlert: {
+        id: 'offer-abc12345',
+        message: '¿Quieres que avise?',
+      },
       transport: 'socket',
     });
     expect(out.proposedProductActions).toEqual([]);

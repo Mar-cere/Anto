@@ -10,6 +10,9 @@ const DASH_STREAK_CARD_KEYS = [
   'STREAK_CARD_NUDGE',
   'STREAK_CHIP_ONE',
   'STREAK_TIER_EMBER',
+  'STREAK_TIER_EMBER_0',
+  'STREAK_NUDGE_EMBER_0',
+  'STREAK_NUDGE_LEGEND_3',
 ];
 
 const FORBIDDEN_VOSEO = /\b(seguí|querés|podés)\b/i;
@@ -22,9 +25,13 @@ describe('dashboardVisualTone', () => {
     });
   });
 
-  it('DASH es: nudge sin voseo', () => {
+  it('DASH es: nudges sin voseo', () => {
+    const nudgeKeys = Object.keys(es.DASH).filter((key) => key.startsWith('STREAK_NUDGE_'));
+    expect(nudgeKeys.length).toBeGreaterThanOrEqual(20);
+    nudgeKeys.forEach((key) => {
+      expect(es.DASH[key]).not.toMatch(FORBIDDEN_VOSEO);
+    });
     expect(es.DASH.STREAK_CARD_NUDGE).toMatch(/sigue así/i);
-    expect(es.DASH.STREAK_CARD_NUDGE).not.toMatch(FORBIDDEN_VOSEO);
   });
 
   it('DASH es/en: sección de insight presente', () => {

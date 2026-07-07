@@ -115,6 +115,15 @@ export const AuthProvider = ({ children }) => {
     return response;
   }, []);
 
+  /**
+   * Aplica un snapshot de usuario tras PUT /me (evita GET /me con caché obsoleta).
+   */
+  const applyLocalUser = useCallback(async (userSnapshot) => {
+    if (!userSnapshot || typeof userSnapshot !== 'object') return;
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userSnapshot));
+    setUser(userSnapshot);
+  }, []);
+
   const value = {
     user,
     loading,
@@ -123,6 +132,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     updateUser,
     refreshSession,
+    applyLocalUser,
   };
 
   return (

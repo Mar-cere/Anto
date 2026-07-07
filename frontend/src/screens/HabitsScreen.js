@@ -27,6 +27,7 @@ import BrandGradientFab from '../components/tasksAndHabits/BrandGradientFab';
 import GratitudeJournalPromoCard from '../components/tasksAndHabits/GratitudeJournalPromoCard';
 import HabitsFrequencyFilters from '../components/tasksAndHabits/HabitsFrequencyFilters';
 import HabitsProgressSummaryCard from '../components/tasksAndHabits/HabitsProgressSummaryCard';
+import CommitmentBridgeOffer from '../components/CommitmentBridgeOffer';
 import FloatingNavBar from '../components/FloatingNavBar';
 import { SkeletonCard } from '../components/Skeleton';
 import { useTheme } from '../context/ThemeContext';
@@ -125,6 +126,10 @@ export default function HabitsScreen({
     openModal,
     handleHabitModalClose,
     habitModalReminderIso,
+    commitmentBridgeOffer,
+    commitmentBridgeSaving,
+    handleCommitmentBridgeSave,
+    handleCommitmentBridgeDismiss,
   } = useHabitsScreen({ route, navigation });
 
   const showSkeleton = loading && !error && habits.length === 0;
@@ -261,6 +266,17 @@ export default function HabitsScreen({
       ListHeaderComponent={
         !showSkeleton ? (
           <View style={styles.listHeaderWrap}>
+            {commitmentBridgeOffer ? (
+              <CommitmentBridgeOffer
+                title={unifiedTexts.COMMITMENT_BRIDGE_TITLE_HABIT}
+                subtitle={unifiedTexts.COMMITMENT_BRIDGE_SUBTITLE}
+                saveLabel={unifiedTexts.COMMITMENT_BRIDGE_SAVE}
+                dismissLabel={unifiedTexts.COMMITMENT_BRIDGE_DISMISS}
+                saving={commitmentBridgeSaving}
+                onSave={handleCommitmentBridgeSave}
+                onDismiss={handleCommitmentBridgeDismiss}
+              />
+            ) : null}
             {embedded ? (
               <>
                 <HabitsProgressSummaryCard

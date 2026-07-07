@@ -13,6 +13,10 @@ import {
 import { resolveHarmIntrusiveDistressContext, clampEmotionalIntensity, HARM_INTRUSIVE_DISTRESS_THEME } from '../constants/harmIntrusiveThoughts.js';
 import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
 import {
+  buildStreamingTtftMetrics,
+  streamingTtftMetricPayload,
+} from '../utils/chatStreamingMetrics.js';
+import {
     normalizeSessionIntention,
     sanitizeSessionIntentionForClient,
     wasSessionIntentionProvided
@@ -40,6 +44,7 @@ import chatProductActionLlmService from '../services/chatProductActionLlmService
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
 import clinicalScalesService from '../services/clinicalScalesService.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
+import chatCommitmentProposalService from '../services/chatCommitmentProposalService.js';
 import { scheduleRollingSummaryRefresh } from '../services/conversationRollingSummaryService.js';
 import { buildCrisisRoutingMetricData } from '../utils/crisisRoutingMetricPayload.js';
 import crisisBackgroundActionsService from '../services/crisisBackgroundActionsService.js';
@@ -101,12 +106,15 @@ import {
   buildCrisisHardStopClientPayload,
 } from '../services/crisisHardStopService.js';
 import { crisisResourcesForTurn } from '../services/crisisResourcesService.js';
+import { applyCrisisProtocolForTurn } from '../services/crisisTurnClientExtrasService.js';
+import { hasCrisisBatterySignal } from '../services/crisisProtocolService.js';
 import { indexPersonalPatternFromUserMessage } from '../services/personalPatternRagService.js';
 import {
   planChatTurnEnhancements,
   buildOpenaiEnhancementSnippets,
   buildAssistantMetadataWithEnhancements,
   finalizeChatTurnEnhancements,
+  persistProposedCommitmentsOnMessage,
   buildClientTurnPayload,
 } from '../services/chatTurnEnhancementsService.js';
 import { toTccLiteClientPayload } from '../services/chatTccLiteService.js';
@@ -605,8 +613,12 @@ router.get('/interventions/graph', protect, requireActiveSubscription(true), asy
 router.get('/tcc-continuity', protect, requireActiveSubscription(true), async (req, res) => {
   try {
     const language = req.appLanguage || resolveRequestLanguage(req);
-    const data = await buildChatTccContinuity({ userId: req.user._id, language });
     const conversationId = String(req.query?.conversationId || '').trim();
+    const data = await buildChatTccContinuity({
+      userId: req.user._id,
+      language,
+      conversationId: conversationId || null,
+    });
     if (
       conversationId &&
       mongoose.Types.ObjectId.isValid(conversationId) &&
@@ -1303,8 +1315,9 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         }
 
         const crisisTransport = req.query.stream === 'true' ? 'sse' : 'http';
+        let crisisBgResult = null;
         try {
-          await crisisBackgroundActionsService.runCrisisBackgroundActions({
+          crisisBgResult = await crisisBackgroundActionsService.runCrisisBackgroundActions({
             userId: req.user._id,
             messageId: userMessage._id,
             messageContent: content,
@@ -1314,6 +1327,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             trendAnalysis,
             crisisHistory,
             conversationContext,
+            conversationId: conversation._id,
             transport: crisisTransport,
             isCrisis,
             log: (msg) => logs.push(`[${Date.now() - startTime}ms] ${msg}`),
@@ -1353,17 +1367,77 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         };
 
         const appLanguageForChat = req.appLanguage || resolveRequestLanguage(req);
+        const willHardStop = shouldHardStopCrisisLlm({
+          riskLevel,
+          messageContent: content.trim(),
+        });
+
+        let crisisTurnClientExtras = await applyCrisisProtocolForTurn({
+          conversation,
+          userId: req.user._id,
+          user,
+          riskLevel,
+          messageContent: content.trim(),
+          contextualAnalysis,
+          trendAnalysis,
+          crisisHistory,
+          conversationContext,
+          hardStop: willHardStop,
+          isCrisis,
+          hadContactAlert: crisisBgResult?.alertSent === true,
+          language: appLanguageForChat,
+          preferences: combinedProfile?.preferences,
+          phone: combinedProfile?.phone,
+        });
 
         const attachTurnCrisisResources = (payload, { hardStop = false } = {}) => {
-          const crisisResources = crisisResourcesForTurn({
-            riskLevel,
-            hardStop,
-            isCrisis,
-            preferences: combinedProfile?.preferences,
-            phone: combinedProfile?.phone,
-            language: appLanguageForChat,
-          });
-          return crisisResources ? { ...payload, crisisResources } : payload;
+          const protocolActive = crisisTurnClientExtras?.crisisProtocolState?.active === true;
+          const batterySignal = hasCrisisBatterySignal(
+            content.trim(),
+            crisisTurnClientExtras?.crisisDecision,
+          );
+          if (hardStop) {
+            crisisTurnClientExtras = {
+              ...crisisTurnClientExtras,
+              crisisResources: crisisResourcesForTurn({
+                riskLevel,
+                hardStop: true,
+                isCrisis: true,
+                hasBatterySignal: batterySignal,
+                crisisProtocolActive: protocolActive,
+                preferences: combinedProfile?.preferences,
+                phone: combinedProfile?.phone,
+                language: appLanguageForChat,
+                showContactAlertNotice:
+                  crisisTurnClientExtras?.crisisProtocolState?.hadContactAlert === true ||
+                  crisisBgResult?.alertSent === true,
+              }),
+            };
+          }
+          const crisisResources =
+            crisisTurnClientExtras?.crisisResources ??
+            crisisResourcesForTurn({
+              riskLevel,
+              hardStop,
+              isCrisis,
+              hasBatterySignal: batterySignal,
+              crisisProtocolActive: protocolActive,
+              preferences: combinedProfile?.preferences,
+              phone: combinedProfile?.phone,
+              language: appLanguageForChat,
+              showContactAlertNotice:
+                crisisTurnClientExtras?.crisisProtocolState?.hadContactAlert === true ||
+                crisisBgResult?.alertSent === true,
+            });
+          let out = crisisResources ? { ...payload, crisisResources } : { ...payload };
+          if (crisisTurnClientExtras?.proposedEmergencyContactAlert) {
+            out.proposedEmergencyContactAlert =
+              crisisTurnClientExtras.proposedEmergencyContactAlert;
+          }
+          if (crisisTurnClientExtras?.softCrisisCheckIn) {
+            out.softCrisisCheckIn = crisisTurnClientExtras.softCrisisCheckIn;
+          }
+          return out;
         };
 
         const sessionPhase = inferChatSessionPhase({
@@ -1408,6 +1482,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           resumeTccLite:
             resumeTccLite && typeof resumeTccLite === 'object' ? resumeTccLite : null,
           resumeCommitmentFollowUp: resumeCommitmentFollowUp === true,
+          isCrisis,
         });
         const { suggestionPlan, tccLitePlan } = turnEnhancements;
         const blockCrisisExtras = isLlmCrisisTherapeuticExtrasBlocked({
@@ -1466,13 +1541,11 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
           personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
           commitmentFollowUpPromptSnippet: promptSnippets.commitmentFollowUpPromptSnippet,
+          sessionCommitmentPromptSnippet: promptSnippets.sessionCommitmentPromptSnippet,
           crisisMetricTransport: req.query.stream === 'true' ? 'sse' : 'http',
         };
 
-        const crisisHardStopContent = shouldHardStopCrisisLlm({
-          riskLevel,
-          messageContent: content.trim(),
-        })
+        const crisisHardStopContent = willHardStop
           ? buildHardStopCrisisAssistantContent({
               riskLevel,
               language: appLanguageForChat,
@@ -1564,6 +1637,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                       suggestions: clientTurnHardStop.suggestions,
                       suggestionsPersonalized: clientTurnHardStop.suggestionsPersonalized,
                       proposedProductActions: [],
+                      proposedCommitments: [],
                       productActionStatus: { paused: false, reason: null, askFirst: false },
                       clinicalScale: null,
                       cognitiveDistortions: null,
@@ -1592,6 +1666,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                 suggestions: clientTurnHardStop.suggestions,
                 suggestionsPersonalized: clientTurnHardStop.suggestionsPersonalized,
                 proposedProductActions: [],
+                proposedCommitments: [],
                 productActionStatus: { paused: false, reason: null, askFirst: false },
                 clinicalScale: null,
                 cognitiveDistortions: null,
@@ -1662,17 +1737,23 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
 
           try {
             let firstChunkAt = null;
+            const preLlmEndAt = Date.now();
             for await (const event of openaiService.generarRespuestaStream(userMessage, openaiContext)) {
               if (event.type === 'chunk') {
                 if (!firstChunkAt) {
                   firstChunkAt = Date.now();
+                  const ttftMetrics = buildStreamingTtftMetrics({
+                    startTime,
+                    preLlmEndAt,
+                    firstChunkAt,
+                  });
                   metricsService
                     .recordMetric(
                       'chat_usage',
                       {
                         action: 'streaming_first_chunk',
                         isGuest: false,
-                        ttftMs: firstChunkAt - startTime
+                        ...streamingTtftMetricPayload(ttftMetrics),
                       },
                       req.user._id.toString(),
                       {
@@ -1797,6 +1878,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   userContent: content,
                   riskLevel,
                   commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
+                  commitmentFollowUpCommitmentId: turnEnhancements.commitmentFollowUpCommitmentId,
                 }).catch(() => {});
 
                 scheduleRollingSummaryRefresh({
@@ -1916,6 +1998,29 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     );
                 }
 
+                const proposedCommitments =
+                  proposedProductActions.length > 0
+                    ? []
+                    : await chatCommitmentProposalService.resolveProposedCommitmentsForTurn(
+                        {
+                          userId: req.user._id,
+                          riskLevel,
+                          isCrisis,
+                          userContent: content,
+                          assistantContent: response.content,
+                          sessionIntention: conversation?.sessionIntention,
+                          conversationId,
+                          assistantMessageId: assistantMessage._id,
+                          interventionId: suggestionPlan.primaryPsychoeducationId || null,
+                        },
+                        { transport: 'sse' },
+                      );
+
+                await persistProposedCommitmentsOnMessage(
+                  assistantMessage._id,
+                  proposedCommitments,
+                ).catch(() => {});
+
                 res.write('data: ' + JSON.stringify(attachTurnCrisisResources({
                   done: true,
                   messageId: assistantMessage._id?.toString(),
@@ -1924,6 +2029,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   suggestions: clientTurn.suggestions,
                   suggestionsPersonalized: clientTurn.suggestionsPersonalized,
                   proposedProductActions,
+                  proposedCommitments,
                   productActionStatus,
                   clinicalScale: scaleSuggestion ? { ...scaleSuggestion, suggestion: clinicalScalesService.generateScaleSuggestion(scaleSuggestion.scale, scaleSuggestion.reason), automaticResult: null } : null,
                   cognitiveDistortions: cognitiveDistortions?.length > 0 ? { detected: cognitiveDistortions, primary: primaryDistortion, intervention: distortionIntervention } : null,
@@ -2146,6 +2252,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           userContent: content,
           riskLevel,
           commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
+          commitmentFollowUpCommitmentId: turnEnhancements.commitmentFollowUpCommitmentId,
         }).catch(() => {});
 
         scheduleRollingSummaryRefresh({
@@ -2376,6 +2483,29 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               console.warn('[ChatRoutes] product proposal cap inc (non-stream):', incErr?.message || incErr)
             );
         }
+
+        const proposedCommitments =
+          proposedProductActions.length > 0
+            ? []
+            : await chatCommitmentProposalService.resolveProposedCommitmentsForTurn(
+                {
+                  userId: req.user._id,
+                  riskLevel,
+                  isCrisis,
+                  userContent: content,
+                  assistantContent: response.content,
+                  sessionIntention: conversation?.sessionIntention,
+                  conversationId,
+                  assistantMessageId: assistantMessage._id,
+                  interventionId: suggestionPlan.primaryPsychoeducationId || null,
+                },
+                { transport: 'http' },
+              );
+
+        await persistProposedCommitmentsOnMessage(
+          assistantMessage._id,
+          proposedCommitments,
+        ).catch(() => {});
         
         // Registrar métrica de tiempo de respuesta de forma asíncrona
         metricsService.recordMetric('response_generation', {
@@ -2395,6 +2525,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           suggestions: clientTurn.suggestions,
           suggestionsPersonalized: clientTurn.suggestionsPersonalized,
           proposedProductActions,
+          proposedCommitments,
           productActionStatus,
           // NUEVO: Información de escalas clínicas y distorsiones cognitivas
           clinicalScale: scaleSuggestion ? {
@@ -2824,7 +2955,10 @@ router.delete('/conversations/:conversationId', protect, validarConversationId, 
     const result = await Message.deleteMany(query);
 
     if (!role) {
-      await resetConversationSessionState(conversationId, { full: true });
+      await resetConversationSessionState(conversationId, {
+        full: true,
+        userId: req.user._id,
+      });
     }
 
     res.json({

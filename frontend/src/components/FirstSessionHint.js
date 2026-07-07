@@ -11,6 +11,7 @@ import React, { useMemo, useEffect, useRef } from 'react';
 import {
   Animated,
   Alert,
+  Modal,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -62,8 +63,8 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null, userCreatedAt = n
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        overlay: {
-          ...StyleSheet.absoluteFillObject,
+        modalRoot: {
+          flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
           padding: 24,
@@ -73,22 +74,16 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null, userCreatedAt = n
           ...StyleSheet.absoluteFillObject,
           backgroundColor: colors.backdropStrong ?? colors.overlay,
         },
-        cardWrapper: {
+        card: {
           width: '100%',
           maxWidth: 340,
-          alignSelf: 'center',
-        },
-        card: {
           backgroundColor: colors.modalSurface ?? colors.surface,
-          borderRadius: 22,
-          borderWidth: 1,
+          borderRadius: 20,
+          borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
-          marginBottom: 0,
           paddingVertical: 22,
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          width: '100%',
-          maxWidth: 340,
-          shadowColor: colors.glassShadow ?? colors.shadowAmbient,
+          shadowColor: colors.shadowAmbient,
           shadowOffset: { width: 0, height: 8 },
           shadowOpacity: 0.28,
           shadowRadius: 24,
@@ -221,36 +216,42 @@ const FirstSessionHint = ({ visible, onDismiss, userId = null, userCreatedAt = n
   if (!visible) return null;
 
   return (
-    <View style={styles.overlay} pointerEvents="auto">
-      <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]} />
-      <View style={styles.cardWrapper}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={handleGotIt}
+    >
+      <View style={styles.modalRoot} pointerEvents="box-none">
+        <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]} />
         <Animated.View style={[styles.card, { transform: [{ scale: cardScale }] }]}>
-        <View style={styles.iconRow}>
-          <View style={styles.iconCircle}>
-            <MaterialCommunityIcons name="message-text-outline" size={24} color={colors.primary} />
+          <View style={styles.iconRow}>
+            <View style={styles.iconCircle}>
+              <MaterialCommunityIcons name="message-text-outline" size={24} color={colors.primary} />
+            </View>
           </View>
-        </View>
-        <Text style={styles.title}>{TEXTS.TITLE}</Text>
-        <Text style={styles.message}>{TEXTS.MESSAGE}</Text>
-        <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={handleGoToChat}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.primaryButtonText}>{TEXTS.GO_TO_CHAT}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.secondaryButton}
-            onPress={handleGotIt}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.secondaryButtonText}>{TEXTS.GOT_IT}</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
+          <Text style={styles.title}>{TEXTS.TITLE}</Text>
+          <Text style={styles.message}>{TEXTS.MESSAGE}</Text>
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={handleGoToChat}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.primaryButtonText}>{TEXTS.GO_TO_CHAT}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleGotIt}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.secondaryButtonText}>{TEXTS.GOT_IT}</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
       </View>
-    </View>
+    </Modal>
   );
 };
 

@@ -1,6 +1,7 @@
 /**
  * Saludos iniciales del chat (es/en) por franja horaria — alineado a backend GREETING_VARIATIONS.
  */
+import { sanitizeProposedCommitments } from './sanitizeProposedCommitments.js';
 
 const GREETING_VARIATIONS_ES = {
   morning: [
@@ -174,8 +175,44 @@ export function reconstructPersistedCommitmentFollowUp(messages) {
 }
 
 /**
+ * Reconstruye la tarjeta de compromisos del último turno (metadata.proposedCommitments).
+ * @param {object[]} messages
+ * @returns {object[]}
+ */
+export function reconstructPersistedCommitmentProposals(messages) {
+  if (!Array.isArray(messages) || messages.length === 0) return messages;
+  if (messages.some((m) => m?.type === 'commitment_proposals')) return messages;
+
+  let lastIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const proposals = messages[i]?.metadata?.proposedCommitments;
+    if (Array.isArray(proposals) && proposals.length > 0) {
+      lastIdx = i;
+      break;
+    }
+  }
+  if (lastIdx === -1) return messages;
+
+  const source = messages[lastIdx];
+  const assistantMessageId = source._id || source.id;
+  const block = {
+    id: `commitment-proposals-loaded-${assistantMessageId || lastIdx}`,
+    role: 'suggestions',
+    type: 'commitment_proposals',
+    proposedCommitments: sanitizeProposedCommitments(source.metadata.proposedCommitments),
+    metadata: {
+      timestamp: source.metadata?.timestamp || new Date().toISOString(),
+      assistantMessageId: assistantMessageId ? String(assistantMessageId) : undefined,
+    },
+  };
+  const next = [...messages];
+  next.splice(lastIdx + 1, 0, block);
+  return next;
+}
+
+/**
  * Filtra quickReplies, aplica idioma al welcome persistido y reconstruye las
- * sugerencias y el follow-up de compromiso del último turno guardados en metadata.
+ * sugerencias, el follow-up de compromiso y las propuestas del último turno.
  * @param {object[]} messages
  * @param {string} language
  * @returns {object[]}
@@ -183,5 +220,8 @@ export function reconstructPersistedCommitmentFollowUp(messages) {
 export function finalizeLoadedChatMessages(messages, language = 'es') {
   const filtered = (messages || []).filter((m) => m.type !== 'quickReplies');
   const localized = localizeChatWelcomeMessages(filtered, language);
-  return reconstructPersistedCommitmentFollowUp(reconstructPersistedSuggestions(localized));
+  const withSuggestions = reconstructPersistedSuggestions(localized);
+  const withFollowUp = reconstructPersistedCommitmentFollowUp(withSuggestions);
+  return reconstructPersistedCommitmentProposals(withFollowUp);
 }
+

@@ -31,6 +31,14 @@ jest.mock('../../context/ToastContext', () => ({
   useToast: () => ({ showToast: jest.fn() }),
 }));
 
+jest.mock('../../context/AuthContext', () => ({
+  useAuth: () => ({ user: { createdAt: new Date().toISOString() } }),
+}));
+
+jest.mock('../../utils/chatAccessGate', () => ({
+  canAttemptChatAccess: jest.fn().mockResolvedValue(true),
+}));
+
 jest.mock('../../utils/chatEntryContext', () => ({
   resolveChatBackTarget: jest.fn(() => Promise.resolve('dash')),
   clearChatEntryBackTarget: jest.fn(() => Promise.resolve()),

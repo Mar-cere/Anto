@@ -5,6 +5,11 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(),
 }));
 
+jest.mock('../../utils/chatAccessGate', () => ({
+  canAttemptChatAccess: jest.fn().mockResolvedValue(true),
+  assertChatAccessOrThrow: jest.fn(),
+}));
+
 jest.mock('../../config/api', () => ({
   __esModule: true,
   default: {
@@ -26,6 +31,18 @@ describe('fetchTccContinuity', () => {
       if (key === 'guestChatMode') return Promise.resolve(null);
       return Promise.resolve(null);
     });
+  });
+
+  it('no llama API sin conversationId válido', async () => {
+    const items = await fetchTccContinuity('');
+    expect(items).toEqual([]);
+    expect(api.get).not.toHaveBeenCalled();
+  });
+
+  it('no llama API con conversationId malformado', async () => {
+    const items = await fetchTccContinuity('abc');
+    expect(items).toEqual([]);
+    expect(api.get).not.toHaveBeenCalled();
   });
 
   it('pasa conversationId como query param plano', async () => {

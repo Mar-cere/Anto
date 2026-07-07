@@ -145,8 +145,7 @@ describe('chatScreenConstants', () => {
     it('debe tener colores para burbujas y UI', () => {
       expect(CHAT_COLORS.USER_BUBBLE).toBeDefined();
       expect(CHAT_COLORS.BOT_BUBBLE).toBe('rgba(255, 255, 255, 0.9)');
-      expect(CHAT_COLORS.ACCENT).toBeDefined();
-      expect(typeof CHAT_COLORS.ACCENT).toBe('string');
+      expect(CHAT_COLORS.ACCENT).toBe(lightColors.textMuted);
       expect(CHAT_COLORS.BOT_BUBBLE_BORDER).toBeDefined();
       expect(CHAT_COLORS.INPUT_PLACEHOLDER).toBeDefined();
       expect(CHAT_COLORS.ERROR).toBe(lightColors.error);

@@ -4,6 +4,8 @@
  * Initial baseline to start multilingual support.
  */
 
+import { ONBOARDING_FOCUS_LABELS } from '../onboardingFocusLabels.js';
+
 export const HOME = {
   BRAND_NAME: 'Anto',
   BADGE: '1 day free · no card required',
@@ -158,13 +160,7 @@ export const ONBOARDING = {
     'Too many attempts. Please wait a moment and try again.',
   QUESTIONS_CONNECTION_ERROR:
     'No connection. Please check your internet and try again.',
-  QUESTIONS_FOCUS_OPTIONS: [
-    'Emotional support',
-    'Anxiety or stress',
-    'Sleep and rest',
-    'Habits and routines',
-    'Focus and organization',
-  ],
+  QUESTIONS_FOCUS_OPTIONS: ONBOARDING_FOCUS_LABELS.en,
 };
 
 export const DASH = {
@@ -203,9 +199,26 @@ export const DASH = {
   FOCUS_NO_CHATS: 'No conversations yet.',
   FOCUS_NO_COMMITMENTS: 'No saved commitments yet.',
   FOCUS_COMMITMENT_FOLLOW_UP: 'Were you able to do «{label}»?',
+  FOCUS_COMMITMENT_FOLLOW_UP_NAMED: 'How did it go with “{label}”?',
+  FOCUS_COMMITMENT_FOLLOW_UP_GENERIC: 'Were you able to make progress on “{label}”?',
+  FOCUS_COMMITMENT_FOLLOW_UP_BA: 'Were you able to take a small behavioral activation step?',
+  FOCUS_COMMITMENT_FOLLOW_UP_EXPOSURE: 'Were you able to move forward with an exposure step?',
+  FOCUS_COMMITMENT_FOLLOW_UP_ABC: 'Were you able to complete or start an ABC record?',
+  FOCUS_COMMITMENT_FOLLOW_UP_AT: 'Were you able to work on an automatic thought?',
+  FOCUS_COMMITMENT_FOLLOW_UP_BREATHING: 'Were you able to practice the breathing exercise?',
+  FOCUS_COMMITMENT_FOLLOW_UP_GROUNDING: 'Were you able to try the grounding technique?',
+  FOCUS_COMMITMENT_TITLE_BA: 'Your behavioral activation step',
+  FOCUS_COMMITMENT_TITLE_EXPOSURE: 'Your exposure step',
+  FOCUS_COMMITMENT_FALLBACK_TITLE: 'Your commitment',
   FOCUS_COMMITMENT_YES: 'Yes',
   FOCUS_COMMITMENT_PARTIAL: 'Partly',
   FOCUS_COMMITMENT_NO: 'Not yet',
+  FOCUS_COMMITMENT_OMIT: 'Skip for now',
+  FOCUS_COMMITMENT_RENEGOTIATE: 'Adjust commitment',
+  FOCUS_COMMITMENT_RENEGOTIATE_HINT: 'We can make it smaller or leave it for another time.',
+  FOCUS_COMMITMENT_RENEGOTIATE_SAVE: 'Save adjustment',
+  FOCUS_COMMITMENT_LINKED_TASK: 'Also in your tasks',
+  FOCUS_COMMITMENT_LINKED_HABIT: 'Also in your habits',
   FOCUS_REMINDER_SECTION: 'Main focus now',
   FOCUS_REMINDER_TAP_CHAT: 'Tap to go to chat',
   FOCUS_PROTOCOL: 'Next step (follow-up)',
@@ -251,6 +264,7 @@ export const DASH = {
   FIRST_SESSION_HINT_GOT_IT: 'Got it',
   FOCUS_CHAT_CONTINUITY_HEADLINE: 'Chat continuity',
   FOCUS_CHAT_CONTINUITY_BADGE: 'Quick glance',
+  FOCUS_CHAT_CONTINUITY_RECENT_BADGE: 'Recent activity',
   FOCUS_PRELOADED_LAST_CHAT_TITLE_EN: 'Resume your last conversation',
   FOCUS_PRELOADED_LAST_CHAT_SUBTITLE_EN:
     'Last chat activity: {days} days ago.',
@@ -286,7 +300,7 @@ export const DASH = {
   MOOD_SECTION_LABEL: 'How you are feeling today',
   MOOD_QUESTION: 'How do you feel right now?',
   MOOD_CALM: 'Calm',
-  MOOD_ANXIOUS: 'Anxious',
+  MOOD_ANXIOUS: 'Tense',
   MOOD_TIRED: 'Tired',
   MOOD_GOOD: 'Good',
   ANTO_PROMPT_CONTINUE: 'Continue',
@@ -358,10 +372,45 @@ export const DASH = {
   EXPLORE_SECTION_TITLE: 'Explore',
   EXPLORE_SECTION_HINT: 'CBT tools and journal when you want to go deeper.',
   STREAK_TIER_EMBER: 'First step',
+  STREAK_TIER_EMBER_0: 'First step',
+  STREAK_TIER_EMBER_1: 'Solid start',
+  STREAK_TIER_EMBER_2: 'Off to a good start',
   STREAK_TIER_WARM: 'Building momentum',
+  STREAK_TIER_WARM_0: 'Building momentum',
+  STREAK_TIER_WARM_1: 'Steady rhythm',
+  STREAK_TIER_WARM_2: 'Adding up',
   STREAK_TIER_BLAZE: 'Strong week',
+  STREAK_TIER_BLAZE_0: 'Strong week',
+  STREAK_TIER_BLAZE_1: 'Good momentum',
+  STREAK_TIER_BLAZE_2: 'Seven days in a row',
   STREAK_TIER_STELLAR: 'Notable consistency',
+  STREAK_TIER_STELLAR_0: 'Notable consistency',
+  STREAK_TIER_STELLAR_1: 'Habit taking shape',
+  STREAK_TIER_STELLAR_2: 'Two weeks strong',
   STREAK_TIER_LEGEND: 'Legendary streak',
+  STREAK_TIER_LEGEND_0: 'Legendary streak',
+  STREAK_TIER_LEGEND_1: 'True consistency',
+  STREAK_TIER_LEGEND_2: 'A full month',
+  STREAK_NUDGE_EMBER_0: 'keep it up',
+  STREAK_NUDGE_EMBER_1: 'nice start',
+  STREAK_NUDGE_EMBER_2: 'step by step',
+  STREAK_NUDGE_EMBER_3: 'one more today',
+  STREAK_NUDGE_WARM_0: 'keep it up',
+  STREAK_NUDGE_WARM_1: 'you are doing well',
+  STREAK_NUDGE_WARM_2: 'keep the pace',
+  STREAK_NUDGE_WARM_3: 'day by day',
+  STREAK_NUDGE_BLAZE_0: 'keep it up',
+  STREAK_NUDGE_BLAZE_1: 'strong run',
+  STREAK_NUDGE_BLAZE_2: 'a week that counts',
+  STREAK_NUDGE_BLAZE_3: 'keep building',
+  STREAK_NUDGE_STELLAR_0: 'keep it up',
+  STREAK_NUDGE_STELLAR_1: 'real consistency',
+  STREAK_NUDGE_STELLAR_2: 'this is how it builds',
+  STREAK_NUDGE_STELLAR_3: 'your pace matters',
+  STREAK_NUDGE_LEGEND_0: 'keep it up',
+  STREAK_NUDGE_LEGEND_1: 'impressive consistency',
+  STREAK_NUDGE_LEGEND_2: 'you are making it happen',
+  STREAK_NUDGE_LEGEND_3: 'stay at your pace',
   STAT_STREAK_HINT: 'Chat, tools and habits count',
   STAT_HABITS_WEEK: 'habits this week',
   HABITS_TODAY_TITLE: "Today's habits",
@@ -414,6 +463,7 @@ export const SETTINGS = {
   NOTIFICATIONS_TYPE_DAILY: 'Daily and motivation',
   NOTIFICATIONS_TYPE_TASKS: 'Tasks and habits',
   NOTIFICATIONS_TYPE_BETWEEN_SESSIONS: 'Prompt to return to chat',
+  NOTIFICATIONS_TYPE_COMMITMENT_WEEKLY: 'Remind me about pending commitments',
   NOTIFICATIONS_ADVANCED_TITLE: 'Advanced',
   NOTIFICATIONS_ADVANCED_SUB: 'Schedules and extra settings (optional)',
   NOTIFICATIONS_ADVANCED_A11Y_EXPANDED:
@@ -464,6 +514,8 @@ export const SETTINGS = {
   APP_INFO: 'App information',
   AI_PRIVACY: 'Privacy and AI',
   AI_PRIVACY_DESC: 'What data is processed with AI and with which provider',
+  AI_LIMITS_LIBRARY: 'AI limits',
+  AI_LIMITS_LIBRARY_DESC: 'What Anto does and does not do',
   LOGOUT_TITLE: 'Sign out',
   LOGOUT_MESSAGE: 'Are you sure you want to sign out?',
   DELETE_TITLE: 'Delete account',
@@ -864,6 +916,88 @@ export const INFO = {
       'OpenAI provides the language models used to draft assistant responses. Anto defines what context and data are sent each time and keeps product logic on its servers.',
     POLICY_BUTTON: 'Open Privacy Policy',
   },
+  AI_LIMITS_LIBRARY: {
+    SECTION_TITLE: 'What Anto does and does not do',
+    SECTION_INTRO:
+      'Anto is AI-supported accompaniment. These notes help align expectations and know when human help is appropriate.',
+    HINT_A11Y: 'More about Anto’s limits',
+    SHEET_CLOSE: 'Close',
+    SHEET_OPEN_LIBRARY: 'View full library',
+    TOPICS: {
+      general: {
+        title: 'Support, not a substitute',
+        body:
+          'Anto combines AI chat, wellness techniques, and in-app tracking. It can help you organize thoughts, practice tools, and remember commitments, but it does not replace a therapeutic relationship or emergency services.',
+        bullets: [
+          'Responses are generated with language models and product rules.',
+          'You can review privacy and providers under Privacy and AI.',
+        ],
+      },
+      not_therapy: {
+        title: 'Not psychotherapy or psychiatry',
+        body:
+          'Anto does not diagnose, prescribe, or replace a mental health professional. If you need treatment, clinical referral, or medication, seek qualified in-person or telehealth care.',
+        bullets: [
+          'The tone may feel warm, but it is not a clinical bond.',
+          'In crisis, we prioritize containment and human resources.',
+        ],
+      },
+      no_diagnosis: {
+        title: 'No diagnoses or clinical labels',
+        body:
+          'Anto does not label you with disorders or confirm diagnoses. It may discuss emotions and patterns in everyday language, without replacing a professional assessment.',
+        bullets: [
+          'Scales or insights in the app are orientational, not clinical reports.',
+        ],
+      },
+      crisis: {
+        title: 'Crisis mode: containment and resources',
+        body:
+          'If we detect elevated risk signals, Anto enters a protocol mode: safety first, helplines, and contacts you configured. It does not replace emergency services or a crisis line.',
+        bullets: [
+          'Anto cannot call or message on your behalf except alerts you activate.',
+          'The crisis panel explains why you see it and what you can do now.',
+          'Contact alerts never include chat text.',
+        ],
+      },
+      human_help: {
+        title: 'When to seek human help',
+        body:
+          'Contact a crisis line, emergency services, or someone you trust if there is immediate danger, active ideation, recent self-harm, or you feel you cannot stay safe.',
+        bullets: [
+          'The app shows emergency numbers for your country.',
+          'Anto complements—it does not replace in-person professional help.',
+        ],
+      },
+      emergency_contacts: {
+        title: 'Emergency contacts and alerts',
+        body:
+          'If you configure contacts and alerts activate per product rules, we send a brief notice (without chat content). At medium levels you choose whether to notify; in some severe cases it may be automatic.',
+        bullets: [
+          'Review and update contacts in Profile.',
+          'You can decline an alert offer in chat.',
+        ],
+      },
+      chat_actions: {
+        title: 'Tasks and habits from chat',
+        body:
+          'Anto may suggest tasks or habits from the conversation. They are only created if you confirm. They are organizational supports, not clinical homework or treatment prescriptions.',
+        bullets: [
+          'You can edit the title before creating.',
+          'You can say “not for me” without penalty.',
+        ],
+      },
+      memory: {
+        title: 'Memory and personal data',
+        body:
+          'Anto uses conversation context and preferences you share. It should not invent biography, dates, or promises about your life. If something feels off, correct it in chat.',
+        bullets: [
+          'You can clear the conversation from the chat menu.',
+          'More detail under Privacy and AI.',
+        ],
+      },
+    },
+  },
 };
 
 export const CHAT = {
@@ -887,6 +1021,7 @@ export const CHAT = {
   CHAT_OPTIONS_LAST_MESSAGE: 'Go to last message',
   CHAT_OPTIONS_CUSTOMIZE: 'Chat customization',
   CHAT_OPTIONS_AI_PRIVACY: 'Privacy and AI',
+  CHAT_OPTIONS_AI_LIMITS: 'AI limits',
   CHAT_OPTIONS_AI_INFO: 'Use of artificial intelligence',
   CHAT_OPTIONS_CLEAR: 'Clear this conversation',
   CHAT_OPTIONS_IMMERSIVE_ON: 'Immersive mode (hide distractions)',
@@ -994,6 +1129,14 @@ export const CHAT = {
   CRISIS_RESOURCES_DISMISS_A11Y: 'Hide resources panel',
   CRISIS_RESOURCES_COUNTRY_PREFIX: 'For',
   CHAT_OPTIONS_CRISIS_RESOURCES: 'Crisis resources',
+  SOFT_CRISIS_KICKER: 'Brief pause',
+  SOFT_CRISIS_OPEN: 'Open',
+  SOFT_CRISIS_DISMISS_A11Y: 'Hide regulation suggestion',
+  CRISIS_POST_CONTACT_ALERT_NOTICE:
+    'If you had active emergency contacts, we sent them a brief notice that you might need support. It does not include this conversation.',
+  EMERGENCY_CONTACT_ALERT_OFFER_YES: 'Yes, notify them',
+  EMERGENCY_CONTACT_ALERT_OFFER_NO: 'No, thanks',
+  EMERGENCY_CONTACT_ALERT_OFFER_TITLE: 'Contact alert',
   PRODUCT_PROPOSAL_TYPE_HABIT: 'Habit',
   PRODUCT_PROPOSAL_TYPE_TASK: 'Task',
   PRODUCT_PROPOSAL_HINT_EDIT: 'Quick edit',
@@ -1004,6 +1147,11 @@ export const CHAT = {
   PRODUCT_PROPOSAL_WHEN_PLACEHOLDER: 'Optional date/time (YYYY-MM-DD HH:mm)',
   PRODUCT_PROPOSAL_CREATE: 'Create',
   PRODUCT_PROPOSAL_DISMISS: 'Not relevant',
+  CHAT_COMMITMENT_PROPOSE_TITLE: 'Save this to revisit later?',
+  CHAT_COMMITMENT_SAVE: 'Save',
+  CHAT_COMMITMENT_EDIT_SAVE: 'Edit and save',
+  CHAT_COMMITMENT_DISMISS: 'Not now',
+  CHAT_COMMITMENT_LABEL_PLACEHOLDER: 'Agreement text',
   PRODUCT_STATUS_COOLDOWN_WITH_MIN:
     'Suggestions are paused for a few minutes ({minutes} min) to avoid overwhelming the conversation.',
   PRODUCT_STATUS_COOLDOWN:
@@ -1262,6 +1410,10 @@ export const TASKS_AND_HABITS = {
   SEARCH_PLACEHOLDER: 'Search...',
   SEARCH_TOGGLE_A11Y: 'Search',
   SECTION_TODAY: 'Today',
+  SECTION_TOMORROW: 'Tomorrow',
+  SECTION_THIS_WEEK: 'This week',
+  SECTION_LATER: 'Later',
+  SECTION_COMPLETED: 'Completed',
   SECTION_UPCOMING: 'Upcoming',
   SECTION_ATTENTION: 'Need attention',
   SECTION_TO_COMPLETE: 'To complete',
@@ -1281,6 +1433,13 @@ export const TASKS_AND_HABITS = {
   GRATITUDE_TITLE: 'Gratitude Journal',
   GRATITUDE_SUBTITLE: 'Write about what you are grateful for today',
   OPEN_GRATITUDE_A11Y: 'Open gratitude journal',
+  COMMITMENT_BRIDGE_TITLE_TASK: 'Also save as a session commitment?',
+  COMMITMENT_BRIDGE_TITLE_HABIT: 'Also save as a session commitment?',
+  COMMITMENT_BRIDGE_SUBTITLE:
+    'If it helps, we can note it to revisit between conversations.',
+  COMMITMENT_BRIDGE_SAVE: 'Save as commitment',
+  COMMITMENT_BRIDGE_DISMISS: 'Not now',
+  COMMITMENT_BRIDGE_SAVED: 'Commitment saved',
 };
 
 export const POMODORO = {
@@ -2124,7 +2283,10 @@ export const TECHNIQUES = {
   INTERVENTION_GRAPH_MAP_A11Y: 'Map of what helps you',
   INTERVENTION_GRAPH_MAP_SOURCE_COL: 'Your chat ideas',
   INTERVENTION_GRAPH_MAP_TARGET_COL: 'Techniques',
-  INTERVENTION_GRAPH_MAP_TAP_HINT: 'Tap a connection to see more detail.',
+  INTERVENTION_GRAPH_MAP_TAP_HINT: 'Tap a topic or technique to see the detail.',
+  INTERVENTION_GRAPH_CONNECTION_HELP:
+    'This technique appears because it connects with what you have shared in chat.',
+  INTERVENTION_GRAPH_STATUS_NOT_YET: 'You have not tried it yet — you can open it whenever you want',
   INTERVENTION_GRAPH_ORIGINAL_SNIPPET: 'As you wrote it',
   PSYCHOED_LOADING: 'Loading modules…',
   PSYCHOED_ERROR: 'Could not load modules.',
@@ -2946,6 +3108,8 @@ export const SESSION_INSIGHT = {
   COMMITMENT_PLACEHOLDER: 'E.g. Walk 10 min after lunch',
   COMMITMENT_GENERIC_ERROR:
     'Write a concrete action (for example, "walk for 10 minutes"), not just the technique name.',
+  CTA_COMMITMENT_TO_TASK: 'Add as task',
+  CTA_COMMITMENT_TO_HABIT: 'Turn into habit',
   CTA_TCC_LITE_CHAT: 'Explore in chat',
   CTA_TCC_LITE_CHAT_HINT: 'A step-by-step CBT frame with Anto, without leaving the conversation.',
   MESSAGES_COUNT: '{n} messages from you',

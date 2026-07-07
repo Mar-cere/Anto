@@ -43,6 +43,20 @@ await jest.unstable_mockModule('../../../services/personalPatternRagService.js',
   buildPersonalPatternRagSnippet: jest.fn().mockResolvedValue(null),
 }));
 
+await jest.unstable_mockModule('../../../services/sessionCommitmentPromptSnippet.js', () => ({
+  buildSessionCommitmentPromptSnippet: jest.fn().mockResolvedValue({ snippet: null, commitmentId: null }),
+}));
+
+const mockMarkCommitmentFollowUpShown = jest.fn().mockResolvedValue(undefined);
+await jest.unstable_mockModule('../../../services/sessionCommitmentService.js', () => ({
+  markCommitmentFollowUpShown: mockMarkCommitmentFollowUpShown,
+}));
+
+const mockRecordMetric = jest.fn().mockResolvedValue(undefined);
+await jest.unstable_mockModule('../../../services/metricsService.js', () => ({
+  default: { recordMetric: mockRecordMetric },
+}));
+
 const mockMessageUpdateOne = jest.fn().mockResolvedValue({ acknowledged: true });
 await jest.unstable_mockModule('../../../models/Message.js', () => ({
   default: { updateOne: mockMessageUpdateOne },
@@ -259,5 +273,49 @@ describe('chatTurnEnhancementsService', () => {
     });
 
     expect(mockMessageUpdateOne).not.toHaveBeenCalled();
+  });
+
+  it('finalizeChatTurnEnhancements marca follow-up de compromiso tras turno', async () => {
+    await finalizeChatTurnEnhancements({
+      conversationId: '507f1f77bcf86cd799439012',
+      userId: '507f1f77bcf86cd799439011',
+      assistantMessageId: '507f1f77bcf86cd799439013',
+      tccLitePlan: { active: false },
+      suggestionPlan: { shouldShow: false, formatted: [] },
+      emotionalAnalysis: {},
+      contextualAnalysis: {},
+      userContent: 'hola',
+      riskLevel: 'LOW',
+      commitmentFollowUpCommitmentId: '507f1f77bcf86cd799439099',
+    });
+
+    expect(mockMarkCommitmentFollowUpShown).toHaveBeenCalledWith(
+      '507f1f77bcf86cd799439011',
+      '507f1f77bcf86cd799439099',
+      '507f1f77bcf86cd799439012',
+    );
+    expect(mockRecordMetric).toHaveBeenCalledWith(
+      'commitment_follow_up_shown',
+      { surface: 'chat' },
+      '507f1f77bcf86cd799439011',
+      { conversationId: '507f1f77bcf86cd799439012' },
+    );
+  });
+
+  it('finalizeChatTurnEnhancements no marca follow-up de compromiso en crisis', async () => {
+    await finalizeChatTurnEnhancements({
+      conversationId: '507f1f77bcf86cd799439012',
+      userId: '507f1f77bcf86cd799439011',
+      assistantMessageId: '507f1f77bcf86cd799439013',
+      tccLitePlan: { active: false },
+      suggestionPlan: { formatted: [] },
+      emotionalAnalysis: {},
+      contextualAnalysis: {},
+      userContent: 'no aguanto',
+      riskLevel: 'HIGH',
+      commitmentFollowUpCommitmentId: '507f1f77bcf86cd799439099',
+    });
+
+    expect(mockMarkCommitmentFollowUpShown).not.toHaveBeenCalled();
   });
 });

@@ -73,6 +73,11 @@ jest.mock('../../utils/chatSseStream', () => ({
   streamChatSseWithFetch: (...args) => mockStreamChatSseWithFetch(...args),
 }));
 
+jest.mock('../../utils/chatAccessGate', () => ({
+  assertChatAccessOrThrow: jest.fn().mockResolvedValue(undefined),
+  canAttemptChatAccess: jest.fn().mockResolvedValue(true),
+}));
+
 // Necesitamos obtener el mock después de que se haya configurado
 let apiMock;
 
@@ -496,6 +501,40 @@ describe('chatService', () => {
       await sendMessageStream('Hola', {});
 
       expect(mockPostChatSseWithXHR).toHaveBeenCalled();
+    });
+
+    it('propaga AbortSignal al socket (#168)', async () => {
+      const controller = new AbortController();
+      mockSendChatMessage.mockResolvedValue({
+        id: 'msg-1',
+        text: 'Respuesta',
+        conversationId: 'conv-123',
+      });
+
+      await sendMessageStream('Hola', { signal: controller.signal });
+
+      expect(mockSendChatMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ signal: controller.signal }),
+      );
+    });
+
+    it('propaga onChunk incremental por socket (#128)', async () => {
+      const onChunk = jest.fn();
+      mockSendChatMessage.mockImplementation(async ({ onChunk: chunkCb }) => {
+        chunkCb?.('Te ');
+        chunkCb?.('escucho.');
+        return {
+          id: 'msg-1',
+          text: 'Te escucho.',
+          conversationId: 'conv-123',
+        };
+      });
+
+      await sendMessageStream('Hola', { onChunk });
+
+      expect(onChunk).toHaveBeenCalledTimes(2);
+      expect(onChunk).toHaveBeenNthCalledWith(1, 'Te ');
+      expect(onChunk).toHaveBeenNthCalledWith(2, 'escucho.');
     });
   });
 

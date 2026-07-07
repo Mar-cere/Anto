@@ -27,6 +27,10 @@ import {
 } from '../utils/chatObservationalContext.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import Message from '../models/Message.js';
+import { sanitizeProposedCommitments } from '../utils/sanitizeProposedCommitments.js';
+import { buildSessionCommitmentPromptSnippet } from './sessionCommitmentPromptSnippet.js';
+import { markCommitmentFollowUpShown } from './sessionCommitmentService.js';
+import metricsService from './metricsService.js';
 
 const CHAT_CONTEXT_SNIPPET_TIMEOUT_MS = 2500;
 
@@ -59,6 +63,7 @@ export async function planChatTurnEnhancements({
   language = 'es',
   resumeTccLite = null,
   resumeCommitmentFollowUp = false,
+  isCrisis = false,
 }) {
   const lang = normalizeApiLanguage(language);
   const blockObservationalSnippets = isChatObservationalContextBlocked(riskLevel);
@@ -193,6 +198,8 @@ export async function planChatTurnEnhancements({
 
   // Plan de follow-up de compromiso (#202): solo inicio de hilo, fuera de crisis.
   let commitmentFollowUpPlan = null;
+  let sessionCommitmentPromptSnippet = null;
+  let commitmentFollowUpCommitmentId = null;
   if (!blockCrisisExtras) {
     try {
       commitmentFollowUpPlan = await buildCommitmentFollowUpPlan({
@@ -205,6 +212,20 @@ export async function planChatTurnEnhancements({
     } catch {
       commitmentFollowUpPlan = null;
     }
+    try {
+      const commitmentCtx = await buildSessionCommitmentPromptSnippet({
+        userId,
+        conversationId,
+        language: lang,
+        riskLevel,
+        isCrisis,
+      });
+      sessionCommitmentPromptSnippet = commitmentCtx.snippet;
+      commitmentFollowUpCommitmentId = commitmentCtx.commitmentId;
+    } catch {
+      sessionCommitmentPromptSnippet = null;
+      commitmentFollowUpCommitmentId = null;
+    }
   }
 
   return {
@@ -216,6 +237,8 @@ export async function planChatTurnEnhancements({
     recentAbcPromptSnippet,
     personalPatternRagPromptSnippet,
     commitmentFollowUpPlan,
+    sessionCommitmentPromptSnippet,
+    commitmentFollowUpCommitmentId,
   };
 }
 
@@ -237,6 +260,9 @@ export function buildOpenaiEnhancementSnippets(enhancements, options = {}) {
     commitmentFollowUpPromptSnippet: blockTherapeutic
       ? null
       : enhancements.commitmentFollowUpPlan?.promptSnippet || null,
+    sessionCommitmentPromptSnippet: blockTherapeutic
+      ? null
+      : enhancements.sessionCommitmentPromptSnippet || null,
   };
 }
 
@@ -258,6 +284,7 @@ export async function finalizeChatTurnEnhancements({
   userContent,
   riskLevel,
   commitmentFollowUpPlan = null,
+  commitmentFollowUpCommitmentId = null,
 }) {
   await saveTccLiteStateToConversation(conversationId, tccLitePlan).catch(() => {});
 
@@ -282,6 +309,24 @@ export async function finalizeChatTurnEnhancements({
 
   const formatted = suggestionPlan?.formatted;
   const crisisBlocked = isLlmCrisisTherapeuticExtrasBlocked({ riskLevel, userMessage: userContent });
+  if (
+    !crisisBlocked &&
+    commitmentFollowUpCommitmentId &&
+    userId &&
+    conversationId
+  ) {
+    await markCommitmentFollowUpShown(userId, commitmentFollowUpCommitmentId, conversationId).catch(
+      () => {},
+    );
+    metricsService
+      .recordMetric(
+        'commitment_follow_up_shown',
+        { surface: 'chat' },
+        String(userId),
+        { conversationId: String(conversationId) },
+      )
+      .catch(() => {});
+  }
   if (
     !crisisBlocked &&
     Array.isArray(formatted) &&
@@ -323,6 +368,22 @@ export async function finalizeChatTurnEnhancements({
   }
 }
 
+/**
+ * Persiste propuestas de compromiso mostradas para reconstruir tarjetas al reabrir el hilo.
+ * @param {unknown} assistantMessageId
+ * @param {unknown[]} proposedCommitments
+ */
+export async function persistProposedCommitmentsOnMessage(assistantMessageId, proposedCommitments) {
+  const sanitized = sanitizeProposedCommitments(proposedCommitments);
+  if (!assistantMessageId || sanitized.length === 0) {
+    return;
+  }
+  await Message.updateOne(
+    { _id: assistantMessageId },
+    { $set: { 'metadata.proposedCommitments': sanitized } },
+  ).catch(() => {});
+}
+
 export function buildClientTurnPayload({
   tccLitePlan,
   suggestionPlan,
@@ -356,5 +417,6 @@ export default {
   buildOpenaiEnhancementSnippets,
   buildAssistantMetadataWithEnhancements,
   finalizeChatTurnEnhancements,
+  persistProposedCommitmentsOnMessage,
   buildClientTurnPayload,
 };

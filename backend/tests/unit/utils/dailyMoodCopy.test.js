@@ -34,7 +34,7 @@ describe('dailyMoodCopy', () => {
     expect(hits).toEqual([]);
   });
 
-  it('ansioso y cansado sugieren chat; tranquilo y bien no', () => {
+  it('tenso y fatiga sugieren chat; calma y bien no', () => {
     expect(getDailyMoodCopy('anxious', 'es').suggestChat).toBe(true);
     expect(getDailyMoodCopy('tired', 'es').suggestChat).toBe(true);
     expect(getDailyMoodCopy('calm', 'es').suggestChat).toBe(false);
@@ -60,8 +60,8 @@ describe('dailyMoodCopy', () => {
     const esSnippet = buildDailyMoodPromptSnippet({ mood: 'anxious' }, 'es');
     const enSnippet = buildDailyMoodPromptSnippet({ mood: 'anxious' }, 'en');
     expect(esSnippet).toMatch(/check-in del día/i);
-    expect(esSnippet).toMatch(/ansioso/i);
+    expect(esSnippet).toMatch(/tenso/i);
     expect(enSnippet).toMatch(/morning check-in/i);
-    expect(enSnippet).toMatch(/anxious/i);
+    expect(enSnippet).toMatch(/tense/i);
   });
 });

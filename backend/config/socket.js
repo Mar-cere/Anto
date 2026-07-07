@@ -27,6 +27,7 @@ import { ENGAGEMENT_SIGNAL } from '../utils/engagementStreakWeights.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
+import chatCommitmentProposalService from '../services/chatCommitmentProposalService.js';
 import metricsService from '../services/metricsService.js';
 import { buildCrisisRoutingMetricData } from '../utils/crisisRoutingMetricPayload.js';
 import crisisBackgroundActionsService from '../services/crisisBackgroundActionsService.js';
@@ -38,6 +39,7 @@ import {
   buildOpenaiEnhancementSnippets,
   buildAssistantMetadataWithEnhancements,
   finalizeChatTurnEnhancements,
+  persistProposedCommitmentsOnMessage,
   buildClientTurnPayload,
 } from '../services/chatTurnEnhancementsService.js';
 import {
@@ -46,9 +48,15 @@ import {
   buildCrisisHardStopClientPayload,
 } from '../services/crisisHardStopService.js';
 import { crisisResourcesForTurn } from '../services/crisisResourcesService.js';
+import { applyCrisisProtocolForTurn } from '../services/crisisTurnClientExtrasService.js';
+import { hasCrisisBatterySignal } from '../services/crisisProtocolService.js';
 import { indexPersonalPatternFromUserMessage } from '../services/personalPatternRagService.js';
 import { resolveChatConversationForSocket } from '../utils/resolveChatConversationForSocket.js';
 import { buildSocketChatErrorPayload } from '../utils/socketChatErrorPayload.js';
+import {
+  buildStreamingTtftMetrics,
+  streamingTtftMetricPayload,
+} from '../utils/chatStreamingMetrics.js';
 
 // Constantes de configuración
 const DEFAULT_FRONTEND_URLS = ['http://localhost:3000', 'http://localhost:19006'];
@@ -67,6 +75,7 @@ const SOCKET_EVENTS = {
   AUTHENTICATE: 'authenticate',
   MESSAGE: 'message',
   MESSAGE_SENT: 'message:sent',
+  MESSAGE_CHUNK: 'message:chunk',
   MESSAGE_RECEIVED: 'message:received',
   AI_TYPING: 'ai:typing',
   CANCEL_RESPONSE: 'cancel:response',
@@ -133,6 +142,7 @@ export const setupSocketIO = (server) => {
     
     let currentUserId = null;
     let responseTimeout = null;
+    socket._chatTurnControl = null;
     
     /**
      * Autenticación del socket
@@ -161,6 +171,13 @@ export const setupSocketIO = (server) => {
         if (!currentUserId) {
           throw new Error(ERROR_MESSAGES.USER_NOT_AUTHENTICATED);
         }
+
+        if (socket._chatTurnControl) {
+          socket._chatTurnControl.aborted = true;
+        }
+        const turnControl = { aborted: false };
+        socket._chatTurnControl = turnControl;
+        const turnStartTime = Date.now();
         
         // Validar que el mensaje tenga contenido
         if (!data || !data.text || typeof data.text !== 'string' || !data.text.trim()) {
@@ -270,8 +287,9 @@ export const setupSocketIO = (server) => {
             contextualAnalysis?.intencion?.confianza >= 0.9 &&
             riskLevel !== 'LOW');
 
+        let crisisBgResult = null;
         try {
-          await crisisBackgroundActionsService.runCrisisBackgroundActions({
+          crisisBgResult = await crisisBackgroundActionsService.runCrisisBackgroundActions({
             userId,
             messageId: userMessage._id,
             messageContent: messageText,
@@ -281,6 +299,7 @@ export const setupSocketIO = (server) => {
             trendAnalysis,
             crisisHistory,
             conversationContext,
+            conversationId: conversation._id,
             transport: 'socket',
             isCrisis,
           });
@@ -326,6 +345,84 @@ export const setupSocketIO = (server) => {
             userProfile?.language ||
             'es',
         );
+        const socketPreferences = {
+          ...(userProfile?.preferences || {}),
+          ...(socketUser?.preferences || {}),
+        };
+        const willHardStop = shouldHardStopCrisisLlm({
+          riskLevel,
+          messageContent: messageText,
+        });
+        let crisisTurnClientExtras = await applyCrisisProtocolForTurn({
+          conversation,
+          userId,
+          user: socketUser,
+          riskLevel,
+          messageContent: messageText,
+          contextualAnalysis,
+          trendAnalysis,
+          crisisHistory,
+          conversationContext,
+          hardStop: willHardStop,
+          isCrisis,
+          hadContactAlert: crisisBgResult?.alertSent === true,
+          language: socketLanguage,
+          preferences: socketPreferences,
+          phone: socketUser?.phone || null,
+        });
+        const buildSocketCrisisPayload = ({ hardStop = false } = {}) => {
+          const protocolActive = crisisTurnClientExtras?.crisisProtocolState?.active === true;
+          const batterySignal = hasCrisisBatterySignal(
+            messageText,
+            crisisTurnClientExtras?.crisisDecision,
+          );
+          if (hardStop) {
+            crisisTurnClientExtras = {
+              ...crisisTurnClientExtras,
+              crisisResources: crisisResourcesForTurn({
+                riskLevel,
+                hardStop: true,
+                isCrisis: true,
+                hasBatterySignal: batterySignal,
+                crisisProtocolActive: protocolActive,
+                preferences: socketPreferences,
+                phone: socketUser?.phone || null,
+                language: socketLanguage,
+                showContactAlertNotice:
+                  crisisTurnClientExtras?.crisisProtocolState?.hadContactAlert === true ||
+                  crisisBgResult?.alertSent === true,
+              }),
+            };
+          }
+          const crisisResources =
+            crisisTurnClientExtras?.crisisResources ??
+            crisisResourcesForTurn({
+              riskLevel,
+              hardStop,
+              isCrisis,
+              hasBatterySignal: batterySignal,
+              crisisProtocolActive: protocolActive,
+              preferences: socketPreferences,
+              phone: socketUser?.phone || null,
+              language: socketLanguage,
+              showContactAlertNotice:
+                crisisTurnClientExtras?.crisisProtocolState?.hadContactAlert === true ||
+                crisisBgResult?.alertSent === true,
+            });
+          return {
+            ...(crisisResources ? { crisisResources } : {}),
+            ...(crisisTurnClientExtras?.proposedEmergencyContactAlert
+              ? {
+                  proposedEmergencyContactAlert:
+                    crisisTurnClientExtras.proposedEmergencyContactAlert,
+                }
+              : {}),
+            ...(crisisTurnClientExtras?.softCrisisCheckIn
+              ? { softCrisisCheckIn: crisisTurnClientExtras.softCrisisCheckIn }
+              : {}),
+          };
+        };
+
         const turnEnhancements = await planChatTurnEnhancements({
           userId,
           conversationId: conversation._id,
@@ -341,6 +438,7 @@ export const setupSocketIO = (server) => {
               ? data.resumeTccLite
               : null,
           resumeCommitmentFollowUp: data?.resumeCommitmentFollowUp === true,
+          isCrisis,
         });
         const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements, {
           blockCrisisExtras: isLlmCrisisTherapeuticExtrasBlocked({
@@ -349,10 +447,7 @@ export const setupSocketIO = (server) => {
           }),
         });
 
-        const crisisHardStopContent = shouldHardStopCrisisLlm({
-          riskLevel,
-          messageContent: messageText,
-        })
+        const crisisHardStopContent = willHardStop
           ? buildHardStopCrisisAssistantContent({
               riskLevel,
               language: socketLanguage,
@@ -423,19 +518,10 @@ export const setupSocketIO = (server) => {
           }).catch(() => {});
 
           const clientTurn = buildCrisisHardStopClientPayload(socketLanguage);
-          const socketPreferences = {
-            ...(userProfile?.preferences || {}),
-            ...(socketUser?.preferences || {}),
-          };
-          const crisisResources = crisisResourcesForTurn({
-            riskLevel,
-            hardStop: true,
-            isCrisis,
-            preferences: socketPreferences,
-            phone: socketUser?.phone || null,
-            language: socketLanguage,
+          socket.emit(SOCKET_EVENTS.MESSAGE_CHUNK, {
+            content: crisisHardStopContent,
+            conversationId: conversation._id.toString(),
           });
-
           socket.emit(SOCKET_EVENTS.AI_TYPING, false);
           socket.emit(SOCKET_EVENTS.MESSAGE_RECEIVED, {
             id: assistantMessage._id.toString(),
@@ -445,11 +531,12 @@ export const setupSocketIO = (server) => {
             timestamp: new Date(),
             crisisHardStop: true,
             proposedProductActions: [],
+            proposedCommitments: [],
             productActionStatus: { paused: false, reason: null, askFirst: false },
             suggestions: clientTurn.suggestions,
             suggestionsPersonalized: clientTurn.suggestionsPersonalized,
             tccLite: clientTurn.tccLite,
-            ...(crisisResources ? { crisisResources } : {}),
+            ...buildSocketCrisisPayload({ hardStop: true }),
           });
           return;
         }
@@ -480,51 +567,131 @@ export const setupSocketIO = (server) => {
             : sessionIntentionSafe === 'plan'
               ? 'action_first_then_validation'
               : 'balanced';
-        const response = await openaiService.generarRespuesta(
-          userMessage,
-          {
-            rollingSummary: conversation?.rollingSummary || null,
-            sessionPhase,
-            safetyHistory: conversationHistory.map((m) => ({
-              role: m.role,
-              content: m.content || '',
-            })),
-            history: historialParaPrompt,
-            emotional: emotionalAnalysis,
-            contextual: contextualAnalysis,
-            profile: userProfile,
-            currentConversationId: conversation._id,
-            sessionPhase,
-            sessionRetention,
-            conversationPattern,
-            sessionIntention: sessionIntentionSafe,
-            responseStrategyHint,
-            psychoeducationPromptSnippet: promptSnippets.psychoeducationPromptSnippet,
-            activeTccProtocolsPromptSnippet: promptSnippets.activeTccProtocolsPromptSnippet,
-            tccLitePromptSnippet: promptSnippets.tccLitePromptSnippet,
-            digitalPhenotypePromptSnippet: promptSnippets.digitalPhenotypePromptSnippet,
-            recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
-            personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
-            commitmentFollowUpPromptSnippet: promptSnippets.commitmentFollowUpPromptSnippet,
-            crisis: buildOpenaiCrisisContext({
-              riskLevel,
-              isCrisis,
-              userMessage: messageText,
-              preferences: {
-                ...(userProfile?.preferences || {}),
-                ...(socketUser?.preferences || {}),
-              },
-              phone: socketUser?.phone || null,
-            }),
-            crisisMetricTransport: 'socket',
-            _promptTelemetry: {
-              userId,
-              conversationId: conversation._id,
-              source: 'socket',
-              callSite: 'buildHistoryForPromptFromMessages'
-            }
+        const openaiContext = {
+          rollingSummary: conversation?.rollingSummary || null,
+          sessionPhase,
+          safetyHistory: conversationHistory.map((m) => ({
+            role: m.role,
+            content: m.content || '',
+          })),
+          history: historialParaPrompt,
+          emotional: emotionalAnalysis,
+          contextual: contextualAnalysis,
+          profile: userProfile,
+          currentConversationId: conversation._id,
+          sessionPhase,
+          sessionRetention,
+          conversationPattern,
+          sessionIntention: sessionIntentionSafe,
+          responseStrategyHint,
+          psychoeducationPromptSnippet: promptSnippets.psychoeducationPromptSnippet,
+          activeTccProtocolsPromptSnippet: promptSnippets.activeTccProtocolsPromptSnippet,
+          tccLitePromptSnippet: promptSnippets.tccLitePromptSnippet,
+          digitalPhenotypePromptSnippet: promptSnippets.digitalPhenotypePromptSnippet,
+          recentAbcPromptSnippet: promptSnippets.recentAbcPromptSnippet,
+          personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
+          commitmentFollowUpPromptSnippet: promptSnippets.commitmentFollowUpPromptSnippet,
+          sessionCommitmentPromptSnippet: promptSnippets.sessionCommitmentPromptSnippet,
+          crisis: buildOpenaiCrisisContext({
+            riskLevel,
+            isCrisis,
+            userMessage: messageText,
+            preferences: {
+              ...(userProfile?.preferences || {}),
+              ...(socketUser?.preferences || {}),
+            },
+            phone: socketUser?.phone || null,
+          }),
+          crisisMetricTransport: 'socket',
+          _promptTelemetry: {
+            userId,
+            conversationId: conversation._id,
+            source: 'socket',
+            callSite: 'buildHistoryForPromptFromMessages',
+          },
+        };
+
+        metricsService
+          .recordMetric(
+            'chat_usage',
+            { action: 'streaming_request', isGuest: false },
+            userId.toString(),
+            {
+              conversationId: String(conversation._id),
+              transport: 'socket',
+              endpoint: 'chat',
+              surface: 'registered',
+              streaming: true,
+            },
+          )
+          .catch(() => {});
+
+        const preLlmEndAt = Date.now();
+        let firstChunkAt = null;
+        let streamResponse = null;
+
+        for await (const event of openaiService.generarRespuestaStream(userMessage, openaiContext)) {
+          if (turnControl.aborted) {
+            socket.emit(SOCKET_EVENTS.AI_TYPING, false);
+            return;
           }
-        );
+          if (event.type === 'chunk') {
+            const chunkText = typeof event.content === 'string' ? event.content : '';
+            if (!chunkText) continue;
+            if (!firstChunkAt) {
+              firstChunkAt = Date.now();
+              const ttftMetrics = buildStreamingTtftMetrics({
+                startTime: turnStartTime,
+                preLlmEndAt,
+                firstChunkAt,
+              });
+              metricsService
+                .recordMetric(
+                  'chat_usage',
+                  {
+                    action: 'streaming_first_chunk',
+                    isGuest: false,
+                    ...streamingTtftMetricPayload(ttftMetrics),
+                  },
+                  userId.toString(),
+                  {
+                    conversationId: String(conversation._id),
+                    transport: 'socket',
+                    endpoint: 'chat',
+                    surface: 'registered',
+                    streaming: true,
+                  },
+                )
+                .catch(() => {});
+            }
+            socket.emit(SOCKET_EVENTS.MESSAGE_CHUNK, {
+              content: chunkText,
+              conversationId: conversation._id.toString(),
+            });
+          } else if (event.type === 'done') {
+            streamResponse = { content: event.content, context: event.context };
+            break;
+          }
+        }
+
+        if (turnControl.aborted) {
+          socket.emit(SOCKET_EVENTS.AI_TYPING, false);
+          return;
+        }
+
+        if (!streamResponse?.content) {
+          throw new Error('Respuesta vacía del stream de chat');
+        }
+
+        if (!firstChunkAt && streamResponse.content) {
+          socket.emit(SOCKET_EVENTS.MESSAGE_CHUNK, {
+            content: streamResponse.content,
+            conversationId: conversation._id.toString(),
+            synthetic: true,
+          });
+        }
+
+        const response = streamResponse;
         
         // 7. Guardar mensaje del asistente
         const assistantMessage = new Message({
@@ -570,6 +737,7 @@ export const setupSocketIO = (server) => {
           userContent: messageText,
           riskLevel,
           commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
+          commitmentFollowUpCommitmentId: turnEnhancements.commitmentFollowUpCommitmentId,
         }).catch(() => {});
         
         // 8. Actualizar última conversación
@@ -650,6 +818,29 @@ export const setupSocketIO = (server) => {
               console.warn('[SocketIO] product proposal cap inc:', incErr?.message || incErr)
             );
         }
+
+        const proposedCommitments =
+          proposedProductActions.length > 0
+            ? []
+            : await chatCommitmentProposalService.resolveProposedCommitmentsForTurn(
+                {
+                  userId,
+                  riskLevel,
+                  isCrisis,
+                  userContent: messageText,
+                  assistantContent: response.content,
+                  sessionIntention: conversation?.sessionIntention,
+                  conversationId: conversation._id,
+                  assistantMessageId: assistantMessage._id,
+                  interventionId: turnEnhancements.suggestionPlan?.primaryPsychoeducationId || null,
+                },
+                { transport: 'socket' },
+              );
+
+        await persistProposedCommitmentsOnMessage(
+          assistantMessage._id,
+          proposedCommitments,
+        ).catch(() => {});
         
         const clientTurn = buildClientTurnPayload({
           tccLitePlan: turnEnhancements.tccLitePlan,
@@ -659,20 +850,26 @@ export const setupSocketIO = (server) => {
           userMessage: messageText,
           commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
         });
-        const socketPreferences = {
-          ...(userProfile?.preferences || {}),
-          ...(socketUser?.preferences || {}),
-        };
-        const crisisResources = crisisResourcesForTurn({
-          riskLevel,
-          hardStop: false,
-          isCrisis,
-          preferences: socketPreferences,
-          phone: socketUser?.phone || null,
-          language: socketLanguage,
-        });
-
         // 9. Emitir respuesta al cliente
+        metricsService
+          .recordMetric(
+            'chat_usage',
+            {
+              action: 'streaming_done',
+              isGuest: false,
+              timeToDoneMs: Date.now() - turnStartTime,
+            },
+            userId.toString(),
+            {
+              conversationId: String(conversation._id),
+              transport: 'socket',
+              endpoint: 'chat',
+              surface: 'registered',
+              streaming: true,
+            },
+          )
+          .catch(() => {});
+
         socket.emit(SOCKET_EVENTS.AI_TYPING, false);
         socket.emit(SOCKET_EVENTS.MESSAGE_RECEIVED, {
           id: assistantMessage._id.toString(),
@@ -681,12 +878,13 @@ export const setupSocketIO = (server) => {
           conversationId: conversation._id.toString(),
           timestamp: new Date(),
           proposedProductActions,
+          proposedCommitments,
           productActionStatus,
           suggestions: clientTurn.suggestions,
           suggestionsPersonalized: clientTurn.suggestionsPersonalized,
           tccLite: clientTurn.tccLite,
           commitmentFollowUp: clientTurn.commitmentFollowUp,
-          ...(crisisResources ? { crisisResources } : {}),
+          ...buildSocketCrisisPayload(),
         });
         
         console.log(`[SocketIO] Mensaje procesado para usuario ${currentUserId}`);
@@ -703,6 +901,9 @@ export const setupSocketIO = (server) => {
      * Permite al usuario cancelar una respuesta que se está generando
      */
     socket.on(SOCKET_EVENTS.CANCEL_RESPONSE, () => {
+      if (socket._chatTurnControl) {
+        socket._chatTurnControl.aborted = true;
+      }
       if (responseTimeout) {
         clearTimeout(responseTimeout);
         responseTimeout = null;
@@ -716,6 +917,10 @@ export const setupSocketIO = (server) => {
      * Limpia recursos y notifica la desconexión
      */
     socket.on(SOCKET_EVENTS.DISCONNECT, () => {
+      if (socket._chatTurnControl) {
+        socket._chatTurnControl.aborted = true;
+        socket._chatTurnControl = null;
+      }
       // Limpiar timeout si existe
       if (responseTimeout) {
         clearTimeout(responseTimeout);

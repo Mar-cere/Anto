@@ -6,21 +6,21 @@ import { DAILY_MOOD_VALUES } from '../models/DailyMoodCheckIn.js';
 const COPY = {
   es: {
     calm: {
-      label: 'Tranquilo',
+      label: 'Calma',
       acknowledgment: 'Qué bueno. Si quieres, podemos mantener ese ritmo hoy.',
       antoSnippet: '¿Quieres contarme qué te ayuda a sentirte así de tranquilo?',
       suggestChat: false,
       chatEmotion: 'tranquilidad',
     },
     anxious: {
-      label: 'Ansioso',
+      label: 'Tenso',
       acknowledgment: 'Gracias por contarlo. No tienes que afrontarlo solo.',
       antoSnippet: 'Puedo acompañarte ahora con calma, sin apuro.',
       suggestChat: true,
       chatEmotion: 'ansiedad',
     },
     tired: {
-      label: 'Cansado',
+      label: 'Fatiga',
       acknowledgment: 'Tiene sentido. Hoy podemos ir despacio.',
       antoSnippet: 'Si quieres, vemos juntos qué te está pesando.',
       suggestChat: true,
@@ -43,7 +43,7 @@ const COPY = {
       chatEmotion: 'calm',
     },
     anxious: {
-      label: 'Anxious',
+      label: 'Tense',
       acknowledgment: 'Thanks for sharing. You do not have to face this alone.',
       antoSnippet: 'I can be with you now, calmly and without rushing.',
       suggestChat: true,

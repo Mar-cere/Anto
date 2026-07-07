@@ -126,6 +126,10 @@ export function auditRenderedEnTemplates(templates, buildWeeklySummaryEmailConte
           'en',
         ),
     ],
+    [
+      'emergencyContactTestEmail',
+      () => templates.emergencyContactTestEmail('Alex', 'María', 'en'),
+    ],
   ];
 
   for (const [id, render] of cases) {
@@ -177,6 +181,8 @@ export function auditRenderedEnTemplates(templates, buildWeeklySummaryEmailConte
             { reference: 'REF-2' },
             'es',
           );
+        case 'emergencyContactTestEmail':
+          return templates.emergencyContactTestEmail('Alex', 'María', 'es');
         default:
           return en;
       }

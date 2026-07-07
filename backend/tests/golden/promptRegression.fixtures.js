@@ -153,6 +153,54 @@ export const PROMPT_GOLDEN_CASES = [
         'podemos cerrar aquí este tramo'
       ]
     }
+  },
+  {
+    id: 'panic_attack_recovery_no_closure_prompt',
+    message: { content: 'Ya va bajando' },
+    context: {
+      sessionPhase: 'default',
+      emotional: { mainEmotion: 'ansiedad', intensity: 5 },
+      contextual: {
+        intencion: { tipo: 'AYUDA_EMOCIONAL', confianza: 0.85 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'SALUD' }
+      },
+      crisis: { riskLevel: 'LOW', country: 'GENERAL' },
+      sessionRetention: {
+        userTurnCount: 5,
+        totalMessages: 10,
+        priorConversationCount: 1,
+        suggestBridgeClosing: false,
+        suggestFatigueClosing: false,
+        suggestThematicMicroClosure: false,
+        suggestCheckpointPause: false,
+        likelyFarewell: false
+      },
+      conversationPattern: { closureRisk: false, questionStreakCount: 0 },
+      currentMessage: 'Ya va bajando',
+      safetyHistory: [
+        { role: 'user', content: 'Hola' },
+        { role: 'assistant', content: 'Hola, ¿cómo estás hoy?' },
+        { role: 'user', content: 'Hoy mal' },
+        { role: 'assistant', content: 'Vaya, hoy se siente pesado.' },
+        { role: 'user', content: 'Todo, tuve crisis de panico' },
+        { role: 'assistant', content: 'Eso puede dejarte muy sacudido.' },
+        { role: 'user', content: 'Acaba de pasar' },
+        { role: 'assistant', content: 'Entonces tu cuerpo sigue en alerta.' },
+        { role: 'user', content: 'Ya va bajando' }
+      ],
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: ['### Hilo reciente (resumen breve', 'crisis de panico'],
+      noneOf: [
+        'podemos cerrar aquí este tramo',
+        'retomarlo cuando quieras desde este punto',
+        'La carga emocional o temática parece más baja',
+        'Varios turnos ya compartidos'
+      ]
+    }
   }
 ];
 

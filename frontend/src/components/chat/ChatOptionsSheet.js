@@ -32,6 +32,7 @@ export default function ChatOptionsSheet({
   onScrollToBottom,
   onOpenCustomization,
   onOpenPrivacy,
+  onOpenAiLimits,
   onOpenAiInfo,
   onOpenCrisisResources,
   onRequestClearConversation,
@@ -206,6 +207,25 @@ export default function ChatOptionsSheet({
               </View>
               <Text style={styles.rowLabel}>{TEXTS.CHAT_OPTIONS_AI_PRIVACY}</Text>
             </TouchableOpacity>
+
+            {onOpenAiLimits ? (
+              <TouchableOpacity
+                style={styles.row}
+                onPress={wrap(onOpenAiLimits)}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel={TEXTS.CHAT_OPTIONS_AI_LIMITS}
+              >
+                <View style={styles.rowIcon}>
+                  <MaterialCommunityIcons
+                    name="shield-alert-outline"
+                    size={22}
+                    color={chatColors.PRIMARY}
+                  />
+                </View>
+                <Text style={styles.rowLabel}>{TEXTS.CHAT_OPTIONS_AI_LIMITS}</Text>
+              </TouchableOpacity>
+            ) : null}
 
             <TouchableOpacity
               style={styles.row}

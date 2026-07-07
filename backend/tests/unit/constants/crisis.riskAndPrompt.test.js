@@ -257,6 +257,24 @@ describe('buildCrisisActionDecision', () => {
 
     expect(decision.actionLevel).toBe('VERIFY');
     expect(decision.shouldAlertContacts).toBe(false);
+    expect(decision.shouldAlertContactsAuto).toBe(false);
+    expect(decision.shouldOfferContactAlert).toBe(false);
+  });
+
+  it('en MEDIUM con evidencia acumulada ofrece alerta (no auto)', () => {
+    const decision = buildCrisisActionDecision({
+      riskLevel: 'MEDIUM',
+      messageContent:
+        'ya se como hacerlo, tengo un plan y me quiero despedir, esta sera la ultima vez, no aguanto mas',
+      contextualAnalysis: { intencion: { tipo: 'CRISIS', confianza: 0.96 } },
+      trendAnalysis: { trends: { rapidDecline: true, escalation: true, sustainedLow: true } },
+      crisisHistory: { recentCrises: 1 },
+      conversationContext: { helpRejected: true, silenceAfterNegative: true, abruptToneChange: false },
+    });
+
+    expect(decision.shouldAlertContactsAuto).toBe(false);
+    expect(decision.shouldOfferContactAlert).toBe(true);
+    expect(decision.actionLevel).toBe('VERIFY');
   });
 
   it('para WARNING usa SUPPORT_USER', () => {

@@ -90,6 +90,16 @@ const conversationSchema = new mongoose.Schema({
     default: 0,
     min: 0
   },
+  /** Última propuesta de compromiso (#202) sin pedido explícito en este hilo */
+  lastCommitmentProposalAt: {
+    type: Date,
+    default: null,
+  },
+  /** Último follow-up de compromiso mostrado en chat (evita repetir en 24 h) */
+  commitmentFollowUpShownAt: {
+    type: Date,
+    default: null,
+  },
   /** Marco TCC lite in-chat (#201): paso activo en el hilo */
   tccLiteState: {
     type: {
@@ -110,6 +120,30 @@ const conversationSchema = new mongoose.Schema({
       peakIntensityAt: { type: Date, default: null },
       dominantEmotion: { type: String, default: null, maxlength: 40 },
       distressTheme: { type: String, default: null, maxlength: 64 },
+    },
+    default: undefined,
+  },
+  /** Protocolo de crisis v1 (#93): estado activo y salida */
+  crisisProtocolState: {
+    type: {
+      active: { type: Boolean, default: false },
+      stableUserTurns: { type: Number, default: 0, min: 0 },
+      hadContactAlert: { type: Boolean, default: false },
+      pendingContactAlertOfferId: { type: String, default: null, maxlength: 80 },
+      contactAlertOfferDismissed: { type: Boolean, default: false },
+      protocolVersion: { type: String, default: '1.0', maxlength: 16 },
+      enteredAt: { type: Date, default: null },
+    },
+    default: undefined,
+  },
+  /** Check-in crisis suave (#19): regulación breve sin protocolo completo */
+  softCrisisCheckInState: {
+    type: {
+      active: { type: Boolean, default: false },
+      stableUserTurns: { type: Number, default: 0, min: 0 },
+      dismissed: { type: Boolean, default: false },
+      version: { type: String, default: '1.0', maxlength: 16 },
+      enteredAt: { type: Date, default: null },
     },
     default: undefined,
   },

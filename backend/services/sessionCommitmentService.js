@@ -3,7 +3,9 @@
  */
 import mongoose from 'mongoose';
 import Conversation from '../models/Conversation.js';
+import Habit from '../models/Habit.js';
 import SessionCommitment from '../models/SessionCommitment.js';
+import Task from '../models/Task.js';
 import {
   failsClinicalGuardrails,
   sanitizeObservationalText,
@@ -12,16 +14,49 @@ import { isGenericInterventionCatalogLabel } from '../utils/commitmentLabelUtils
 
 const MAX_LABEL = 240;
 const MAX_ACTIVE_COMMITMENTS = 12;
-const DEFAULT_FOLLOW_UP_HOURS = 48;
+const FOCUS_VISIBLE_LIMIT = 3;
+const DEFAULT_FOLLOW_UP_HOURS = 72;
+const FOLLOW_UP_CHAT_MIN_MS = 48 * 60 * 60 * 1000;
+const MAX_FOLLOW_UP_ATTEMPTS = 2;
 const ACTIVE_STATUSES = ['active'];
 const LIST_STATUSES = ['active', 'completed'];
-const ALLOWED_SOURCES = new Set(['session_insight', 'manual', 'chat_action']);
+const ALLOWED_SOURCES = new Set(['session_insight', 'manual', 'chat_action', 'chat_proposed']);
 
 export function sanitizeCommitmentSourceMeta(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const meta = {};
   const interventionId = String(raw.interventionId || '').trim().slice(0, 64);
-  if (!interventionId) return null;
-  return { interventionId };
+  if (interventionId) meta.interventionId = interventionId;
+  const taskId = String(raw.taskId || '').trim();
+  if (taskId && mongoose.Types.ObjectId.isValid(taskId)) meta.taskId = taskId;
+  const habitId = String(raw.habitId || '').trim();
+  if (habitId && mongoose.Types.ObjectId.isValid(habitId)) meta.habitId = habitId;
+  const proposedMessageId = String(raw.proposedMessageId || '').trim().slice(0, 64);
+  if (proposedMessageId) meta.proposedMessageId = proposedMessageId;
+  return Object.keys(meta).length > 0 ? meta : null;
+}
+
+async function validateOwnedProductSourceMeta(userId, raw) {
+  const meta = sanitizeCommitmentSourceMeta(raw);
+  if (!meta) {
+    if (raw?.taskId || raw?.habitId) {
+      return { error: 'invalidProductLink' };
+    }
+    return { sourceMeta: null };
+  }
+
+  const uid = new mongoose.Types.ObjectId(String(userId));
+  if (raw?.taskId) {
+    if (!meta.taskId) return { error: 'invalidProductLink' };
+    const task = await Task.findOne({ _id: meta.taskId, userId: uid }).select('_id').lean();
+    if (!task) return { error: 'invalidProductLink' };
+  }
+  if (raw?.habitId) {
+    if (!meta.habitId) return { error: 'invalidProductLink' };
+    const habit = await Habit.findOne({ _id: meta.habitId, userId: uid }).select('_id').lean();
+    if (!habit) return { error: 'invalidProductLink' };
+  }
+  return { sourceMeta: meta };
 }
 
 function normalizeLabel(raw) {
@@ -50,12 +85,16 @@ function toClientCommitment(doc) {
     conversationId: doc.conversationId ? String(doc.conversationId) : null,
     followUpAt: doc.followUpAt || null,
     followUpAnswer: doc.followUpAnswer || 'pending',
+    followUpAttempts: Number(doc.followUpAttempts) || 0,
+    lastFollowUpAt: doc.lastFollowUpAt || null,
     completedAt: doc.completedAt || null,
+    renegotiatedFrom: doc.renegotiatedFrom ? String(doc.renegotiatedFrom) : null,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt,
     interventionId: doc.sourceMeta?.interventionId
       ? String(doc.sourceMeta.interventionId)
       : null,
+    sourceMeta: doc.sourceMeta || null,
   };
 }
 
@@ -67,6 +106,22 @@ async function resolveOwnedConversationId(userId, conversationId) {
   const convOid = new mongoose.Types.ObjectId(String(conversationId));
   const conv = await Conversation.findOne({ _id: convOid, userId: uid }).select('_id').lean();
   return conv?._id ? convOid : null;
+}
+
+function isFollowUpDue(commitment, now = Date.now()) {
+  if (!commitment || commitment.status !== 'active' || commitment.followUpAnswer !== 'pending') {
+    return false;
+  }
+  if (Number(commitment.followUpAttempts) >= MAX_FOLLOW_UP_ATTEMPTS) return false;
+  const followUpAt = commitment.followUpAt ? new Date(commitment.followUpAt).getTime() : null;
+  const createdAt = commitment.createdAt ? new Date(commitment.createdAt).getTime() : null;
+  const lastFollowUpAt = commitment.lastFollowUpAt
+    ? new Date(commitment.lastFollowUpAt).getTime()
+    : null;
+  const anchor = lastFollowUpAt || createdAt;
+  if (!anchor) return false;
+  if (followUpAt && followUpAt > now) return false;
+  return now - anchor >= FOLLOW_UP_CHAT_MIN_MS;
 }
 
 export async function listSessionCommitments(userId, { status = 'active', limit = 8 } = {}) {
@@ -82,6 +137,11 @@ export async function listSessionCommitments(userId, { status = 'active', limit 
     .limit(safeLimit)
     .lean();
   return docs.map(toClientCommitment);
+}
+
+export async function countActiveSessionCommitments(userId) {
+  const uid = new mongoose.Types.ObjectId(String(userId));
+  return SessionCommitment.countDocuments({ userId: uid, status: 'active' });
 }
 
 export async function createSessionCommitment(userId, payload = {}) {
@@ -104,6 +164,13 @@ export async function createSessionCommitment(userId, payload = {}) {
 
   const source = ALLOWED_SOURCES.has(payload.source) ? payload.source : 'session_insight';
 
+  let sourceMeta = sanitizeCommitmentSourceMeta(payload.sourceMeta);
+  if (source === 'chat_action' && (payload.sourceMeta?.taskId || payload.sourceMeta?.habitId)) {
+    const validated = await validateOwnedProductSourceMeta(userId, payload.sourceMeta);
+    if (validated.error) return { error: validated.error };
+    sourceMeta = validated.sourceMeta;
+  }
+
   const doc = await SessionCommitment.create({
     userId: uid,
     conversationId,
@@ -112,7 +179,12 @@ export async function createSessionCommitment(userId, payload = {}) {
     status: 'active',
     followUpAt,
     followUpAnswer: 'pending',
-    sourceMeta: sanitizeCommitmentSourceMeta(payload.sourceMeta),
+    followUpAttempts: 0,
+    lastFollowUpAt: null,
+    sourceMeta,
+    renegotiatedFrom: mongoose.Types.ObjectId.isValid(String(payload.renegotiatedFrom || ''))
+      ? new mongoose.Types.ObjectId(String(payload.renegotiatedFrom))
+      : null,
   });
 
   return { commitment: toClientCommitment(doc.toObject()) };
@@ -124,6 +196,15 @@ export async function updateSessionCommitment(userId, commitmentId, patch = {}) 
   }
   const uid = new mongoose.Types.ObjectId(String(userId));
   const update = {};
+
+  if (patch.label != null) {
+    const { label, error } = normalizeLabel(patch.label);
+    if (error) return { error };
+    update.label = label;
+    update.followUpAnswer = 'pending';
+    update.followUpAttempts = 0;
+    update.lastFollowUpAt = null;
+  }
 
   if (patch.status) {
     const allowed = ['active', 'completed', 'skipped', 'archived'];
@@ -147,13 +228,26 @@ export async function updateSessionCommitment(userId, commitmentId, patch = {}) 
     }
   }
 
-  if (Object.keys(update).length === 0) {
+  const incFields = {};
+  if (patch.followUpAnswer === 'no') {
+    incFields.followUpAttempts = 1;
+  }
+  if (patch.recordFollowUpShown === true) {
+    update.lastFollowUpAt = new Date();
+    incFields.followUpAttempts = 1;
+  }
+
+  if (Object.keys(update).length === 0 && Object.keys(incFields).length === 0) {
     return { error: 'invalidStatus' };
   }
 
+  const mongoUpdate = {};
+  if (Object.keys(update).length > 0) mongoUpdate.$set = update;
+  if (Object.keys(incFields).length > 0) mongoUpdate.$inc = incFields;
+
   const doc = await SessionCommitment.findOneAndUpdate(
     { _id: new mongoose.Types.ObjectId(String(commitmentId)), userId: uid },
-    { $set: update },
+    mongoUpdate,
     { new: true },
   ).lean();
 
@@ -161,7 +255,63 @@ export async function updateSessionCommitment(userId, commitmentId, patch = {}) 
   return { commitment: toClientCommitment(doc) };
 }
 
-export async function loadCommitmentLabelsForFocus(userId, limit = 5) {
+export async function loadCommitmentLabelsForFocus(userId, limit = FOCUS_VISIBLE_LIMIT) {
   const items = await listSessionCommitments(userId, { status: 'active', limit });
   return items.map((c) => c.label).filter(Boolean);
 }
+
+/**
+ * Compromiso más antiguo listo para follow-up suave en chat.
+ */
+export async function pickPendingCommitmentForChatFollowUp(userId, { conversationId = null } = {}) {
+  const uid = new mongoose.Types.ObjectId(String(userId));
+  const docs = await SessionCommitment.find({
+    userId: uid,
+    status: 'active',
+    followUpAnswer: 'pending',
+  })
+    .sort({ createdAt: 1 })
+    .limit(5)
+    .lean();
+
+  const due = docs.filter((doc) => isFollowUpDue(doc));
+  if (!due.length) return null;
+
+  if (conversationId && mongoose.Types.ObjectId.isValid(String(conversationId))) {
+    const conv = await Conversation.findOne({
+      _id: new mongoose.Types.ObjectId(String(conversationId)),
+      userId: uid,
+    })
+      .select('commitmentFollowUpShownAt')
+      .lean();
+    const shownAt = conv?.commitmentFollowUpShownAt
+      ? new Date(conv.commitmentFollowUpShownAt).getTime()
+      : null;
+    if (shownAt && Date.now() - shownAt < 24 * 60 * 60 * 1000) {
+      return null;
+    }
+  }
+
+  return toClientCommitment(due[0]);
+}
+
+export async function markCommitmentFollowUpShown(userId, commitmentId, conversationId = null) {
+  await updateSessionCommitment(userId, commitmentId, { recordFollowUpShown: true });
+  if (conversationId && mongoose.Types.ObjectId.isValid(String(conversationId))) {
+    await Conversation.updateOne(
+      { _id: conversationId, userId: new mongoose.Types.ObjectId(String(userId)) },
+      { $set: { commitmentFollowUpShownAt: new Date() } },
+    );
+  }
+}
+
+export function sanitizeCommitmentPatch(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const patch = {};
+  if (raw.label != null) patch.label = raw.label;
+  if (raw.status != null) patch.status = raw.status;
+  if (raw.followUpAnswer != null) patch.followUpAnswer = raw.followUpAnswer;
+  return patch;
+}
+
+export { FOCUS_VISIBLE_LIMIT, DEFAULT_FOLLOW_UP_HOURS, MAX_FOLLOW_UP_ATTEMPTS, isFollowUpDue };

@@ -11,6 +11,9 @@ import { Alert, Animated, AppState, InteractionManager, Platform, Vibration } fr
 import chatService from '../services/chatService';
 import paymentService from '../services/paymentService';
 import websocketService from '../services/websocketService';
+import { useAuth } from '../context/AuthContext';
+import { canAttemptChatAccess } from '../utils/chatAccessGate';
+import { isSubscriptionRequiredError } from '../utils/subscriptionAccess';
 import { useNetworkStatus } from './useNetworkStatus';
 import { ROUTES } from '../constants/routes';
 import {
@@ -46,6 +49,9 @@ import {
 import { newClientRequestId } from '../utils/clientRequestId';
 import { isValidMongoObjectId24 } from '../utils/mongoId';
 import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
+import { sanitizeProposedCommitments } from '../utils/sanitizeProposedCommitments';
+import { createSessionCommitment } from '../services/sessionCommitmentsService';
+import { postCommitmentTelemetry } from '../utils/commitmentTelemetry';
 import {
   parseGuestHandoffPendingFromStorage,
   parseUserIdFromUserDataStorage,
@@ -61,14 +67,16 @@ import {
   findLatestCrisisContextFromMessages,
   normalizeCrisisResourcesPayload,
 } from '../utils/crisisResources';
+import { normalizeSoftCrisisCheckInPayload } from '../utils/softCrisisCheckIn';
 import { fetchCrisisResources } from '../services/crisisResourcesService';
 import { updateSessionCommitment } from '../services/sessionCommitmentsService';
+import userService from '../services/userService';
 import {
   clearPendingTccLiteResume,
   peekPendingTccLiteResume,
   setPendingTccLiteResume,
 } from '../utils/chatTccLiteResume';
-import { countNonemptyUserTurns } from '../utils/chatTurnUtils';
+import { countNonemptyUserTurns, hasNonemptyUserTurns } from '../utils/chatTurnUtils';
 import {
   buildAssistantMetadataFromTurnPayload,
   resolveTccLiteAtHandoffFromPayload,
@@ -115,6 +123,7 @@ export function useChatScreen() {
   const textsRef = useRef(TEXTS);
   const navigation = useNavigation();
   const route = useRoute();
+  const { user } = useAuth();
   const { showToast } = useToast();
   const { isConnected, isInternetReachable } = useNetworkStatus();
   const isOffline = !isConnected || isInternetReachable === false;
@@ -146,11 +155,17 @@ export function useChatScreen() {
   const dismissedContinuityIdsRef = useRef([]);
   const [tccLiteAtHandoff, setTccLiteAtHandoff] = useState(null);
   const [crisisResourcesPanel, setCrisisResourcesPanel] = useState(null);
+  const [softCrisisCheckInPanel, setSoftCrisisCheckInPanel] = useState(null);
+  const [crisisContactAlertNotice, setCrisisContactAlertNotice] = useState(null);
+  const [emergencyContactAlertConfirmingId, setEmergencyContactAlertConfirmingId] = useState(null);
   const crisisResourcesDismissedRef = useRef(false);
+  const softCrisisCheckInDismissedRef = useRef(false);
   const pendingTccLiteResumeRef = useRef(null);
   // Señal #202: al abrir desde "retomar conversación", forzar el follow-up de
   // compromiso en el primer mensaje aunque el hilo ya tenga historial.
   const pendingResumeCommitmentFollowUpRef = useRef(false);
+  /** Invalida respuestas en vuelo de loadTccContinuity (p. ej. tras borrar el chat). */
+  const tccContinuityRequestIdRef = useRef(0);
   const handleSendRef = useRef(null);
   /** Evita doble POST / doble respuesta del asistente si el usuario envía dos veces muy rápido. */
   const sendRequestInFlightRef = useRef(false);
@@ -327,11 +342,47 @@ export function useChatScreen() {
   }, []);
 
   const applyCrisisResourcesFromTurn = useCallback((payload) => {
-    const normalized = normalizeCrisisResourcesPayload(payload?.crisisResources);
-    if (!normalized) return;
-    crisisResourcesDismissedRef.current = false;
-    setCrisisResourcesPanel(normalized);
+    const normalizedResources = normalizeCrisisResourcesPayload(payload?.crisisResources);
+    const normalizedSoft = normalizeSoftCrisisCheckInPayload(payload?.softCrisisCheckIn);
+
+    if (normalizedResources) {
+      crisisResourcesDismissedRef.current = false;
+      setCrisisResourcesPanel(normalizedResources);
+      setSoftCrisisCheckInPanel(null);
+      return;
+    }
+
+    if (normalizedSoft && !softCrisisCheckInDismissedRef.current) {
+      softCrisisCheckInDismissedRef.current = false;
+      setSoftCrisisCheckInPanel(normalizedSoft);
+      setCrisisResourcesPanel(null);
+      return;
+    }
+
+    if (!normalizedSoft) {
+      setSoftCrisisCheckInPanel(null);
+    }
   }, []);
+
+  const dismissSoftCrisisCheckInPanel = useCallback(async () => {
+    softCrisisCheckInDismissedRef.current = true;
+    setSoftCrisisCheckInPanel(null);
+    try {
+      const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+      if (!convId || !isValidMongoObjectId24(convId)) return;
+      await userService.dismissSoftCrisisCheckInFromChat({ conversationId: convId });
+    } catch (e) {
+      console.warn('[useChatScreen] soft crisis check-in dismiss:', e?.message || e);
+    }
+  }, []);
+
+  const handleOpenSoftCrisisTechnique = useCallback(
+    (technique) => {
+      if (!technique?.screen) return;
+      navigation.navigate(technique.screen, technique.params || {});
+    },
+    [navigation],
+  );
 
   const hydrateCrisisResourcesFromMessages = useCallback(async (messageList) => {
     if (crisisResourcesDismissedRef.current) return;
@@ -419,6 +470,19 @@ export function useChatScreen() {
 
       if (userToken) {
         setGuestQuota(null);
+        const mayUseChat = await canAttemptChatAccess(user);
+        if (!mayUseChat) {
+          Alert.alert(texts.SUBSCRIPTION_REQUIRED_TITLE, texts.SUBSCRIPTION_REQUIRED_DEFAULT, [
+            { text: texts.COMMON_CANCEL, style: 'cancel', onPress: () => navigation.goBack() },
+            {
+              text: texts.SUBSCRIPTION_VIEW_PLANS,
+              onPress: () => navigation.navigate('Subscription'),
+            },
+          ]);
+          setMessages([]);
+          setShowSessionIntentionPrompt(false);
+          return;
+        }
         await chatService.initializeSocket();
         const paramOpenId = route.params?.openConversationId;
         if (paramOpenId && isValidMongoObjectId24(String(paramOpenId))) {
@@ -505,6 +569,19 @@ export function useChatScreen() {
         setShowSessionIntentionPrompt(false);
         return;
       }
+      if (isSubscriptionRequiredError(err) || extractErrorCode(err) === 'SUBSCRIPTION_REQUIRED') {
+        setError(null);
+        Alert.alert(texts.SUBSCRIPTION_REQUIRED_TITLE, texts.SUBSCRIPTION_REQUIRED_DEFAULT, [
+          { text: texts.COMMON_CANCEL, style: 'cancel', onPress: () => navigation.goBack() },
+          {
+            text: texts.SUBSCRIPTION_VIEW_PLANS,
+            onPress: () => navigation.navigate('Subscription'),
+          },
+        ]);
+        setMessages([]);
+        setShowSessionIntentionPrompt(false);
+        return;
+      }
       console.error('[ChatScreen] Error al inicializar chat:', err.message);
       setError(texts.NETWORK_ERROR_INIT);
     } finally {
@@ -518,6 +595,7 @@ export function useChatScreen() {
     navigation,
     route.params?.openConversationId,
     route.params?.resumeCommitmentFollowUp,
+    user,
     applyMessagePagination,
     hydrateCrisisResourcesFromMessages,
     captureUserTurnBaseline,
@@ -710,6 +788,97 @@ export function useChatScreen() {
       );
     } catch (e) {
       console.warn('[useChatScreen] proposal rejected feedback:', e?.message || e);
+    }
+  }, []);
+
+  const handleCommitmentProposalPress = useCallback(
+    async (proposal, proposalsMessage) => {
+      try {
+        const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+        const assistantMessageId = proposalsMessage?.metadata?.assistantMessageId;
+        const label = String(proposal?.label || '').trim();
+        if (!label || label.length < 2) return;
+        await createSessionCommitment({
+          label,
+          conversationId:
+            convId && isValidMongoObjectId24(convId) ? String(convId) : undefined,
+          source: 'chat_proposed',
+          sourceMeta: {
+            ...(proposal?.sourceMeta && typeof proposal.sourceMeta === 'object'
+              ? proposal.sourceMeta
+              : {}),
+            ...(assistantMessageId && isValidMongoObjectId24(assistantMessageId)
+              ? { proposedMessageId: String(assistantMessageId) }
+              : {}),
+          },
+        });
+        setMessages((prev) =>
+          prev.filter((m) => {
+            const id = m.id || m._id;
+            const targetId = proposalsMessage?.id || proposalsMessage?._id;
+            return String(id) !== String(targetId);
+          }),
+        );
+      } catch (e) {
+        console.warn('[useChatScreen] commitment proposal:', e?.message || e);
+      }
+    },
+    [],
+  );
+
+  const handleCommitmentProposalReject = useCallback(async (proposalsMessage) => {
+    void postCommitmentTelemetry({ event: 'create_dismissed', surface: 'chat' });
+    setMessages((prev) =>
+      prev.filter((m) => {
+        const id = m.id || m._id;
+        const targetId = proposalsMessage?.id || proposalsMessage?._id;
+        return String(id) !== String(targetId);
+      }),
+    );
+  }, []);
+
+  const handleEmergencyContactAlertConfirm = useCallback(async (offerMessage) => {
+    const offer = offerMessage?.proposedEmergencyContactAlert;
+    const offerKey = offerMessage?.id || offerMessage?._id || offer?.id;
+    if (!offer?.id || emergencyContactAlertConfirmingId) return;
+    try {
+      const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+      if (!convId || !isValidMongoObjectId24(convId)) return;
+      setEmergencyContactAlertConfirmingId(String(offerKey));
+      await userService.confirmEmergencyContactAlertFromChat({
+        offerId: offer.id,
+        conversationId: convId,
+      });
+      const texts = textsRef.current;
+      setCrisisContactAlertNotice(texts.CRISIS_POST_CONTACT_ALERT_NOTICE);
+      setMessages((prev) =>
+        prev.filter((m) => {
+          const id = m.id || m._id;
+          const targetId = offerMessage?.id || offerMessage?._id;
+          return String(id) !== String(targetId);
+        }),
+      );
+    } catch (e) {
+      console.warn('[useChatScreen] emergency contact alert confirm:', e?.message || e);
+    } finally {
+      setEmergencyContactAlertConfirmingId(null);
+    }
+  }, [emergencyContactAlertConfirmingId]);
+
+  const handleEmergencyContactAlertReject = useCallback(async (offerMessage) => {
+    setMessages((prev) =>
+      prev.filter((m) => {
+        const id = m.id || m._id;
+        const targetId = offerMessage?.id || offerMessage?._id;
+        return String(id) !== String(targetId);
+      }),
+    );
+    try {
+      const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
+      if (!convId || !isValidMongoObjectId24(convId)) return;
+      await userService.dismissEmergencyContactAlertFromChat({ conversationId: convId });
+    } catch (e) {
+      console.warn('[useChatScreen] emergency contact alert dismiss:', e?.message || e);
     }
   }, []);
 
@@ -922,12 +1091,12 @@ export function useChatScreen() {
         },
         onDone(payload) {
           applyCrisisResourcesFromTurn(payload);
-          // Asegurar que no se pierdan chunks pendientes.
+          // Descartar chunks en bruto del stream: el servidor envía la versión saneada en onDone.
+          pendingChunk = '';
           if (flushTimer) {
             clearTimeout(flushTimer);
             flushTimer = null;
           }
-          flushPendingChunk();
 
           if (payload.guest) {
             setGuestQuota({
@@ -973,6 +1142,32 @@ export function useChatScreen() {
                 role: 'suggestions',
                 type: 'product_proposals',
                 proposedProductActions: ppa,
+                metadata: {
+                  timestamp: new Date().toISOString(),
+                  assistantMessageId: payload.messageId,
+                },
+              });
+            }
+            const pc = sanitizeProposedCommitments(payload.proposedCommitments);
+            if (pc.length > 0) {
+              next.push({
+                id: `commitment-proposals-${Date.now()}`,
+                role: 'suggestions',
+                type: 'commitment_proposals',
+                proposedCommitments: pc,
+                metadata: {
+                  timestamp: new Date().toISOString(),
+                  assistantMessageId: payload.messageId,
+                },
+              });
+            }
+            const eca = payload.proposedEmergencyContactAlert;
+            if (eca && eca.id && eca.message) {
+              next.push({
+                id: `emergency-contact-offer-${eca.id}`,
+                role: 'suggestions',
+                type: 'emergency_contact_alert_offer',
+                proposedEmergencyContactAlert: eca,
                 metadata: {
                   timestamp: new Date().toISOString(),
                   assistantMessageId: payload.messageId,
@@ -1337,15 +1532,21 @@ export function useChatScreen() {
     const texts = textsRef.current;
     try {
       cancelActiveStream();
+      tccContinuityRequestIdRef.current += 1;
       historyPageRef.current = 1;
       setHistoryHasMore(false);
+      setMessages([]);
+      messagesRef.current = [];
       await clearOfflinePendingMessage();
       setOfflinePendingMessage(null);
       dismissedContinuityIdsRef.current = [];
       setDismissedContinuityIds([]);
       setTccLiteAtHandoff(null);
+      setTccContinuityItems([]);
       crisisResourcesDismissedRef.current = false;
       setCrisisResourcesPanel(null);
+      softCrisisCheckInDismissedRef.current = false;
+      setSoftCrisisCheckInPanel(null);
       userTurnBaselineRef.current = 0;
       captureVisitBaselineRef.current = true;
       pendingTccLiteResumeRef.current = null;
@@ -1359,6 +1560,12 @@ export function useChatScreen() {
     } catch (err) {
       console.error('Error al borrar la conversación:', err);
       setError(texts.ERROR_CLEAR);
+      tccContinuityRequestIdRef.current += 1;
+      try {
+        await initializeConversation();
+      } catch (_) {
+        /* mejor esfuerzo: rehidratar desde servidor */
+      }
     }
   }, [initializeConversation, cancelActiveStream]);
 
@@ -1587,12 +1794,11 @@ export function useChatScreen() {
     const unsubscribeAlert = websocketService.on('emergency:alert:sent', (data) => {
       const texts = textsRef.current;
       if (data && !data.isTest) {
-        Alert.alert(
-          `🚨 ${texts.EMERGENCY_ALERT_SENT_TITLE}`,
-          texts.EMERGENCY_ALERT_SENT_BODY
-            .replace('{successful}', String(data.successfulSends))
-            .replace('{total}', String(data.totalContacts)),
-          [{ text: texts.COMMON_OK }]
+        setCrisisContactAlertNotice(
+          texts.CRISIS_POST_CONTACT_ALERT_NOTICE ||
+            texts.EMERGENCY_ALERT_SENT_BODY
+              ?.replace('{successful}', String(data.successfulSends))
+              ?.replace('{total}', String(data.totalContacts)),
         );
       }
     });
@@ -1626,6 +1832,8 @@ export function useChatScreen() {
   }, [navigation]);
 
   const loadTccContinuity = useCallback(async () => {
+    const requestId = tccContinuityRequestIdRef.current + 1;
+    tccContinuityRequestIdRef.current = requestId;
     try {
       if (dismissedContinuityIdsRef.current.length === 0) {
         const stored = await loadDismissedContinuityIds();
@@ -1636,18 +1844,31 @@ export function useChatScreen() {
       }
       const convId = await AsyncStorage.getItem(CHAT_SESSION_KEYS.CONVERSATION_ID);
       const items = await chatService.fetchTccContinuity(convId);
+      if (requestId !== tccContinuityRequestIdRef.current) return;
+      if (!hasNonemptyUserTurns(messagesRef.current)) {
+        setTccContinuityItems([]);
+        return;
+      }
       setTccContinuityItems(Array.isArray(items) ? items : []);
     } catch {
+      if (requestId !== tccContinuityRequestIdRef.current) return;
       setTccContinuityItems([]);
     }
   }, []);
 
+  const hasUserMessagesInChat = useMemo(
+    () => hasNonemptyUserTurns(messages),
+    [messages],
+  );
+
   const visibleTccContinuityItems = useMemo(
     () =>
-      (tccContinuityItems || []).filter(
-        (item) => item?.id && !dismissedContinuityIds.includes(item.id),
-      ),
-    [tccContinuityItems, dismissedContinuityIds],
+      hasUserMessagesInChat
+        ? (tccContinuityItems || []).filter(
+            (item) => item?.id && !dismissedContinuityIds.includes(item.id),
+          )
+        : [],
+    [tccContinuityItems, dismissedContinuityIds, hasUserMessagesInChat],
   );
 
   const handleOpenTccContinuityItem = useCallback(
@@ -1736,13 +1957,15 @@ export function useChatScreen() {
           setTrialInfo(null);
         } else {
           loadTrialInfo();
-          loadTccContinuity();
         }
         const p = await getOfflinePendingMessage();
         setOfflinePendingMessage(p);
         await initializeConversation();
         if (captureVisitBaselineRef.current) {
           captureUserTurnBaseline(messagesRef.current);
+        }
+        if (!(await chatService.isGuestChatMode())) {
+          await loadTccContinuity();
         }
       })();
       const handoffTimer = setTimeout(() => {
@@ -1809,6 +2032,8 @@ export function useChatScreen() {
     handleProductProposalPress,
     handleProductProposalReject,
     handleCommitmentFollowUpAnswer,
+    handleCommitmentProposalPress,
+    handleCommitmentProposalReject,
     showSessionIntentionPrompt,
     sessionIntentionSubmitting,
     selectSessionIntention,
@@ -1820,9 +2045,16 @@ export function useChatScreen() {
     handleOpenTccLiteAtHandoff,
     handleDismissTccLiteAtHandoff,
     crisisResourcesPanel,
+    softCrisisCheckInPanel,
+    crisisContactAlertNotice,
     dismissCrisisResourcesPanel,
+    dismissSoftCrisisCheckInPanel,
+    handleOpenSoftCrisisTechnique,
     openCrisisResourcesPanel,
     openEmergencyContactsFromChat,
+    handleEmergencyContactAlertConfirm,
+    handleEmergencyContactAlertReject,
+    emergencyContactAlertConfirmingId,
     historyHasMore,
     loadingOlderMessages,
     loadOlderMessages,

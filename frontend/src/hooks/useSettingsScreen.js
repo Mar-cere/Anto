@@ -40,6 +40,7 @@ const DEFAULT_NOTIFICATION_PREFERENCES = {
     taskReminders: true,
     motivationalMessages: true,
     betweenSessionsMessages: true,
+    commitmentWeeklyReminders: false,
   },
 };
 
@@ -74,7 +75,7 @@ const resolveSettingsErrorMessage = (error, fallbackMessage) => {
 
 export function useSettingsScreen({ navigation }) {
   const TEXTS = useSettingsTexts();
-  const { user, logout: authLogout, refreshSession } = useAuth();
+  const { user, logout: authLogout, refreshSession, applyLocalUser } = useAuth();
   const { language, setLanguage } = useLanguage();
   const { showToast } = useToast();
   const { setPreference } = useTheme();
@@ -87,16 +88,12 @@ export function useSettingsScreen({ navigation }) {
   const persistUserFromMeResponse = useCallback(
     async (putResult) => {
       if (putResult?.user) {
-        await AsyncStorage.setItem(
-          STORAGE_USER_DATA,
-          JSON.stringify(putResult.user),
-        );
-        await refreshSession();
+        await applyLocalUser(putResult.user);
         return true;
       }
       return false;
     },
-    [refreshSession],
+    [applyLocalUser],
   );
 
   const persistNotificationPreferences = useCallback(

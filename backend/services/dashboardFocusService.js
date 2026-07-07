@@ -15,7 +15,7 @@ import UserInsight from '../models/UserInsight.js';
 import cacheService from './cacheService.js';
 import openaiService from './openaiService.js';
 import { computeNextRoutinePushSlot } from './notificationScheduler.js';
-import { getLastSessionSummaryForUser } from './lastSessionSummaryService.js';
+import { getLastSessionSummaryForUser, reconcileChatContinuitySummary } from './lastSessionSummaryService.js';
 import { getTodayDailyMoodCheckIn } from './dailyMoodCheckInService.js';
 import { getEngagementStreak } from './engagementStreakService.js';
 import { buildUserSummary } from './userSummaryService.js';
@@ -30,7 +30,11 @@ import {
 import { findWeekPlanForUser } from './behavioralActivationWeekPlanService.js';
 import { loadExposureFocus } from './chatTccContinuityService.js';
 import { pickBaFocusSlot } from './activeTccProtocolsContextService.js';
-import { listSessionCommitments } from './sessionCommitmentService.js';
+import {
+  FOCUS_VISIBLE_LIMIT,
+  isFollowUpDue,
+  listSessionCommitments,
+} from './sessionCommitmentService.js';
 import { buildHomeRotatingInsightForUser } from './homeRotatingInsightService.js';
 import { buildDigitalPhenotypeFocusAlert } from './digitalPhenotypePatternAlertService.js';
 
@@ -481,7 +485,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
     habitReminder,
     protocolNext,
     userFocusPrefs,
-    lastSessionSummaryRaw,
+    lastSessionSummaryStored,
     baWeekFocus,
     exposureFocus
   ] = await Promise.all([
@@ -497,6 +501,12 @@ export async function buildDashboardFocus(userId, opts = {}) {
     loadBaWeekFocus(userId, language),
     loadExposureFocus(userId)
   ]);
+
+  const lastSessionSummaryRaw = reconcileChatContinuitySummary(
+    lastSessionSummaryStored,
+    recentConversations,
+    { language, now: new Date() },
+  );
 
   const notificationPreferences = userFocusPrefs?.notificationPreferences || null;
   const userTimezone = userFocusPrefs?.timezone || null;
@@ -583,9 +593,11 @@ export async function buildDashboardFocus(userId, opts = {}) {
       ? {
           snippet: lastSessionSummary.snippet,
           bridge: lastSessionSummary.bridge,
+          displaySubtitle: lastSessionSummary.displaySubtitle,
           conversationId: lastSessionSummary.conversationId,
           generatedAt: lastSessionSummary.generatedAt,
           placeholder: lastSessionSummary.placeholder,
+          recentActivityPending: lastSessionSummary.recentActivityPending === true,
           headline: lastSessionSummary.headline
         }
       : null,
@@ -651,14 +663,26 @@ export async function buildDashboardFocus(userId, opts = {}) {
           reminderAt: habitReminder.nextAt ? habitReminder.nextAt.toISOString() : null
         }
       : null,
-    commitments: (commitments.items || []).slice(0, 5).map((c) => ({
+    commitments: (commitments.items || []).slice(0, FOCUS_VISIBLE_LIMIT).map((c) => ({
       id: c.id,
       label: c.label,
       status: c.status,
       followUpAt: c.followUpAt,
       followUpAnswer: c.followUpAnswer,
+      followUpAttempts: c.followUpAttempts ?? 0,
+      followUpDue: isFollowUpDue(
+        {
+          status: c.status,
+          followUpAnswer: c.followUpAnswer,
+          followUpAt: c.followUpAt,
+          followUpAttempts: c.followUpAttempts,
+          createdAt: c.createdAt,
+          lastFollowUpAt: c.lastFollowUpAt,
+        },
+      ),
       createdAt: c.createdAt,
       interventionId: c.interventionId || null,
+      sourceMeta: c.sourceMeta || null,
     })),
     dailyMood: dailyMood || null,
     engagementStreak,

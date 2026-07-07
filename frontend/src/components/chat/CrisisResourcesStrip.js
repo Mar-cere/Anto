@@ -18,6 +18,8 @@ import { SPACING } from '../../constants/ui';
 import { pickLocalizedDefaults } from '../../utils/localizedFallback';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { buildTelUri } from '../../utils/crisisResources';
+import AiLimitInfoButton from '../common/AiLimitInfoButton';
+import { AI_LIMIT_TOPIC } from '../../constants/aiCompetenceLimits';
 
 const DEFAULT_TEXTS_BY_LANG = {
   es: {
@@ -53,6 +55,8 @@ export default function CrisisResourcesStrip({
   resources,
   onDismiss,
   onOpenEmergencyContacts,
+  onOpenAiLimitsLibrary,
+  contactAlertNotice = null,
   style,
 }) {
   const { colors, resolvedScheme } = useTheme();
@@ -150,6 +154,16 @@ export default function CrisisResourcesStrip({
           fontWeight: '700',
           color: colors.warning || colors.primary,
         },
+        transparencyBlock: {
+          fontSize: 13,
+          lineHeight: 18,
+          color: colors.text,
+          marginBottom: 4,
+        },
+        transparencySection: {
+          gap: 6,
+          marginBottom: SPACING.xs,
+        },
         disclaimer: {
           fontSize: 12,
           lineHeight: 17,
@@ -203,6 +217,14 @@ export default function CrisisResourcesStrip({
               </Text>
             ) : null}
           </View>
+          {onOpenAiLimitsLibrary ? (
+            <AiLimitInfoButton
+              topicId={AI_LIMIT_TOPIC.CRISIS}
+              size={20}
+              color={colors.textSecondary}
+              onOpenFullLibrary={onOpenAiLimitsLibrary}
+            />
+          ) : null}
           {onDismiss ? (
             <TouchableOpacity
               onPress={() => {
@@ -217,6 +239,20 @@ export default function CrisisResourcesStrip({
             </TouchableOpacity>
           ) : null}
         </View>
+
+        {contactAlertNotice ? (
+          <Text style={styles.transparencyBlock}>{contactAlertNotice}</Text>
+        ) : null}
+
+        {Array.isArray(resources.transparency) && resources.transparency.length > 0 ? (
+          <View style={styles.transparencySection}>
+            {resources.transparency.map((block) => (
+              <Text key={block.id} style={styles.transparencyBlock}>
+                {block.text}
+              </Text>
+            ))}
+          </View>
+        ) : null}
 
         {resources.items.map((item) => {
           const dial = item.dial || null;

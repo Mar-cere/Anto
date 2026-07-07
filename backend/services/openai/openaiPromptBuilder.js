@@ -1208,6 +1208,11 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     systemMessage += commitmentFollowUpSnippet;
   }
 
+  const sessionCommitmentSnippet = String(contexto.sessionCommitmentPromptSnippet || '').trim();
+  if (sessionCommitmentSnippet) {
+    systemMessage += sessionCommitmentSnippet;
+  }
+
   if (contexto.crisis?.riskLevel && shouldAttachCrisisContextToPrompt(contexto.crisis.riskLevel)) {
     const crisisPrompt = generateCrisisSystemPrompt(
       contexto.crisis.riskLevel,

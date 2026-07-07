@@ -11,6 +11,8 @@ import { hydrateInterventionSuggestion } from '../../utils/psychoeducationTopic'
 import PsychoeducationSuggestionCard from '../PsychoeducationSuggestionCard';
 import MarkdownText from '../MarkdownText';
 import TccLiteMessageFooter from './TccLiteMessageFooter';
+import AiLimitInfoButton from '../common/AiLimitInfoButton';
+import { AI_LIMIT_TOPIC } from '../../constants/aiCompetenceLimits';
 import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import {
@@ -365,6 +367,12 @@ function ChatMessageItem({
   onProductProposalPress,
   onProductProposalReject,
   onCommitmentFollowUpAnswer,
+  onCommitmentProposalPress,
+  onCommitmentProposalReject,
+  onEmergencyContactAlertConfirm,
+  onEmergencyContactAlertReject,
+  emergencyContactAlertConfirmingId = null,
+  onOpenAiLimitsLibrary,
 }) {
   const { language } = useLanguage();
   const TEXTS = useChatTexts();
@@ -416,10 +424,113 @@ function ChatMessageItem({
     );
   }
 
+  if (message.type === 'emergency_contact_alert_offer' && message.proposedEmergencyContactAlert) {
+    const offer = message.proposedEmergencyContactAlert;
+    const offerKey = String(message.id || message._id || offer.id);
+    const isConfirming = emergencyContactAlertConfirmingId === offerKey;
+    return (
+      <View style={styles.suggestionsContainer}>
+        <View style={styles.productProposalTopRow}>
+          <Text style={styles.suggestionsTitle}>{TEXTS.EMERGENCY_CONTACT_ALERT_OFFER_TITLE}</Text>
+          <AiLimitInfoButton
+            topicId={AI_LIMIT_TOPIC.EMERGENCY_CONTACTS}
+            size={18}
+            color={colors.textSecondary}
+            onOpenFullLibrary={onOpenAiLimitsLibrary}
+          />
+        </View>
+        <View style={styles.productProposalCard}>
+          <Text style={styles.productProposalTitle}>{offer.message}</Text>
+          <View style={styles.proposalActionsRow}>
+            <TouchableOpacity
+              style={[styles.proposalPrimaryBtn, isConfirming && { opacity: 0.6 }]}
+              onPress={() => onEmergencyContactAlertConfirm?.(message)}
+              disabled={isConfirming}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isConfirming }}
+            >
+              <Text style={styles.proposalPrimaryBtnText}>
+                {TEXTS.EMERGENCY_CONTACT_ALERT_OFFER_YES}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.proposalGhostBtn, isConfirming && { opacity: 0.6 }]}
+              onPress={() => onEmergencyContactAlertReject?.(message)}
+              disabled={isConfirming}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isConfirming }}
+            >
+              <Text style={styles.proposalGhostBtnText}>
+                {TEXTS.EMERGENCY_CONTACT_ALERT_OFFER_NO}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  if (message.type === 'commitment_proposals' && message.proposedCommitments?.length) {
+    return (
+      <View style={styles.suggestionsContainer}>
+        <Text style={styles.suggestionsTitle}>{TEXTS.CHAT_COMMITMENT_PROPOSE_TITLE}</Text>
+        {message.proposedCommitments.map((proposal) => (
+          <View key={proposal.id} style={styles.productProposalCard}>
+            {proposal.rationaleShort ? (
+              <Text style={styles.productProposalWhy}>{proposal.rationaleShort}</Text>
+            ) : null}
+            <TextInput
+              style={styles.proposalEditInput}
+              placeholder={TEXTS.CHAT_COMMITMENT_LABEL_PLACEHOLDER}
+              placeholderTextColor={colors.textMuted ?? colors.textSecondary}
+              value={proposalDraftEdits[proposal.id]?.label ?? proposal.label ?? ''}
+              onChangeText={(value) =>
+                setProposalDraftEdits((prev) => ({
+                  ...prev,
+                  [proposal.id]: { ...(prev[proposal.id] || {}), label: value },
+                }))
+              }
+            />
+            <View style={styles.proposalActionsRow}>
+              <TouchableOpacity
+                style={styles.proposalPrimaryBtn}
+                onPress={() => {
+                  const edit = proposalDraftEdits[proposal.id] || {};
+                  onCommitmentProposalPress?.(
+                    { ...proposal, label: edit.label || proposal.label },
+                    message,
+                  );
+                }}
+                accessibilityRole="button"
+              >
+                <Text style={styles.proposalPrimaryBtnText}>{TEXTS.CHAT_COMMITMENT_SAVE}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.proposalGhostBtn}
+                onPress={() => onCommitmentProposalReject?.(message)}
+                accessibilityRole="button"
+              >
+                <Text style={styles.proposalGhostBtnText}>{TEXTS.CHAT_COMMITMENT_DISMISS}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))}
+      </View>
+    );
+  }
+
   if (message.type === 'product_proposals' && message.proposedProductActions?.length) {
     return (
       <View style={styles.suggestionsContainer}>
-        <Text style={styles.suggestionsTitle}>{TEXTS.PRODUCT_ACTIONS_TITLE}</Text>
+        <View style={styles.productProposalTopRow}>
+          <Text style={styles.suggestionsTitle}>{TEXTS.PRODUCT_ACTIONS_TITLE}</Text>
+          <AiLimitInfoButton
+            topicId={AI_LIMIT_TOPIC.CHAT_ACTIONS}
+            size={18}
+            color={colors.textSecondary}
+            onOpenFullLibrary={onOpenAiLimitsLibrary}
+          />
+        </View>
         {message.proposedProductActions.map((action) => (
           <View key={action.id} style={styles.productProposalCard}>
             <View style={styles.productProposalTopRow}>

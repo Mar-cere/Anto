@@ -685,7 +685,9 @@ class OpenAIService {
           sessionRetention: contexto.sessionRetention,
           conversationPattern: contexto.conversationPattern,
           sessionEmotionalIntensity: contexto.sessionEmotionalIntensity,
-          distress: contexto.distress
+          distress: contexto.distress,
+          sessionPhase: contexto.sessionPhase,
+          conversationHistory: contexto.safetyHistory || contexto.history || [],
         }
       );
 
@@ -938,6 +940,7 @@ class OpenAIService {
           sessionEmotionalIntensity: contexto.sessionEmotionalIntensity,
           distress: contexto.distress,
           crisisMetricTransport: this.resolveCrisisMetricTransport(contexto),
+          sessionPhase: contexto.sessionPhase,
         });
         yield {
           type: 'done',
@@ -994,6 +997,7 @@ class OpenAIService {
         sessionRetention: contexto.sessionRetention,
         conversationPattern: contexto.conversationPattern,
         crisisMetricTransport: this.resolveCrisisMetricTransport(contexto),
+        sessionPhase: contexto.sessionPhase,
       });
       yield { type: 'done', content: result.content, context: { ...result.context, modelRouting } };
       return;
@@ -1015,6 +1019,7 @@ class OpenAIService {
       sessionEmotionalIntensity: contexto.sessionEmotionalIntensity,
       distress: contexto.distress,
       crisisMetricTransport: this.resolveCrisisMetricTransport(contexto),
+      sessionPhase: contexto.sessionPhase,
     });
     yield { type: 'done', content: result.content, context: { ...result.context, modelRouting } };
   }
@@ -1039,6 +1044,7 @@ class OpenAIService {
     sessionEmotionalIntensity = null,
     distress = null,
     crisisMetricTransport = 'unknown',
+    sessionPhase = 'default',
   }) {
     let activeProtocol = therapeuticProtocolService.getActiveProtocol(mensaje.userId);
     let currentIntervention = null;
@@ -1111,7 +1117,9 @@ class OpenAIService {
       sessionRetention,
       conversationPattern,
       sessionEmotionalIntensity,
-      distress
+      distress,
+      sessionPhase,
+      conversationHistory,
     });
 
     const respuestaConSeguridad = this.applyCrisisResponseSafety(respuestaValidada, {

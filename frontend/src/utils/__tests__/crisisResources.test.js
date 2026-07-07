@@ -17,14 +17,23 @@ describe('crisisResources utils', () => {
         { id: 'bad', label: '', value: '' },
       ],
       disclaimer: 'Test',
+      transparency: [
+        { id: 'why', text: 'Por qué' },
+        { id: 'bad', text: '' },
+      ],
     });
     expect(out.items).toHaveLength(1);
     expect(out.items[0].dial).toBe('133');
+    expect(out.transparency).toHaveLength(1);
+    expect(out.transparency[0].id).toBe('why');
   });
 
-  it('shouldShowCrisisResourcesPanel alinea con backend', () => {
+  it('shouldShowCrisisResourcesPanel alinea con backend (#19)', () => {
     expect(shouldShowCrisisResourcesPanel({ riskLevel: 'MEDIUM' })).toBe(true);
-    expect(shouldShowCrisisResourcesPanel({ riskLevel: 'WARNING' })).toBe(true);
+    expect(shouldShowCrisisResourcesPanel({ riskLevel: 'WARNING' })).toBe(false);
+    expect(
+      shouldShowCrisisResourcesPanel({ riskLevel: 'WARNING', hasBatterySignal: true }),
+    ).toBe(true);
     expect(shouldShowCrisisResourcesPanel({ riskLevel: 'LOW' })).toBe(false);
   });
 

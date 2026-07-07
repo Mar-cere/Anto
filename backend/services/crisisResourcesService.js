@@ -7,6 +7,7 @@ import {
 } from '../constants/emergencyNumbers.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import { KNOWN_ISO_COUNTRIES } from '../utils/emergencyRegionResolver.js';
+import { buildCrisisProtocolTransparency } from '../constants/crisisProtocolCopy.js';
 
 const PANEL_RISK_LEVELS = new Set(['WARNING', 'MEDIUM', 'HIGH']);
 const MAX_RESOURCE_ITEMS = 8;
@@ -33,9 +34,14 @@ export function shouldExposeCrisisResourcesPanel({
   riskLevel,
   hardStop = false,
   isCrisis = false,
+  hasBatterySignal = false,
+  crisisProtocolActive = false,
 } = {}) {
   if (hardStop === true) return true;
   const level = String(riskLevel || 'LOW').toUpperCase();
+  if (level === 'WARNING') {
+    return hasBatterySignal === true || crisisProtocolActive === true;
+  }
   if (PANEL_RISK_LEVELS.has(level)) return true;
   return isCrisis === true && PANEL_RISK_LEVELS.has(level);
 }
@@ -85,6 +91,7 @@ export function buildCrisisResourcesClientPayload({
   language = 'es',
   riskLevel = null,
   hardStop = false,
+  showContactAlertNotice = false,
 } = {}) {
   const lang = normalizeApiLanguage(language);
   const en = lang === 'en';
@@ -152,6 +159,10 @@ export function buildCrisisResourcesClientPayload({
     appLimits: en
       ? 'Anto cannot place calls or send alerts on your behalf unless you configured emergency contacts and alerts are activated.'
       : 'Anto no puede llamar ni enviar avisos por ti salvo que hayas configurado contactos de emergencia y se activen las alertas.',
+    transparency: buildCrisisProtocolTransparency({
+      language: lang,
+      showContactAlertNotice: showContactAlertNotice === true,
+    }),
   };
 }
 
@@ -162,11 +173,22 @@ export function crisisResourcesForTurn({
   riskLevel,
   hardStop = false,
   isCrisis = false,
+  hasBatterySignal = false,
+  crisisProtocolActive = false,
   preferences = null,
   phone = null,
   language = 'es',
+  showContactAlertNotice = false,
 } = {}) {
-  if (!shouldExposeCrisisResourcesPanel({ riskLevel, hardStop, isCrisis })) {
+  if (
+    !shouldExposeCrisisResourcesPanel({
+      riskLevel,
+      hardStop,
+      isCrisis,
+      hasBatterySignal,
+      crisisProtocolActive,
+    })
+  ) {
     return null;
   }
   return buildCrisisResourcesClientPayload({
@@ -175,6 +197,7 @@ export function crisisResourcesForTurn({
     language,
     riskLevel,
     hardStop,
+    showContactAlertNotice,
   });
 }
 

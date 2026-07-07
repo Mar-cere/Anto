@@ -37,6 +37,48 @@ export function normalizeStrokeWidth(weight, maxWeight, minW = 1.2, maxW = 5) {
   return minW + (w / safeMax) * (maxW - minW);
 }
 
+/** Arista con mayor peso (conexión principal del mapa). */
+export function pickPrimaryGraphLink(links = []) {
+  if (!Array.isArray(links) || links.length === 0) return null;
+  return links.reduce((best, link) => {
+    const w = Number(link?.weight) || 0;
+    const bestW = Number(best?.weight) || 0;
+    return w > bestW ? link : best;
+  }, null);
+}
+
+export function pickStrongestLinkForSourceNode(links, nodeId) {
+  const id = String(nodeId || '');
+  if (!id) return null;
+  const matches = (links || []).filter(
+    (link) =>
+      link.sourceId === id ||
+      link.topicFree === id ||
+      link.conceptId === id ||
+      link.topicTag === id,
+  );
+  return pickPrimaryGraphLink(matches);
+}
+
+export function pickStrongestLinkForTargetNode(links, nodeId) {
+  const id = String(nodeId || '');
+  if (!id) return null;
+  const matches = (links || []).filter((link) => link.targetId === id);
+  return pickPrimaryGraphLink(matches);
+}
+
+export function nodeParticipatesInGraphLink(nodeId, link) {
+  if (!nodeId || !link) return false;
+  const id = String(nodeId);
+  return (
+    link.sourceId === id ||
+    link.targetId === id ||
+    link.topicFree === id ||
+    link.conceptId === id ||
+    link.topicTag === id
+  );
+}
+
 function aggregateByKey(edges, keyFn) {
   const map = new Map();
   for (const edge of edges || []) {

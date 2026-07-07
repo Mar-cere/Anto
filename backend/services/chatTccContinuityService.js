@@ -1,9 +1,11 @@
 /**
  * Continuidad chat ↔ protocolos TCC: ítems accionables (BA, exposición, AT, ABC).
  */
+import mongoose from 'mongoose';
 import AbcRecord from '../models/AbcRecord.js';
 import AutomaticThoughtLog from '../models/AutomaticThoughtLog.js';
 import ExposurePlan from '../models/ExposurePlan.js';
+import Message from '../models/Message.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import { tccContinuityCopy } from '../utils/tccContinuityCopy.js';
 import {
@@ -176,11 +178,30 @@ export async function loadAbcContinuityFocus(userId, language = 'es') {
   }
 }
 
+async function conversationHasUserMessages(conversationId, userId) {
+  if (!conversationId || !userId) return false;
+  if (!mongoose.Types.ObjectId.isValid(String(conversationId))) return false;
+  const cid = new mongoose.Types.ObjectId(String(conversationId));
+  const uid = new mongoose.Types.ObjectId(String(userId));
+  return Boolean(
+    await Message.exists({
+      conversationId: cid,
+      userId: uid,
+      role: 'user',
+      content: { $regex: /\S/ },
+    }),
+  );
+}
+
 /**
  * @returns {Promise<{ items: object[], generatedAt: string }>}
  */
-export async function buildChatTccContinuity({ userId, language = 'es' }) {
+export async function buildChatTccContinuity({ userId, language = 'es', conversationId = null } = {}) {
   if (!userId) {
+    return { items: [], generatedAt: new Date().toISOString() };
+  }
+
+  if (!(await conversationHasUserMessages(conversationId, userId))) {
     return { items: [], generatedAt: new Date().toISOString() };
   }
 
