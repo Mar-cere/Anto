@@ -42,6 +42,7 @@ import {
   persistProposedCommitmentsOnMessage,
   buildClientTurnPayload,
 } from '../services/chatTurnEnhancementsService.js';
+import { shouldShowCommitmentFollowUpChips } from '../services/commitmentFollowUpService.js';
 import {
   shouldHardStopCrisisLlm,
   buildHardStopCrisisAssistantContent,
@@ -446,6 +447,10 @@ export const setupSocketIO = (server) => {
             userMessage: messageText,
           }),
         });
+        const showCommitmentFollowUpChips = shouldShowCommitmentFollowUpChips({
+          conversationHistory,
+          forceFollowUp: data?.resumeCommitmentFollowUp === true,
+        });
 
         const crisisHardStopContent = willHardStop
           ? buildHardStopCrisisAssistantContent({
@@ -738,6 +743,7 @@ export const setupSocketIO = (server) => {
           riskLevel,
           commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
           commitmentFollowUpCommitmentId: turnEnhancements.commitmentFollowUpCommitmentId,
+          showCommitmentFollowUpChips,
         }).catch(() => {});
         
         // 8. Actualizar última conversación
@@ -849,6 +855,7 @@ export const setupSocketIO = (server) => {
           riskLevel,
           userMessage: messageText,
           commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
+          showCommitmentFollowUpChips,
         });
         // 9. Emitir respuesta al cliente
         metricsService

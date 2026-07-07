@@ -17,6 +17,8 @@ import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 
 /** Solo se pregunta al inicio del hilo (primer turno real del usuario). */
 const MAX_USER_TURNS_FOR_ASK = 1;
+/** Chips en cliente: no en el primer saludo; dejar que la conversación arranque. */
+export const MIN_USER_TURNS_FOR_FOLLOW_UP_CHIPS = 2;
 /** Ventana para que el detector heurístico asocie una respuesta al follow-up. */
 const ANSWER_LOOKBACK_HOURS = 48;
 /** Respuestas largas no se infieren (se dejan a los chips) para evitar falsos positivos. */
@@ -25,6 +27,18 @@ const MAX_ANSWER_LEN_FOR_HEURISTIC = 80;
 function countUserTurns(conversationHistory = []) {
   if (!Array.isArray(conversationHistory)) return 0;
   return conversationHistory.filter((m) => m?.role === 'user').length;
+}
+
+/**
+ * Chips de follow-up en el cliente: tras al menos 2 mensajes del usuario,
+ * salvo retomar conversación explícito desde el dashboard.
+ */
+export function shouldShowCommitmentFollowUpChips({
+  conversationHistory = [],
+  forceFollowUp = false,
+} = {}) {
+  if (forceFollowUp) return true;
+  return countUserTurns(conversationHistory) >= MIN_USER_TURNS_FOR_FOLLOW_UP_CHIPS;
 }
 
 function truncateLabel(label, max = 120) {
@@ -186,4 +200,6 @@ export default {
   buildCommitmentFollowUpPlan,
   markCommitmentFollowUpAsked,
   detectCommitmentFollowUpAnswer,
+  shouldShowCommitmentFollowUpChips,
+  MIN_USER_TURNS_FOR_FOLLOW_UP_CHIPS,
 };

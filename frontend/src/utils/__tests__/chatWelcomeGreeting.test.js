@@ -33,6 +33,17 @@ describe('reconstructPersistedCommitmentFollowUp', () => {
     const messages = [{ id: 'a1', role: 'assistant', metadata: {} }];
     expect(reconstructPersistedCommitmentFollowUp(messages)).toHaveLength(1);
   });
+
+  it('no reconstruye compromisos con etiqueta genérica de técnica', () => {
+    const messages = [
+      {
+        id: 'a1',
+        role: 'assistant',
+        metadata: { commitmentFollowUp: { id: 'c1', label: 'Activación conductual' } },
+      },
+    ];
+    expect(reconstructPersistedCommitmentFollowUp(messages)).toHaveLength(1);
+  });
 });
 
 describe('chatWelcomeGreeting', () => {

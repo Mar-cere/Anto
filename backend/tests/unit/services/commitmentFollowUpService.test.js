@@ -21,6 +21,8 @@ const {
   buildCommitmentFollowUpPlan,
   markCommitmentFollowUpAsked,
   detectCommitmentFollowUpAnswer,
+  shouldShowCommitmentFollowUpChips,
+  MIN_USER_TURNS_FOR_FOLLOW_UP_CHIPS,
 } = await import('../../../services/commitmentFollowUpService.js');
 
 const VALID_ID = '507f1f77bcf86cd799439011';
@@ -29,6 +31,41 @@ const VALID_ID = '507f1f77bcf86cd799439011';
 function chain(doc) {
   return { sort: () => ({ lean: () => Promise.resolve(doc) }) };
 }
+
+describe('shouldShowCommitmentFollowUpChips', () => {
+  it('no muestra chips en el primer mensaje del usuario', () => {
+    expect(
+      shouldShowCommitmentFollowUpChips({
+        conversationHistory: [{ role: 'user', content: 'hola' }],
+      }),
+    ).toBe(false);
+  });
+
+  it('muestra chips desde el segundo mensaje del usuario', () => {
+    expect(
+      shouldShowCommitmentFollowUpChips({
+        conversationHistory: [
+          { role: 'user', content: 'hola' },
+          { role: 'assistant', content: 'respuesta' },
+          { role: 'user', content: 'sigo' },
+        ],
+      }),
+    ).toBe(true);
+  });
+
+  it('fuerza chips al retomar conversación', () => {
+    expect(
+      shouldShowCommitmentFollowUpChips({
+        conversationHistory: [{ role: 'user', content: 'hola' }],
+        forceFollowUp: true,
+      }),
+    ).toBe(true);
+  });
+
+  it('expone umbral mínimo de 2 turnos', () => {
+    expect(MIN_USER_TURNS_FOR_FOLLOW_UP_CHIPS).toBe(2);
+  });
+});
 
 describe('classifyFollowUpAnswerFromText', () => {
   it('clasifica afirmativo (es/en)', () => {

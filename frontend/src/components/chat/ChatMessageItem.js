@@ -26,6 +26,11 @@ import {
   useChatColors,
   useChatTexts,
 } from '../../screens/chat/chatScreenConstants';
+import {
+  buildCommitmentDisplayTitle,
+  isGenericCommitmentLabel,
+} from '../../utils/commitmentDisplayCopy';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 
 function AnimatedDot({ delay, dotStyle, styles }) {
   const anim = useRef(new Animated.Value(0)).current;
@@ -136,6 +141,12 @@ const createStyles = (themeColors, c) =>
   suggestionsContainer: {
     marginBottom: 16,
     paddingHorizontal: 14,
+  },
+  commitmentFollowUpShell: {
+    alignSelf: 'flex-start',
+    width: '92%',
+    maxWidth: '92%',
+    marginTop: SPACING.sm,
   },
   suggestionsTitle: {
     fontSize: 11,
@@ -316,12 +327,12 @@ const createStyles = (themeColors, c) =>
     paddingHorizontal: 6,
   },
   commitmentFollowUpCard: {
-    borderRadius: 14,
+    borderRadius: LAYOUT.MESSAGE_BUBBLE_BORDER_RADIUS,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: themeColors.border,
     backgroundColor: themeColors.cardBackground || themeColors.surface || themeColors.background,
-    padding: SPACING.md,
-    marginTop: SPACING.xs,
+    padding: LAYOUT.MESSAGE_BUBBLE_PADDING + 2,
+    width: '100%',
   },
   commitmentFollowUpLabel: {
     fontSize: 14,
@@ -356,8 +367,8 @@ const createStyles = (themeColors, c) =>
   });
 
 const COMMITMENT_FOLLOW_UP_COPY = {
-  es: { prompt: '¿Cómo te fue con esto que quedó la última vez?', yes: 'Lo hice', partial: 'A medias', no: 'Aún no' },
-  en: { prompt: 'How did it go with what you set out last time?', yes: 'I did it', partial: 'Partly', no: 'Not yet' },
+  es: { yes: 'Lo hice', partial: 'A medias', no: 'Aún no' },
+  en: { yes: 'I did it', partial: 'Partly', no: 'Not yet' },
 };
 
 function ChatMessageItem({
@@ -376,6 +387,7 @@ function ChatMessageItem({
 }) {
   const { language } = useLanguage();
   const TEXTS = useChatTexts();
+  const DASH = useSectionTranslations('DASH');
   const { colors } = useTheme();
   const chatColors = useChatColors();
   const styles = useMemo(() => createStyles(colors, chatColors), [colors, chatColors]);
@@ -673,7 +685,12 @@ function ChatMessageItem({
 
   if (message.type === 'commitment_follow_up' && message.commitmentFollowUp?.id) {
     const cf = message.commitmentFollowUp;
+    if (isGenericCommitmentLabel(cf.label)) return null;
     const L = COMMITMENT_FOLLOW_UP_COPY[language === 'en' ? 'en' : 'es'];
+    const title = buildCommitmentDisplayTitle({ label: cf.label }, DASH);
+    const prompt =
+      DASH.FOCUS_COMMITMENT_FOLLOW_UP_SHORT ||
+      (language === 'en' ? 'Were you able to do it?' : '¿Pudiste hacerlo?');
     const options = [
       ['yes', L.yes],
       ['partial', L.partial],
@@ -681,14 +698,19 @@ function ChatMessageItem({
     ];
     return (
       <View style={styles.suggestionsContainer}>
-        <View style={styles.commitmentFollowUpCard} accessibilityRole="summary">
-          {cf.label ? (
-            <Text style={styles.commitmentFollowUpLabel} numberOfLines={2}>
-              {cf.label}
-            </Text>
-          ) : null}
-          <Text style={styles.commitmentFollowUpPrompt}>{L.prompt}</Text>
-          <View style={styles.commitmentFollowUpChips}>
+        <View
+          style={styles.commitmentFollowUpShell}
+          accessibilityRole="summary"
+          accessibilityLabel={`${title}. ${prompt}`}
+        >
+          <View style={styles.commitmentFollowUpCard}>
+            {title ? (
+              <Text style={styles.commitmentFollowUpLabel} numberOfLines={2}>
+                {title}
+              </Text>
+            ) : null}
+            <Text style={styles.commitmentFollowUpPrompt}>{prompt}</Text>
+            <View style={styles.commitmentFollowUpChips}>
             {options.map(([answer, label]) => (
               <TouchableOpacity
                 key={answer}
@@ -701,6 +723,7 @@ function ChatMessageItem({
               </TouchableOpacity>
             ))}
           </View>
+        </View>
         </View>
       </View>
     );

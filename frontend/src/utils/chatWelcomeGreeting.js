@@ -2,6 +2,7 @@
  * Saludos iniciales del chat (es/en) por franja horaria — alineado a backend GREETING_VARIATIONS.
  */
 import { sanitizeProposedCommitments } from './sanitizeProposedCommitments.js';
+import { isGenericCommitmentLabel } from './commitmentDisplayCopy.js';
 
 const GREETING_VARIATIONS_ES = {
   morning: [
@@ -160,6 +161,9 @@ export function reconstructPersistedCommitmentFollowUp(messages) {
   if (lastIdx === -1) return messages;
 
   const source = messages[lastIdx];
+  const cf = source.metadata?.commitmentFollowUp;
+  if (!cf?.id || isGenericCommitmentLabel(cf.label)) return messages;
+
   const block = {
     id: `commitment-follow-up-loaded-${source._id || source.id || lastIdx}`,
     role: 'suggestions',

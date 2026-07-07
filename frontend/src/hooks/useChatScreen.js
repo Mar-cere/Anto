@@ -77,6 +77,7 @@ import {
   setPendingTccLiteResume,
 } from '../utils/chatTccLiteResume';
 import { countNonemptyUserTurns, hasNonemptyUserTurns } from '../utils/chatTurnUtils';
+import { isGenericCommitmentLabel } from '../utils/commitmentDisplayCopy';
 import {
   buildAssistantMetadataFromTurnPayload,
   resolveTccLiteAtHandoffFromPayload,
@@ -1183,7 +1184,10 @@ export function useChatScreen() {
                 metadata: { timestamp: new Date().toISOString() }
               });
             }
-            if (payload.commitmentFollowUp?.id) {
+            if (
+              payload.commitmentFollowUp?.id &&
+              !isGenericCommitmentLabel(payload.commitmentFollowUp.label)
+            ) {
               next.push({
                 id: `commitment-follow-up-${Date.now()}`,
                 role: 'suggestions',

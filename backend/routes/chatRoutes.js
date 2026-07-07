@@ -117,6 +117,7 @@ import {
   persistProposedCommitmentsOnMessage,
   buildClientTurnPayload,
 } from '../services/chatTurnEnhancementsService.js';
+import { shouldShowCommitmentFollowUpChips } from '../services/commitmentFollowUpService.js';
 import { toTccLiteClientPayload } from '../services/chatTccLiteService.js';
 import { normalizeTccLiteState } from '../services/tccLiteConversationStateService.js';
 import { tccLiteStepIndex, tccLiteStepOrder } from '../utils/tccLiteCopy.js';
@@ -1485,6 +1486,10 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           isCrisis,
         });
         const { suggestionPlan, tccLitePlan } = turnEnhancements;
+        const showCommitmentFollowUpChips = shouldShowCommitmentFollowUpChips({
+          conversationHistory,
+          forceFollowUp: resumeCommitmentFollowUp === true,
+        });
         const blockCrisisExtras = isLlmCrisisTherapeuticExtrasBlocked({
           riskLevel,
           userMessage: content.trim(),
@@ -1879,6 +1884,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   riskLevel,
                   commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
                   commitmentFollowUpCommitmentId: turnEnhancements.commitmentFollowUpCommitmentId,
+                  showCommitmentFollowUpChips,
                 }).catch(() => {});
 
                 scheduleRollingSummaryRefresh({
@@ -1910,6 +1916,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   riskLevel,
                   userMessage: content.trim(),
                   commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
+                  showCommitmentFollowUpChips,
                 });
                 if (suggestionPlan.actionIds?.length > 0) {
                   suggestionPlan.actionIds.forEach((suggestionType) => {
@@ -2253,6 +2260,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           riskLevel,
           commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
           commitmentFollowUpCommitmentId: turnEnhancements.commitmentFollowUpCommitmentId,
+          showCommitmentFollowUpChips,
         }).catch(() => {});
 
         scheduleRollingSummaryRefresh({
@@ -2396,6 +2404,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           riskLevel,
           userMessage: content.trim(),
           commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
+          showCommitmentFollowUpChips,
         });
         if (suggestionPlan.actionIds?.length > 0) {
           suggestionPlan.actionIds.forEach((suggestionType) => {

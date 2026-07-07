@@ -285,12 +285,13 @@ export async function finalizeChatTurnEnhancements({
   riskLevel,
   commitmentFollowUpPlan = null,
   commitmentFollowUpCommitmentId = null,
+  showCommitmentFollowUpChips = false,
 }) {
   await saveTccLiteStateToConversation(conversationId, tccLitePlan).catch(() => {});
 
   // Follow-up de compromiso (#202): marcar como preguntado (una sola vez) y
   // persistir en el mensaje asistente para rehidratar los chips al recargar.
-  if (commitmentFollowUpPlan?.commitmentId) {
+  if (showCommitmentFollowUpChips && commitmentFollowUpPlan?.commitmentId) {
     await markCommitmentFollowUpAsked(commitmentFollowUpPlan.commitmentId).catch(() => {});
     if (assistantMessageId) {
       await Message.updateOne(
@@ -391,6 +392,7 @@ export function buildClientTurnPayload({
   riskLevel = 'LOW',
   userMessage = '',
   commitmentFollowUpPlan = null,
+  showCommitmentFollowUpChips = false,
 }) {
   const lang = normalizeApiLanguage(language);
   if (isLlmCrisisTherapeuticExtrasBlocked({ riskLevel, userMessage })) {
@@ -406,9 +408,10 @@ export function buildClientTurnPayload({
     suggestions: formatted,
     suggestionsPersonalized: suggestionPlan?.rankingPersonalized === true,
     tccLite: toTccLiteClientPayload(tccLitePlan || { active: false }, lang),
-    commitmentFollowUp: commitmentFollowUpPlan
-      ? { id: commitmentFollowUpPlan.commitmentId, label: commitmentFollowUpPlan.label }
-      : null,
+    commitmentFollowUp:
+      showCommitmentFollowUpChips && commitmentFollowUpPlan
+        ? { id: commitmentFollowUpPlan.commitmentId, label: commitmentFollowUpPlan.label }
+        : null,
   };
 }
 
