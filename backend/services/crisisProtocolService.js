@@ -17,6 +17,9 @@ const ADDICTION_CRISIS_LEXICON =
 const USER_EXPLICIT_OK =
   /(?:estoy\s+bien|me\s+siento\s+bien|ya\s+estoy\s+(?:bien|a\s+salvo|mejor|tranquil[oa])|estoy\s+a\s+salvo|me\s+siento\s+(?:mejor|a\s+salvo|tranquil[oa])|ya\s+me\s+siento\s+mejor|i\s*'?m\s+(?:ok|okay|fine|safe|better)|i\s+feel\s+(?:ok|okay|better|safe)|feeling\s+(?:ok|okay|better|safe))/i;
 
+const MIXED_DISTRESS_AFTER_BUT =
+  /\b(terrible|horrible|fatal|peor|no aguanto|muy mal|ansiedad|triste|deprim|asustad|miedo|llor|dolor|awful|so bad|can't cope|cannot cope|anxious|depressed|scared|crying)\b/i;
+
 export function hasAddictionCrisisLexicon(content) {
   if (!content || typeof content !== 'string') return false;
   return ADDICTION_CRISIS_LEXICON.test(content);
@@ -31,7 +34,13 @@ export function hasCrisisBatterySignal(messageContent, crisisDecision = null) {
 
 export function isUserExplicitWellbeingMessage(content) {
   if (!content || typeof content !== 'string') return false;
-  return USER_EXPLICIT_OK.test(content.trim());
+  const trimmed = content.trim();
+  if (!USER_EXPLICIT_OK.test(trimmed)) return false;
+  // «Estoy a salvo pero me siento terrible» no cierra protocolo: aún hay malestar activo.
+  if (/\bpero\b/i.test(trimmed) && MIXED_DISTRESS_AFTER_BUT.test(trimmed)) {
+    return false;
+  }
+  return true;
 }
 
 function normalizeRiskLevel(riskLevel) {

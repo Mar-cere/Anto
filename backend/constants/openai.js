@@ -330,7 +330,7 @@ const REASONING_EFFORT_SET = new Set(['minimal', 'low', 'medium', 'high', 'xhigh
 export function getChatReasoningEffortForContext(contextLike) {
   const crisis = contextLike?.crisis?.riskLevel;
   if (crisis === 'HIGH' || crisis === 'MEDIUM') {
-    return 'medium';
+    return 'low';
   }
 
   const raw = process.env.OPENAI_CHAT_REASONING_EFFORT;

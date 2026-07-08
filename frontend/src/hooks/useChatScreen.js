@@ -1260,7 +1260,11 @@ export function useChatScreen() {
         return;
       }
 
-      if (backendCode === 'STREAM_INCOMPLETE') {
+      if (
+        backendCode === 'STREAM_INCOMPLETE' ||
+        backendCode === 'SOCKET_TIMEOUT' ||
+        backendCode === 'TURN_ABORTED'
+      ) {
         let recoveredFromServer = false;
         // Recuperación silenciosa: evitar avisos de stream incompleto.
         // Intentamos reconciliar estado con el servidor para obtener la respuesta final persistida.

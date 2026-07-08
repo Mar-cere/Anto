@@ -58,6 +58,12 @@ describe('crisisProtocolService', () => {
       expect(isUserExplicitWellbeingMessage("I'm okay now")).toBe(true);
       expect(isUserExplicitWellbeingMessage('sigo mal')).toBe(false);
     });
+
+    it('no cierra protocolo con mensaje mixto «a salvo pero terrible»', () => {
+      expect(
+        isUserExplicitWellbeingMessage('Si estoy a salvo pero me siento terrible'),
+      ).toBe(false);
+    });
   });
 
   describe('advanceCrisisProtocolState', () => {

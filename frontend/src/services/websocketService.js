@@ -7,6 +7,7 @@ import { API_URL } from '../config/api';
 import { CHAT_SOCKET_EVENTS } from '../constants/chatSocketEvents';
 
 const CONNECT_TIMEOUT_MS = 12000;
+const CHAT_TURN_STALL_MS = 45000;
 const CHAT_TURN_TIMEOUT_MS = 120000;
 
 const getSocketUrl = () => {
@@ -197,11 +198,20 @@ class WebSocketService {
       supersededErr.code = 'TURN_SUPERSEDED';
       this._clearChatTurnWaiters(supersededErr);
 
+      let turnProgress = false;
+
       const turnTimer = setTimeout(() => {
         const timeoutErr = new Error('Tiempo de espera agotado (socket)');
         timeoutErr.code = 'SOCKET_TIMEOUT';
         finish(timeoutErr);
       }, CHAT_TURN_TIMEOUT_MS);
+
+      const stallTimer = setTimeout(() => {
+        if (turnProgress) return;
+        const timeoutErr = new Error('Tiempo de espera agotado (socket)');
+        timeoutErr.code = 'SOCKET_TIMEOUT';
+        finish(timeoutErr);
+      }, CHAT_TURN_STALL_MS);
 
       const expectedConversationId = conversationId ? String(conversationId) : null;
 
@@ -217,6 +227,7 @@ class WebSocketService {
         }
         const piece = payload?.content;
         if (typeof piece === 'string' && piece.length > 0) {
+          turnProgress = true;
           onChunk(piece);
         }
       };
@@ -230,6 +241,7 @@ class WebSocketService {
             return;
           }
         }
+        turnProgress = true;
         finish(null, payload);
       };
 
@@ -250,6 +262,7 @@ class WebSocketService {
 
       const finish = (err, payload) => {
         clearTimeout(turnTimer);
+        clearTimeout(stallTimer);
         this.socket?.off(CHAT_SOCKET_EVENTS.MESSAGE_CHUNK, onChunkEvent);
         this.socket?.off(CHAT_SOCKET_EVENTS.MESSAGE_RECEIVED, onReceived);
         this.socket?.off(CHAT_SOCKET_EVENTS.ERROR, onSocketError);
@@ -267,6 +280,7 @@ class WebSocketService {
 
       const cleanupRef = (rejectError) => {
         clearTimeout(turnTimer);
+        clearTimeout(stallTimer);
         this.socket?.off(CHAT_SOCKET_EVENTS.MESSAGE_CHUNK, onChunkEvent);
         this.socket?.off(CHAT_SOCKET_EVENTS.MESSAGE_RECEIVED, onReceived);
         this.socket?.off(CHAT_SOCKET_EVENTS.ERROR, onSocketError);

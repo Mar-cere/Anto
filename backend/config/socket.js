@@ -45,14 +45,17 @@ import {
 import { shouldShowCommitmentFollowUpChips } from '../services/commitmentFollowUpService.js';
 import {
   shouldHardStopCrisisLlm,
-  buildHardStopCrisisAssistantContent,
-  buildCrisisHardStopClientPayload,
 } from '../services/crisisHardStopService.js';
 import { crisisResourcesForTurn } from '../services/crisisResourcesService.js';
 import { applyCrisisProtocolForTurn } from '../services/crisisTurnClientExtrasService.js';
 import { hasCrisisBatterySignal } from '../services/crisisProtocolService.js';
 import { indexPersonalPatternFromUserMessage } from '../services/personalPatternRagService.js';
 import { resolveChatConversationForSocket } from '../utils/resolveChatConversationForSocket.js';
+import {
+  persistCrisisStructuredAssistantTurn,
+  readProtocolWasActive,
+  resolveCrisisStructuredAssistantContent,
+} from '../services/crisisStructuredTurnService.js';
 import { buildSocketChatErrorPayload } from '../utils/socketChatErrorPayload.js';
 import {
   buildStreamingTtftMetrics,
@@ -354,6 +357,7 @@ export const setupSocketIO = (server) => {
           riskLevel,
           messageContent: messageText,
         });
+        const protocolWasActive = readProtocolWasActive(conversation);
         let crisisTurnClientExtras = await applyCrisisProtocolForTurn({
           conversation,
           userId,
@@ -424,6 +428,95 @@ export const setupSocketIO = (server) => {
           };
         };
 
+        const structuredCrisisTurn = resolveCrisisStructuredAssistantContent({
+          willHardStop,
+          protocolWasActive,
+          messageContent: messageText,
+          language: socketLanguage,
+          preferences: socketPreferences,
+          phone: socketUser?.phone || null,
+        });
+
+        if (structuredCrisisTurn?.content) {
+          if (structuredCrisisTurn.kind === 'hard_stop') {
+            metricsService
+              .recordMetric(
+                'crisis_hard_stop',
+                buildCrisisRoutingMetricData({
+                  riskLevel,
+                  transport: 'socket',
+                  messageContent: messageText,
+                }),
+                userId.toString(),
+                { conversationId: String(conversation._id) },
+              )
+              .catch(() => {});
+          } else {
+            metricsService
+              .recordMetric(
+                'crisis_protocol_follow_up',
+                {
+                  transport: 'socket',
+                  protocolWasActive: true,
+                },
+                userId.toString(),
+                { conversationId: String(conversation._id) },
+              )
+              .catch(() => {});
+          }
+
+          const { assistantMessage, clientTurn } = await persistCrisisStructuredAssistantTurn({
+            userId,
+            conversationId: conversation._id,
+            content: structuredCrisisTurn.content,
+            riskLevel,
+            hardStop: structuredCrisisTurn.hardStop,
+            kind: structuredCrisisTurn.kind,
+            emotionalAnalysis,
+            contextualAnalysis,
+            language: socketLanguage,
+          });
+
+          intenseChatCheckInService
+            .maybeSchedule({
+              userId,
+              conversationId: conversation._id,
+              assistantMessageId: assistantMessage._id,
+              emotionalAnalysis,
+              riskLevel,
+              isCrisis: true,
+            })
+            .catch(() => {});
+
+          scheduleRollingSummaryRefresh({
+            conversationId: conversation._id,
+            userId,
+            isGuest: false,
+          }).catch(() => {});
+
+          socket.emit(SOCKET_EVENTS.MESSAGE_CHUNK, {
+            content: structuredCrisisTurn.content,
+            conversationId: conversation._id.toString(),
+          });
+          socket.emit(SOCKET_EVENTS.AI_TYPING, false);
+          socket.emit(SOCKET_EVENTS.MESSAGE_RECEIVED, {
+            id: assistantMessage._id.toString(),
+            text: structuredCrisisTurn.content,
+            userId: currentUserId,
+            conversationId: conversation._id.toString(),
+            timestamp: new Date(),
+            crisisHardStop: structuredCrisisTurn.hardStop === true,
+            proposedProductActions: [],
+            proposedCommitments: [],
+            productActionStatus: { paused: false, reason: null, askFirst: false },
+            suggestions: clientTurn.suggestions,
+            suggestionsPersonalized: clientTurn.suggestionsPersonalized,
+            tccLite: clientTurn.tccLite,
+            ...buildSocketCrisisPayload({ hardStop: structuredCrisisTurn.hardStop === true }),
+          });
+          return;
+        }
+
         const turnEnhancements = await planChatTurnEnhancements({
           userId,
           conversationId: conversation._id,
@@ -451,101 +544,6 @@ export const setupSocketIO = (server) => {
           conversationHistory,
           forceFollowUp: data?.resumeCommitmentFollowUp === true,
         });
-
-        const crisisHardStopContent = willHardStop
-          ? buildHardStopCrisisAssistantContent({
-              riskLevel,
-              language: socketLanguage,
-              preferences: {
-                ...(userProfile?.preferences || {}),
-                ...(socketUser?.preferences || {}),
-              },
-              phone: socketUser?.phone || null,
-              resourcesDeliveredInPanel: true,
-            })
-          : null;
-
-        if (crisisHardStopContent) {
-          metricsService
-            .recordMetric(
-              'crisis_hard_stop',
-              buildCrisisRoutingMetricData({
-                riskLevel,
-                transport: 'socket',
-                messageContent: messageText,
-              }),
-              userId.toString(),
-              { conversationId: String(conversation._id) }
-            )
-            .catch(() => {});
-
-          const assistantMessage = new Message({
-            userId,
-            content: crisisHardStopContent,
-            role: 'assistant',
-            conversationId: conversation._id,
-            metadata: buildAssistantMetadataWithEnhancements(
-              {
-                status: 'sent',
-                crisis: {
-                  riskLevel: normalizeStoredCrisisRiskLevel(riskLevel),
-                  hardStop: true,
-                },
-                context: {
-                  emotional: emotionalAnalysis,
-                  contextual: contextualAnalysis,
-                  response: JSON.stringify({ crisisHardStop: true }),
-                },
-              },
-              { active: false },
-              socketLanguage,
-            ),
-          });
-          await assistantMessage.save();
-          await Conversation.findByIdAndUpdate(conversation._id, {
-            lastMessage: assistantMessage._id,
-          });
-
-          intenseChatCheckInService
-            .maybeSchedule({
-              userId,
-              conversationId: conversation._id,
-              assistantMessageId: assistantMessage._id,
-              emotionalAnalysis,
-              riskLevel,
-              isCrisis: true,
-            })
-            .catch(() => {});
-
-          scheduleRollingSummaryRefresh({
-            conversationId: conversation._id,
-            userId,
-            isGuest: false,
-          }).catch(() => {});
-
-          const clientTurn = buildCrisisHardStopClientPayload(socketLanguage);
-          socket.emit(SOCKET_EVENTS.MESSAGE_CHUNK, {
-            content: crisisHardStopContent,
-            conversationId: conversation._id.toString(),
-          });
-          socket.emit(SOCKET_EVENTS.AI_TYPING, false);
-          socket.emit(SOCKET_EVENTS.MESSAGE_RECEIVED, {
-            id: assistantMessage._id.toString(),
-            text: crisisHardStopContent,
-            userId: currentUserId,
-            conversationId: conversation._id.toString(),
-            timestamp: new Date(),
-            crisisHardStop: true,
-            proposedProductActions: [],
-            proposedCommitments: [],
-            productActionStatus: { paused: false, reason: null, askFirst: false },
-            suggestions: clientTurn.suggestions,
-            suggestionsPersonalized: clientTurn.suggestionsPersonalized,
-            tccLite: clientTurn.tccLite,
-            ...buildSocketCrisisPayload({ hardStop: true }),
-          });
-          return;
-        }
 
         if (
           shouldIncludeCrisisInOpenaiContext(riskLevel, {
@@ -639,6 +637,10 @@ export const setupSocketIO = (server) => {
         for await (const event of openaiService.generarRespuestaStream(userMessage, openaiContext)) {
           if (turnControl.aborted) {
             socket.emit(SOCKET_EVENTS.AI_TYPING, false);
+            socket.emit(
+              SOCKET_EVENTS.ERROR,
+              buildSocketChatErrorPayload({ code: 'TURN_ABORTED', message: 'Turno cancelado' }),
+            );
             return;
           }
           if (event.type === 'chunk') {
@@ -682,6 +684,10 @@ export const setupSocketIO = (server) => {
 
         if (turnControl.aborted) {
           socket.emit(SOCKET_EVENTS.AI_TYPING, false);
+          socket.emit(
+            SOCKET_EVENTS.ERROR,
+            buildSocketChatErrorPayload({ code: 'TURN_ABORTED', message: 'Turno cancelado' }),
+          );
           return;
         }
 
