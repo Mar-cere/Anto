@@ -12,7 +12,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   ImageBackground,
   KeyboardAvoidingView,
@@ -353,21 +352,14 @@ const VerifyEmailScreen = () => {
         await refreshSession();
 
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert(
-          TEXTS.VERIFIED_TITLE,
-          TEXTS.VERIFIED_MESSAGE,
-          [
-            {
-              text: TEXTS.CONTINUE,
-              onPress: () => {
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: ROUTES.MAIN_TABS }],
-                });
-              },
-            },
-          ]
-        );
+        showToast({
+          message: TEXTS.VERIFIED_TITLE,
+          type: 'success',
+        });
+        navigation.reset({
+          index: 0,
+          routes: [{ name: ROUTES.MAIN_TABS }],
+        });
       } else {
         throw new Error(TEXTS.TOKENS_MISSING);
       }

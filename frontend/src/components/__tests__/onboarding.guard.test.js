@@ -127,14 +127,15 @@ describe('onboarding guard', () => {
     expect(tutorialCompleteBlock).toMatch(/setShowOnboardingQuestions\(true\)/);
   });
 
-  it('DashScreen muestra hint tras preguntas, no abre chat sin acceso', () => {
+  it('DashScreen cierra preguntas sin abrir chat sin acceso', () => {
     const src = readSrc('screens/DashScreen.js');
     const dismissBlock = src.slice(
       src.indexOf('const handleOnboardingQuestionsDismiss'),
       src.indexOf('const handleOnboardingQuestionsCompleted'),
     );
-    expect(dismissBlock).toMatch(/setShowFirstSessionHint\(true\)/);
+    expect(dismissBlock).toMatch(/setShowOnboardingQuestions\(false\)/);
     expect(dismissBlock).not.toMatch(/goToChatFromOnboarding\(\)/);
+    expect(dismissBlock).not.toMatch(/setShowFirstSessionHint/);
 
     const completedBlock = src.slice(
       src.indexOf('const handleOnboardingQuestionsCompleted'),
@@ -165,6 +166,28 @@ describe('onboarding guard', () => {
     expect(src).toMatch(/onboardingOverlayStateRef/);
     expect(src).toMatch(/blocker\.showTutorial \|\| blocker\.showOnboardingQuestions/);
     expect(src).toMatch(/showTutorial \|\| showOnboardingQuestions \|\| showEmergencyContactsModal/);
+    expect(src).not.toMatch(/showFirstSessionHint/);
+    expect(src).not.toMatch(/FirstSessionHint/);
+  });
+
+  it('flujo de 6 superficies: sin FirstSessionHint ni hint en loadData', () => {
+    const src = readSrc('screens/DashScreen.js');
+    expect(src).not.toMatch(/import FirstSessionHint/);
+    expect(src).not.toMatch(/isFirstSessionHintDismissed/);
+    const loadBlock = src.slice(
+      src.indexOf('if (!tutorialCompleted)'),
+      src.indexOf('setHasCheckedTutorial(true)'),
+    );
+    expect(loadBlock).not.toMatch(/setShowFirstSessionHint/);
+    expect(loadBlock).not.toMatch(/isFirstSessionHintDismissed/);
+  });
+
+  it('VerifyEmailScreen auto-continúa tras verificar (sin Alert bloqueante)', () => {
+    const src = readSrc('screens/VerifyEmailScreen.js');
+    expect(src).not.toMatch(/Alert\.alert/);
+    expect(src).toMatch(/showToast\(\{/);
+    expect(src).toMatch(/navigation\.reset\(\{/);
+    expect(src).toMatch(/ROUTES\.MAIN_TABS/);
   });
 
   it('OnboardingQuestions muestra beneficios antes del foco', () => {

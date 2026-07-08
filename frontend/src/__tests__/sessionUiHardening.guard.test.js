@@ -75,13 +75,12 @@ describe('sessionUi hardening guard', () => {
     });
   });
 
-  describe('FirstSessionHint overlay', () => {
-    it('opacidad solo en backdrop; tarjeta opaca', () => {
-      const src = readSrc('components/FirstSessionHint.js');
-      expect(src).toMatch(/modalSurface/);
-      expect(src).toMatch(/backdropStrong/);
-      expect(src).toMatch(/\{ opacity: fadeAnim \}/);
-      expect(src).not.toMatch(/styles\.overlay, \{ opacity: fadeAnim \}/);
+  describe('chat gate en pestaña Chat', () => {
+    it('useChatScreen valida acceso al cargar (sustituye hint de primera sesión)', () => {
+      const hook = readSrc('hooks/useChatScreen.js');
+      expect(hook).toMatch(/canAttemptChatAccess/);
+      expect(hook).toMatch(/SUBSCRIPTION_REQUIRED_TITLE/);
+      expect(hook).toMatch(/navigate\('Subscription'\)/);
     });
   });
 

@@ -29,7 +29,6 @@ import {
   mergeFocusResponse,
   shouldRefreshHomeOnFocus,
 } from '../utils/dashboardHomeRefresh';
-import FirstSessionHint, { isFirstSessionHintDismissed } from '../components/FirstSessionHint';
 import OnboardingQuestions from '../components/OnboardingQuestions';
 import OnboardingTutorial, { isTutorialCompleted } from '../components/OnboardingTutorial';
 import TutorialHighlight from '../components/TutorialHighlight';
@@ -67,7 +66,6 @@ import {
 import { setChatEntryBackTarget } from '../utils/chatEntryContext';
 import { canAttemptChatAccess } from '../utils/chatAccessGate';
 import { STORAGE_KEYS as CHAT_STORAGE_KEYS } from './chat/chatScreenConstants';
-import { setFirstSessionHintDismissed } from '../utils/firstSessionHintStorage';
 import { markTutorialCompleted } from '../utils/tutorialStorage';
 import { buildFocusNextTaskNavParams } from '../utils/focusNextTaskNavigation';
 import { buildFocusNextHabitNavParams } from '../utils/focusNextHabitNavigation';
@@ -182,7 +180,6 @@ const DashScreen = () => {
   const [isFirstTimeUser, setIsFirstTimeUser] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
   const [hasCheckedTutorial, setHasCheckedTutorial] = useState(false);
-  const [showFirstSessionHint, setShowFirstSessionHint] = useState(false);
   const [showOnboardingQuestions, setShowOnboardingQuestions] = useState(false);
   const [highlightElement, setHighlightElement] = useState(null);
   const [trialInfo, setTrialInfo] = useState(null);
@@ -201,7 +198,6 @@ const DashScreen = () => {
   const onboardingOverlayStateRef = useRef({
     showTutorial: false,
     showOnboardingQuestions: false,
-    showFirstSessionHint: false,
   });
 
   // Log cuando showTutorial cambia (solo en desarrollo)
@@ -215,9 +211,8 @@ const DashScreen = () => {
     onboardingOverlayStateRef.current = {
       showTutorial,
       showOnboardingQuestions,
-      showFirstSessionHint,
     };
-  }, [showTutorial, showOnboardingQuestions, showFirstSessionHint]);
+  }, [showTutorial, showOnboardingQuestions]);
 
   const checkEmergencyContacts = useCallback(async (currentUserData = null) => {
     try {
@@ -241,7 +236,7 @@ const DashScreen = () => {
 
         setTimeout(() => {
           const blocker = onboardingOverlayStateRef.current;
-          if (blocker.showTutorial || blocker.showOnboardingQuestions || blocker.showFirstSessionHint) {
+          if (blocker.showTutorial || blocker.showOnboardingQuestions) {
             return;
           }
           setShowEmergencyContactsModal(true);
@@ -255,7 +250,7 @@ const DashScreen = () => {
         setHasCheckedEmergencyContacts(true);
         setTimeout(() => {
           const blocker = onboardingOverlayStateRef.current;
-          if (blocker.showTutorial || blocker.showOnboardingQuestions || blocker.showFirstSessionHint) {
+          if (blocker.showTutorial || blocker.showOnboardingQuestions) {
             return;
           }
           setShowEmergencyContactsModal(true);
@@ -358,7 +353,8 @@ const DashScreen = () => {
           console.log('👤 Tiempo desde creación (horas):', hoursSinceCreation);
         }
         
-        // Flujo: primero recorrido (qué es Anto), luego preferencia opcional, luego chat.
+        // Flujo: primero recorrido (qué es Anto), luego preferencia opcional; el chat
+        // queda accesible directamente desde la barra de navegación.
         if (!tutorialCompleted) {
           if (isNewUser) {
             setIsFirstTimeUser(true);
@@ -369,12 +365,6 @@ const DashScreen = () => {
             }
             setShowTutorial(true);
           }, 1000);
-        } else {
-          // Tutorial ya completado: mostrar hint de primera sesión si no lo cerró
-          const hintDismissed = await isFirstSessionHintDismissed(userId);
-          if (!hintDismissed) {
-            setTimeout(() => setShowFirstSessionHint(true), 800);
-          }
         }
         setHasCheckedTutorial(true);
       }
@@ -673,9 +663,6 @@ const DashScreen = () => {
     if (tutorialShouldOpenChatRef.current) {
       tutorialShouldOpenChatRef.current = false;
       await markTutorialCompleted(userId);
-      if (userId) {
-        await setFirstSessionHintDismissed(userId);
-      }
       setTimeout(() => {
         goToChatFromOnboarding();
       }, 250);
@@ -684,15 +671,11 @@ const DashScreen = () => {
     setTimeout(() => setShowOnboardingQuestions(true), 400);
   }, [goToChatFromOnboarding, userData]);
 
-  // Al cerrar las preguntas de onboarding (omitir o enviar), mostrar hint "Empezar chat"
-  const handleOnboardingQuestionsDismiss = useCallback(async () => {
+  // Al cerrar las preguntas de onboarding (omitir o enviar) el usuario queda en el
+  // dashboard; el chat sigue accesible desde la barra de navegación.
+  const handleOnboardingQuestionsDismiss = useCallback(() => {
     setShowOnboardingQuestions(false);
-    const userId = userData?._id || userData?.id || null;
-    const hintDismissed = await isFirstSessionHintDismissed(userId);
-    if (!hintDismissed) {
-      setTimeout(() => setShowFirstSessionHint(true), 300);
-    }
-  }, [userData]);
+  }, []);
 
   const handleOnboardingQuestionsCompleted = useCallback(async () => {
     const userId = userData?._id || userData?.id || null;
@@ -902,14 +885,6 @@ const DashScreen = () => {
         onDismiss={handleOnboardingQuestionsDismiss}
         onCompleted={handleOnboardingQuestionsCompleted}
         onExploreApp={handleExploreAppTutorial}
-      />
-
-      {/* Hint de objetivo de primera sesión (tras onboarding) */}
-      <FirstSessionHint
-        visible={showFirstSessionHint}
-        onDismiss={() => setShowFirstSessionHint(false)}
-        userId={userData?._id || userData?.id || null}
-        userCreatedAt={userData?.createdAt || null}
       />
 
       <EmergencyContactsModal

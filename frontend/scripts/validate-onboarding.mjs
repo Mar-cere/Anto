@@ -70,10 +70,47 @@ const dismiss = dash.slice(
   dash.indexOf('const handleOnboardingQuestionsDismiss'),
   dash.indexOf('const handleOnboardingQuestionsCompleted'),
 );
-if (dismiss.includes('setShowFirstSessionHint(true)') && !dismiss.includes('goToChatFromOnboarding')) {
-  pass('post-onboarding: hint en lugar de chat directo');
+if (
+  dismiss.includes('setShowOnboardingQuestions(false)') &&
+  !dismiss.includes('goToChatFromOnboarding') &&
+  !dismiss.includes('FirstSessionHint') &&
+  !dismiss.includes('setShowFirstSessionHint')
+) {
+  pass('post-onboarding: cierra preguntas sin hint ni chat directo');
 } else {
-  fail('post-onboarding: hint en lugar de chat directo');
+  fail('post-onboarding: cierra preguntas sin hint ni chat directo');
+}
+
+const verify = read('src/screens/VerifyEmailScreen.js');
+if (
+  !verify.includes('Alert.alert') &&
+  verify.includes('showToast({') &&
+  verify.includes('navigation.reset({') &&
+  verify.includes('ROUTES.MAIN_TABS')
+) {
+  pass('verificación email: auto-continúa sin Alert bloqueante');
+} else {
+  fail('verificación email: auto-continúa sin Alert bloqueante');
+}
+
+if (
+  !dash.includes('import FirstSessionHint') &&
+  !dash.includes('<FirstSessionHint') &&
+  !dash.includes('showFirstSessionHint')
+) {
+  pass('DashScreen: sin FirstSessionHint en el flujo');
+} else {
+  fail('DashScreen: sin FirstSessionHint en el flujo');
+}
+
+if (
+  dash.includes('OnboardingTutorial') &&
+  dash.includes('OnboardingQuestions') &&
+  dash.includes('EmergencyContactsModal')
+) {
+  pass('flujo de 6 superficies: tutorial, preguntas y contactos de emergencia');
+} else {
+  fail('flujo de 6 superficies: tutorial, preguntas y contactos de emergencia');
 }
 
 if (dash.includes('canAttemptChatAccess') && dash.includes("navigate('Subscription')")) {

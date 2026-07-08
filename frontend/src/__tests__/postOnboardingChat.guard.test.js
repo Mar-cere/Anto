@@ -1,5 +1,5 @@
 /**
- * Blindaje: cierre de onboarding → hint → chat solo con acceso válido.
+ * Blindaje: cierre de onboarding → chat solo con acceso válido (flujo de 6 superficies).
  */
 import fs from 'fs';
 import path from 'path';
@@ -38,8 +38,10 @@ describe('postOnboardingChat guard', () => {
       dash.indexOf('const handleOnboardingQuestionsDismiss'),
       dash.indexOf('const handleOnboardingQuestionsCompleted'),
     );
-    expect(dismiss).toMatch(/setShowFirstSessionHint\(true\)/);
+    expect(dismiss).toMatch(/setShowOnboardingQuestions\(false\)/);
     expect(dismiss).not.toMatch(/goToChatFromOnboarding/);
+    expect(dismiss).not.toMatch(/FirstSessionHint/);
+    expect(dismiss).not.toMatch(/setShowFirstSessionHint/);
 
     const goChat = dash.slice(
       dash.indexOf('const goToChatFromOnboarding'),
@@ -50,22 +52,31 @@ describe('postOnboardingChat guard', () => {
     expect(goChat).toMatch(/navigate\('Subscription'\)/);
   });
 
-  it('FirstSessionHint comprueba acceso antes de ir al chat', () => {
-    const hint = readSrc('components/FirstSessionHint.js');
-    expect(hint).toMatch(/canAttemptChatAccess/);
-    expect(hint).toMatch(/SUBSCRIPTION_REQUIRED_TITLE/);
-    expect(hint).toMatch(/userCreatedAt/);
-    expect(hint).toMatch(/setFirstSessionHintDismissed\(userId\)/);
+  it('DashScreen no monta FirstSessionHint (eliminado del flujo)', () => {
+    const dash = readSrc('screens/DashScreen.js');
+    expect(dash).not.toMatch(/import FirstSessionHint/);
+    expect(dash).not.toMatch(/<FirstSessionHint/);
+    expect(dash).not.toMatch(/showFirstSessionHint/);
+    expect(dash).not.toMatch(/firstSessionHintStorage/);
   });
 
-  it('FirstSessionHint usa Modal opaco (modalSurface), no panel translúcido del dashboard', () => {
-    const hint = readSrc('components/FirstSessionHint.js');
-    expect(hint).toMatch(/<Modal/);
-    expect(hint).toMatch(/colors\.modalSurface/);
-    expect(hint).not.toMatch(/FOCUS_PANEL/);
+  it('useChatScreen valida acceso al cargar (gate en la pestaña Chat)', () => {
+    const hook = readSrc('hooks/useChatScreen.js');
+    expect(hook).toMatch(/canAttemptChatAccess/);
+    expect(hook).toMatch(/SUBSCRIPTION_REQUIRED_TITLE/);
+    expect(hook).toMatch(/navigate\('Subscription'\)/);
   });
 
-  it('handleOnboardingQuestionsCompleted no descarta el hint prematuramente', () => {
+  it('VerifyEmailScreen continúa sin Alert bloqueante tras verificar', () => {
+    const verify = readSrc('screens/VerifyEmailScreen.js');
+    expect(verify).not.toMatch(/Alert\.alert/);
+    expect(verify).not.toMatch(/import\s*\{[^}]*Alert/);
+    expect(verify).toMatch(/showToast\(\{/);
+    expect(verify).toMatch(/navigation\.reset\(\{/);
+    expect(verify).toMatch(/ROUTES\.MAIN_TABS/);
+  });
+
+  it('handleOnboardingQuestionsCompleted persiste tutorial sin hint', () => {
     const dash = readSrc('screens/DashScreen.js');
     const block = dash.slice(
       dash.indexOf('const handleOnboardingQuestionsCompleted'),
@@ -73,5 +84,6 @@ describe('postOnboardingChat guard', () => {
     );
     expect(block).toMatch(/markTutorialCompleted/);
     expect(block).not.toMatch(/setFirstSessionHintDismissed/);
+    expect(block).not.toMatch(/setShowFirstSessionHint/);
   });
 });

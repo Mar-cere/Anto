@@ -24,8 +24,9 @@ describe('authTokenRefresh guard', () => {
     expect(src).toMatch(/refreshAccessToken/);
     expect(src).toMatch(/refreshPromise/);
     expect(src).toMatch(/registerOnSessionInvalidated/);
-    expect(src).toMatch(/isTokenExpiredError/);
-    expect(src).toMatch(/TOKEN_MISSING_MARKERS/);
+    expect(src).toMatch(/ensureValidAccessToken/);
+    expect(src).toMatch(/isAccessTokenStale/);
+    expect(src).toMatch(/getAccessTokenExpiryMs/);
     expect(src).toMatch(/\/api\/auth\/refresh/);
   });
 
@@ -34,7 +35,7 @@ describe('authTokenRefresh guard', () => {
     expect(src).toMatch(/REFRESH: '\/api\/auth\/refresh'/);
     expect(src).toMatch(/withAuthRetry/);
     expect(src).toMatch(/refreshAccessToken/);
-    expect(src).toMatch(/clearAuthSession/);
+    expect(src).toMatch(/ensureValidAccessToken/);
     expect(src).toMatch(/notifySessionInvalidated/);
     expect(src).toMatch(/AUTH_STORAGE_KEYS\.REFRESH_TOKEN/);
     expect(src).toMatch(/AUTH_ENDPOINTS_WITHOUT_REFRESH/);
@@ -45,8 +46,8 @@ describe('authTokenRefresh guard', () => {
     const src = readSrc('context/AuthContext.js');
     expect(src).toMatch(/api\.get\(ENDPOINTS\.ME\)/);
     expect(src).toMatch(/registerOnSessionInvalidated/);
-    expect(src).toMatch(/clearAuthSession/);
-    expect(src).toMatch(/AUTH_STORAGE_KEYS/);
+    expect(src).toMatch(/isNetworkError/);
+    expect(src).toMatch(/handleSessionLoadError/);
   });
 
   it('login por pantalla guarda refreshToken con la misma clave que api.ts', () => {

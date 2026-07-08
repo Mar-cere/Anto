@@ -121,12 +121,15 @@ describe('api config', () => {
   });
 
   describe('refresh automático en peticiones autenticadas', () => {
-    it('reintenta GET tras renovar token cuando expiró', async () => {
-      await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_TOKEN, 'expired-access');
+    it('renueva token proactivamente antes del GET si está por expirar', async () => {
+      const exp = Math.floor((Date.now() + 15 * 60 * 1000) / 1000);
+      const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+      const payload = Buffer.from(JSON.stringify({ exp })).toString('base64url');
+      const staleToken = `${header}.${payload}.sig`;
+      await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_TOKEN, staleToken);
       await AsyncStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, 'valid-refresh');
 
       fetch
-        .mockResolvedValueOnce(errorResponse(401, 'Token expirado'))
         .mockResolvedValueOnce(
           jsonResponse({ accessToken: 'new-access', user: { _id: 'u1' } }),
         )
@@ -136,16 +139,43 @@ describe('api config', () => {
 
       expect(me).toEqual({ _id: 'u1', email: 'a@b.com' });
       expect(await AsyncStorage.getItem(AUTH_STORAGE_KEYS.USER_TOKEN)).toBe('new-access');
-      expect(fetch).toHaveBeenCalledTimes(3);
-      expect(String(fetch.mock.calls[1][0])).toContain('/api/auth/refresh');
+      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(String(fetch.mock.calls[0][0])).toContain('/api/auth/refresh');
+    });
+
+    it('reintenta GET tras renovar token cuando expiró', async () => {
+      const exp = Math.floor(Date.now() / 1000) - 120;
+      const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+      const payload = Buffer.from(JSON.stringify({ exp })).toString('base64url');
+      const expiredToken = `${header}.${payload}.sig`;
+      await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_TOKEN, expiredToken);
+      await AsyncStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, 'valid-refresh');
+
+      fetch
+        .mockResolvedValueOnce(
+          jsonResponse({ accessToken: 'new-access', user: { _id: 'u1' } }),
+        )
+        .mockResolvedValueOnce(jsonResponse({ _id: 'u1', email: 'a@b.com' }));
+
+      const me = await api.get(ENDPOINTS.ME);
+
+      expect(me).toEqual({ _id: 'u1', email: 'a@b.com' });
+      expect(await AsyncStorage.getItem(AUTH_STORAGE_KEYS.USER_TOKEN)).toBe('new-access');
+      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(String(fetch.mock.calls[0][0])).toContain('/api/auth/refresh');
     });
 
     it('limpia sesión si el refresh falla', async () => {
-      await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_TOKEN, 'expired-access');
+      const exp = Math.floor(Date.now() / 1000) - 120;
+      const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
+      const payload = Buffer.from(JSON.stringify({ exp })).toString('base64url');
+      const expiredToken = `${header}.${payload}.sig`;
+      await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_TOKEN, expiredToken);
       await AsyncStorage.setItem(AUTH_STORAGE_KEYS.USER_DATA, '{"_id":"u1"}');
       await AsyncStorage.setItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN, 'expired-refresh');
 
       fetch
+        .mockResolvedValueOnce(errorResponse(401, 'Token inválido o expirado'))
         .mockResolvedValueOnce(errorResponse(401, 'Token expirado'))
         .mockResolvedValueOnce(errorResponse(401, 'Token inválido o expirado'));
 

@@ -17,6 +17,7 @@ import { getAppLanguage } from '../utils/appLanguage';
 import {
   AUTH_STORAGE_KEYS,
   clearAuthSession,
+  ensureValidAccessToken,
   isTokenExpiredError,
   notifySessionInvalidated,
   refreshAccessToken,
@@ -203,15 +204,35 @@ async function withAuthRetry<T>(
     }
     const refreshed = await refreshAccessToken();
     if (!refreshed) {
+      if (typeof console !== 'undefined') {
+        console.warn(`[API] ${endpoint} - Sesión inválida; se requiere iniciar sesión de nuevo`);
+      }
       await clearAuthSession();
       notifySessionInvalidated();
       throw error;
+    }
+    if (typeof __DEV__ !== 'undefined' && __DEV__ && typeof console !== 'undefined') {
+      console.log(`[API] ${endpoint} - Token renovado, reintentando petición`);
     }
     return withAuthRetry(endpoint, fn, true);
   }
 }
 
+function logApiError(endpoint: string, errorMessage: string, error?: ApiError): void {
+  if (typeof console === 'undefined') {
+    return;
+  }
+  if (isTokenExpiredError(error ?? { message: errorMessage })) {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.log(`[API] ${endpoint} - Token expirado, renovando sesión...`);
+    }
+    return;
+  }
+  console.error(`[API] ${endpoint} - Error:`, errorMessage);
+}
+
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
+  await ensureValidAccessToken();
   const token = await AsyncStorage.getItem(AUTH_STORAGE_KEYS.USER_TOKEN);
   const appLanguage = await getAppLanguage();
   if (typeof __DEV__ !== 'undefined' && __DEV__) {
@@ -255,9 +276,7 @@ async function handleResponse<T>(response: Response, endpoint: string): Promise<
       `Error del servidor: ${response.status}`;
     const err = new Error(errorMessage) as ApiError;
     err.response = { status: response.status, data: errorData };
-    if (typeof console !== 'undefined') {
-      console.error(`[API] ${endpoint} - Error:`, errorMessage);
-    }
+    logApiError(endpoint, errorMessage, err);
     throw err;
   }
   if (response.status === 304) {
@@ -293,7 +312,7 @@ async function parseJsonResponse<T>(response: Response, endpoint: string): Promi
       `Error del servidor: ${response.status}`;
     const err = new Error(errorMessage) as ApiError;
     err.response = { status: response.status, data: errorData };
-    console.error(`[API] ${endpoint} - Error:`, errorMessage);
+    logApiError(endpoint, errorMessage, err);
     throw err;
   }
   try {
@@ -327,7 +346,10 @@ export const api = {
         }
         return responseData;
       } catch (error) {
-        console.error(`[API] POST ${endpoint} - Error:`, (error as Error).message);
+        const apiError = error as ApiError;
+        if (!isTokenExpiredError(apiError)) {
+          console.error(`[API] POST ${endpoint} - Error:`, (error as Error).message);
+        }
         throw error;
       }
     }),
@@ -352,11 +374,13 @@ export const api = {
         }
         return data;
       } catch (error) {
-        const err = error as Error;
+        const err = error as ApiError;
         if (err?.name === 'AbortError') {
           throw err;
         }
-        console.error(`[API] GET ${endpoint} - Error:`, err.message);
+        if (!isTokenExpiredError(err)) {
+          console.error(`[API] GET ${endpoint} - Error:`, err.message);
+        }
         throw error;
       }
     }),
@@ -372,7 +396,10 @@ export const api = {
         });
         return parseJsonResponse<T>(response, endpoint);
       } catch (error) {
-        console.error(`[API] PUT ${endpoint} - Error:`, (error as Error).message);
+        const apiError = error as ApiError;
+        if (!isTokenExpiredError(apiError)) {
+          console.error(`[API] PUT ${endpoint} - Error:`, (error as Error).message);
+        }
         throw error;
       }
     }),
@@ -387,7 +414,10 @@ export const api = {
         });
         return parseJsonResponse<T>(response, endpoint);
       } catch (error) {
-        console.error(`[API] DELETE ${endpoint} - Error:`, (error as Error).message);
+        const apiError = error as ApiError;
+        if (!isTokenExpiredError(apiError)) {
+          console.error(`[API] DELETE ${endpoint} - Error:`, (error as Error).message);
+        }
         throw error;
       }
     }),
@@ -403,7 +433,10 @@ export const api = {
         });
         return parseJsonResponse<T>(response, endpoint);
       } catch (error) {
-        console.error(`[API] PATCH ${endpoint} - Error:`, (error as Error).message);
+        const apiError = error as ApiError;
+        if (!isTokenExpiredError(apiError)) {
+          console.error(`[API] PATCH ${endpoint} - Error:`, (error as Error).message);
+        }
         throw error;
       }
     }),

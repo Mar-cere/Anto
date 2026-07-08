@@ -18,8 +18,28 @@ import {
   clearAuthSession,
   registerOnSessionInvalidated,
 } from '../utils/authTokenRefresh';
+import { isAuthError, isNetworkError } from '../utils/apiErrorHandler';
 
 const STORAGE_KEYS = AUTH_STORAGE_KEYS;
+
+async function restoreUserFromCache() {
+  const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
+  return userData ? JSON.parse(userData) : null;
+}
+
+async function handleSessionLoadError(error, { logLabel }) {
+  if (isNetworkError(error)) {
+    console.warn(`[AuthContext] ${logLabel}: sin conexión; se usa sesión local`);
+    return restoreUserFromCache();
+  }
+  if (isAuthError(error)) {
+    console.warn(`[AuthContext] ${logLabel}: sesión inválida`);
+    await clearAuthSession();
+    return null;
+  }
+  console.warn(`[AuthContext] ${logLabel}:`, error);
+  return restoreUserFromCache();
+}
 
 const AuthContext = createContext(null);
 
@@ -46,9 +66,10 @@ export const AuthProvider = ({ children }) => {
       const userData = await AsyncStorage.getItem(STORAGE_KEYS.USER_DATA);
       setUser(userData ? JSON.parse(userData) : null);
     } catch (e) {
-      console.warn('[AuthContext] Error restaurando sesión:', e);
-      await clearAuthSession();
-      setUser(null);
+      const cachedUser = await handleSessionLoadError(e, {
+        logLabel: 'Error restaurando sesión',
+      });
+      setUser(cachedUser);
     }
   }, []);
 
@@ -76,9 +97,10 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (e) {
         if (!cancelled) {
-          console.warn('[AuthContext] Error cargando sesión al iniciar:', e);
-          await clearAuthSession();
-          setUser(null);
+          const cachedUser = await handleSessionLoadError(e, {
+            logLabel: 'Error cargando sesión al iniciar',
+          });
+          setUser(cachedUser);
         }
       } finally {
         if (!cancelled) setLoading(false);

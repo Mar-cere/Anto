@@ -5,6 +5,9 @@ import { HTTP_STATUS } from './apiErrorHandler';
 
 const REFRESH_ENDPOINT = '/api/auth/refresh';
 
+/** Renovar el access token antes de que caduque (JWT backend: 7d). */
+export const ACCESS_TOKEN_REFRESH_BUFFER_MS = 60 * 60 * 1000;
+
 const getApiUrl = () => {
   if (process.env.EXPO_PUBLIC_API_URL) {
     return process.env.EXPO_PUBLIC_API_URL;
@@ -46,6 +49,64 @@ const TOKEN_EXPIRED_MARKERS = [
 ];
 
 const TOKEN_MISSING_MARKERS = ['token no proporcionado', 'not authenticated'];
+
+function decodeBase64Url(value) {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+  return atob(padded);
+}
+
+/**
+ * Extrae `exp` (ms) del JWT sin verificar firma (solo para decidir refresh proactivo).
+ * @param {string | null | undefined} token
+ * @returns {number | null}
+ */
+export function getAccessTokenExpiryMs(token) {
+  if (!token || typeof token !== 'string') {
+    return null;
+  }
+  const parts = token.split('.');
+  if (parts.length !== 3) {
+    return null;
+  }
+  try {
+    const payload = JSON.parse(decodeBase64Url(parts[1]));
+    return typeof payload.exp === 'number' ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * @param {string | null | undefined} token
+ * @param {number} [bufferMs]
+ */
+export function isAccessTokenStale(token, bufferMs = ACCESS_TOKEN_REFRESH_BUFFER_MS) {
+  if (!token) {
+    return true;
+  }
+  const expiresAtMs = getAccessTokenExpiryMs(token);
+  if (expiresAtMs == null) {
+    return true;
+  }
+  return expiresAtMs - Date.now() <= bufferMs;
+}
+
+/**
+ * Garantiza un access token vigente antes de llamadas autenticadas.
+ * @returns {Promise<boolean>} false si no hay refresh token o el refresh falló
+ */
+export async function ensureValidAccessToken(bufferMs = ACCESS_TOKEN_REFRESH_BUFFER_MS) {
+  const token = await AsyncStorage.getItem(AUTH_STORAGE_KEYS.USER_TOKEN);
+  if (!isAccessTokenStale(token, bufferMs)) {
+    return true;
+  }
+  const refreshToken = await AsyncStorage.getItem(AUTH_STORAGE_KEYS.REFRESH_TOKEN);
+  if (!refreshToken) {
+    return false;
+  }
+  return refreshAccessToken();
+}
 
 export function isTokenExpiredError(error) {
   const message = String(error?.message || '').toLowerCase();
