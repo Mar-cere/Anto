@@ -1452,6 +1452,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           willHardStop,
           protocolWasActive,
           previousAssistantWasHardStop,
+          protocolExitingThisTurn: Boolean(crisisTurnClientExtras?.crisisProtocolExit),
           messageContent: content.trim(),
           language: appLanguageForChat,
           preferences: combinedProfile?.preferences,

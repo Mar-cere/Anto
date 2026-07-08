@@ -437,6 +437,7 @@ export const setupSocketIO = (server) => {
           willHardStop,
           protocolWasActive,
           previousAssistantWasHardStop,
+          protocolExitingThisTurn: Boolean(crisisTurnClientExtras?.crisisProtocolExit),
           messageContent: messageText,
           language: socketLanguage,
           preferences: socketPreferences,

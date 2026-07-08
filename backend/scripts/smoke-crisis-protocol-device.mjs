@@ -19,6 +19,10 @@ import {
   normalizeCrisisProtocolState,
 } from '../services/crisisProtocolService.js';
 import {
+  resolveCrisisStructuredAssistantContent,
+  wasLastAssistantTurnCrisisHardStop,
+} from '../services/crisisStructuredTurnService.js';
+import {
   validateContactAlertOfferConfirmation,
   isValidConversationIdForOffer,
 } from '../services/crisisContactAlertOfferService.js';
@@ -95,6 +99,49 @@ ok(
   exitTurn.crisisProtocolExit != null && exitTurn.crisisProtocolState?.active === false,
 );
 
+// #205: seguimiento estructurado sin LLM tras hard-stop + blindaje de salida.
+ok(
+  'follow-up estructurado se dispara tras hard-stop (protocolo activo)',
+  resolveCrisisStructuredAssistantContent({
+    willHardStop: false,
+    protocolWasActive: true,
+    messageContent: 'Si estoy a salvo pero me siento terrible',
+    language: 'es',
+  })?.kind === 'protocol_follow_up',
+);
+ok(
+  'follow-up se recupera aunque el estado esté corrupto (turno previo hard-stop)',
+  resolveCrisisStructuredAssistantContent({
+    willHardStop: false,
+    protocolWasActive: false,
+    previousAssistantWasHardStop: true,
+    messageContent: 'me siento fatal',
+    language: 'es',
+  })?.kind === 'protocol_follow_up',
+);
+ok(
+  'follow-up cede al LLM cuando el protocolo cierra este turno',
+  resolveCrisisStructuredAssistantContent({
+    willHardStop: false,
+    protocolWasActive: true,
+    protocolExitingThisTurn: true,
+    messageContent: 'ya estoy bien, gracias',
+    language: 'es',
+  }) === null,
+);
+ok(
+  'detecta hard-stop previo desde metadata.crisis',
+  wasLastAssistantTurnCrisisHardStop([
+    { role: 'assistant', metadata: { crisis: { hardStop: true } } },
+  ]) === true,
+);
+ok(
+  'socket.js selecciona metadata.crisis para detectar hard-stop previo',
+  fs
+    .readFileSync(path.join(root, 'backend/config/socket.js'), 'utf8')
+    .includes('metadata.crisis'),
+);
+
 ok('offerId inválido rechazado', isValidConversationIdForOffer('not-a-mongo-id') === false);
 ok(
   'validación oferta sin conversación',
@@ -128,6 +175,12 @@ const chatRoutes = fs.readFileSync(path.join(root, 'backend/routes/chatRoutes.js
 ok(
   'chat integra crisisProtocolState',
   chatRoutes.includes('crisisProtocolState') && chatRoutes.includes('crisisTurnClientExtras'),
+);
+ok(
+  'socket.js y chatRoutes.js pasan protocolExitingThisTurn',
+  fs
+    .readFileSync(path.join(root, 'backend/config/socket.js'), 'utf8')
+    .includes('protocolExitingThisTurn') && chatRoutes.includes('protocolExitingThisTurn'),
 );
 ok(
   'chat integra softCrisisCheckIn (#19)',
@@ -210,6 +263,7 @@ const unitTests = [
   'backend/tests/unit/services/crisisProtocolService.test.js',
   'backend/tests/unit/services/crisisContactAlertOfferService.test.js',
   'backend/tests/unit/services/crisisHardStopService.test.js',
+  'backend/tests/unit/services/crisisStructuredTurnService.test.js',
   'backend/tests/unit/services/softCrisisCheckInService.test.js',
 ];
 for (const rel of unitTests) {

@@ -73,8 +73,12 @@ export function shouldUseCrisisProtocolFollowUpFastPath({
   protocolWasActive,
   willHardStop,
   previousAssistantWasHardStop = false,
+  protocolExitingThisTurn = false,
 } = {}) {
   if (willHardStop === true) return false;
+  // Si el protocolo se cierra en este turno (usuario estabilizado o «ya estoy bien»),
+  // no imponemos un seguimiento enlatado: dejamos que el cierre lo maneje el LLM de forma cálida.
+  if (protocolExitingThisTurn === true) return false;
   return protocolWasActive === true || previousAssistantWasHardStop === true;
 }
 
@@ -144,6 +148,7 @@ export function resolveCrisisStructuredAssistantContent({
   willHardStop,
   protocolWasActive,
   previousAssistantWasHardStop = false,
+  protocolExitingThisTurn = false,
   messageContent,
   language,
   preferences,
@@ -167,6 +172,7 @@ export function resolveCrisisStructuredAssistantContent({
       protocolWasActive,
       willHardStop,
       previousAssistantWasHardStop,
+      protocolExitingThisTurn,
     })
   ) {
     return {

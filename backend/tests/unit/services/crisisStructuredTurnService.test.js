@@ -46,6 +46,24 @@ describe('crisisStructuredTurnService', () => {
         }),
       ).toBe(false);
     });
+
+    it('no se dispara si el protocolo se cierra en este turno (usuario estabilizado)', () => {
+      expect(
+        shouldUseCrisisProtocolFollowUpFastPath({
+          protocolWasActive: true,
+          willHardStop: false,
+          protocolExitingThisTurn: true,
+        }),
+      ).toBe(false);
+      expect(
+        shouldUseCrisisProtocolFollowUpFastPath({
+          protocolWasActive: true,
+          willHardStop: false,
+          previousAssistantWasHardStop: true,
+          protocolExitingThisTurn: true,
+        }),
+      ).toBe(false);
+    });
   });
 
   describe('wasLastAssistantTurnCrisisHardStop', () => {
@@ -155,6 +173,17 @@ describe('crisisStructuredTurnService', () => {
       });
       expect(out?.kind).toBe('protocol_follow_up');
       expect(out?.content).toMatch(/Gracias por responder/i);
+    });
+
+    it('cede al LLM (no enlatado) cuando el usuario se estabiliza y el protocolo cierra', () => {
+      const out = resolveCrisisStructuredAssistantContent({
+        willHardStop: false,
+        protocolWasActive: true,
+        protocolExitingThisTurn: true,
+        messageContent: 'ya estoy bien, gracias',
+        language: 'es',
+      });
+      expect(out).toBeNull();
     });
   });
 });
