@@ -25,6 +25,31 @@ function readMessageMetadataCrisis(message) {
   return metadata.crisis || null;
 }
 
+function readMessageContextResponse(message) {
+  const metadata = message?.metadata;
+  if (!metadata) return null;
+  const context = metadata.context;
+  if (!context) return null;
+  return context.response ?? null;
+}
+
+function readCrisisHardStopFromContextResponse(contextResponse) {
+  if (!contextResponse) return false;
+  if (typeof contextResponse === 'string') {
+    try {
+      const parsed = JSON.parse(contextResponse);
+      return parsed?.crisisHardStop === true || parsed?.crisis?.hardStop === true;
+    } catch {
+      return false;
+    }
+  }
+  // If it is already an object
+  if (typeof contextResponse === 'object') {
+    return contextResponse.crisisHardStop === true || contextResponse.crisis?.hardStop === true;
+  }
+  return false;
+}
+
 /**
  * Detecta si el mensaje de asistente más reciente fue un hard-stop de crisis.
  * Red de seguridad: si el estado del protocolo se corrompió (p. ej. por un cierre
@@ -36,7 +61,12 @@ export function wasLastAssistantTurnCrisisHardStop(conversationHistoryNewestFirs
   const lastAssistant = conversationHistoryNewestFirst.find((m) => m?.role === 'assistant');
   if (!lastAssistant) return false;
   const crisis = readMessageMetadataCrisis(lastAssistant);
-  return crisis?.hardStop === true;
+  if (crisis?.hardStop === true) return true;
+
+  // Backward compatible: algunos mensajes antiguos guardaban el flag en
+  // `metadata.context.response` (JSON).
+  const contextResponse = readMessageContextResponse(lastAssistant);
+  return readCrisisHardStopFromContextResponse(contextResponse);
 }
 
 export function shouldUseCrisisProtocolFollowUpFastPath({

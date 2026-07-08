@@ -63,6 +63,21 @@ describe('crisisStructuredTurnService', () => {
       expect(wasLastAssistantTurnCrisisHardStop(history)).toBe(true);
     });
 
+    it('detecta hard-stop cuando el flag vive en metadata.context.response (JSON)', () => {
+      const history = [
+        {
+          role: 'assistant',
+          metadata: {
+            context: {
+              response: JSON.stringify({ crisisHardStop: true }),
+            },
+          },
+        },
+        { role: 'user', content: 'me quiero morir' },
+      ];
+      expect(wasLastAssistantTurnCrisisHardStop(history)).toBe(true);
+    });
+
     it('devuelve false si el último asistente no fue hard-stop', () => {
       const history = [
         { role: 'assistant', metadata: { crisis: { hardStop: false } } },

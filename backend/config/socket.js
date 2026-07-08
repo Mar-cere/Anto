@@ -228,7 +228,9 @@ export const setupSocketIO = (server) => {
           Message.find({
             conversationId: conversation._id
           })
-            .select('content role metadata.context.emotional createdAt')
+            .select(
+              'content role metadata.crisis metadata.context.emotional metadata.context.response createdAt'
+            )
             .sort({ createdAt: -1 })
             .limit(HISTORIAL_LIMITE)
             .lean(),

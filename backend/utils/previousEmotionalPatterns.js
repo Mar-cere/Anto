@@ -6,7 +6,9 @@
 const EMOTIONAL_CONTEXT_SELECT = [
   'content',
   'role',
+  'metadata.crisis',
   'metadata.context.emotional',
+  'metadata.context.response',
   'metadata.context.contextual',
   'createdAt',
 ].join(' ');
