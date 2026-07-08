@@ -5,6 +5,7 @@ import User from '../models/User.js';
 import SessionCommitment from '../models/SessionCommitment.js';
 import pushNotificationService from './pushNotificationService.js';
 import notificationScheduler from './notificationScheduler.js';
+import metricsService from './metricsService.js';
 
 const COOLDOWN_HOURS = 7 * 24;
 
@@ -66,8 +67,12 @@ export async function processWeeklyCommitmentNudges() {
         notificationType,
         { language: lang },
       );
-      if (sent) results.sent += 1;
-      else results.skipped += 1;
+      if (sent) {
+        results.sent += 1;
+        await metricsService
+          .recordMetric('commitment_follow_up_shown', { surface: 'push' }, String(user._id))
+          .catch(() => {});
+      } else results.skipped += 1;
     } catch (err) {
       console.error('[sessionCommitmentWeeklyNudge]', user._id, err?.message || err);
       results.errors += 1;

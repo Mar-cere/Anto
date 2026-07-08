@@ -26,6 +26,14 @@ jest.unstable_mockModule('../../../services/notificationScheduler.js', () => ({
   default: notificationScheduler,
 }));
 
+const metricsService = {
+  recordMetric: jest.fn().mockResolvedValue(undefined),
+};
+
+jest.unstable_mockModule('../../../services/metricsService.js', () => ({
+  default: metricsService,
+}));
+
 const User = (await import('../../../models/User.js')).default;
 const SessionCommitment = (await import('../../../models/SessionCommitment.js')).default;
 const {
@@ -67,5 +75,10 @@ describe('sessionCommitmentWeeklyNudgeService', () => {
     const result = await processWeeklyCommitmentNudges();
     expect(result.sent).toBe(1);
     expect(notificationScheduler.sendScheduledNotification).toHaveBeenCalled();
+    expect(metricsService.recordMetric).toHaveBeenCalledWith(
+      'commitment_follow_up_shown',
+      { surface: 'push' },
+      'u1',
+    );
   });
 });

@@ -9,10 +9,14 @@ import metricsService from '../services/metricsService.js';
 import { metricsApiCopy } from '../utils/metricsApiCopy.js';
 
 const commitmentMetricSchema = Joi.object({
-  event: Joi.string().valid('create_dismissed', 'bridge_dismissed').required(),
-  surface: Joi.string()
-    .valid('chat', 'task_modal', 'habit_modal', 'session_insight')
-    .required(),
+  event: Joi.string().valid('create_dismissed', 'bridge_dismissed', 'follow_up_shown').required(),
+  surface: Joi.when('event', {
+    is: 'follow_up_shown',
+    then: Joi.string().valid('dashboard').required(),
+    otherwise: Joi.string()
+      .valid('chat', 'task_modal', 'habit_modal', 'session_insight')
+      .required(),
+  }),
 });
 
 const productActionMetricSchema = Joi.object({
@@ -103,7 +107,9 @@ router.post('/commitment', authenticateToken, async (req, res) => {
     const metricName =
       value.event === 'bridge_dismissed'
         ? 'commitment_bridge_dismissed'
-        : 'commitment_create_dismissed';
+        : value.event === 'follow_up_shown'
+          ? 'commitment_follow_up_shown'
+          : 'commitment_create_dismissed';
     await metricsService.recordMetric(
       metricName,
       { surface: value.surface },

@@ -77,7 +77,16 @@ describe('dashboardFocusCard guard', () => {
     expect(src).toMatch(/visibleCommitments/);
     expect(src).toMatch(/buildCommitmentFollowUpPrompt/);
     expect(src).toMatch(/visibleCommitments\.length > 0/);
-    expect(src).toMatch(/item\.followUpDue === true/);
+    expect(src).toMatch(/isCommitmentFollowUpDue/);
+    expect(src).toMatch(/followUpDue === true/);
+  });
+
+  it('DashboardFocusCard registra telemetría follow_up_shown en dashboard', () => {
+    const src = readSrc('components/DashboardFocusCard.js');
+    expect(src).toMatch(/postCommitmentTelemetry/);
+    expect(src).toMatch(/event: 'follow_up_shown'/);
+    expect(src).toMatch(/surface: 'dashboard'/);
+    expect(src).toMatch(/isCommitmentFollowUpDue/);
   });
 
   it('filterDashboardCommitments solo expone compromisos accionables', () => {

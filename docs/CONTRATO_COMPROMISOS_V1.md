@@ -332,7 +332,7 @@ Tono: **tú**, español neutro; EN en `en.js` con misma intención.
 
 - [ ] Pantalla dedicada «Mis compromisos» (lista completa, búsqueda)
 - [ ] `PATCH /:id` con solo `label` documentado como renegociación in-place (deprecar en favor de `renegotiate`)
-- [ ] Telemetría `commitment_follow_up_shown` con `surface: dashboard` y `push`
+- [x] Telemetría `commitment_follow_up_shown` con `surface: dashboard` y `push`
 - [ ] Respuesta «En parte» puede mantener `active` (hoy siempre `completed`)
 - [ ] Máx. **2** sugerencias de texto en cierre de sesión (hoy 1 `suggestedStep`)
 - [ ] Variación de copy en follow-ups estructurados tras varios turnos en protocolo

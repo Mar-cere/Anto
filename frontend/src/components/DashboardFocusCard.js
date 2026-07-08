@@ -3,7 +3,7 @@
  * recordatorio priorizado (metadatos), línea de foco, opcional siguiente tarea y CTA al chat.
  */
 import { Ionicons } from '@expo/vector-icons';
-import React, { memo, useCallback, useMemo, useState } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Text, Pressable, View, useWindowDimensions, TextInput } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -27,6 +27,9 @@ import {
   resolveFocusNextHabitSubtitle,
 } from '../utils/focusNextHabitNavigation';
 import { filterDashboardCommitments } from '../utils/commitmentLabelUtils';
+import { postCommitmentTelemetry } from '../utils/commitmentTelemetry';
+
+const MAX_COMMITMENT_FOLLOW_UP_ATTEMPTS = 2;
 
 const COMPACT_WIDTH = 400;
 
@@ -225,6 +228,24 @@ const DashboardFocusCard = ({
     () => filterDashboardCommitments(commitments, { hasBaWeekRow: Boolean(baWeekNext) }),
     [commitments, baWeekNext],
   );
+  const reportedFollowUpRef = useRef(new Set());
+  const isCommitmentFollowUpDue = useCallback((item) => {
+    return (
+      item?.followUpAnswer === 'pending' &&
+      item?.followUpDue === true &&
+      Number(item?.followUpAttempts || 0) < MAX_COMMITMENT_FOLLOW_UP_ATTEMPTS
+    );
+  }, []);
+
+  useEffect(() => {
+    visibleCommitments.forEach((item) => {
+      if (!item?.id || !isCommitmentFollowUpDue(item)) return;
+      if (reportedFollowUpRef.current.has(item.id)) return;
+      reportedFollowUpRef.current.add(item.id);
+      void postCommitmentTelemetry({ event: 'follow_up_shown', surface: 'dashboard' });
+    });
+  }, [visibleCommitments, isCommitmentFollowUpDue]);
+
   const [renegotiateId, setRenegotiateId] = useState(null);
   const [renegotiateLabel, setRenegotiateLabel] = useState('');
 
@@ -602,17 +623,13 @@ const DashboardFocusCard = ({
               const commitmentTitle = buildCommitmentDisplayTitle(item, DASH);
               const followUpPrompt = buildCommitmentFollowUpPrompt(item, DASH);
               const linkHint = buildCommitmentLinkHint(item, DASH);
-              const maxFollowUpAttempts = 2;
-              const showFollowUp =
-                item.followUpAnswer === 'pending' &&
-                item.followUpDue === true &&
-                Number(item.followUpAttempts || 0) < maxFollowUpAttempts;
+              const showFollowUp = isCommitmentFollowUpDue(item);
               const showRenegotiate =
                 item.status === 'active' &&
                 (renegotiateId === item.id ||
                   (item.followUpAnswer === 'no' &&
                     Number(item.followUpAttempts || 0) >= 1 &&
-                    Number(item.followUpAttempts || 0) < maxFollowUpAttempts));
+                    Number(item.followUpAttempts || 0) < MAX_COMMITMENT_FOLLOW_UP_ATTEMPTS));
               return (
               <View key={item.id} style={styles.commitmentRow}>
                 <Text style={styles.commitmentLabel} numberOfLines={2}>
