@@ -769,7 +769,11 @@ export function useChatScreen() {
       }),
     );
     try {
-      await updateSessionCommitment(commitmentId, { followUpAnswer: answer });
+      if (answer === 'skipped') {
+        await updateSessionCommitment(commitmentId, { status: 'skipped' });
+      } else {
+        await updateSessionCommitment(commitmentId, { followUpAnswer: answer });
+      }
     } catch (e) {
       console.warn('[useChatScreen] commitment follow-up answer:', e?.message || e);
     }

@@ -255,6 +255,37 @@ export async function updateSessionCommitment(userId, commitmentId, patch = {}) 
   return { commitment: toClientCommitment(doc) };
 }
 
+/**
+ * Renegociación v1: archiva el compromiso anterior y crea uno nuevo con `renegotiatedFrom`.
+ */
+export async function renegotiateSessionCommitment(userId, commitmentId, { label, followUpHours } = {}) {
+  if (!mongoose.Types.ObjectId.isValid(String(commitmentId))) {
+    return { error: 'notFound' };
+  }
+  const { label: normalized, error } = normalizeLabel(label);
+  if (error) return { error };
+
+  const uid = new mongoose.Types.ObjectId(String(userId));
+  const oldId = new mongoose.Types.ObjectId(String(commitmentId));
+  const old = await SessionCommitment.findOne({ _id: oldId, userId: uid }).lean();
+  if (!old) return { error: 'notFound' };
+  if (old.status !== 'active') return { error: 'invalidStatus' };
+
+  await SessionCommitment.updateOne(
+    { _id: oldId, userId: uid },
+    { $set: { status: 'archived' } },
+  );
+
+  return createSessionCommitment(userId, {
+    label: normalized,
+    conversationId: old.conversationId ? String(old.conversationId) : undefined,
+    source: old.source || 'session_insight',
+    followUpHours,
+    sourceMeta: old.sourceMeta || undefined,
+    renegotiatedFrom: String(oldId),
+  });
+}
+
 export async function loadCommitmentLabelsForFocus(userId, limit = FOCUS_VISIBLE_LIMIT) {
   const items = await listSessionCommitments(userId, { status: 'active', limit });
   return items.map((c) => c.label).filter(Boolean);

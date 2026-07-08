@@ -17,6 +17,7 @@ import {
 } from './chatProductActionProposalService.js';
 import conversationCommitmentProposalCapService from './conversationCommitmentProposalCapService.js';
 import metricsService from './metricsService.js';
+import { isUserInPostCrisisCommitmentCooldown } from '../utils/commitmentPostCrisisGuard.js';
 
 const MAX_LABEL = 240;
 
@@ -131,6 +132,10 @@ export async function buildProposedCommitments(input) {
   } = input;
 
   if (!shouldOfferCommitmentProposals({ riskLevel, isCrisis })) {
+    return [];
+  }
+
+  if (await isUserInPostCrisisCommitmentCooldown(userId)) {
     return [];
   }
 

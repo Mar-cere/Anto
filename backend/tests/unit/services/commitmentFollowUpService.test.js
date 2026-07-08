@@ -15,6 +15,10 @@ jest.unstable_mockModule('../../../services/sessionCommitmentService.js', () => 
   updateSessionCommitment: mockUpdateSessionCommitment,
 }));
 
+jest.unstable_mockModule('../../../utils/commitmentPostCrisisGuard.js', () => ({
+  isUserInPostCrisisCommitmentCooldown: jest.fn().mockResolvedValue(false),
+}));
+
 const {
   classifyFollowUpAnswerFromText,
   buildCommitmentFollowUpPromptSnippet,

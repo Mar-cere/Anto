@@ -20,6 +20,7 @@ import {
   buildCommitmentFollowUpPlan,
   detectCommitmentFollowUpAnswer,
   markCommitmentFollowUpAsked,
+  shouldShowCommitmentFollowUpChips,
 } from './commitmentFollowUpService.js';
 import {
   isChatObservationalContextBlocked,
@@ -196,22 +197,12 @@ export async function planChatTurnEnhancements({
     // best-effort
   }
 
-  // Plan de follow-up de compromiso (#202): solo inicio de hilo, fuera de crisis.
+  // Plan de follow-up de compromiso (#202): v1 unificado — prioriza snippet §7.2;
+  // solo usa el plan legacy si no hay compromiso pendiente en el camino v1.
   let commitmentFollowUpPlan = null;
   let sessionCommitmentPromptSnippet = null;
   let commitmentFollowUpCommitmentId = null;
   if (!blockCrisisExtras) {
-    try {
-      commitmentFollowUpPlan = await buildCommitmentFollowUpPlan({
-        userId,
-        conversationHistory,
-        riskLevel,
-        language: lang,
-        forceFollowUp: resumeCommitmentFollowUp === true,
-      });
-    } catch {
-      commitmentFollowUpPlan = null;
-    }
     try {
       const commitmentCtx = await buildSessionCommitmentPromptSnippet({
         userId,
@@ -220,9 +211,32 @@ export async function planChatTurnEnhancements({
         riskLevel,
         isCrisis,
       });
-      sessionCommitmentPromptSnippet = commitmentCtx.snippet;
-      commitmentFollowUpCommitmentId = commitmentCtx.commitmentId;
+      if (commitmentCtx?.commitmentId && commitmentCtx?.snippet) {
+        sessionCommitmentPromptSnippet = commitmentCtx.snippet;
+        commitmentFollowUpCommitmentId = commitmentCtx.commitmentId;
+        if (
+          shouldShowCommitmentFollowUpChips({
+            conversationHistory,
+            forceFollowUp: resumeCommitmentFollowUp === true,
+          })
+        ) {
+          commitmentFollowUpPlan = {
+            commitmentId: commitmentCtx.commitmentId,
+            label: commitmentCtx.label || '',
+            promptSnippet: null,
+          };
+        }
+      } else {
+        commitmentFollowUpPlan = await buildCommitmentFollowUpPlan({
+          userId,
+          conversationHistory,
+          riskLevel,
+          language: lang,
+          forceFollowUp: resumeCommitmentFollowUp === true,
+        });
+      }
     } catch {
+      commitmentFollowUpPlan = null;
       sessionCommitmentPromptSnippet = null;
       commitmentFollowUpCommitmentId = null;
     }

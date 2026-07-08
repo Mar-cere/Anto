@@ -3,6 +3,7 @@
  */
 import { pickPendingCommitmentForChatFollowUp } from './sessionCommitmentService.js';
 import { shouldOfferCommitmentProposals } from './chatCommitmentProposalService.js';
+import { isUserInPostCrisisCommitmentCooldown } from '../utils/commitmentPostCrisisGuard.js';
 
 const SNIPPETS = {
   es: (label) =>
@@ -31,17 +32,20 @@ const SNIPPETS = {
  */
 export async function buildSessionCommitmentPromptSnippet(opts = {}) {
   const { userId, conversationId, language = 'es', riskLevel, isCrisis } = opts;
-  if (!userId) return { snippet: null, commitmentId: null };
+  if (!userId) return { snippet: null, commitmentId: null, label: null };
   if (!shouldOfferCommitmentProposals({ riskLevel, isCrisis })) {
-    return { snippet: null, commitmentId: null };
+    return { snippet: null, commitmentId: null, label: null };
+  }
+  if (await isUserInPostCrisisCommitmentCooldown(userId)) {
+    return { snippet: null, commitmentId: null, label: null };
   }
 
   const pending = await pickPendingCommitmentForChatFollowUp(userId, { conversationId });
-  if (!pending?.label) return { snippet: null, commitmentId: null };
+  if (!pending?.label) return { snippet: null, commitmentId: null, label: null };
 
   const lang = String(language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es';
   const label = String(pending.label).slice(0, 120);
-  return { snippet: SNIPPETS[lang](label), commitmentId: pending.id };
+  return { snippet: SNIPPETS[lang](label), commitmentId: pending.id, label };
 }
 
 export default { buildSessionCommitmentPromptSnippet };

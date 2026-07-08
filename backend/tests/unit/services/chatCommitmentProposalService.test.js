@@ -4,6 +4,11 @@
 import { jest } from '@jest/globals';
 
 const mockCountDocuments = jest.fn();
+const mockIsPostCrisisCooldown = jest.fn().mockResolvedValue(false);
+
+await jest.unstable_mockModule('../../../utils/commitmentPostCrisisGuard.js', () => ({
+  isUserInPostCrisisCommitmentCooldown: (...args) => mockIsPostCrisisCooldown(...args),
+}));
 
 await jest.unstable_mockModule('../../../models/SessionCommitment.js', () => ({
   __esModule: true,

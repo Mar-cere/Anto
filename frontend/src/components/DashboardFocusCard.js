@@ -9,7 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { createDashboardFocusStyles } from '../styles/focusCardTheme';
-import { updateSessionCommitment } from '../services/sessionCommitmentsService';
+import { updateSessionCommitment, renegotiateSessionCommitment } from '../services/sessionCommitmentsService';
 import { getLastSessionDisplayText } from '../utils/dashboardHomeUtils';
 import {
   buildCommitmentDisplayTitle,
@@ -269,7 +269,7 @@ const DashboardFocusCard = ({
       const label = String(renegotiateLabel || '').trim();
       if (!id || label.length < 2) return;
       try {
-        await updateSessionCommitment(id, { label });
+        await renegotiateSessionCommitment(id, { label });
         setRenegotiateId(null);
         setRenegotiateLabel('');
         onCommitmentsChanged?.();

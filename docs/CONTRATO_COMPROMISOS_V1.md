@@ -308,27 +308,37 @@ Tono: **tú**, español neutro; EN en `en.js` con misma intención.
 
 ## 14. Checklist de implementación
 
-### Hecho (base jul 2026)
+### v1.0 — cerrado (validado jul 2026)
 
 - [x] Modelo `SessionCommitment` + CRUD `/api/session-commitments`
 - [x] CTA en `SessionInsightScreen` (`source: session_insight`)
-- [x] Lista en `GET /api/summary/focus` + chips Sí / En parte / Aún no en dashboard
-- [x] Guardrails clínicos en `label`
-- [x] Tests unitarios `sessionCommitmentService`
+- [x] Lista en `GET /api/summary/focus` + chips Sí / En parte / Aún no / **Omitir** en dashboard
+- [x] Guardrails clínicos en `label` (+ rechazo de labels genéricos del catálogo)
+- [x] Campos `followUpAttempts`, `lastFollowUpAt`, `source: chat_proposed`, `renegotiatedFrom`
+- [x] `proposedCommitments` en chat (≤1/turno) + tarjeta de confirmación
+- [x] Puente post task/habit → compromiso opcional (`source: chat_action`)
+- [x] Puente compromiso → tarea/hábito en insight
+- [x] Inyección prompt: compromisos pendientes en apertura chat (§7.2), **unificada** con chips (sin doble snippet)
+- [x] Exclusión crisis activa + **post-crisis 24 h** (`crisis_hard_stop` / `crisis_protocol_exit`) en propuesta y follow-up
+- [x] Chat invitado sin compromisos (rutas autenticadas)
+- [x] Notificación semanal opt-in (máx. 1/7 días)
+- [x] Telemetría §12 (mayoría; `commitment_follow_up_shown` en chat)
+- [x] i18n claves §13
+- [x] Renegociación: `PATCH` con `renegotiate: true` archiva anterior y crea nuevo con `renegotiatedFrom`
+- [x] Chip **Omitir** en follow-up de chat
+- [x] Tests: crisis, cap 30 min, follow-up, smoke `smoke-commitments-v1.mjs`, paridad v1 follow-up
 
-### Pendiente v1 (contrato)
+### v1.1 — siguiente iteración
 
-- [ ] Chip **Omitir** + flujo renegociación (dashboard + modal corto)
-- [ ] Campos `followUpAttempts`, `lastFollowUpAt`, `source: chat_proposed`
-- [ ] `proposedCommitments` en chat + tarjeta de confirmación
-- [ ] Puente post task/habit → compromiso opcional
-- [ ] Puente compromiso → tarea/hábito en insight
-- [ ] Inyección prompt: compromisos pendientes en apertura chat (§7.2)
-- [ ] Exclusión crisis / invitado en propuesta y follow-up
-- [ ] Notificación semanal opt-in
-- [ ] Telemetría §12
-- [ ] i18n claves §13
-- [ ] Tests: guard de no follow-up en crisis; paridad dashboard ↔ chat; tope 3 visibles
+- [ ] Pantalla dedicada «Mis compromisos» (lista completa, búsqueda)
+- [ ] `PATCH /:id` con solo `label` documentado como renegociación in-place (deprecar en favor de `renegotiate`)
+- [ ] Telemetría `commitment_follow_up_shown` con `surface: dashboard` y `push`
+- [ ] Respuesta «En parte» puede mantener `active` (hoy siempre `completed`)
+- [ ] Máx. **2** sugerencias de texto en cierre de sesión (hoy 1 `suggestedStep`)
+- [ ] Variación de copy en follow-ups estructurados tras varios turnos en protocolo
+- [ ] Tests de integración HTTP `/api/session-commitments`
+- [ ] Clave i18n dedicada `NOTIF_COMMITMENT_WEEKLY` (hoy pool push)
+- [ ] Botón separado «Editar y guardar» en tarjeta chat (`CHAT_COMMITMENT_EDIT_SAVE`)
 
 ---
 
@@ -345,4 +355,4 @@ Tono: **tú**, español neutro; EN en `en.js` con misma intención.
 
 ---
 
-*Última actualización: Julio 2026 (v1.0). Revisar tras implementación en staging y smoke en dispositivo.*
+*Última actualización: Julio 2026 (v1.0 cerrado). Revisar `backend/scripts/smoke-commitments-v1.mjs` antes de abrir v1.1.*

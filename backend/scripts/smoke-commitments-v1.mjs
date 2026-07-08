@@ -210,6 +210,41 @@ const finalizeV11 = fs.readFileSync(
   path.join(root, 'backend/services/chatTurnEnhancementsService.js'),
   'utf8',
 );
+if (
+  finalizeV11.includes('prioriza snippet §7.2') ||
+  finalizeV11.includes('buildSessionCommitmentPromptSnippet')
+) {
+  pass('follow-up chat unificado (v1 antes que legacy)');
+} else {
+  fail('follow-up chat unificado (v1 antes que legacy)');
+}
+
+if (fs.existsSync(path.join(root, 'backend/utils/commitmentPostCrisisGuard.js'))) {
+  pass('guard post-crisis 24h compromisos');
+} else {
+  fail('guard post-crisis 24h compromisos');
+}
+
+const sessionSvc = fs.readFileSync(
+  path.join(root, 'backend/services/sessionCommitmentService.js'),
+  'utf8',
+);
+if (sessionSvc.includes('renegotiateSessionCommitment')) {
+  pass('renegociación archiva y crea con renegotiatedFrom');
+} else {
+  fail('renegociación archiva y crea con renegotiatedFrom');
+}
+
+const chatItemSrc = fs.readFileSync(
+  path.join(root, 'frontend/src/components/chat/ChatMessageItem.js'),
+  'utf8',
+);
+if (chatItemSrc.includes("'skipped'") && chatItemSrc.includes('Omitir')) {
+  pass('chip omitir en follow-up de chat');
+} else {
+  fail('chip omitir en follow-up de chat');
+}
+
 if (finalizeV11.includes('persistProposedCommitmentsOnMessage')) {
   pass('persistencia metadata proposedCommitments');
 } else {

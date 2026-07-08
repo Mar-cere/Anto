@@ -12,6 +12,7 @@ import metricsService from '../services/metricsService.js';
 import {
   createSessionCommitment,
   listSessionCommitments,
+  renegotiateSessionCommitment,
   sanitizeCommitmentPatch,
   updateSessionCommitment,
 } from '../services/sessionCommitmentService.js';
@@ -113,6 +114,22 @@ router.post('/', writeLimiter, async (req, res) => {
 
 router.patch('/:id', validateObjectId, writeLimiter, async (req, res) => {
   try {
+    if (req.body?.renegotiate === true && req.body?.label != null) {
+      const result = await renegotiateSessionCommitment(req.user._id, req.params.id, {
+        label: req.body.label,
+        followUpHours: req.body.followUpHours,
+      });
+      if (result.error) {
+        const msg = req.apiCopy[result.error] || req.apiCopy.updateError;
+        const status = result.error === 'notFound' ? 404 : 400;
+        return res.status(status).json({ success: false, message: msg, code: result.error });
+      }
+      metricsService
+        .recordMetric('commitment_renegotiated', {}, String(req.user._id))
+        .catch(() => {});
+      return res.json({ success: true, commitment: result.commitment });
+    }
+
     const patch = sanitizeCommitmentPatch(req.body);
     const result = await updateSessionCommitment(req.user._id, req.params.id, patch);
     if (result.error) {

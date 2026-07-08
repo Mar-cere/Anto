@@ -43,14 +43,21 @@ await jest.unstable_mockModule('../../../services/personalPatternRagService.js',
   buildPersonalPatternRagSnippet: jest.fn().mockResolvedValue(null),
 }));
 
+const mockBuildCommitmentFollowUpPlan = jest.fn().mockResolvedValue(null);
+const mockBuildSessionCommitmentPromptSnippet = jest
+  .fn()
+  .mockResolvedValue({ snippet: null, commitmentId: null, label: null });
+const mockShouldShowCommitmentFollowUpChips = jest.fn().mockReturnValue(false);
+
 await jest.unstable_mockModule('../../../services/sessionCommitmentPromptSnippet.js', () => ({
-  buildSessionCommitmentPromptSnippet: jest.fn().mockResolvedValue({ snippet: null, commitmentId: null }),
+  buildSessionCommitmentPromptSnippet: mockBuildSessionCommitmentPromptSnippet,
 }));
 
 await jest.unstable_mockModule('../../../services/commitmentFollowUpService.js', () => ({
-  buildCommitmentFollowUpPlan: jest.fn().mockResolvedValue(null),
+  buildCommitmentFollowUpPlan: mockBuildCommitmentFollowUpPlan,
   detectCommitmentFollowUpAnswer: jest.fn().mockResolvedValue(undefined),
   markCommitmentFollowUpAsked: jest.fn().mockResolvedValue(undefined),
+  shouldShowCommitmentFollowUpChips: mockShouldShowCommitmentFollowUpChips,
 }));
 
 const mockMarkCommitmentFollowUpShown = jest.fn().mockResolvedValue(undefined);
@@ -91,6 +98,33 @@ describe('chatTurnEnhancementsService', () => {
     mockToTccLiteClientPayload.mockReturnValue({ active: true, step: 'capture_thought' });
     mockSaveTccLiteState.mockResolvedValue(undefined);
     mockRecordShown.mockResolvedValue(undefined);
+  });
+
+  it('planChatTurnEnhancements prioriza follow-up v1 y no llama al plan legacy', async () => {
+    mockBuildSessionCommitmentPromptSnippet.mockResolvedValue({
+      snippet: '## Compromisos pendientes',
+      commitmentId: '507f1f77bcf86cd799439088',
+      label: 'Caminar diez minutos',
+    });
+    mockShouldShowCommitmentFollowUpChips.mockReturnValue(true);
+
+    const result = await planChatTurnEnhancements({
+      userId: '507f1f77bcf86cd799439011',
+      conversationId: '507f1f77bcf86cd799439012',
+      userContent: 'hola',
+      conversationHistory: [{ role: 'user', content: 'hola' }, { role: 'user', content: 'otro' }],
+      emotionalAnalysis: { mainEmotion: 'calma' },
+      contextualAnalysis: {},
+      riskLevel: 'LOW',
+      sessionIntention: null,
+      language: 'es',
+    });
+
+    expect(mockBuildSessionCommitmentPromptSnippet).toHaveBeenCalled();
+    expect(mockBuildCommitmentFollowUpPlan).not.toHaveBeenCalled();
+    expect(result.sessionCommitmentPromptSnippet).toContain('Compromisos pendientes');
+    expect(result.commitmentFollowUpPlan?.commitmentId).toBe('507f1f77bcf86cd799439088');
+    expect(result.commitmentFollowUpPlan?.promptSnippet).toBeNull();
   });
 
   it('planChatTurnEnhancements agrega sugerencias, TCC y protocolos', async () => {

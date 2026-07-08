@@ -13,6 +13,7 @@ import mongoose from 'mongoose';
 import SessionCommitment from '../models/SessionCommitment.js';
 import { updateSessionCommitment } from './sessionCommitmentService.js';
 import { isChatObservationalContextBlocked } from '../utils/chatObservationalContext.js';
+import { isUserInPostCrisisCommitmentCooldown } from '../utils/commitmentPostCrisisGuard.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 
 /** Solo se pregunta al inicio del hilo (primer turno real del usuario). */
@@ -124,6 +125,7 @@ export async function buildCommitmentFollowUpPlan({
   if (!userId) return null;
   // El gating de crisis nunca se omite, ni siquiera al retomar desde el dashboard.
   if (isChatObservationalContextBlocked(riskLevel)) return null;
+  if (await isUserInPostCrisisCommitmentCooldown(userId)) return null;
   // Por defecto solo al inicio del hilo; forceFollowUp lo permite al "retomar
   // conversación" desde el dashboard aunque el hilo ya tenga historial (#202).
   if (!forceFollowUp && countUserTurns(conversationHistory) > MAX_USER_TURNS_FOR_ASK) {

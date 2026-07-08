@@ -20,3 +20,7 @@ export async function updateSessionCommitment(id, patch) {
   const data = res?.data ?? res;
   return data?.commitment ?? null;
 }
+
+export async function renegotiateSessionCommitment(id, { label, followUpHours } = {}) {
+  return updateSessionCommitment(id, { renegotiate: true, label, followUpHours });
+}
