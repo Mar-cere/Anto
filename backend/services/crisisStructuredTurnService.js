@@ -15,8 +15,37 @@ import { normalizeCrisisProtocolState } from './crisisProtocolService.js';
 const MIXED_DISTRESS_AFTER_BUT =
   /\b(terrible|horrible|fatal|peor|no aguanto|muy mal|ansiedad|triste|deprim|asustad|miedo|llor|dolor|awful|so bad|can't cope|cannot cope|anxious|depressed|scared|crying)\b/i;
 
-export function shouldUseCrisisProtocolFollowUpFastPath({ protocolWasActive, willHardStop } = {}) {
-  return protocolWasActive === true && willHardStop !== true;
+/** Lee metadata (objeto plano o Map de Mongoose) de forma segura. */
+function readMessageMetadataCrisis(message) {
+  const metadata = message?.metadata;
+  if (!metadata) return null;
+  if (typeof metadata.get === 'function') {
+    return metadata.get('crisis') || null;
+  }
+  return metadata.crisis || null;
+}
+
+/**
+ * Detecta si el mensaje de asistente más reciente fue un hard-stop de crisis.
+ * Red de seguridad: si el estado del protocolo se corrompió (p. ej. por un cierre
+ * erróneo previo), el seguimiento estructurado igual debe dispararse tras un hard-stop.
+ * @param {Array<{ role?: string }>|null} conversationHistoryNewestFirst
+ */
+export function wasLastAssistantTurnCrisisHardStop(conversationHistoryNewestFirst) {
+  if (!Array.isArray(conversationHistoryNewestFirst)) return false;
+  const lastAssistant = conversationHistoryNewestFirst.find((m) => m?.role === 'assistant');
+  if (!lastAssistant) return false;
+  const crisis = readMessageMetadataCrisis(lastAssistant);
+  return crisis?.hardStop === true;
+}
+
+export function shouldUseCrisisProtocolFollowUpFastPath({
+  protocolWasActive,
+  willHardStop,
+  previousAssistantWasHardStop = false,
+} = {}) {
+  if (willHardStop === true) return false;
+  return protocolWasActive === true || previousAssistantWasHardStop === true;
 }
 
 /**
@@ -84,6 +113,7 @@ export function buildCrisisProtocolFollowUpContent({ messageContent, language = 
 export function resolveCrisisStructuredAssistantContent({
   willHardStop,
   protocolWasActive,
+  previousAssistantWasHardStop = false,
   messageContent,
   language,
   preferences,
@@ -102,7 +132,13 @@ export function resolveCrisisStructuredAssistantContent({
       hardStop: true,
     };
   }
-  if (shouldUseCrisisProtocolFollowUpFastPath({ protocolWasActive, willHardStop })) {
+  if (
+    shouldUseCrisisProtocolFollowUpFastPath({
+      protocolWasActive,
+      willHardStop,
+      previousAssistantWasHardStop,
+    })
+  ) {
     return {
       kind: 'protocol_follow_up',
       content: buildCrisisProtocolFollowUpContent({ messageContent, language }),
@@ -167,6 +203,7 @@ export function readProtocolWasActive(conversation) {
 
 export default {
   shouldUseCrisisProtocolFollowUpFastPath,
+  wasLastAssistantTurnCrisisHardStop,
   buildCrisisProtocolFollowUpContent,
   resolveCrisisStructuredAssistantContent,
   persistCrisisStructuredAssistantTurn,

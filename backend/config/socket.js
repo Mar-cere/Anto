@@ -55,6 +55,7 @@ import {
   persistCrisisStructuredAssistantTurn,
   readProtocolWasActive,
   resolveCrisisStructuredAssistantContent,
+  wasLastAssistantTurnCrisisHardStop,
 } from '../services/crisisStructuredTurnService.js';
 import { buildSocketChatErrorPayload } from '../utils/socketChatErrorPayload.js';
 import {
@@ -358,6 +359,8 @@ export const setupSocketIO = (server) => {
           messageContent: messageText,
         });
         const protocolWasActive = readProtocolWasActive(conversation);
+        const previousAssistantWasHardStop =
+          wasLastAssistantTurnCrisisHardStop(conversationHistory);
         let crisisTurnClientExtras = await applyCrisisProtocolForTurn({
           conversation,
           userId,
@@ -431,6 +434,7 @@ export const setupSocketIO = (server) => {
         const structuredCrisisTurn = resolveCrisisStructuredAssistantContent({
           willHardStop,
           protocolWasActive,
+          previousAssistantWasHardStop,
           messageContent: messageText,
           language: socketLanguage,
           preferences: socketPreferences,

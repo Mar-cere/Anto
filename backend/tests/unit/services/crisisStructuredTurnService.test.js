@@ -4,6 +4,7 @@ const {
   buildCrisisProtocolFollowUpContent,
   shouldUseCrisisProtocolFollowUpFastPath,
   resolveCrisisStructuredAssistantContent,
+  wasLastAssistantTurnCrisisHardStop,
 } = await import('../../../services/crisisStructuredTurnService.js');
 
 describe('crisisStructuredTurnService', () => {
@@ -27,6 +28,49 @@ describe('crisisStructuredTurnService', () => {
           willHardStop: false,
         }),
       ).toBe(false);
+    });
+
+    it('se dispara aunque el estado esté corrupto si el turno previo fue hard-stop', () => {
+      expect(
+        shouldUseCrisisProtocolFollowUpFastPath({
+          protocolWasActive: false,
+          willHardStop: false,
+          previousAssistantWasHardStop: true,
+        }),
+      ).toBe(true);
+      expect(
+        shouldUseCrisisProtocolFollowUpFastPath({
+          protocolWasActive: false,
+          willHardStop: true,
+          previousAssistantWasHardStop: true,
+        }),
+      ).toBe(false);
+    });
+  });
+
+  describe('wasLastAssistantTurnCrisisHardStop', () => {
+    it('detecta hard-stop en el asistente más reciente (objeto plano)', () => {
+      const history = [
+        { role: 'assistant', metadata: { crisis: { hardStop: true } } },
+        { role: 'user', content: 'me quiero morir' },
+      ];
+      expect(wasLastAssistantTurnCrisisHardStop(history)).toBe(true);
+    });
+
+    it('detecta hard-stop cuando metadata es un Map de Mongoose', () => {
+      const metadata = new Map([['crisis', { hardStop: true }]]);
+      const history = [{ role: 'assistant', metadata }];
+      expect(wasLastAssistantTurnCrisisHardStop(history)).toBe(true);
+    });
+
+    it('devuelve false si el último asistente no fue hard-stop', () => {
+      const history = [
+        { role: 'assistant', metadata: { crisis: { hardStop: false } } },
+        { role: 'user', content: 'hola' },
+      ];
+      expect(wasLastAssistantTurnCrisisHardStop(history)).toBe(false);
+      expect(wasLastAssistantTurnCrisisHardStop([])).toBe(false);
+      expect(wasLastAssistantTurnCrisisHardStop(null)).toBe(false);
     });
   });
 
@@ -84,6 +128,18 @@ describe('crisisStructuredTurnService', () => {
         language: 'es',
       });
       expect(out).toBeNull();
+    });
+
+    it('recupera el follow-up tras hard-stop aunque el protocolo se haya cerrado por error', () => {
+      const out = resolveCrisisStructuredAssistantContent({
+        willHardStop: false,
+        protocolWasActive: false,
+        previousAssistantWasHardStop: true,
+        messageContent: 'Si estoy a salvo pero me siento terrible',
+        language: 'es',
+      });
+      expect(out?.kind).toBe('protocol_follow_up');
+      expect(out?.content).toMatch(/Gracias por responder/i);
     });
   });
 });

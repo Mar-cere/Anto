@@ -107,6 +107,7 @@ import {
   persistCrisisStructuredAssistantTurn,
   readProtocolWasActive,
   resolveCrisisStructuredAssistantContent,
+  wasLastAssistantTurnCrisisHardStop,
 } from '../services/crisisStructuredTurnService.js';
 import { crisisResourcesForTurn } from '../services/crisisResourcesService.js';
 import { applyCrisisProtocolForTurn } from '../services/crisisTurnClientExtrasService.js';
@@ -1376,6 +1377,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           messageContent: content.trim(),
         });
         const protocolWasActive = readProtocolWasActive(conversation);
+        const previousAssistantWasHardStop =
+          wasLastAssistantTurnCrisisHardStop(conversationHistory);
 
         let crisisTurnClientExtras = await applyCrisisProtocolForTurn({
           conversation,
@@ -1448,6 +1451,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         const structuredCrisisTurn = resolveCrisisStructuredAssistantContent({
           willHardStop,
           protocolWasActive,
+          previousAssistantWasHardStop,
           messageContent: content.trim(),
           language: appLanguageForChat,
           preferences: combinedProfile?.preferences,
