@@ -96,7 +96,6 @@ const MoodCheckInCard = memo(({ onMoodSaved, displayName = '', syncedMood = null
 
   return (
     <View style={[styles.section, styles.surfaceCard]} accessibilityRole="summary">
-      <Text style={styles.eyebrow}>{DASH.MOOD_SECTION_LABEL}</Text>
       <Text style={styles.questionTitle}>{DASH.MOOD_QUESTION}</Text>
 
       {loading ? (
