@@ -86,21 +86,20 @@ class NotificationScheduler {
     this.isRunning = false;
   }
 
-  async _countUserSentToday(userId) {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const end = new Date();
-    end.setHours(23, 59, 59, 999);
+  async _countUserSentToday(userId, timeZone = 'UTC') {
+    // El "día" se calcula desde la medianoche local del usuario (según su zona horaria),
+    // no la del servidor, para que el tope diario sea coherente en cualquier país.
+    const start = this._getStartOfDayInTzUtc(new Date(), timeZone);
 
     return NotificationEngagement.countDocuments({
       userId,
       status: 'sent',
-      sentAt: { $gte: start, $lte: end }
+      sentAt: { $gte: start }
     });
   }
 
-  async _canSendMoreToday(userId) {
-    const sentToday = await this._countUserSentToday(userId);
+  async _canSendMoreToday(userId, timeZone = 'UTC') {
+    const sentToday = await this._countUserSentToday(userId, timeZone);
     return sentToday < this.DAILY_MAX_PER_USER;
   }
 
@@ -256,10 +255,11 @@ class NotificationScheduler {
       if (!mongoose.Types.ObjectId.isValid(userIdStr)) continue;
       try {
         const user = await User.findById(userIdStr)
-          .select('pushToken notificationPreferences preferences.language')
+          .select('pushToken notificationPreferences preferences.language preferences.timezone')
           .lean();
         if (!user?.pushToken || user.notificationPreferences?.enabled === false) continue;
         if (!this._taskRemindersEnabled(user)) continue;
+        const userTz = this._getUserTimezone(user);
 
         for (const task of list) {
           try {
@@ -283,6 +283,7 @@ class NotificationScheduler {
               taskId: idStr,
               dueIn: lang === 'en' ? 'tomorrow' : 'mañana',
               language: lang,
+              timezone: userTz,
             });
           } catch (taskErr) {
             console.error('[NotificationScheduler] Error aviso tarea para mañana:', taskErr);
@@ -404,7 +405,7 @@ class NotificationScheduler {
                 user._id,
                 user.pushToken,
                 T.MORNING_MOTIVATION,
-                { timeOfDay: 'morning', language: this._userLanguage(user) },
+                { timeOfDay: 'morning', language: this._userLanguage(user), timezone: tz },
               );
               if (sentOk) results.sent++;
             }
@@ -420,17 +421,18 @@ class NotificationScheduler {
                 user._id,
                 user.pushToken,
                 T.EVENING_REFLECTION,
-                { timeOfDay: 'evening', language: this._userLanguage(user) },
+                { timeOfDay: 'evening', language: this._userLanguage(user), timezone: tz },
               );
               if (sentOk) results.sent++;
             }
           }
 
           // Hasta 2 franjas fijas diarias de bienestar (antes 4 en ventana corta), además de mañana/tarde configurables
-          if (this._wellnessTypesEnabled(user) && h === 14 && m === 0) {
+          if (this._wellnessTypesEnabled(user) && h === 12 && m === 0) {
             const sentOk = await this.sendScheduledNotification(user._id, user.pushToken, T.MIDDAY_MOTIVATION, {
               timeOfDay: 'midday',
               language: this._userLanguage(user),
+              timezone: tz,
             });
             if (sentOk) results.sent++;
           }
@@ -438,6 +440,7 @@ class NotificationScheduler {
             const sentOk = await this.sendScheduledNotification(user._id, user.pushToken, T.SLEEP_ROUTINE_REMINDER, {
               timeOfDay: 'night',
               language: this._userLanguage(user),
+              timezone: tz,
             });
             if (sentOk) results.sent++;
           }
@@ -493,6 +496,9 @@ class NotificationScheduler {
         const u = await User.findById(userId).select('preferences.language').lean();
         language = resolveAppLanguage({ preferenceLanguage: u?.preferences?.language });
       }
+      // La zona horaria la proveen los llamadores (envío por preferencias, hábitos, tareas,
+      // comportamiento); si falta se usa UTC, equivalente al comportamiento previo del servidor.
+      const timeZone = options.timezone || 'UTC';
       const opts = { ...options, language };
 
       const T = pushNotificationService.NOTIFICATION_TYPES;
@@ -509,7 +515,7 @@ class NotificationScheduler {
       }
 
       if (notificationType !== T.COMMITMENT_WEEKLY_NUDGE) {
-        const canSend = await this._canSendMoreToday(userId);
+        const canSend = await this._canSendMoreToday(userId, timeZone);
         if (!canSend) {
           return false;
         }
@@ -625,7 +631,7 @@ class NotificationScheduler {
   async sendBehaviorBasedNotification(userId, behaviorData) {
     try {
       const user = await User.findById(userId).select(
-        'pushToken notificationPreferences preferences.language',
+        'pushToken notificationPreferences preferences.language preferences.timezone',
       );
       
       if (!user || !user.pushToken) {
@@ -710,7 +716,7 @@ class NotificationScheduler {
         userId,
         user.pushToken,
         notificationType,
-        options
+        { ...options, timezone: this._getUserTimezone(user) }
       );
 
       return {
@@ -965,6 +971,7 @@ class NotificationScheduler {
             habitId: String(h._id),
             habitName: String(h.title || (lang === 'en' ? 'Habit' : 'Hábito')).slice(0, 120),
             language: lang,
+            timezone: tz,
           },
         );
         if (ok) {

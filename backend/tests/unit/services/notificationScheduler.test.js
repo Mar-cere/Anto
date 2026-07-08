@@ -80,6 +80,41 @@ describe('NotificationScheduler Service', () => {
       expect(sendSpy).toHaveBeenCalledTimes(1);
       expect(createSpy).toHaveBeenCalledTimes(1);
     });
+
+    it('cuenta el tope diario desde la medianoche local del usuario (no del servidor)', async () => {
+      const tz = 'America/Santiago';
+      const countSpy = jest
+        .spyOn(NotificationEngagement, 'countDocuments')
+        .mockResolvedValue(0);
+      const startSpy = jest.spyOn(notificationScheduler, '_getStartOfDayInTzUtc');
+
+      await notificationScheduler._countUserSentToday('507f1f77bcf86cd799439011', tz);
+
+      expect(startSpy).toHaveBeenCalledWith(expect.any(Date), tz);
+      expect(countSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: '507f1f77bcf86cd799439011',
+          status: 'sent',
+          sentAt: expect.objectContaining({ $gte: expect.any(Date) }),
+        }),
+      );
+    });
+
+    it('propaga la zona horaria de las opciones al chequeo de tope diario', async () => {
+      const canSpy = jest
+        .spyOn(notificationScheduler, '_canSendMoreToday')
+        .mockResolvedValue(false);
+
+      const result = await notificationScheduler.sendScheduledNotification(
+        '507f1f77bcf86cd799439011',
+        'ExponentPushToken[test]',
+        pushNotificationService.NOTIFICATION_TYPES.DAILY_CHECKIN,
+        { language: 'es', timezone: 'America/Santiago' },
+      );
+
+      expect(result).toBe(false);
+      expect(canSpy).toHaveBeenCalledWith('507f1f77bcf86cd799439011', 'America/Santiago');
+    });
   });
 
   describe('Mensajes entre sesiones (#31)', () => {
@@ -269,7 +304,7 @@ describe('NotificationScheduler Service', () => {
         uid,
         mockUser.pushToken,
         pushNotificationService.NOTIFICATION_TYPES.MORNING_MOTIVATION,
-        { timeOfDay: 'morning', language: 'es' }
+        { timeOfDay: 'morning', language: 'es', timezone: 'UTC' }
       );
     });
   });

@@ -24,6 +24,7 @@ import ErrorBoundary from './src/components/ErrorBoundary';
 import Toast from './src/components/Toast';
 import LanguageAuthSync from './src/components/LanguageAuthSync';
 import DeviceRegionSync from './src/components/DeviceRegionSync';
+import DeviceTimezoneSync from './src/components/DeviceTimezoneSync';
 import AppConfigPreload from './src/components/AppConfigPreload';
 import DigitalHealthForegroundSync from './src/components/DigitalHealthForegroundSync';
 
@@ -70,6 +71,7 @@ export default function App() {
             <AuthProvider>
               <LanguageAuthSync />
               <DeviceRegionSync />
+              <DeviceTimezoneSync />
               <ThemePreferenceSync />
               <ToastProvider>
                 <AppContent />

@@ -83,7 +83,6 @@ export function useSettingsScreen({ navigation }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [pushNotificationsEnabled, setPushNotificationsEnabled] =
     useState(false);
-  const [timezoneSynced, setTimezoneSynced] = useState(false);
 
   const persistUserFromMeResponse = useCallback(
     async (putResult) => {
@@ -188,38 +187,8 @@ export function useSettingsScreen({ navigation }) {
     ],
   );
 
-  const guessTimezone = useCallback(() => {
-    try {
-      const tz = Intl?.DateTimeFormat?.().resolvedOptions?.().timeZone;
-      if (typeof tz === 'string' && tz.includes('/')) return tz;
-    } catch {}
-    return null;
-  }, []);
-
-  useEffect(() => {
-    if (!user || timezoneSynced) return;
-    const currentTz = user?.preferences?.timezone;
-    if (currentTz) {
-      setTimezoneSynced(true);
-      return;
-    }
-    const tz = guessTimezone();
-    if (!tz) return;
-    // Best-effort: persistir timezone para que el scheduler use hora local del usuario.
-    (async () => {
-      try {
-        const currentPreferences = user?.preferences || {};
-        const result = await api.put(ENDPOINTS.UPDATE_PROFILE, {
-          preferences: { ...currentPreferences, timezone: tz },
-        });
-        await persistUserFromMeResponse(result);
-      } catch {
-        // silencioso: no bloquear UX
-      } finally {
-        setTimezoneSynced(true);
-      }
-    })();
-  }, [guessTimezone, persistUserFromMeResponse, timezoneSynced, user]);
+  // La sincronización de zona horaria vive ahora en DeviceTimezoneSync (a nivel de app),
+  // que la actualiza al iniciar y al volver a primer plano, cubriendo también viajes.
 
   const handleLogout = useCallback(async () => {
     setShowLogoutModal(false);

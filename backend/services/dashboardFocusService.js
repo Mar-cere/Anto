@@ -141,7 +141,49 @@ async function loadLatestScales(userId) {
   return { phq9: mapRow(phq), gad7: mapRow(gad) };
 }
 
-async function loadNextHabitReminder(userId) {
+/**
+ * Hora y minuto local (en `timeZone`) de un instante. Espeja la lógica del scheduler
+ * para que la hora mostrada coincida con la del envío real de la notificación.
+ */
+function localHourMinuteInTz(date, timeZone) {
+  if (!timeZone) return { hh: date.getHours(), mm: date.getMinutes() };
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }).formatToParts(date);
+    const hh = parseInt(parts.find((p) => p.type === 'hour')?.value || '', 10);
+    const mm = parseInt(parts.find((p) => p.type === 'minute')?.value || '', 10);
+    if (Number.isFinite(hh) && Number.isFinite(mm)) return { hh, mm };
+  } catch {}
+  return { hh: date.getUTCHours(), mm: date.getUTCMinutes() };
+}
+
+/** Instante UTC correspondiente a 00:00 del día local (en `timeZone`). */
+function startOfLocalDayUtc(now, timeZone) {
+  if (!timeZone) {
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  }
+  try {
+    const dateParts = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(now);
+    const [y, m, d] = dateParts.split('-').map((x) => parseInt(x, 10));
+    const utcMidnight = new Date(Date.UTC(y, (m || 1) - 1, d || 1, 0, 0, 0, 0));
+    const { hh, mm } = localHourMinuteInTz(utcMidnight, timeZone);
+    const deltaMinutes = hh * 60 + mm;
+    return new Date(utcMidnight.getTime() - deltaMinutes * 60 * 1000);
+  } catch {
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 0, 0, 0, 0));
+  }
+}
+
+async function loadNextHabitReminder(userId, timeZone = null) {
   const uid = new mongoose.Types.ObjectId(userId);
   const habits = await Habit.find({
     userId: uid,
@@ -153,15 +195,16 @@ async function loadNextHabitReminder(userId) {
     .lean();
 
   const now = new Date();
+  const startOfDay = startOfLocalDayUtc(now, timeZone);
   let best = null;
   for (const h of habits) {
     if (h.status?.completedToday) continue;
     const rt = new Date(h.reminder.time);
-    const hours = rt.getHours();
-    const minutes = rt.getMinutes();
-    const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0, 0);
+    // La hora/minuto se interpretan en la zona del usuario, igual que el envío real.
+    const { hh, mm } = localHourMinuteInTz(rt, timeZone);
+    let target = new Date(startOfDay.getTime() + (hh * 60 + mm) * 60 * 1000);
     if (target <= now) {
-      target.setDate(target.getDate() + 1);
+      target = new Date(target.getTime() + 24 * 60 * 60 * 1000);
     }
     if (!best || target.getTime() < best.nextAt.getTime()) {
       best = { id: h.id, title: h.title, nextAt: target };
@@ -245,7 +288,8 @@ export function buildReminderCandidates({
   habitReminder = null,
   nextPushSlot = null,
   now = new Date(),
-  language = 'es'
+  language = 'es',
+  timeZone = null
 }) {
   const c = focusCopy(language);
   const locale = focusLocale(language);
@@ -292,7 +336,11 @@ export function buildReminderCandidates({
   if (habitReminder) {
     const at = habitReminder.nextAt;
     const timeStr = at
-      ? at.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+      ? at.toLocaleTimeString(locale, {
+          hour: '2-digit',
+          minute: '2-digit',
+          ...(timeZone ? { timeZone } : {}),
+        })
       : '';
     candidates.push({
       kind: 'habit',
@@ -482,7 +530,6 @@ export async function buildDashboardFocus(userId, opts = {}) {
     recentConversations,
     commitments,
     scales,
-    habitReminder,
     protocolNext,
     userFocusPrefs,
     lastSessionSummaryStored,
@@ -494,7 +541,6 @@ export async function buildDashboardFocus(userId, opts = {}) {
     loadRecentConversations(userId, 3),
     loadCommitments(userId),
     loadLatestScales(userId),
-    loadNextHabitReminder(userId),
     loadTherapeuticProtocolHint(userId, language),
     loadUserNotificationPrefs(userId),
     getLastSessionSummaryForUser(userId),
@@ -510,6 +556,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
 
   const notificationPreferences = userFocusPrefs?.notificationPreferences || null;
   const userTimezone = userFocusPrefs?.timezone || null;
+  const habitReminder = await loadNextHabitReminder(userId, userTimezone);
   const dailyMood = await getTodayDailyMoodCheckIn(userId, {
     language,
     timezone: userTimezone,
@@ -531,7 +578,8 @@ export async function buildDashboardFocus(userId, opts = {}) {
     habitReminder,
     nextPushSlot,
     now: new Date(),
-    language
+    language,
+    timeZone: userTimezone
   });
 
   const lastSessionSummary = localizeLastSessionSummaryForDisplay(lastSessionSummaryRaw, language, {
