@@ -1,0 +1,27 @@
+---
+description: >-
+  Reglas clínicas y de crisis en chat: sin diagnóstico, protocolo de crisis,
+  bloqueo de extras terapéuticos, confirmación obligatoria de acciones.
+globs:
+  - backend/routes/chatRoutes.js
+  - backend/routes/guestChatRoutes.js
+  - backend/routes/crisisRoutes.js
+  - backend/services/chat*
+  - backend/services/crisis*
+  - backend/services/*Crisis*
+  - backend/services/openai*
+  - backend/services/*Prompt*
+  - frontend/src/components/chat/**
+  - frontend/src/screens/**/Chat*
+alwaysApply: false
+---
+
+# Anto — chat y clínica (recordatorio)
+
+- Anto **acompaña**; no diagnostica, no prescribe, no sustituye emergencias.
+- Outputs LLM visibles: pasar `sanitizeObservationalText` / `clinicalContentGuardrails`.
+- En crisis: respetar protocolo #93 / #19 / hard-stop; **bloquear** sugerencias, TCC lite y acciones productivas.
+- Acciones desde chat: **proponer → confirmar en UI → POST**; nunca auto-persistir.
+- Chat invitado: sin `proposedProductActions`.
+
+Checklist completo: skill **anto-chat-clinical**. Copy ES/EN: skill **anto-i18n-theme-review**.

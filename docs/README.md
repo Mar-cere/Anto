@@ -8,6 +8,7 @@
 
 | Documento | Descripción |
 |-----------|-------------|
+| [PRODUCT_NARRATIVE.md](./PRODUCT_NARRATIVE.md) | Narrativa de producto v1: promesa, categoría, voz de marca y límites. |
 | [FLUJOS.md](./FLUJOS.md) | Flujos principales: autenticación, chat, pagos, crisis. Resumen y enlaces a detalle. |
 | [CONTRATOS_API.md](./CONTRATOS_API.md) | Alineación frontend–backend: endpoints, rutas y contratos request/response. |
 | [REVISION_STOREKIT_COMPRAS.md](./REVISION_STOREKIT_COMPRAS.md) | Revisión del flujo de compras con StoreKit (iOS) y validación de recibos. |

@@ -1,0 +1,22 @@
+---
+description: >-
+  i18n (ES+EN), temas claro/oscuro y español neutro en UI y copy de Anto.
+  Aplica al editar traducciones, componentes, estilos o mensajes de API.
+globs:
+  - frontend/src/**/*
+  - backend/utils/*ApiCopy.js
+  - backend/routes/**/*.js
+alwaysApply: false
+---
+
+# Anto — i18n, temas y tono
+
+Al modificar textos visibles, estilos o copy de API, cumple siempre estos tres criterios:
+
+1. **Ambos idiomas** — misma clave en `es.js` y `en.js` (frontend) o bloques `es`/`en` en `*ApiCopy.js` (backend). Sin strings hardcodeados en componentes.
+2. **Ambos temas** — usar `useTheme()` y tokens de `themePalettes.js`; no colores fijos (`#fff`, `white`, etc.). Tokens nuevos en `lightColors` y `darkColors`.
+3. **Español neutro** — sin voseo (podés → puedes) ni modismos regionales. EN natural, sin español residual.
+
+Antes de cerrar la tarea: ejecutar `npm run test:i18n` en `frontend/` o `backend/` según corresponda.
+
+Para el checklist completo, seguir la skill **anto-i18n-theme-review**. Índice de skills: `.cursor/skills/README.md`.

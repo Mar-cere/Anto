@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## Agent Skills (guías de producto)
+
+Convenciones de i18n, diseño UI, chat clínico, APIs y narrativa de producto están en `.cursor/skills/` (índice en `.cursor/skills/README.md`). Narrativa completa en `docs/PRODUCT_NARRATIVE.md`. Aplicar la skill que corresponda al tipo de cambio antes de cerrar la tarea. Rules breves en `.cursor/rules/`.
+
 ## Cursor Cloud specific instructions
 
 Este repositorio es un único producto, **Anto** (asistente de bienestar emocional con IA), compuesto por dos servicios reales más un scaffold residual:

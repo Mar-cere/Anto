@@ -74,6 +74,12 @@ docs/obsidian-propuestas/*
 !docs/obsidian-propuestas/README.md
 .anto-obsidian-export.json
 
+# Cursor — estado local del IDE (versionar .cursor/rules/ y .cursor/skills/; ver AGENTS.md)
+.cursor/debug-*.log
+.cursor/plans/
+.cursor/mcp.json
+.cursor/settings.json
+
 # generated native folders
 /ios
 /android

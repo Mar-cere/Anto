@@ -1,0 +1,20 @@
+---
+description: >-
+  Patrón de endpoints Anto: ApiCopy ES/EN, attachApiCopy, Joi localizado,
+  registro en server.js y test i18n mínimo.
+globs:
+  - backend/routes/**
+  - backend/utils/*ApiCopy.js
+  - backend/utils/*Schemas.js
+alwaysApply: false
+---
+
+# Anto — backend API (recordatorio)
+
+- Mensajes solo vía `req.apiCopy` (`*ApiCopy.js` con claves idénticas en `es` y `en`).
+- Router: `attachApiCopy` + `authenticateToken` (si aplica) + Joi con mensajes del copy.
+- Registrar ruta nueva en `backend/server.js`.
+- Test mínimo `*Routes.i18n.test.js` (401 sin auth con `X-App-Language: en`).
+- Cerrar con `npm run test:i18n` en `backend/`.
+
+Si toca chat/crisis: además skill **anto-chat-clinical**. Copy y tono: skill **anto-i18n-theme-review**.
