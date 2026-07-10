@@ -140,7 +140,9 @@ export default function SubscriptionContent({
           flexDirection: 'row',
           gap: 8,
           marginBottom: 12,
-          opacity: subscribing ? 0.7 : 1,
+        },
+        ctaDisabled: {
+          opacity: 0.45,
         },
         ctaText: {
           color: colors.textOnPrimary,
@@ -169,17 +171,34 @@ export default function SubscriptionContent({
           color: colors.text,
           lineHeight: 20,
         },
-        agreementText: {
+        agreementWrap: {
+          alignItems: 'center',
+          marginBottom: 14,
+        },
+        agreementIntro: {
           fontSize: 12,
           color: colors.textSecondary,
           lineHeight: 18,
-          marginBottom: 14,
           textAlign: 'center',
+          marginBottom: 4,
+        },
+        agreementLinksRow: {
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        agreementTextInline: {
+          fontSize: 12,
+          color: colors.textSecondary,
+          lineHeight: 18,
         },
         agreementLink: {
+          fontSize: 12,
           color: colors.primary,
           textDecorationLine: 'underline',
           fontWeight: '600',
+          lineHeight: 18,
         },
         cancelButton: {
           flexDirection: 'row',
@@ -220,12 +239,12 @@ export default function SubscriptionContent({
     if (!plan?.id) return true;
     const isCurrentPlan =
       subscriptionStatus?.plan && plan.id === subscriptionStatus.plan && hasActiveSubscription;
-    return (
-      subscribing ||
-      isCurrentPlan ||
-      (hasActiveSubscription && plan.id !== subscriptionStatus?.plan)
-    );
+    return subscribing || isCurrentPlan;
   };
+
+  const chosenPlan = planById[chosenPlanId];
+  const ctaDisabled =
+    subscribing || !chosenPlanId || !chosenPlan || resolvePlanDisabled(chosenPlan);
 
   const handleSelectPlan = (plan) => {
     if (!plan?.id || resolvePlanDisabled(plan)) return;
@@ -335,23 +354,32 @@ export default function SubscriptionContent({
             </View>
           ) : null}
 
-          <Text style={styles.agreementText}>
-            {TEXTS.SUBSCRIBE_AGREEMENT}
-            <Text style={styles.agreementLink} onPress={() => Linking.openURL(LEGAL_URLS.TERMS_EULA)}>
-              {TEXTS.SUBSCRIBE_AGREEMENT_TERMS}
-            </Text>
-            {TEXTS.SUBSCRIBE_AGREEMENT_AND}
-            <Text style={styles.agreementLink} onPress={() => Linking.openURL(LEGAL_URLS.PRIVACY)}>
-              {TEXTS.SUBSCRIBE_AGREEMENT_PRIVACY}
-            </Text>
-            {TEXTS.SUBSCRIBE_AGREEMENT_END}
-          </Text>
+          <View style={styles.agreementWrap}>
+            <Text style={styles.agreementIntro}>{TEXTS.SUBSCRIBE_AGREEMENT}</Text>
+            <View style={styles.agreementLinksRow}>
+              <Text
+                style={styles.agreementLink}
+                onPress={() => Linking.openURL(LEGAL_URLS.TERMS_EULA)}
+              >
+                {TEXTS.SUBSCRIBE_AGREEMENT_TERMS}
+              </Text>
+              <Text style={styles.agreementTextInline}>{TEXTS.SUBSCRIBE_AGREEMENT_AND}</Text>
+              <Text
+                style={styles.agreementLink}
+                onPress={() => Linking.openURL(LEGAL_URLS.PRIVACY)}
+              >
+                {TEXTS.SUBSCRIBE_AGREEMENT_PRIVACY}
+              </Text>
+              <Text style={styles.agreementTextInline}>{TEXTS.SUBSCRIBE_AGREEMENT_END}</Text>
+            </View>
+          </View>
 
           <TouchableOpacity
-            style={styles.cta}
+            style={[styles.cta, ctaDisabled && styles.ctaDisabled]}
             onPress={handleContinue}
-            disabled={subscribing || !chosenPlanId || resolvePlanDisabled(planById[chosenPlanId])}
+            disabled={ctaDisabled}
             accessibilityRole="button"
+            accessibilityState={{ disabled: ctaDisabled }}
           >
             {subscribing && selectedPlan === chosenPlanId ? (
               <ActivityIndicator color={colors.textOnPrimary} />

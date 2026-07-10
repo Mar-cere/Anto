@@ -243,7 +243,11 @@ export function useSubscriptionScreen() {
         showToast({ message: TEXTS.INVALID_PLAN, type: 'warning' });
         return;
       }
-      if (subscriptionStatus?.hasSubscription && subscriptionLooksCurrentlyUsable(subscriptionStatus)) {
+      const hasActiveSubscription =
+        subscriptionStatus?.hasSubscription && subscriptionLooksCurrentlyUsable(subscriptionStatus);
+      const isCurrentPlan =
+        hasActiveSubscription && plan.id && plan.id === subscriptionStatus.plan;
+      if (isCurrentPlan) {
         const currentPlan = subscriptionStatus.plan || TEXTS.PLAN_UNKNOWN;
         const daysRemaining = subscriptionStatus.daysRemaining;
         const message = daysRemaining
@@ -253,6 +257,7 @@ export function useSubscriptionScreen() {
             )
           : TEXTS.ALREADY_ACTIVE_NO_DAYS.replace('{plan}', String(currentPlan));
         showToast({ message, type: 'info', duration: 4500 });
+        return;
       }
       try {
         setSubscribing(true);
