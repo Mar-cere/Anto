@@ -424,7 +424,12 @@ class PaymentService {
         errorCode: 'GENERIC_ERROR',
       };
     }
-    if (result.success) return result;
+    if (result.success) {
+      return {
+        ...result,
+        subscription: result.subscription ?? null,
+      };
+    }
     return {
       ...result,
       errorCode: classifyStoreKitError(result),
@@ -623,11 +628,24 @@ class PaymentService {
 
   /**
    * Obtener estado de suscripción
+   * @param {{ forceRefresh?: boolean }} [opts]
    * @returns {Promise<Object>} - Estado de la suscripción
    */
-  async getSubscriptionStatus() {
+  async getSubscriptionStatus(opts = {}) {
+    const forceRefresh = opts.forceRefresh === true;
     try {
-      const response = await api.get(ENDPOINTS.PAYMENT_SUBSCRIPTION_STATUS);
+      if (forceRefresh) {
+        try {
+          const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+          await AsyncStorage.removeItem('subscription_status_cache');
+        } catch (cacheError) {
+          console.warn('[PaymentService] Error limpiando caché local de suscripción:', cacheError);
+        }
+      }
+
+      const response = forceRefresh
+        ? await api.get(ENDPOINTS.PAYMENT_SUBSCRIPTION_STATUS, { _t: String(Date.now()) })
+        : await api.get(ENDPOINTS.PAYMENT_SUBSCRIPTION_STATUS);
       
       // Si la respuesta es 304 Not Modified, usar datos del caché local si existen
       if (response.notModified) {

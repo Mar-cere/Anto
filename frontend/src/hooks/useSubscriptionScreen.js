@@ -292,13 +292,16 @@ export function useSubscriptionScreen() {
               throw new Error(TEXTS.SUBSCRIPTION_UNEXPECTED_ERROR);
             }
             if (purchaseResult.success) {
-              await new Promise((r) => setTimeout(r, 1500));
-              let retries = 3;
-              let statusUpdated = false;
+              const validatedOnServer = !!purchaseResult.subscription;
+              if (!validatedOnServer) {
+                await new Promise((r) => setTimeout(r, 1500));
+              }
+              let retries = validatedOnServer ? 1 : 5;
+              let statusUpdated = validatedOnServer;
               while (retries > 0 && !statusUpdated) {
                 try {
                   await loadData();
-                  const newStatus = await paymentService.getSubscriptionStatus();
+                  const newStatus = await paymentService.getSubscriptionStatus({ forceRefresh: true });
                   if (subscriptionLooksCurrentlyUsable(newStatus)) statusUpdated = true;
                   else await new Promise((r) => setTimeout(r, 1000));
                 } catch (_) {}

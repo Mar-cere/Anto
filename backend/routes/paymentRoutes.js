@@ -15,7 +15,10 @@ import { authenticateToken } from '../middleware/auth.js';
 import { validateUserObjectId } from '../middleware/validation.js';
 import Transaction from '../models/Transaction.js';
 import appleReceiptService from '../services/appleReceiptService.js';
-import { handleAppleServerNotification } from '../services/appleServerNotificationService.js';
+import {
+  extractAppleSignedPayload,
+  handleAppleServerNotification,
+} from '../services/appleServerNotificationService.js';
 import cacheService from '../services/cacheService.js';
 import paymentAuditService from '../services/paymentAuditService.js';
 import paymentService from '../services/paymentService.js';
@@ -852,11 +855,23 @@ router.get('/apple-server-notifications', (req, res) => {
  */
 router.post(
   '/apple-server-notifications',
-  express.json({ limit: '512kb' }),
   webhookLimiter,
   async (req, res) => {
     try {
-      const signedPayload = req.body?.signedPayload;
+      const signedPayload = extractAppleSignedPayload(req.body);
+      logger.payment(
+        `[AppleASN] POST recibido ${JSON.stringify({
+          bodyType: typeof req.body,
+          bodyKeys:
+            req.body && typeof req.body === 'object' && !Array.isArray(req.body)
+              ? Object.keys(req.body)
+              : [],
+          hasSignedPayload: typeof signedPayload === 'string' && signedPayload.length > 0,
+          signedPayloadLength: typeof signedPayload === 'string' ? signedPayload.length : 0,
+          signedPayloadParts:
+            typeof signedPayload === 'string' ? signedPayload.split('.').length : 0,
+        })}`,
+      );
       if (process.env.APPLE_ASN_DEBUG === 'true') {
         const sp = signedPayload;
         logger.debug('[AppleASN-DEBUG] POST apple-server-notifications', {

@@ -6,6 +6,8 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import jwt from 'jsonwebtoken';
+
 import {
   Environment,
   NotificationTypeV2,
@@ -87,24 +89,19 @@ function buildVerifiers(enableOnlineChecks) {
   const bundleId = getBundleId();
   const appAppleId = resolveAppAppleId();
 
-  const production = new SignedDataVerifier(
-    roots,
-    enableOnlineChecks,
-    Environment.PRODUCTION,
-    bundleId,
-    appAppleId,
-  );
-  const sandbox = new SignedDataVerifier(
-    roots,
-    enableOnlineChecks,
-    Environment.SANDBOX,
-    bundleId,
-    appAppleId,
-  );
-  return { production, sandbox };
+  const mk = (environment, appleIdForEnv) =>
+    new SignedDataVerifier(roots, enableOnlineChecks, environment, bundleId, appleIdForEnv);
+
+  return {
+    production: mk(Environment.PRODUCTION, appAppleId),
+    // Apple: appAppleId solo es obligatorio en Production.
+    sandbox: mk(Environment.SANDBOX, undefined),
+    xcode: mk(Environment.XCODE, undefined),
+    localTesting: mk(Environment.LOCAL_TESTING, undefined),
+  };
 }
 
-/** @type {Map<string, { production: SignedDataVerifier, sandbox: SignedDataVerifier }>} */
+/** @type {Map<string, ReturnType<typeof buildVerifiers>>} */
 const verifierCache = new Map();
 
 function getVerifiers(enableOnlineChecks) {
@@ -147,6 +144,38 @@ function formatAppleVerifyError(err) {
  * Útil con APPLE_ASN_DEBUG cuando la librería de Apple falla antes de exponer el payload.
  * No usar para tomar decisiones de negocio.
  */
+/**
+ * Extrae signedPayload del cuerpo POST (Apple envía JSON; algunos proxies alteran el body).
+ * @param {unknown} body
+ * @returns {string|null}
+ */
+export function extractAppleSignedPayload(body) {
+  if (body == null) return null;
+  if (typeof body === 'string' && body.includes('.')) {
+    return body.trim();
+  }
+  if (typeof body === 'object' && !Array.isArray(body)) {
+    const sp = body.signedPayload;
+    if (typeof sp === 'string' && sp.trim()) {
+      return sp.trim();
+    }
+  }
+  return null;
+}
+
+function describeSignedPayloadShape(signedPayload) {
+  if (typeof signedPayload !== 'string' || !signedPayload) {
+    return { valid: false, reason: 'missing_or_not_string', length: 0, parts: 0 };
+  }
+  const parts = signedPayload.split('.');
+  return {
+    valid: parts.length === 3 && parts.every((p) => p.length > 0),
+    reason: parts.length === 3 ? 'ok' : `expected_3_jws_parts_got_${parts.length}`,
+    length: signedPayload.length,
+    parts: parts.length,
+  };
+}
+
 function decodeSignedPayloadMiddleUnsafe(signedPayload) {
   if (!signedPayload || typeof signedPayload !== 'string') {
     return { error: 'signedPayload vacío' };
@@ -162,8 +191,17 @@ function decodeSignedPayloadMiddleUnsafe(signedPayload) {
       keys: Object.keys(parsed),
       notificationType: parsed.notificationType ?? null,
       notificationUUID: parsed.notificationUUID ?? null,
-      bundleId: parsed.data?.bundleId ?? null,
-      environment: parsed.data?.environment ?? null,
+      bundleId:
+        parsed.data?.bundleId ??
+        parsed.summary?.bundleId ??
+        parsed.appData?.bundleId ??
+        null,
+      environment:
+        parsed.data?.environment ??
+        parsed.summary?.environment ??
+        parsed.appData?.environment ??
+        null,
+      jwtDecodeNull: jwt.decode(signedPayload) == null,
     };
   } catch (e) {
     return { error: e?.message || String(e) };
@@ -176,6 +214,13 @@ function decodeSignedPayloadMiddleUnsafe(signedPayload) {
  */
 async function verifyNotificationPayload(signedPayload) {
   const verifyStart = Date.now();
+  const shape = describeSignedPayloadShape(signedPayload);
+  if (!shape.valid) {
+    const msg = `[AppleASN] signedPayload inválido (${shape.reason}, length=${shape.length})`;
+    logger.payment(msg);
+    throw new Error(msg);
+  }
+
   const unsafePeek = decodeSignedPayloadMiddleUnsafe(signedPayload);
   const envHintRaw = unsafePeek?.environment;
   const envHint =
@@ -185,28 +230,52 @@ async function verifyNotificationPayload(signedPayload) {
         ? 'production'
         : null;
 
+  logger.payment(
+    `[AppleASN] Verificando JWS ${JSON.stringify({
+      envHint,
+      shapeLength: shape.length,
+      unsafeNotificationType: unsafePeek?.notificationType ?? null,
+      unsafeBundleId: unsafePeek?.bundleId ?? null,
+      hasAppAppleId: resolveAppAppleId() != null,
+    })}`,
+  );
+
   // Render y hosts similares suelen bloquear OCSP; offline es el default seguro.
   const preferOnline = process.env.APPLE_ASN_ONLINE_OCSP === 'true';
   const modes = preferOnline ? [true, false] : [false, true];
 
   let lastProdErr;
   let lastSandboxErr;
+  let lastOtherErr;
+
+  const verifierOrder = (() => {
+    const base = [
+      { key: 'sandbox', label: 'sandbox' },
+      { key: 'production', label: 'production' },
+      { key: 'xcode', label: 'xcode' },
+      { key: 'localTesting', label: 'localTesting' },
+    ];
+    if (envHint === 'sandbox') {
+      return base;
+    }
+    if (envHint === 'production') {
+      return [
+        { key: 'production', label: 'production' },
+        { key: 'sandbox', label: 'sandbox' },
+        { key: 'xcode', label: 'xcode' },
+        { key: 'localTesting', label: 'localTesting' },
+      ];
+    }
+    return base;
+  })();
 
   for (const enableOnline of modes) {
-    const { production, sandbox } = getVerifiers(enableOnline);
+    const verifiers = getVerifiers(enableOnline);
     const rootCertCount = loadAppleRootCertificates().length;
-    const order =
-      envHint === 'sandbox'
-        ? [
-            { verifier: sandbox, label: 'sandbox' },
-            { verifier: production, label: 'production' },
-          ]
-        : [
-            { verifier: production, label: 'production' },
-            { verifier: sandbox, label: 'sandbox' },
-          ];
 
-    for (const { verifier, label } of order) {
+    for (const { key, label } of verifierOrder) {
+      const verifier = verifiers[key];
+      if (!verifier) continue;
       try {
         const payload = await verifier.verifyAndDecodeNotification(signedPayload);
         if (payload == null || typeof payload !== 'object') {
@@ -217,36 +286,43 @@ async function verifyNotificationPayload(signedPayload) {
             `[AppleASN] JWS verificado (${label}) sin OCSP en línea; si es habitual, define APPLE_ASN_ONLINE_OCSP=false`,
           );
         }
-        logger.payment('[AppleASN] JWS verificado', {
-          label,
-          enableOnline,
-          durationMs: Date.now() - verifyStart,
-          notificationType: payload.notificationType ?? null,
-          notificationUUID: payload.notificationUUID ?? null,
-          rootCertCount,
-        });
+        logger.payment(
+          `[AppleASN] JWS verificado ${JSON.stringify({
+            label,
+            enableOnline,
+            durationMs: Date.now() - verifyStart,
+            notificationType: payload.notificationType ?? null,
+            notificationUUID: payload.notificationUUID ?? null,
+            rootCertCount,
+          })}`,
+        );
         return { verifier, payload };
       } catch (err) {
         if (label === 'production') {
           lastProdErr = err;
-        } else {
+        } else if (label === 'sandbox') {
           lastSandboxErr = err;
+        } else {
+          lastOtherErr = err;
         }
       }
     }
   }
 
   const diagUnsafe = unsafePeek;
-  logger.payment('[AppleASN] Fallo verificación JWS — diagnóstico', {
+  const diagMsg = `[AppleASN] Fallo verificación JWS — diagnóstico ${JSON.stringify({
     envHint,
     bundleId: getBundleId(),
     hasAppAppleId: resolveAppAppleId() != null,
     rootCertCount: loadAppleRootCertificates().length,
+    shape,
     unsafePeek: diagUnsafe,
     prodError: formatAppleVerifyError(lastProdErr),
     sandboxError: formatAppleVerifyError(lastSandboxErr),
+    otherError: formatAppleVerifyError(lastOtherErr),
     durationMs: Date.now() - verifyStart,
-  });
+  })}`;
+  logger.payment(diagMsg);
 
   const hint =
     'Revisa APPLE_BUNDLE_ID, APPLE_APP_APPLE_ID (obligatorio para notificaciones Production), certificados en backend/certs/*.pem (G2+G3), y APPLE_ASN_ONLINE_OCSP=false si OCSP falla en el host.';
@@ -356,11 +432,15 @@ const TYPES_FORCE_EXPIRED = new Set([
  * @param {string|undefined} signedPayload
  */
 export async function handleAppleServerNotification(signedPayload) {
-  if (!signedPayload || typeof signedPayload !== 'string') {
+  const normalized =
+    typeof signedPayload === 'string'
+      ? signedPayload.trim()
+      : extractAppleSignedPayload(signedPayload);
+  if (!normalized || typeof normalized !== 'string') {
     throw new Error('signedPayload requerido');
   }
 
-  const { verifier, payload } = await verifyNotificationPayload(signedPayload);
+  const { verifier, payload } = await verifyNotificationPayload(normalized);
   if (!payload || typeof payload !== 'object') {
     throw new Error('Notificación decodificada inválida (payload vacío)');
   }

@@ -630,8 +630,44 @@ class StoreKitService {
   }
 
   /**
+   * Busca en el historial de StoreKit una compra reciente del producto (fallback si el listener tarda).
+   * @param {object} module
+   * @param {string} productId
+   * @param {number} startedAtMs
+   */
+  async findRecentPurchaseInHistory(module, productId, startedAtMs) {
+    try {
+      const historyResult = await module.getPurchaseHistoryAsync();
+      if (
+        !historyResult ||
+        historyResult.responseCode !== module.IAPResponseCode.OK ||
+        !Array.isArray(historyResult.results)
+      ) {
+        return null;
+      }
+      const deduped = dedupePurchaseHistoryRows(historyResult.results);
+      const matches = deduped.filter((p) => {
+        if (!p || p.productId !== productId || !p.transactionReceipt) return false;
+        const pt =
+          typeof p.purchaseTime === 'number' && !Number.isNaN(p.purchaseTime)
+            ? p.purchaseTime
+            : Number(p.purchaseTime) || 0;
+        if (!pt) return true;
+        return pt >= startedAtMs - 120000;
+      });
+      if (matches.length === 0) return null;
+      matches.sort((a, b) => (b.purchaseTime || 0) - (a.purchaseTime || 0));
+      return matches[0];
+    } catch (err) {
+      console.warn('[StoreKit] findRecentPurchaseInHistory:', err?.message);
+      return null;
+    }
+  }
+
+  /**
    * Inicia purchaseItemAsync y espera la respuesta por setPurchaseListener.
    * expo-in-app-purchases suele resolver purchaseItemAsync en undefined; el resultado real llega al listener.
+   * Si el listener tarda, consulta getPurchaseHistoryAsync (mismo camino que «Restaurar compras»).
    */
   awaitPurchaseUpdateAfterRequest(module, productId) {
     if (this._purchaseUpdateWaiter) {
@@ -641,42 +677,89 @@ class StoreKitService {
         ),
       );
     }
-    return new Promise((resolve, reject) => {
-      const TIMEOUT_MS = 90000;
-      let timeoutId;
 
-      const cleanupAndResolve = (update) => {
+    const startedAtMs = Date.now();
+    const TIMEOUT_MS = 90000;
+    const HISTORY_FALLBACK_DELAY_MS = 6000;
+    const HISTORY_POLL_MS = 2500;
+
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      let timeoutId = null;
+      let historyPollId = null;
+      let historyFallbackTimer = null;
+
+      const cleanupTimers = () => {
         if (timeoutId) {
           clearTimeout(timeoutId);
           timeoutId = null;
         }
+        if (historyPollId) {
+          clearInterval(historyPollId);
+          historyPollId = null;
+        }
+        if (historyFallbackTimer) {
+          clearTimeout(historyFallbackTimer);
+          historyFallbackTimer = null;
+        }
+      };
+
+      const settleResolve = (update, via) => {
+        if (settled) return;
+        settled = true;
+        cleanupTimers();
         this._purchaseUpdateWaiter = null;
+        console.log('[StoreKit] Compra resuelta', {
+          productId,
+          via,
+          elapsedMs: Date.now() - startedAtMs,
+        });
         resolve(update);
       };
-      const cleanupAndReject = (err) => {
-        if (timeoutId) {
-          clearTimeout(timeoutId);
-          timeoutId = null;
-        }
+
+      const settleReject = (err) => {
+        if (settled) return;
+        settled = true;
+        cleanupTimers();
         this._purchaseUpdateWaiter = null;
         reject(err);
       };
 
-      // Debe ejecutarse antes del waiter y de purchaseItemAsync. Idempotente si initialize() ya enlazó.
       this.setupPurchaseListeners();
 
       timeoutId = setTimeout(() => {
-        cleanupAndReject(
+        settleReject(
           new Error(
             'App Store no respondió en el tiempo esperado. Usá «Restaurar compras» si el cargo fue realizado.',
           ),
         );
       }, TIMEOUT_MS);
 
+      const tryHistoryFallback = async () => {
+        if (settled) return;
+        const purchase = await this.findRecentPurchaseInHistory(module, productId, startedAtMs);
+        if (!purchase || settled) return;
+        settleResolve(
+          {
+            responseCode: module.IAPResponseCode.OK,
+            results: [purchase],
+            _resolvedVia: 'purchaseHistoryFallback',
+          },
+          'purchaseHistoryFallback',
+        );
+      };
+
+      historyFallbackTimer = setTimeout(() => {
+        tryHistoryFallback();
+        historyPollId = setInterval(() => {
+          tryHistoryFallback();
+        }, HISTORY_POLL_MS);
+      }, HISTORY_FALLBACK_DELAY_MS);
+
       this._purchaseUpdateWaiter = {
         productId,
-        resolve: cleanupAndResolve,
-        reject: cleanupAndReject,
+        resolve: (update) => settleResolve(update, 'purchaseListener'),
+        reject: settleReject,
       };
 
       try {
@@ -685,27 +768,27 @@ class StoreKitService {
           maybePromise.catch((purchaseError) => {
             const msg = purchaseError?.message || '';
             if (msg.includes('Must wait for promise to resolve')) {
-              cleanupAndReject(
+              settleReject(
                 new Error(
                   'Hay una compra pendiente procesándose. Esperá unos segundos o usá «Restaurar compras».',
                 ),
               );
               return;
             }
-            cleanupAndReject(purchaseError);
+            settleReject(purchaseError);
           });
         }
       } catch (purchaseError) {
         const msg = purchaseError?.message || '';
         if (msg.includes('Must wait for promise to resolve')) {
-          cleanupAndReject(
+          settleReject(
             new Error(
               'Hay una compra pendiente procesándose. Esperá unos segundos o usá «Restaurar compras».',
             ),
           );
           return;
         }
-        cleanupAndReject(purchaseError);
+        settleReject(purchaseError);
       }
     });
   }
@@ -1028,6 +1111,7 @@ class StoreKitService {
 
       // Marcar que estamos procesando esta compra para evitar duplicados en el listener
       let purchaseKey = null;
+      let validatedSubscription = null;
 
       console.log('[StoreKit] 📱 Respuesta de App Store recibida (listener)', {
         productId,
@@ -1234,6 +1318,7 @@ class StoreKitService {
               validationDuration: Date.now() - validationStartTime,
               timestamp: new Date().toISOString(),
             });
+            validatedSubscription = validationResult.subscription ?? null;
           } catch (validationError) {
             console.error('[StoreKit] ❌ EXCEPCIÓN en validación de recibo', {
               productId,
@@ -1416,6 +1501,8 @@ class StoreKitService {
           success: true,
           purchase,
           plan: mappedPlan,
+          subscription: validatedSubscription,
+          resolvedVia: purchaseResult._resolvedVia ?? 'purchaseListener',
         };
       } else if (responseCode === module.IAPResponseCode.USER_CANCELED) {
         return this.fail('Compra cancelada por el usuario', 'PURCHASE_CANCELLED', {
