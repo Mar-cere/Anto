@@ -20,7 +20,6 @@ import cacheService from '../services/cacheService.js';
 import paymentAuditService from '../services/paymentAuditService.js';
 import paymentService from '../services/paymentService.js';
 import logger from '../utils/logger.js';
-import { debugAgentLog } from '../utils/debugAgentLog.js';
 import { normalizeAppleReceiptPayload } from '../utils/appleReceiptNormalize.js';
 import {
   extractMercadoPagoWebhookResourceId,
@@ -764,22 +763,6 @@ router.post(
 
       const duration = Date.now() - startTime;
 
-      // #region agent log
-      debugAgentLog({
-        location: 'paymentRoutes.js:validate-receipt:done',
-        message: 'validate-receipt completed',
-        hypothesisId: 'H3',
-        runId: 'post-fix',
-        data: {
-          success: !!result.success,
-          durationMs: duration,
-          productId,
-          restore: !!restore,
-          appleStatus: receiptResponse?.status ?? null,
-        },
-      });
-      // #endregion
-
       if (result.success) {
         logger.payment('POST /validate-receipt: suscripción procesada exitosamente', {
           userId: userId.toString(),
@@ -887,20 +870,6 @@ router.post(
         });
       }
       const result = await handleAppleServerNotification(signedPayload);
-      // #region agent log
-      debugAgentLog({
-        location: 'paymentRoutes.js:apple-server-notifications:ok',
-        message: 'ASN webhook processed',
-        hypothesisId: 'H1',
-        runId: 'post-fix',
-        data: {
-          processed: !!result?.processed,
-          skipped: !!result?.skipped,
-          test: !!result?.test,
-          notificationUUID: result?.notificationUUID ?? null,
-        },
-      });
-      // #endregion
       return res.status(200).json({ received: true, ...result });
     } catch (error) {
       const msg = error?.message || String(error);

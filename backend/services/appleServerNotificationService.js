@@ -49,7 +49,6 @@ import appleReceiptService from './appleReceiptService.js';
 import cacheService from './cacheService.js';
 import paymentAuditService from './paymentAuditService.js';
 import logger from '../utils/logger.js';
-import { debugAgentLog } from '../utils/debugAgentLog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -193,24 +192,6 @@ async function verifyNotificationPayload(signedPayload) {
   let lastProdErr;
   let lastSandboxErr;
 
-  // #region agent log
-  debugAgentLog({
-    location: 'appleServerNotificationService.js:verifyNotificationPayload:entry',
-    message: 'ASN verify start',
-    hypothesisId: 'H1',
-    runId: 'post-fix',
-    data: {
-      signedPayloadLength: signedPayload?.length ?? 0,
-      envHint,
-      unsafeBundleId: unsafePeek?.bundleId ?? null,
-      unsafeNotificationType: unsafePeek?.notificationType ?? null,
-      preferOnline,
-      hasAppAppleId: resolveAppAppleId() != null,
-      bundleId: getBundleId(),
-    },
-  });
-  // #endregion
-
   for (const enableOnline of modes) {
     const { production, sandbox } = getVerifiers(enableOnline);
     const rootCertCount = loadAppleRootCertificates().length;
@@ -236,22 +217,14 @@ async function verifyNotificationPayload(signedPayload) {
             `[AppleASN] JWS verificado (${label}) sin OCSP en línea; si es habitual, define APPLE_ASN_ONLINE_OCSP=false`,
           );
         }
-        // #region agent log
-        debugAgentLog({
-          location: 'appleServerNotificationService.js:verifyNotificationPayload:success',
-          message: 'ASN verify OK',
-          hypothesisId: 'H1',
-          runId: 'post-fix',
-          data: {
-            label,
-            enableOnline,
-            durationMs: Date.now() - verifyStart,
-            notificationType: payload.notificationType ?? null,
-            notificationUUID: payload.notificationUUID ?? null,
-            rootCertCount,
-          },
+        logger.payment('[AppleASN] JWS verificado', {
+          label,
+          enableOnline,
+          durationMs: Date.now() - verifyStart,
+          notificationType: payload.notificationType ?? null,
+          notificationUUID: payload.notificationUUID ?? null,
+          rootCertCount,
         });
-        // #endregion
         return { verifier, payload };
       } catch (err) {
         if (label === 'production') {
@@ -274,22 +247,6 @@ async function verifyNotificationPayload(signedPayload) {
     sandboxError: formatAppleVerifyError(lastSandboxErr),
     durationMs: Date.now() - verifyStart,
   });
-
-  // #region agent log
-  debugAgentLog({
-    location: 'appleServerNotificationService.js:verifyNotificationPayload:failure',
-    message: 'ASN verify failed',
-    hypothesisId: 'H1',
-    runId: 'post-fix',
-    data: {
-      envHint,
-      durationMs: Date.now() - verifyStart,
-      prodError: formatAppleVerifyError(lastProdErr),
-      sandboxError: formatAppleVerifyError(lastSandboxErr),
-      unsafePeek: diagUnsafe,
-    },
-  });
-  // #endregion
 
   const hint =
     'Revisa APPLE_BUNDLE_ID, APPLE_APP_APPLE_ID (obligatorio para notificaciones Production), certificados en backend/certs/*.pem (G2+G3), y APPLE_ASN_ONLINE_OCSP=false si OCSP falla en el host.';

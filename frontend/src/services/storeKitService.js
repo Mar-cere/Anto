@@ -1001,9 +1001,6 @@ class StoreKitService {
       // Solicitar compra: purchaseItemAsync puede resolver undefined; el resultado llega por setPurchaseListener.
       const purchaseRequestTime = Date.now();
       let purchaseResult;
-      // #region agent log
-      fetch('http://127.0.0.1:7668/ingest/64a2fca1-2412-43e9-b4f8-4d93df60a87d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e92f22'},body:JSON.stringify({sessionId:'e92f22',location:'storeKitService.js:purchaseSubscription:beforeAwait',message:'StoreKit purchase await start',data:{plan,productId},timestamp:Date.now(),hypothesisId:'H2',runId:'post-fix'})}).catch(()=>{});
-      // #endregion
       try {
         purchaseResult = await this.awaitPurchaseUpdateAfterRequest(module, productId);
       } catch (purchaseError) {
@@ -1028,10 +1025,6 @@ class StoreKitService {
         return this.fail(msg || 'Error al procesar la compra. Por favor, intenta de nuevo.', 'PURCHASE_FAILED');
       }
       const purchaseRequestDuration = Date.now() - purchaseRequestTime;
-
-      // #region agent log
-      fetch('http://127.0.0.1:7668/ingest/64a2fca1-2412-43e9-b4f8-4d93df60a87d',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'e92f22'},body:JSON.stringify({sessionId:'e92f22',location:'storeKitService.js:purchaseSubscription:afterAwait',message:'StoreKit listener responded',data:{plan,productId,purchaseRequestDurationMs:purchaseRequestDuration,hasResult:!!purchaseResult},timestamp:Date.now(),hypothesisId:'H2',runId:'post-fix'})}).catch(()=>{});
-      // #endregion
 
       // Marcar que estamos procesando esta compra para evitar duplicados en el listener
       let purchaseKey = null;
