@@ -45,6 +45,7 @@ logs/
 *.pem
 # Certificado raíz público Apple (PKI); necesario en Render para ASN V2
 !backend/certs/apple_root_ca_g3.pem
+!backend/certs/apple_root_ca_g2.pem
 
 # local env files
 .env

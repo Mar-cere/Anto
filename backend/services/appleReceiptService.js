@@ -601,7 +601,12 @@ class AppleReceiptService {
         };
 
         if (!skipDuplicateSideEffects) {
-          await dispatchPaymentEmail('Enviando correo post-pago (Apple)');
+          void dispatchPaymentEmail('Enviando correo post-pago (Apple)').catch((emailErr) => {
+            logger.warn('[AppleReceipt] Correo post-pago en background falló', {
+              userId: userId.toString(),
+              error: emailErr?.message,
+            });
+          });
         } else {
           const txnForEmail = await Transaction.findOne({
             userId,
@@ -615,9 +620,14 @@ class AppleReceiptService {
             ? txnForEmail?.metadata?.renewalEmailSentAt
             : txnForEmail?.metadata?.thankYouEmailSentAt;
           if (!sentFlag) {
-            await dispatchPaymentEmail(
-              'Reintento: correo post-pago (activación previa sin constancia de envío)'
-            );
+            void dispatchPaymentEmail(
+              'Reintento: correo post-pago (activación previa sin constancia de envío)',
+            ).catch((emailErr) => {
+              logger.warn('[AppleReceipt] Reintento correo post-pago en background falló', {
+                userId: userId.toString(),
+                error: emailErr?.message,
+              });
+            });
           }
         }
       }
@@ -861,6 +871,11 @@ class AppleReceiptService {
         providerTransactionId: appleTransactionId,
         paymentProvider: 'apple',
         reasonLabel: `Correo post-pago StoreKit2 (${source})`,
+      }).catch((emailErr) => {
+        logger.warn('[AppleReceipt] Correo post-pago StoreKit2 en background falló', {
+          userId: String(userId),
+          error: emailErr?.message,
+        });
       });
     }
 
