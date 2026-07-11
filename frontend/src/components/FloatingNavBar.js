@@ -13,11 +13,8 @@ import { SPACING } from '../constants/ui';
 
 const BAR_BLUR = Platform.OS === 'ios' ? 76 : 48;
 
-/** Anto.png tiene fondo negro opaco: en modo oscuro desaparece sobre surface oscuro. */
-const CENTER_NAV_ICON = {
-  light: require('../images/Anto.png'),
-  dark: require('../../assets/icon.png'),
-};
+/** Logo de marca en el tab central (mismo asset que welcome; fondo blanco del botón da contraste en oscuro). */
+const CENTER_NAV_ICON = require('../images/Anto.png');
 
 /**
  * @param {string} activeTab - 'home' | 'calendar' | 'chat' | 'techniques' | 'settings'
@@ -58,7 +55,7 @@ const FloatingNavBar = ({
   );
   const barBlurTint = resolvedScheme === 'dark' ? 'dark' : 'light';
   const isDarkNav = resolvedScheme === 'dark';
-  const centerIconSource = CENTER_NAV_ICON[isDarkNav ? 'dark' : 'light'];
+  const centerIconSource = CENTER_NAV_ICON;
   const rippleColor = useMemo(
     () => `${colors.primary}38`,
     [colors.primary],

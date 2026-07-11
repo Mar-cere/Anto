@@ -22,6 +22,12 @@ describe('techniquesHub guard', () => {
     expect(src).not.toMatch(/TAB_POMODORO_LABEL/);
   });
 
+  it('FloatingNavBar usa Anto.png como icono central en todos los temas', () => {
+    const src = readSrc('components/FloatingNavBar.js');
+    expect(src).toMatch(/require\('\.\.\/images\/Anto\.png'\)/);
+    expect(src).not.toMatch(/assets\/icon\.png/);
+  });
+
   it('TechniquesHubScreen integra catálogo completo sin enlace ver todas', () => {
     const src = readSrc('screens/TechniquesHubScreen.js');
     expect(src).toMatch(/TechniquesCatalogPanel/);

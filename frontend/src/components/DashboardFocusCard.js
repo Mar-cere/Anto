@@ -551,6 +551,10 @@ const DashboardFocusCard = ({
 
   const showChatCta = Boolean(onOpenChat) && !hasChatContinuity;
 
+  const hasAlternateChatEntry = showChatReminder || showChatCta || showLastSessionRow;
+  const showSparseChatLink =
+    Boolean(focus?.isSparseActivity && onOpenChat) && !hasAlternateChatEntry;
+
   const showFocusHero =
     Boolean(focus?.line) && !hasChatContinuity && !focus?.suppressForChatContinuity;
 
@@ -605,7 +609,7 @@ const DashboardFocusCard = ({
           </View>
         ) : null}
 
-        {focus?.isSparseActivity ? (
+        {showSparseChatLink ? (
           <Pressable
             style={({ pressed }) => [styles.sparseLink, pressed && { opacity: 0.85 }]}
             onPress={onOpenChat}

@@ -65,6 +65,13 @@ describe('dashboardFocusCard guard', () => {
     expect(src).toMatch(/ctaSecondary:[\s\S]*marginTop:\s*SPACING\.md/);
   });
 
+  it('no muestra enlace sparse de chat si ya hay fila o CTA al chat', () => {
+    const src = readSrc('components/DashboardFocusCard.js');
+    expect(src).toMatch(/hasAlternateChatEntry/);
+    expect(src).toMatch(/showSparseChatLink/);
+    expect(src).not.toMatch(/\{focus\?\.isSparseActivity \?/);
+  });
+
   it('DashboardFocusCard resuelve próxima tarea con useMemo', () => {
     const src = readSrc('components/DashboardFocusCard.js');
     expect(src).toMatch(/resolveFocusNextTask\(data\)/);
