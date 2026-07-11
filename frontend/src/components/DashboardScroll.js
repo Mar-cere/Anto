@@ -5,16 +5,24 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING } from '../constants/ui';
+import { getFloatingNavScrollBottomInset } from '../utils/floatingNavInsets';
 
 const DashboardScroll = ({
-  children, 
-  refreshing, 
+  children,
+  refreshing,
   onRefresh,
   contentContainerStyle,
+  bottomInset,
 }) => {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const scrollBottomInset =
+    typeof bottomInset === 'number' && Number.isFinite(bottomInset)
+      ? bottomInset
+      : getFloatingNavScrollBottomInset(insets.bottom);
 
   const styles = React.useMemo(
     () =>
@@ -30,10 +38,12 @@ const DashboardScroll = ({
         contentContainer: {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
           paddingTop: 8,
-          paddingBottom: 100,
+        },
+        navSpacer: {
+          height: scrollBottomInset,
         },
       }),
-    [],
+    [scrollBottomInset],
   );
 
   return (
@@ -54,6 +64,7 @@ const DashboardScroll = ({
         bounces={true}
       >
         {children}
+        <View style={styles.navSpacer} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" />
       </ScrollView>
     </View>
   );

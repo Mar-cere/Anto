@@ -44,7 +44,7 @@ import DashboardFocusCard from '../components/DashboardFocusCard';
 import BrandLoadingView from '../components/common/BrandLoadingView';
 import { api, ENDPOINTS } from '../config/api';
 import { BORDERS, SPACING, STATUS_BAR } from '../constants/ui';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   computeHabitsActiveThisWeek,
   getActiveHabitsForDashboard,
@@ -80,7 +80,6 @@ const STORAGE_KEYS = {
 const DashScreen = () => {
   const DASH = useSectionTranslations('DASH');
   const CHAT = useSectionTranslations('CHAT');
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const { colors, statusBarStyle, resolvedScheme } = useTheme();
   const styles = useMemo(
@@ -794,9 +793,6 @@ const DashScreen = () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setRefreshing(true);
             loadData(true);
-          }}
-          contentContainerStyle={{
-            paddingBottom: insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA,
           }}
         >
           {trialInfo && trialInfo.isInTrial && !trialBannerDismissed && (
