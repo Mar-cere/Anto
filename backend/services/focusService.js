@@ -13,8 +13,14 @@ import { FOCUS_THEMES, FOCUS_THEMES_ARRAY, FOCUS_STATUS, getFocusTheme, isValidF
  */
 function calculateCurrentWeek(startedAt, durationWeeks) {
   if (!startedAt) return 1;
+  
   const now = new Date();
-  const elapsed = now - new Date(startedAt);
+  const start = new Date(startedAt);
+  
+  // Blindar: si la fecha de inicio es futura, devolver semana 1
+  if (start > now) return 1;
+  
+  const elapsed = now - start;
   const elapsedWeeks = Math.floor(elapsed / (7 * 24 * 60 * 60 * 1000));
   const weekNumber = Math.min(Math.max(1, elapsedWeeks + 1), durationWeeks);
   return weekNumber;
@@ -62,7 +68,12 @@ export async function getActiveFocus(userId, language = 'es') {
 
   const focus = user.activeFocus;
   const theme = getFocusTheme(focus.themeId);
-  if (!theme) return null;
+  
+  // Blindar: si el tema ya no existe en el catálogo, devolver null
+  if (!theme) {
+    console.warn(`[focusService] Theme ${focus.themeId} not found in catalog for user ${userId}`);
+    return null;
+  }
 
   const copy = await import('../utils/focusApiCopy.js').then(m => m.focusApiCopy(language));
   const currentWeek = focus.status === FOCUS_STATUS.ACTIVE 
@@ -109,6 +120,7 @@ export async function startFocus(userId, payload) {
     throw error;
   }
 
+  // Blindar: solo rechazar si hay un foco ACTIVE (permitir si es paused/completed)
   if (user.activeFocus?.themeId && user.activeFocus.status === FOCUS_STATUS.ACTIVE) {
     const error = new Error('User already has an active focus');
     error.code = 'ALREADY_ACTIVE';
@@ -128,6 +140,7 @@ export async function startFocus(userId, payload) {
     completedAt: null,
   };
 
+  user.markModified('activeFocus');
   await user.save();
 
   return {
@@ -174,12 +187,14 @@ export async function updateActiveFocus(userId, payload) {
     }
     user.activeFocus.status = status;
     
+    // Actualizar weekNumber al reactivar
     if (status === FOCUS_STATUS.ACTIVE) {
       const currentWeek = calculateCurrentWeek(user.activeFocus.startedAt, user.activeFocus.durationWeeks);
       user.activeFocus.weekNumber = currentWeek;
     }
   }
 
+  user.markModified('activeFocus');
   await user.save();
 
   return {
@@ -222,6 +237,7 @@ export async function completeFocus(userId) {
   user.activeFocus.completedAt = new Date();
   user.activeFocus.weekNumber = currentWeek;
 
+  user.markModified('activeFocus');
   await user.save();
 
   return {

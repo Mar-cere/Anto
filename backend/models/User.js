@@ -520,6 +520,8 @@ userSchema.index({
 });
 userSchema.index({ 'subscription.status': 1, 'subscription.subscriptionEndDate': 1 });
 userSchema.index({ email: 1, isActive: 1 });
+// Índice para consultas de focos activos (#2)
+userSchema.index({ 'activeFocus.themeId': 1, 'activeFocus.status': 1 });
 
 // Virtuals: propiedades calculadas al acceder
 userSchema.virtual('daysSinceRegistration').get(function() {

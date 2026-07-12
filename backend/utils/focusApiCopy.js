@@ -25,6 +25,10 @@ const COPY = {
     invalidStatus: 'Estado de foco no válido',
     cannotCompleteNonActive: 'Solo puedes completar un foco activo',
     
+    // Rate limiting
+    rateLimitStart: 'Demasiados intentos de iniciar foco. Espera un momento',
+    rateLimitUpdate: 'Demasiadas actualizaciones de foco. Espera un momento',
+    
     // Validación Joi
     joiThemeIdRequired: 'El tema de foco es requerido',
     joiThemeIdInvalid: 'El tema de foco no es válido',
@@ -72,6 +76,10 @@ const COPY = {
     invalidTheme: 'Invalid focus theme',
     invalidStatus: 'Invalid focus status',
     cannotCompleteNonActive: 'You can only complete an active focus',
+    
+    // Rate limiting
+    rateLimitStart: 'Too many attempts to start focus. Please wait',
+    rateLimitUpdate: 'Too many focus updates. Please wait',
     
     // Validación Joi
     joiThemeIdRequired: 'Focus theme is required',
