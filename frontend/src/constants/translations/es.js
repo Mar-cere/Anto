@@ -432,6 +432,40 @@ export const DASH = {
   ACTION_SUGGESTION_OPEN: 'Abrir',
 };
 
+export const FOCUS_THEMES = {
+  ANXIETY_NAME: 'Ansiedad',
+  ANXIETY_DESC: 'Trabaja con preocupación, tensión y estrategias de regulación',
+  BOUNDARIES_NAME: 'Límites',
+  BOUNDARIES_DESC: 'Fortalece tu capacidad de decir que no y proteger tu espacio',
+  SELF_CARE_NAME: 'Autocuidado',
+  SELF_CARE_DESC: 'Construye hábitos sostenibles de bienestar físico y emocional',
+};
+
+export const FOCUS_ONBOARDING = {
+  TITLE: 'Elige tu foco de acompañamiento',
+  SUBTITLE: 'Durante las próximas semanas, Anto alineará el chat, técnicas y sugerencias a este tema.',
+  SELECT_THEME: 'Seleccionar tema',
+  CUSTOM_GOAL_LABEL: 'Tu objetivo personal (opcional)',
+  CUSTOM_GOAL_PLACEHOLDER: '¿Qué te gustaría explorar sobre este tema?',
+  START_FOCUS: 'Empezar acompañamiento',
+  SKIP_FOR_NOW: 'Omitir por ahora',
+  DURATION_WEEKS: '{weeks} semanas',
+};
+
+export const FOCUS_PROGRESS = {
+  TITLE: 'Tu proceso de acompañamiento',
+  WEEK_LABEL: 'Semana {current} de {total}',
+  PROGRESS_LABEL: '{progress}% completado',
+  CUSTOM_GOAL: 'Tu objetivo',
+  PAUSE_FOCUS: 'Pausar por ahora',
+  RESUME_FOCUS: 'Reanudar',
+  COMPLETE_FOCUS: 'Completar proceso',
+  SUGGESTED_INTERVENTIONS: 'Técnicas sugeridas',
+  STATUS_ACTIVE: 'Activo',
+  STATUS_PAUSED: 'Pausado',
+  STATUS_COMPLETED: 'Completado',
+};
+
 export const SETTINGS = {
   TITLE: 'Configuración',
   BACK: 'Volver',

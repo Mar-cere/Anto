@@ -430,6 +430,40 @@ export const DASH = {
   ACTION_SUGGESTION_OPEN: 'Open',
 };
 
+export const FOCUS_THEMES = {
+  ANXIETY_NAME: 'Anxiety',
+  ANXIETY_DESC: 'Work with worry, tension, and regulation strategies',
+  BOUNDARIES_NAME: 'Boundaries',
+  BOUNDARIES_DESC: 'Strengthen your ability to say no and protect your space',
+  SELF_CARE_NAME: 'Self-care',
+  SELF_CARE_DESC: 'Build sustainable habits of physical and emotional well-being',
+};
+
+export const FOCUS_ONBOARDING = {
+  TITLE: 'Choose your focus',
+  SUBTITLE: 'Over the next few weeks, Anto will align chat, techniques, and suggestions to this theme.',
+  SELECT_THEME: 'Select theme',
+  CUSTOM_GOAL_LABEL: 'Your personal goal (optional)',
+  CUSTOM_GOAL_PLACEHOLDER: 'What would you like to explore about this theme?',
+  START_FOCUS: 'Start process',
+  SKIP_FOR_NOW: 'Skip for now',
+  DURATION_WEEKS: '{weeks} weeks',
+};
+
+export const FOCUS_PROGRESS = {
+  TITLE: 'Your accompaniment process',
+  WEEK_LABEL: 'Week {current} of {total}',
+  PROGRESS_LABEL: '{progress}% complete',
+  CUSTOM_GOAL: 'Your goal',
+  PAUSE_FOCUS: 'Pause for now',
+  RESUME_FOCUS: 'Resume',
+  COMPLETE_FOCUS: 'Complete process',
+  SUGGESTED_INTERVENTIONS: 'Suggested techniques',
+  STATUS_ACTIVE: 'Active',
+  STATUS_PAUSED: 'Paused',
+  STATUS_COMPLETED: 'Completed',
+};
+
 export const SETTINGS = {
   TITLE: 'Settings',
   BACK: 'Back',
