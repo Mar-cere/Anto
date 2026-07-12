@@ -607,6 +607,21 @@ const DashScreen = () => {
     navigation.navigate('Tasks', buildFocusNextHabitNavParams(nextHabit));
   }, [navigation]);
 
+  const openFocusOnboarding = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    navigation.navigate('FocusOnboarding', {
+      onComplete: () => refreshHomeDataOnFocus({ force: true }),
+    });
+  }, [navigation, refreshHomeDataOnFocus]);
+
+  const openFocusProgress = useCallback((activeFocus) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    navigation.navigate('FocusProgress', {
+      focus: activeFocus,
+      onUpdate: () => refreshHomeDataOnFocus({ force: true }),
+    });
+  }, [navigation, refreshHomeDataOnFocus]);
+
   const refreshHomeDataOnFocus = useCallback(async ({ force = false } = {}) => {
     if (homeRefreshInFlightRef.current) return;
     if (!force && !shouldRefreshHomeOnFocus(lastHomeRefreshAtRef.current)) return;
@@ -825,6 +840,7 @@ const DashScreen = () => {
             onOpenNextTask={openNextTaskFromFocus}
             onOpenNextHabit={openNextHabitFromFocus}
             onCommitmentsChanged={() => refreshHomeDataOnFocus({ force: true })}
+            onOpenFocusProgress={openFocusProgress}
           />
           <DashboardStreakHero
             streakDays={dashboardStats.streakDays}
