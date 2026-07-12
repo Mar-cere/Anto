@@ -37,6 +37,7 @@ import {
 } from './sessionCommitmentService.js';
 import { buildHomeRotatingInsightForUser } from './homeRotatingInsightService.js';
 import { buildDigitalPhenotypeFocusAlert } from './digitalPhenotypePatternAlertService.js';
+import { getActiveFocus } from './focusService.js';
 
 function cacheTtlSecondsUntilUtcEndOfDay() {
   const now = Date.now();
@@ -534,7 +535,8 @@ export async function buildDashboardFocus(userId, opts = {}) {
     userFocusPrefs,
     lastSessionSummaryStored,
     baWeekFocus,
-    exposureFocus
+    exposureFocus,
+    activeFocus
   ] = await Promise.all([
     buildUserSummary(userId, { period: 'week', language }),
     loadUpcomingTasks(userId, 5),
@@ -545,7 +547,8 @@ export async function buildDashboardFocus(userId, opts = {}) {
     loadUserNotificationPrefs(userId),
     getLastSessionSummaryForUser(userId),
     loadBaWeekFocus(userId, language),
-    loadExposureFocus(userId)
+    loadExposureFocus(userId),
+    getActiveFocus(userId, language).catch(() => null)
   ]);
 
   const lastSessionSummaryRaw = reconcileChatContinuitySummary(
@@ -734,5 +737,22 @@ export async function buildDashboardFocus(userId, opts = {}) {
     })),
     dailyMood: dailyMood || null,
     engagementStreak,
+    activeFocus: activeFocus
+      ? {
+          themeId: activeFocus.themeId,
+          themeName: activeFocus.themeName,
+          themeDescription: activeFocus.themeDescription,
+          icon: activeFocus.icon,
+          accentKey: activeFocus.accentKey,
+          weekNumber: activeFocus.weekNumber,
+          durationWeeks: activeFocus.durationWeeks,
+          progress: activeFocus.progress,
+          customGoal: activeFocus.customGoal,
+          status: activeFocus.status,
+          startedAt: activeFocus.startedAt,
+          completedAt: activeFocus.completedAt,
+          suggestedInterventions: activeFocus.suggestedInterventions,
+        }
+      : null,
   };
 }

@@ -446,6 +446,49 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: null
     }
+  },
+  /**
+   * Foco de acompañamiento activo (#2): tema temporal que vertebra el proceso
+   * (alinea tono, sugerencias, técnicas y métricas). Un foco a la vez.
+   */
+  activeFocus: {
+    themeId: {
+      type: String,
+      enum: ['anxiety', 'boundaries', 'selfCare'],
+      default: null,
+      trim: true,
+      index: true
+    },
+    startedAt: {
+      type: Date,
+      default: null
+    },
+    durationWeeks: {
+      type: Number,
+      default: 4,
+      min: 1,
+      max: 12
+    },
+    customGoal: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: [200, 'El objetivo personalizado no puede exceder 200 caracteres']
+    },
+    weekNumber: {
+      type: Number,
+      default: 1,
+      min: 1
+    },
+    status: {
+      type: String,
+      enum: ['active', 'paused', 'completed'],
+      default: 'active'
+    },
+    completedAt: {
+      type: Date,
+      default: null
+    }
   }
 }, {
   timestamps: true,
