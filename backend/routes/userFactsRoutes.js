@@ -1,6 +1,17 @@
 /**
  * Rutas REST para gestión de hechos biográficos del usuario.
  * CRUD completo: crear, listar, actualizar, eliminar.
+ * 
+ * ## Límites y Rate Limiting
+ * 
+ * - POST: 30 hechos / 15 minutos
+ * - PUT: 50 actualizaciones / 15 minutos
+ * - DELETE: 40 eliminaciones / 15 minutos
+ * - GET: sin rate limit (protegido por auth)
+ * 
+ * ## Validaciones
+ * 
+ * - Fact: 5-150 caracteres, sin caracteres problemáticos (<>{})
  */
 
 import express from 'express';
@@ -74,6 +85,18 @@ router.post('/', createLimiter, async (req, res) => {
     });
   } catch (err) {
     console.error('[userFactsRoutes] Error creating fact:', err);
+    
+    // Errores de validación de Mongoose
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({
+        message: copy.createError,
+        errors: Object.keys(err.errors).map((key) => ({
+          field: key,
+          message: err.errors[key].message,
+        })),
+      });
+    }
+    
     return res.status(500).json({ message: copy.createError });
   }
 });
@@ -82,19 +105,27 @@ router.post('/', createLimiter, async (req, res) => {
  * GET /api/user-facts
  * Lista los hechos biográficos del usuario autenticado.
  * Query params opcionales:
- * - category: filtrar por categoría
+ * - category: filtrar por categoría (work, family, study, health, relationships, commitment, other)
  * - includeInactive: incluir hechos inactivos (default: false)
+ * - limit: número máximo de resultados (default: 100, max: 500)
  */
 router.get('/', async (req, res) => {
   const copy = req.apiCopy;
   try {
-    const { category, includeInactive } = req.query;
+    const { category, includeInactive, limit } = req.query;
 
     const filter = {
       userId: req.user._id,
     };
 
+    // Validar categoría contra enum
+    const validCategories = ['work', 'family', 'study', 'health', 'relationships', 'commitment', 'other'];
     if (category) {
+      if (!validCategories.includes(category)) {
+        return res.status(400).json({
+          message: copy.joiCategoryInvalid || 'Invalid category',
+        });
+      }
       filter.category = category;
     }
 
@@ -102,8 +133,12 @@ router.get('/', async (req, res) => {
       filter.isActive = true;
     }
 
+    // Validar y normalizar limit
+    const safeLimit = Math.min(Math.max(1, parseInt(limit) || 100), 500);
+
     const facts = await UserFact.find(filter)
       .sort({ createdAt: -1 })
+      .limit(safeLimit)
       .select('fact category source conversationId isActive createdAt updatedAt')
       .lean();
 
@@ -166,6 +201,23 @@ router.put('/:id', validateObjectId, updateLimiter, async (req, res) => {
     });
   } catch (err) {
     console.error('[userFactsRoutes] Error updating fact:', err);
+    
+    // Errores de validación de Mongoose
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({
+        message: copy.updateError,
+        errors: Object.keys(err.errors).map((key) => ({
+          field: key,
+          message: err.errors[key].message,
+        })),
+      });
+    }
+    
+    // Errores de cast (ObjectId inválido)
+    if (err.name === 'CastError') {
+      return res.status(400).json({ message: copy.notFound });
+    }
+    
     return res.status(500).json({ message: copy.updateError });
   }
 });
@@ -206,6 +258,12 @@ router.delete('/:id', validateObjectId, deleteLimiter, async (req, res) => {
     });
   } catch (err) {
     console.error('[userFactsRoutes] Error deleting fact:', err);
+    
+    // Errores de cast (ObjectId inválido)
+    if (err.name === 'CastError') {
+      return res.status(400).json({ message: copy.notFound });
+    }
+    
     return res.status(500).json({ message: copy.deleteError });
   }
 });

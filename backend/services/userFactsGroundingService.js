@@ -384,22 +384,37 @@ export async function getManualUserFacts(userId, limit = EXTRACTION_LIMITS.MAX_L
     return [];
   }
 
+  // Validar y normalizar limit
+  const safeLimit = Math.min(Math.max(EXTRACTION_LIMITS.MIN_LIMIT, Math.floor(Number(limit) || EXTRACTION_LIMITS.DEFAULT_LIMIT)), EXTRACTION_LIMITS.MAX_LIMIT);
+
   try {
     const manualFacts = await UserFact.find({
       userId,
       isActive: true,
     })
       .sort({ createdAt: -1 })
-      .limit(limit)
+      .limit(safeLimit)
       .select('fact category source createdAt')
       .lean();
 
-    return manualFacts.map((f) => ({
-      fact: f.fact,
-      category: f.category,
-      context: new Date(f.createdAt).toLocaleDateString('es-ES'),
-      source: f.source || 'user',
-    }));
+    return manualFacts
+      .map((f) => {
+        // Sanitizar el fact por si hay datos legacy sin sanitizar
+        const sanitizedFact = sanitizeFact(f.fact);
+        
+        // Solo incluir si el fact sanitizado es válido
+        if (!sanitizedFact || sanitizedFact.length < EXTRACTION_LIMITS.MIN_FACT_LENGTH) {
+          return null;
+        }
+        
+        return {
+          fact: sanitizedFact,
+          category: f.category,
+          context: new Date(f.createdAt).toLocaleDateString('es-ES'),
+          source: f.source || 'user',
+        };
+      })
+      .filter((f) => f !== null); // Remover hechos inválidos
   } catch (error) {
     console.error('[userFactsGroundingService] Error fetching manual facts:', error);
     return [];
@@ -419,12 +434,15 @@ export async function getManualUserFacts(userId, limit = EXTRACTION_LIMITS.MAX_L
 export async function buildCombinedFactsSnippet(userId, conversationId = null, language = 'es', maxFacts = 15) {
   if (!userId) return '';
 
+  // Validar y normalizar maxFacts
+  const safeMaxFacts = Math.min(Math.max(1, Math.floor(Number(maxFacts) || 15)), EXTRACTION_LIMITS.MAX_LIMIT);
+
   try {
     // Obtener hechos manuales (prioridad alta)
-    const manualFacts = await getManualUserFacts(userId, maxFacts);
+    const manualFacts = await getManualUserFacts(userId, safeMaxFacts);
 
     // Calcular cuántos hechos extraídos podemos añadir
-    const remainingSlots = maxFacts - manualFacts.length;
+    const remainingSlots = safeMaxFacts - manualFacts.length;
 
     if (remainingSlots <= 0) {
       // Si ya tenemos suficientes hechos manuales, solo usar esos
@@ -447,7 +465,7 @@ export async function buildCombinedFactsSnippet(userId, conversationId = null, l
         combinedFacts.push(extractedFact);
       }
 
-      if (combinedFacts.length >= maxFacts) break;
+      if (combinedFacts.length >= safeMaxFacts) break;
     }
 
     if (combinedFacts.length === 0) return '';
