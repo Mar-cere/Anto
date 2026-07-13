@@ -17,6 +17,7 @@ import {
   updateActiveFocus,
   completeFocus,
 } from '../services/focusService.js';
+import { logFocusEvent } from '../services/focusTelemetryService.js';
 
 const router = express.Router();
 
@@ -84,6 +85,19 @@ router.post('/active', startLimiter, async (req, res) => {
     }
 
     const focus = await startFocus(req.user._id, value);
+    
+    // Telemetría: focus started
+    logFocusEvent({
+      userId: req.user._id,
+      eventType: 'focus_started',
+      themeId: focus.themeId,
+      metadata: {
+        durationWeeks: focus.durationWeeks,
+        hasCustomGoal: Boolean(value.customGoal),
+        source: 'api',
+      },
+    }).catch(err => console.error('[focusRoutes] Telemetry error:', err));
+    
     return res.status(201).json({ success: true, message: copy.startedSuccess, data: focus });
   } catch (err) {
     console.error('[focusRoutes] Error /active POST:', err);
@@ -114,6 +128,22 @@ router.patch('/active', updateLimiter, async (req, res) => {
     }
 
     const focus = await updateActiveFocus(req.user._id, value);
+    
+    // Telemetría: pause/resume si cambió el status
+    if (value.status) {
+      const eventType = value.status === 'paused' ? 'focus_paused' : 'focus_resumed';
+      logFocusEvent({
+        userId: req.user._id,
+        eventType,
+        themeId: focus.themeId,
+        metadata: {
+          newStatus: focus.status,
+          weekNumber: focus.weekNumber,
+          source: 'api',
+        },
+      }).catch(err => console.error('[focusRoutes] Telemetry error:', err));
+    }
+    
     return res.json({ success: true, message: copy.updatedSuccess, data: focus });
   } catch (err) {
     console.error('[focusRoutes] Error /active PATCH:', err);
@@ -138,6 +168,19 @@ router.post('/active/complete', updateLimiter, async (req, res) => {
   
   try {
     const focus = await completeFocus(req.user._id);
+    
+    // Telemetría: focus completed
+    logFocusEvent({
+      userId: req.user._id,
+      eventType: 'focus_completed',
+      themeId: focus.themeId,
+      metadata: {
+        weekNumber: focus.weekNumber,
+        durationWeeks: focus.durationWeeks,
+        source: 'api',
+      },
+    }).catch(err => console.error('[focusRoutes] Telemetry error:', err));
+    
     return res.json({ success: true, message: copy.completedSuccess, data: focus });
   } catch (err) {
     console.error('[focusRoutes] Error /active/complete:', err);
