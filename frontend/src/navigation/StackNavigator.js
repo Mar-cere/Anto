@@ -63,6 +63,7 @@ import SessionInsightScreen from '../screens/SessionInsightScreen';
 import WeeklyInsightScreen from '../screens/WeeklyInsightScreen';
 import FocusOnboardingScreen from '../screens/focus/FocusOnboardingScreen';
 import FocusProgressScreen from '../screens/focus/FocusProgressScreen';
+import UserFactsScreen from '../screens/userFacts/UserFactsScreen';
 import { useTheme } from '../context/ThemeContext';
 import TabNavigator from './TabNavigator';
 
@@ -414,6 +415,11 @@ const StackNavigator = ({ initialRouteName = ROUTE_NAMES.HOME }) => {
       <Stack.Screen
         name={ROUTES.FOCUS_PROGRESS}
         component={FocusProgressScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name={ROUTES.USER_FACTS}
+        component={UserFactsScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

@@ -3206,6 +3206,53 @@ export const API_ERRORS = {
   GENERIC: 'Something went wrong. Try again.',
 };
 
+export const USER_FACTS = {
+  SCREEN_TITLE: 'Facts About Me',
+  EMPTY_TITLE: 'No facts saved yet',
+  EMPTY_MESSAGE:
+    'Here you can save information about yourself that you want the assistant to always remember.',
+  EMPTY_CTA: 'Add first fact',
+  ADD_FACT_CTA: 'Add fact',
+  FACT_CARD_EDIT: 'Edit',
+  FACT_CARD_DELETE: 'Delete',
+  DELETE_CONFIRM_TITLE: 'Delete fact',
+  DELETE_CONFIRM_MESSAGE:
+    'This fact will be permanently deleted. This action cannot be undone.',
+  DELETE_CANCEL: 'Cancel',
+  DELETE_CONFIRM: 'Delete',
+  TOAST_DELETED: 'Fact deleted',
+  TOAST_ERROR: 'Could not complete. Try again.',
+  TOAST_SAVED: 'Fact saved',
+  LOADING: 'Loading facts…',
+  ERROR_LOADING: 'Could not load facts',
+  RETRY: 'Retry',
+
+  // Modal
+  MODAL_CREATE_TITLE: 'New fact about me',
+  MODAL_EDIT_TITLE: 'Edit fact',
+  MODAL_DONE: 'Done',
+  MODAL_CANCEL: 'Cancel',
+  MODAL_SAVE: 'Save',
+  MODAL_SAVING: 'Saving…',
+  MODAL_FACT_LABEL: 'What do you want me to remember?',
+  MODAL_FACT_PLACEHOLDER: 'Example: I work as a graphic designer',
+  MODAL_FACT_HINT: 'Write a concrete fact about yourself (work, family, studies, health…)',
+  MODAL_CATEGORY_LABEL: 'Category',
+  MODAL_ERROR_TITLE: 'Error',
+  MODAL_ERROR_TOO_SHORT: 'Fact must be at least 5 characters long',
+  MODAL_ERROR_TOO_LONG: 'Fact cannot exceed 150 characters',
+  MODAL_ERROR_EMPTY: 'Please enter a fact',
+
+  // Categories
+  CATEGORY_WORK: 'Work',
+  CATEGORY_FAMILY: 'Family',
+  CATEGORY_STUDY: 'Studies',
+  CATEGORY_HEALTH: 'Health',
+  CATEGORY_RELATIONSHIPS: 'Relationships',
+  CATEGORY_COMMITMENT: 'Commitments',
+  CATEGORY_OTHER: 'Other',
+};
+
 export default {
   HOME,
   REGISTER,
@@ -3226,5 +3273,6 @@ export default {
   TECHNIQUES,
   PROFILE,
   SUBSCRIPTION,
+  USER_FACTS,
   API_ERRORS,
 };

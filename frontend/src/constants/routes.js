@@ -15,4 +15,6 @@ export const ROUTES = {
   // Focus accompaniment (#2)
   FOCUS_ONBOARDING: 'FocusOnboarding',
   FOCUS_PROGRESS: 'FocusProgress',
+  // User facts (#63 grounding)
+  USER_FACTS: 'UserFacts',
 }; 
