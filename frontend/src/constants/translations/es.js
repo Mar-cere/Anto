@@ -450,6 +450,11 @@ export const FOCUS_ONBOARDING = {
   START_FOCUS: 'Empezar acompañamiento',
   SKIP_FOR_NOW: 'Omitir por ahora',
   DURATION_WEEKS: '{weeks} semanas',
+  ERROR_LOADING: 'No se pudieron cargar los temas de foco',
+  ERROR_STARTING: 'No se pudo iniciar el foco. Intenta de nuevo',
+  ERROR_TITLE: 'Error',
+  LOADING: 'Cargando temas...',
+  NO_THEMES_AVAILABLE: 'No hay temas disponibles en este momento',
 };
 
 export const FOCUS_PROGRESS = {
@@ -464,6 +469,17 @@ export const FOCUS_PROGRESS = {
   STATUS_ACTIVE: 'Activo',
   STATUS_PAUSED: 'Pausado',
   STATUS_COMPLETED: 'Completado',
+  PAUSE_CONFIRM_TITLE: 'Pausar proceso',
+  PAUSE_CONFIRM_MESSAGE: '¿Seguro que quieres pausar tu proceso? Podrás reanudarlo cuando quieras.',
+  COMPLETE_CONFIRM_TITLE: 'Completar proceso',
+  COMPLETE_CONFIRM_MESSAGE: '¿Ya completaste este proceso de acompañamiento? Podrás iniciar uno nuevo después.',
+  CANCEL: 'Cancelar',
+  CONFIRM_PAUSE: 'Pausar',
+  CONFIRM_COMPLETE: 'Completar',
+  ERROR_TITLE: 'Error',
+  ERROR_PAUSING: 'No se pudo pausar el foco',
+  ERROR_COMPLETING: 'No se pudo completar el foco',
+  NO_ACTIVE_FOCUS: 'No hay foco activo',
 };
 
 export const SETTINGS = {

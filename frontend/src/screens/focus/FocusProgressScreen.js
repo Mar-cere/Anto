@@ -19,40 +19,45 @@ import { createGlobalStyles } from '../../styles/globalStyles';
 import { updateFocus, completeFocus } from '../../services/focusService';
 
 const FocusProgressScreen = ({ navigation, route }) => {
-  const { colors, resolvedScheme } = useTheme();
+  const { colors } = useTheme();
   const FOCUS_PROGRESS = useSectionTranslations('FOCUS_PROGRESS');
 
-  const [focus, setFocus] = useState(route.params?.focus || null);
+  const focus = route?.params?.focus || null;
   const [updating, setUpdating] = useState(false);
 
   const styles = useMemo(
-    () => createStyles(colors, resolvedScheme),
-    [colors, resolvedScheme]
+    () => createStyles(colors),
+    [colors]
   );
   const globalStyles = useMemo(() => createGlobalStyles(colors), [colors]);
 
   const handlePause = useCallback(async () => {
-    if (!focus) return;
+    if (!focus || updating) return;
 
     Alert.alert(
-      FOCUS_PROGRESS.PAUSE_FOCUS,
-      '¿Seguro que quieres pausar tu proceso? Podrás reanudarlo cuando quieras.',
+      FOCUS_PROGRESS.PAUSE_CONFIRM_TITLE,
+      FOCUS_PROGRESS.PAUSE_CONFIRM_MESSAGE,
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: FOCUS_PROGRESS.CANCEL, style: 'cancel' },
         {
-          text: 'Pausar',
+          text: FOCUS_PROGRESS.CONFIRM_PAUSE,
           style: 'destructive',
           onPress: async () => {
             setUpdating(true);
             try {
               await updateFocus({ status: 'paused' });
-              navigation.goBack();
-              if (route.params?.onUpdate) {
+              if (navigation?.goBack) {
+                navigation.goBack();
+              }
+              if (route?.params?.onUpdate) {
                 route.params.onUpdate();
               }
             } catch (error) {
               console.error('Error pausing focus:', error);
-              Alert.alert('Error', 'No se pudo pausar el foco');
+              const message =
+                error.response?.data?.message ||
+                FOCUS_PROGRESS.ERROR_PAUSING;
+              Alert.alert(FOCUS_PROGRESS.ERROR_TITLE, message);
             } finally {
               setUpdating(false);
             }
@@ -60,29 +65,34 @@ const FocusProgressScreen = ({ navigation, route }) => {
         },
       ]
     );
-  }, [focus, navigation, route, FOCUS_PROGRESS]);
+  }, [focus, navigation, route, updating, FOCUS_PROGRESS]);
 
   const handleComplete = useCallback(async () => {
-    if (!focus) return;
+    if (!focus || updating) return;
 
     Alert.alert(
-      FOCUS_PROGRESS.COMPLETE_FOCUS,
-      '¿Ya completaste este proceso de acompañamiento? Podrás iniciar uno nuevo después.',
+      FOCUS_PROGRESS.COMPLETE_CONFIRM_TITLE,
+      FOCUS_PROGRESS.COMPLETE_CONFIRM_MESSAGE,
       [
-        { text: 'Cancelar', style: 'cancel' },
+        { text: FOCUS_PROGRESS.CANCEL, style: 'cancel' },
         {
-          text: 'Completar',
+          text: FOCUS_PROGRESS.CONFIRM_COMPLETE,
           onPress: async () => {
             setUpdating(true);
             try {
               await completeFocus();
-              navigation.goBack();
-              if (route.params?.onUpdate) {
+              if (navigation?.goBack) {
+                navigation.goBack();
+              }
+              if (route?.params?.onUpdate) {
                 route.params.onUpdate();
               }
             } catch (error) {
               console.error('Error completing focus:', error);
-              Alert.alert('Error', 'No se pudo completar el foco');
+              const message =
+                error.response?.data?.message ||
+                FOCUS_PROGRESS.ERROR_COMPLETING;
+              Alert.alert(FOCUS_PROGRESS.ERROR_TITLE, message);
             } finally {
               setUpdating(false);
             }
@@ -90,12 +100,12 @@ const FocusProgressScreen = ({ navigation, route }) => {
         },
       ]
     );
-  }, [focus, navigation, route, FOCUS_PROGRESS]);
+  }, [focus, navigation, route, updating, FOCUS_PROGRESS]);
 
   if (!focus) {
     return (
       <SafeAreaView style={[styles.container, styles.centerContent]} edges={['top']}>
-        <Text style={styles.errorText}>No hay foco activo</Text>
+        <Text style={styles.errorText}>{FOCUS_PROGRESS.NO_ACTIVE_FOCUS}</Text>
       </SafeAreaView>
     );
   }
@@ -195,7 +205,7 @@ const FocusProgressScreen = ({ navigation, route }) => {
   );
 };
 
-function createStyles(colors, resolvedScheme) {
+function createStyles(colors) {
   return {
     container: {
       flex: 1,

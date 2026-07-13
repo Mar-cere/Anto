@@ -39,46 +39,72 @@ const FocusOnboardingScreen = ({ navigation, route }) => {
   const globalStyles = useMemo(() => createGlobalStyles(colors), [colors]);
 
   React.useEffect(() => {
-    loadThemes();
-  }, []);
+    let mounted = true;
 
-  const loadThemes = useCallback(async () => {
-    try {
-      const response = await getFocusThemes();
-      setThemes(response.data || []);
-    } catch (error) {
-      console.error('Error loading focus themes:', error);
-      Alert.alert('Error', 'No se pudieron cargar los temas de foco');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    const load = async () => {
+      try {
+        const response = await getFocusThemes();
+        if (mounted) {
+          setThemes(response.data || []);
+        }
+      } catch (error) {
+        console.error('Error loading focus themes:', error);
+        if (mounted) {
+          Alert.alert(
+            FOCUS_ONBOARDING.ERROR_TITLE,
+            error.response?.data?.message || FOCUS_ONBOARDING.ERROR_LOADING
+          );
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    load();
+
+    return () => {
+      mounted = false;
+    };
+  }, [FOCUS_ONBOARDING]);
 
   const handleStart = useCallback(async () => {
-    if (!selectedThemeId) return;
+    if (!selectedThemeId || starting) return;
+    
+    const trimmedGoal = customGoal.trim();
+    if (trimmedGoal.length > 200) {
+      Alert.alert(
+        FOCUS_ONBOARDING.ERROR_TITLE,
+        'El objetivo no puede exceder 200 caracteres'
+      );
+      return;
+    }
 
     setStarting(true);
     try {
       await startFocus({
         themeId: selectedThemeId,
-        customGoal: customGoal.trim() || null,
+        customGoal: trimmedGoal || null,
       });
 
-      navigation.goBack();
+      if (navigation?.goBack) {
+        navigation.goBack();
+      }
       
-      if (route.params?.onComplete) {
+      if (route?.params?.onComplete) {
         route.params.onComplete();
       }
     } catch (error) {
       console.error('Error starting focus:', error);
       const message =
         error.response?.data?.message ||
-        'No se pudo iniciar el foco. Intenta de nuevo';
-      Alert.alert('Error', message);
+        FOCUS_ONBOARDING.ERROR_STARTING;
+      Alert.alert(FOCUS_ONBOARDING.ERROR_TITLE, message);
     } finally {
       setStarting(false);
     }
-  }, [selectedThemeId, customGoal, navigation, route]);
+  }, [selectedThemeId, customGoal, navigation, route, starting, FOCUS_ONBOARDING]);
 
   const handleSkip = useCallback(() => {
     navigation.goBack();
@@ -88,6 +114,27 @@ const FocusOnboardingScreen = ({ navigation, route }) => {
     return (
       <SafeAreaView style={[styles.container, styles.centerContent]} edges={['top']}>
         <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={styles.loadingText}>{FOCUS_ONBOARDING.LOADING}</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!themes || themes.length === 0) {
+    return (
+      <SafeAreaView style={[styles.container, styles.centerContent]} edges={['top']}>
+        <Text style={styles.emptyText}>{FOCUS_ONBOARDING.NO_THEMES_AVAILABLE}</Text>
+        <Pressable
+          onPress={handleSkip}
+          style={({ pressed }) => [
+            styles.skipButton,
+            { marginTop: SPACING.lg },
+            pressed && { opacity: 0.7 },
+          ]}
+          accessibilityRole="button"
+          accessibilityLabel={FOCUS_ONBOARDING.SKIP_FOR_NOW}
+        >
+          <Text style={styles.skipButtonText}>{FOCUS_ONBOARDING.SKIP_FOR_NOW}</Text>
+        </Pressable>
       </SafeAreaView>
     );
   }
@@ -207,8 +254,6 @@ const FocusOnboardingScreen = ({ navigation, route }) => {
 };
 
 function createStyles(colors, resolvedScheme, width) {
-  const isCompact = width < 600;
-  
   return {
     container: {
       flex: 1,
@@ -217,6 +262,18 @@ function createStyles(colors, resolvedScheme, width) {
     centerContent: {
       justifyContent: 'center',
       alignItems: 'center',
+      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    },
+    loadingText: {
+      marginTop: SPACING.md,
+      color: colors.textSecondary,
+      fontSize: 14,
+    },
+    emptyText: {
+      color: colors.textSecondary,
+      fontSize: 16,
+      textAlign: 'center',
+      marginBottom: SPACING.md,
     },
     scroll: {
       flex: 1,

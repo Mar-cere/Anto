@@ -448,6 +448,11 @@ export const FOCUS_ONBOARDING = {
   START_FOCUS: 'Start process',
   SKIP_FOR_NOW: 'Skip for now',
   DURATION_WEEKS: '{weeks} weeks',
+  ERROR_LOADING: 'Could not load focus themes',
+  ERROR_STARTING: 'Could not start focus. Try again',
+  ERROR_TITLE: 'Error',
+  LOADING: 'Loading themes...',
+  NO_THEMES_AVAILABLE: 'No themes available at this time',
 };
 
 export const FOCUS_PROGRESS = {
@@ -462,6 +467,17 @@ export const FOCUS_PROGRESS = {
   STATUS_ACTIVE: 'Active',
   STATUS_PAUSED: 'Paused',
   STATUS_COMPLETED: 'Completed',
+  PAUSE_CONFIRM_TITLE: 'Pause process',
+  PAUSE_CONFIRM_MESSAGE: 'Are you sure you want to pause your process? You can resume it anytime.',
+  COMPLETE_CONFIRM_TITLE: 'Complete process',
+  COMPLETE_CONFIRM_MESSAGE: 'Have you completed this accompaniment process? You can start a new one after.',
+  CANCEL: 'Cancel',
+  CONFIRM_PAUSE: 'Pause',
+  CONFIRM_COMPLETE: 'Complete',
+  ERROR_TITLE: 'Error',
+  ERROR_PAUSING: 'Could not pause focus',
+  ERROR_COMPLETING: 'Could not complete focus',
+  NO_ACTIVE_FOCUS: 'No active focus',
 };
 
 export const SETTINGS = {
