@@ -24,6 +24,7 @@
  */
 
 import Message from '../models/Message.js';
+import UserFact from '../models/UserFact.js';
 import { buildKnownFactsSnippet } from './chat/groundingPolicySnippet.js';
 
 const FACT_CATEGORIES = {
@@ -368,4 +369,92 @@ export async function buildFactsSnippetForPrompt(userId, conversationId = null, 
   if (facts.length === 0) return '';
 
   return buildKnownFactsSnippet(facts, language);
+}
+
+/**
+ * Obtiene los hechos biográficos manuales del usuario (registrados vía API).
+ * Estos hechos tienen prioridad sobre los extraídos automáticamente.
+ * 
+ * @param {string} userId - ID del usuario
+ * @param {number} limit - Máximo número de hechos a retornar
+ * @returns {Promise<Array>} Lista de hechos estructurados
+ */
+export async function getManualUserFacts(userId, limit = EXTRACTION_LIMITS.MAX_LIMIT) {
+  if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
+    return [];
+  }
+
+  try {
+    const manualFacts = await UserFact.find({
+      userId,
+      isActive: true,
+    })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .select('fact category source createdAt')
+      .lean();
+
+    return manualFacts.map((f) => ({
+      fact: f.fact,
+      category: f.category,
+      context: new Date(f.createdAt).toLocaleDateString('es-ES'),
+      source: f.source || 'user',
+    }));
+  } catch (error) {
+    console.error('[userFactsGroundingService] Error fetching manual facts:', error);
+    return [];
+  }
+}
+
+/**
+ * Combina hechos manuales y extraídos automáticamente, priorizando los manuales.
+ * Elimina duplicados (hechos con contenido muy similar).
+ * 
+ * @param {string} userId - ID del usuario
+ * @param {string} conversationId - ID de la conversación (opcional)
+ * @param {string} language - Idioma del snippet ('es' | 'en')
+ * @param {number} maxFacts - Máximo número de hechos en el snippet final
+ * @returns {Promise<string>} Snippet combinado de hechos conocidos
+ */
+export async function buildCombinedFactsSnippet(userId, conversationId = null, language = 'es', maxFacts = 15) {
+  if (!userId) return '';
+
+  try {
+    // Obtener hechos manuales (prioridad alta)
+    const manualFacts = await getManualUserFacts(userId, maxFacts);
+
+    // Calcular cuántos hechos extraídos podemos añadir
+    const remainingSlots = maxFacts - manualFacts.length;
+
+    if (remainingSlots <= 0) {
+      // Si ya tenemos suficientes hechos manuales, solo usar esos
+      return buildKnownFactsSnippet(manualFacts, language);
+    }
+
+    // Obtener hechos extraídos para completar
+    const extractedFacts = await extractKnownFacts(userId, conversationId, remainingSlots);
+
+    // Combinar: manuales primero, luego extraídos (evitando duplicados)
+    const combinedFacts = [...manualFacts];
+    const seenFactContent = new Set(manualFacts.map((f) => f.fact.toLowerCase().trim()));
+
+    for (const extractedFact of extractedFacts) {
+      const normalizedContent = extractedFact.fact.toLowerCase().trim();
+      
+      // Evitar duplicados exactos
+      if (!seenFactContent.has(normalizedContent)) {
+        seenFactContent.add(normalizedContent);
+        combinedFacts.push(extractedFact);
+      }
+
+      if (combinedFacts.length >= maxFacts) break;
+    }
+
+    if (combinedFacts.length === 0) return '';
+
+    return buildKnownFactsSnippet(combinedFacts, language);
+  } catch (error) {
+    console.error('[userFactsGroundingService] Error building combined facts snippet:', error);
+    return '';
+  }
 }

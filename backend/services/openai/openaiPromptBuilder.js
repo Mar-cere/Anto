@@ -5,7 +5,7 @@
 import { buildDailyMoodPromptSnippet } from '../../utils/dailyMoodCopy.js';
 import Message from '../../models/Message.js';
 import { buildGroundingPolicySnippet } from '../chat/groundingPolicySnippet.js';
-import { buildFactsSnippetForPrompt } from '../userFactsGroundingService.js';
+import { buildCombinedFactsSnippet } from '../userFactsGroundingService.js';
 import {
   generateCrisisMessage,
   generateCrisisSystemPrompt,
@@ -1167,10 +1167,10 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     systemMessage += onboardingSnippet;
   }
 
-  // Known facts grounding (#63): Hechos biográficos explícitos del usuario
+  // Known facts grounding (#63): Hechos biográficos manuales + extraídos del usuario
   if (!contexto.isGuest && mensaje.userId) {
     try {
-      const factsSnippet = await buildFactsSnippetForPrompt(mensaje.userId, contexto.conversationId, language);
+      const factsSnippet = await buildCombinedFactsSnippet(mensaje.userId, contexto.conversationId, language, 15);
       if (factsSnippet) {
         systemMessage += factsSnippet;
       }
