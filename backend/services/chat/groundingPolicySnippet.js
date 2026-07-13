@@ -48,18 +48,41 @@ export function buildGroundingPolicySnippet(language = 'es') {
 export function buildKnownFactsSnippet(facts, language = 'es') {
   if (!facts || facts.length === 0) return '';
 
+  const MAX_SNIPPET_LENGTH = 1000; // Límite total del snippet
+
   const header =
     language === 'en'
       ? "\n\n### KNOWN FACTS (from this user's history)\nThese are the ONLY biographical facts you can reference:"
       : '\n\n### HECHOS CONOCIDOS (del historial de este usuario)\nEstos son los ÚNICOS hechos biográficos que puedes referenciar:';
 
   const mentionLabel = language === 'en' ? 'mentioned' : 'mencionado';
-  const factLines = facts.map((f) => `- ${f.fact} (${mentionLabel}: ${f.context})`).join('\n');
+  
+  // Construir líneas de hechos y truncar si excede el límite
+  const factLines = [];
+  let currentLength = header.length;
+  
+  for (const f of facts) {
+    const factLine = `- ${f.fact} (${mentionLabel}: ${f.context})`;
+    if (currentLength + factLine.length + 1 > MAX_SNIPPET_LENGTH) {
+      const remainingCount = facts.length - factLines.length;
+      if (remainingCount > 0) {
+        const truncationMsg = language === 'en' 
+          ? `\n(${remainingCount} more facts omitted for brevity)`
+          : `\n(${remainingCount} hechos adicionales omitidos por brevedad)`;
+        factLines.push(truncationMsg);
+      }
+      break;
+    }
+    factLines.push(factLine);
+    currentLength += factLine.length + 1;
+  }
+  
+  const factsText = factLines.join('\n');
 
   const footer =
     language === 'en'
       ? '\nIf the user asks about something NOT listed here, ask them instead of assuming.'
       : '\nSi el usuario pregunta sobre algo que NO está aquí listado, pregúntale en lugar de asumir.';
 
-  return `${header}\n${factLines}${footer}`;
+  return `${header}\n${factsText}${footer}`;
 }

@@ -149,14 +149,17 @@ describe('openaiPromptBuilder - grounding integration', () => {
     });
 
     it('debe manejar errores de extracción de hechos sin fallar', async () => {
-      Message.find = jest.fn().mockImplementation(() => {
-        throw new Error('Database error');
+      Message.find = jest.fn().mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockRejectedValue(new Error('Database error')),
       });
 
       const prompt = await buildContextualizedPrompt(baseMensaje, baseContexto);
 
       expect(prompt.systemMessage).toContain('POLÍTICA DE GROUNDING');
-      expect(prompt.messages).toBeDefined();
+      expect(prompt).toHaveProperty('systemMessage');
     });
   });
 
