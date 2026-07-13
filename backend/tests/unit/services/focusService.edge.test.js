@@ -29,11 +29,12 @@ describe('focusService edge cases', () => {
         }
       };
       
-      User.findById = jest.fn().mockResolvedValue({
-        ...mockUser,
+      const mockChain = {
         select: jest.fn().mockReturnThis(),
         lean: jest.fn().mockResolvedValue(mockUser),
-      });
+      };
+      
+      User.findById = jest.fn().mockReturnValue(mockChain);
       
       const result = await focusService.getActiveFocus('user123', 'es');
       
@@ -93,10 +94,12 @@ describe('focusService edge cases', () => {
         }
       };
       
-      User.findById = jest.fn().mockResolvedValue({
+      const mockChain = {
         select: jest.fn().mockReturnThis(),
         lean: jest.fn().mockResolvedValue(mockUser),
-      });
+      };
+      
+      User.findById = jest.fn().mockReturnValue(mockChain);
       
       const result = await focusService.getActiveFocus('user123', 'es');
       
