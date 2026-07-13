@@ -56,3 +56,17 @@ export const completeFocus = async () => {
   const response = await apiClient.post('/focus/active/complete');
   return response.data;
 };
+
+/**
+ * Enviar evento de telemetría de interacción con UI de foco
+ * @param {Object} event - { eventType, themeId?, metadata? }
+ * @returns {Promise<void>}
+ */
+export const logFocusTelemetry = async (event) => {
+  try {
+    await apiClient.post('/focus/telemetry', event);
+  } catch (error) {
+    // No bloquear la operación principal si falla la telemetría
+    console.warn('[focusService] Error logging telemetry:', error.message);
+  }
+};

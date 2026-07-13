@@ -18,7 +18,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
 import { createGlobalStyles } from '../../styles/globalStyles';
-import { getFocusThemes, startFocus } from '../../services/focusService';
+import { getFocusThemes, startFocus, logFocusTelemetry } from '../../services/focusService';
 
 const FocusOnboardingScreen = ({ navigation, route }) => {
   const { colors, resolvedScheme } = useTheme();
@@ -40,6 +40,12 @@ const FocusOnboardingScreen = ({ navigation, route }) => {
 
   React.useEffect(() => {
     let mounted = true;
+
+    // Telemetría: onboarding opened
+    logFocusTelemetry({
+      eventType: 'focus_onboarding_opened',
+      metadata: { source: 'dashboard' },
+    });
 
     const load = async () => {
       try {
@@ -107,6 +113,11 @@ const FocusOnboardingScreen = ({ navigation, route }) => {
   }, [selectedThemeId, customGoal, navigation, route, starting, FOCUS_ONBOARDING]);
 
   const handleSkip = useCallback(() => {
+    // Telemetría: onboarding skipped
+    logFocusTelemetry({
+      eventType: 'focus_onboarding_skipped',
+      metadata: { source: 'dashboard' },
+    });
     navigation.goBack();
   }, [navigation]);
 

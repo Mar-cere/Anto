@@ -25,6 +25,7 @@ import DashboardScroll from '../components/DashboardScroll';
 import EmergencyContactsModal from '../components/EmergencyContactsModal';
 import FloatingNavBar from '../components/FloatingNavBar';
 import websocketService from '../services/websocketService';
+import { logFocusTelemetry } from '../services/focusService';
 import {
   mergeFocusResponse,
   shouldRefreshHomeOnFocus,
@@ -306,6 +307,19 @@ const DashScreen = () => {
         focusRes.data
       ) {
         setFocusPayload(focusRes.data);
+        
+        // Telemetría: dashboard viewed con foco activo
+        if (focusRes.data?.activeFocus?.themeId) {
+          logFocusTelemetry({
+            eventType: 'focus_dashboard_viewed',
+            themeId: focusRes.data.activeFocus.themeId,
+            metadata: {
+              weekNumber: focusRes.data.activeFocus.weekNumber,
+              progress: focusRes.data.activeFocus.progress,
+              source: 'dashboard',
+            },
+          });
+        }
       } else {
         setFocusPayload(null);
       }

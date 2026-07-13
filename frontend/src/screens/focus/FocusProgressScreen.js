@@ -16,7 +16,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
 import { createGlobalStyles } from '../../styles/globalStyles';
-import { updateFocus, completeFocus } from '../../services/focusService';
+import { updateFocus, completeFocus, logFocusTelemetry } from '../../services/focusService';
 
 const FocusProgressScreen = ({ navigation, route }) => {
   const { colors } = useTheme();
@@ -30,6 +30,21 @@ const FocusProgressScreen = ({ navigation, route }) => {
     [colors]
   );
   const globalStyles = useMemo(() => createGlobalStyles(colors), [colors]);
+
+  // Telemetría: progress viewed
+  React.useEffect(() => {
+    if (focus?.themeId) {
+      logFocusTelemetry({
+        eventType: 'focus_progress_viewed',
+        themeId: focus.themeId,
+        metadata: {
+          weekNumber: focus.weekNumber,
+          progress: focus.progress,
+          source: 'dashboard',
+        },
+      });
+    }
+  }, [focus?.themeId]);
 
   const handlePause = useCallback(async () => {
     if (!focus || updating) return;

@@ -196,4 +196,33 @@ router.post('/active/complete', updateLimiter, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/focus/telemetry
+ * Registrar evento de telemetría de interacción con UI de foco.
+ * Body: { eventType, themeId?, metadata? }
+ */
+router.post('/telemetry', async (req, res) => {
+  const copy = req.apiCopy;
+  
+  try {
+    const { eventType, themeId, metadata } = req.body;
+    
+    if (!eventType) {
+      return res.status(400).json({ success: false, message: 'eventType is required' });
+    }
+
+    await logFocusEvent({
+      userId: req.user._id,
+      eventType,
+      themeId,
+      metadata: metadata || {},
+    });
+    
+    return res.status(201).json({ success: true, message: 'Telemetry logged' });
+  } catch (err) {
+    console.error('[focusRoutes] Error /telemetry:', err);
+    return res.status(500).json({ success: false, message: 'Error logging telemetry' });
+  }
+});
+
 export default router;
