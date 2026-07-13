@@ -53,7 +53,8 @@ export function buildKnownFactsSnippet(facts, language = 'es') {
       ? "\n\n### KNOWN FACTS (from this user's history)\nThese are the ONLY biographical facts you can reference:"
       : '\n\n### HECHOS CONOCIDOS (del historial de este usuario)\nEstos son los ÚNICOS hechos biográficos que puedes referenciar:';
 
-  const factLines = facts.map((f) => `- ${f.fact} (mencionado: ${f.context})`).join('\n');
+  const mentionLabel = language === 'en' ? 'mentioned' : 'mencionado';
+  const factLines = facts.map((f) => `- ${f.fact} (${mentionLabel}: ${f.context})`).join('\n');
 
   const footer =
     language === 'en'

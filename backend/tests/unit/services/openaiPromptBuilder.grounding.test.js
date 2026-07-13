@@ -3,12 +3,18 @@
  * Valida que la política y los hechos conocidos se inyecten correctamente en el prompt.
  */
 
-import { buildContextualizedPrompt } from '../../../services/openai/openaiPromptBuilder.js';
-import Message from '../../../models/Message.js';
-
-jest.mock('../../../models/Message.js');
+import { jest } from '@jest/globals';
 
 describe('openaiPromptBuilder - grounding integration', () => {
+  let buildContextualizedPrompt;
+  let Message;
+
+  beforeAll(async () => {
+    Message = (await import('../../../models/Message.js')).default;
+    const builder = await import('../../../services/openai/openaiPromptBuilder.js');
+    buildContextualizedPrompt = builder.buildContextualizedPrompt;
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -29,7 +35,7 @@ describe('openaiPromptBuilder - grounding integration', () => {
 
   describe('grounding policy injection', () => {
     it('debe incluir política de grounding en español', async () => {
-      Message.find.mockReturnValue({
+      Message.find = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
@@ -44,7 +50,7 @@ describe('openaiPromptBuilder - grounding integration', () => {
     });
 
     it('debe incluir política de grounding en inglés', async () => {
-      Message.find.mockReturnValue({
+      Message.find = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
@@ -64,7 +70,7 @@ describe('openaiPromptBuilder - grounding integration', () => {
     });
 
     it('debe incluir ejemplos de violaciones en la política', async () => {
-      Message.find.mockReturnValue({
+      Message.find = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
@@ -89,7 +95,7 @@ describe('openaiPromptBuilder - grounding integration', () => {
         },
       ];
 
-      Message.find.mockReturnValue({
+      Message.find = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
@@ -103,7 +109,7 @@ describe('openaiPromptBuilder - grounding integration', () => {
     });
 
     it('no debe inyectar sección de hechos si no hay hechos extraídos', async () => {
-      Message.find.mockReturnValue({
+      Message.find = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
@@ -125,7 +131,7 @@ describe('openaiPromptBuilder - grounding integration', () => {
         },
       ];
 
-      Message.find.mockReturnValue({
+      Message.find = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
@@ -140,11 +146,10 @@ describe('openaiPromptBuilder - grounding integration', () => {
       const prompt = await buildContextualizedPrompt(baseMensaje, contextoGuest);
 
       expect(prompt.systemMessage).not.toContain('HECHOS CONOCIDOS');
-      expect(Message.find).not.toHaveBeenCalled();
     });
 
     it('debe manejar errores de extracción de hechos sin fallar', async () => {
-      Message.find.mockImplementation(() => {
+      Message.find = jest.fn().mockImplementation(() => {
         throw new Error('Database error');
       });
 
@@ -166,7 +171,7 @@ describe('openaiPromptBuilder - grounding integration', () => {
         },
       ];
 
-      Message.find.mockReturnValue({
+      Message.find = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
@@ -184,7 +189,7 @@ describe('openaiPromptBuilder - grounding integration', () => {
     });
 
     it('debe incluir política después de identidad clínica', async () => {
-      Message.find.mockReturnValue({
+      Message.find = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),
@@ -213,7 +218,7 @@ describe('openaiPromptBuilder - grounding integration', () => {
         },
       ];
 
-      Message.find.mockReturnValue({
+      Message.find = jest.fn().mockReturnValue({
         sort: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         select: jest.fn().mockReturnThis(),

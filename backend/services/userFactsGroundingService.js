@@ -51,7 +51,7 @@ const BIOGRAPHICAL_PATTERNS = [
   {
     pattern: /i\s+have\s+(\d+)\s+(child|children|sibling|siblings)/i,
     category: 'family',
-    template: (m, lang) => (lang === 'en' ? `Has ${m[1]} ${m[2]}` : `Tiene ${m[1]} ${m[2] === 'child' || m[2] === 'children' ? 'hijo(s)' : 'hermano(s)}'`),
+    template: (m, lang) => (lang === 'en' ? `Has ${m[1]} ${m[2]}` : `Tiene ${m[1]} ${m[2] === 'child' || m[2] === 'children' ? 'hijo(s)' : 'hermano(s)'}`),
   },
   {
     pattern: /i\s+live\s+with\s+(?:my\s+)?([\w\s]{3,30})/i,
