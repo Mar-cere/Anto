@@ -36,6 +36,13 @@ const COPY = {
     joiDurationWeeksMax: 'La duración no puede exceder 12 semanas',
     joiCustomGoalMax: 'El objetivo personalizado no puede exceder 200 caracteres',
     joiStatusInvalid: 'El estado debe ser active, paused o completed',
+    joiEventTypeRequired: 'El tipo de evento es requerido',
+    joiEventTypeInvalid: 'El tipo de evento no es válido',
+    joiMetadataInvalid: 'La metadata debe ser un objeto',
+    
+    // Telemetría
+    telemetryLogged: 'Telemetría registrada correctamente',
+    telemetryError: 'Error al registrar telemetría',
     
     // Copy de temas
     themes: {
@@ -88,6 +95,13 @@ const COPY = {
     joiDurationWeeksMax: 'Duration cannot exceed 12 weeks',
     joiCustomGoalMax: 'Custom goal cannot exceed 200 characters',
     joiStatusInvalid: 'Status must be active, paused, or completed',
+    joiEventTypeRequired: 'Event type is required',
+    joiEventTypeInvalid: 'Event type is not valid',
+    joiMetadataInvalid: 'Metadata must be an object',
+    
+    // Telemetría
+    telemetryLogged: 'Telemetry logged successfully',
+    telemetryError: 'Error logging telemetry',
     
     // Copy de temas
     themes: {

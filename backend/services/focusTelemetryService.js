@@ -4,6 +4,10 @@
  */
 import FocusTelemetryEvent from '../models/FocusTelemetryEvent.js';
 
+// Límites de seguridad
+const MAX_EVENTS_QUERY_LIMIT = 1000;
+const DEFAULT_EVENTS_QUERY_LIMIT = 100;
+
 /**
  * Registrar un evento de telemetría de foco.
  * @param {Object} event - Datos del evento
@@ -15,6 +19,17 @@ import FocusTelemetryEvent from '../models/FocusTelemetryEvent.js';
  */
 export async function logFocusEvent({ userId, eventType, themeId, metadata = {} }) {
   try {
+    // Validaciones básicas
+    if (!userId) {
+      console.warn('[focusTelemetryService] userId is required');
+      return;
+    }
+    
+    if (!eventType || typeof eventType !== 'string') {
+      console.warn('[focusTelemetryService] eventType is required and must be a string');
+      return;
+    }
+    
     await FocusTelemetryEvent.create({
       userId,
       eventType,
@@ -43,12 +58,23 @@ export async function logFocusEvent({ userId, eventType, themeId, metadata = {} 
  * @returns {Promise<Array>} Lista de eventos
  */
 export async function getFocusEvents(userId, options = {}) {
+  // Validar userId
+  if (!userId) {
+    throw new Error('userId is required');
+  }
+  
   const {
     eventType,
     themeId,
     since,
-    limit = 100,
+    limit = DEFAULT_EVENTS_QUERY_LIMIT,
   } = options;
+
+  // Validar y cap limit
+  const safeLimit = Math.min(
+    Math.max(1, Math.floor(limit)),
+    MAX_EVENTS_QUERY_LIMIT
+  );
 
   const query = { userId };
 
@@ -67,7 +93,7 @@ export async function getFocusEvents(userId, options = {}) {
   return FocusTelemetryEvent
     .find(query)
     .sort({ timestamp: -1 })
-    .limit(limit)
+    .limit(safeLimit)
     .lean();
 }
 

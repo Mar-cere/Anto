@@ -57,3 +57,42 @@ export function getUpdateFocusSchema(copy) {
       }),
   }).min(1);
 }
+
+/**
+ * Schema para registrar evento de telemetría.
+ */
+export function getTelemetryEventSchema(copy) {
+  const VALID_EVENT_TYPES = [
+    'focus_started',
+    'focus_paused',
+    'focus_resumed',
+    'focus_completed',
+    'focus_progress_viewed',
+    'focus_onboarding_opened',
+    'focus_onboarding_skipped',
+    'focus_dashboard_viewed',
+  ];
+
+  return Joi.object({
+    eventType: Joi.string()
+      .valid(...VALID_EVENT_TYPES)
+      .required()
+      .messages({
+        'any.required': copy.joiEventTypeRequired || 'Event type is required',
+        'any.only': copy.joiEventTypeInvalid || 'Invalid event type',
+      }),
+    themeId: Joi.string()
+      .valid(...Object.keys(FOCUS_THEMES))
+      .optional()
+      .allow(null)
+      .messages({
+        'any.only': copy.joiThemeIdInvalid,
+      }),
+    metadata: Joi.object()
+      .optional()
+      .default({})
+      .messages({
+        'object.base': copy.joiMetadataInvalid || 'Metadata must be an object',
+      }),
+  });
+}

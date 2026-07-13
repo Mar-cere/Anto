@@ -9,7 +9,7 @@ import { createRateLimiter } from '../utils/createRateLimiter.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { validateBody, validationErrorBody } from '../utils/apiValidation.js';
 import { focusApiCopy } from '../utils/focusApiCopy.js';
-import { getStartFocusSchema, getUpdateFocusSchema } from '../utils/focusSchemas.js';
+import { getStartFocusSchema, getUpdateFocusSchema, getTelemetryEventSchema } from '../utils/focusSchemas.js';
 import {
   getFocusThemes,
   getActiveFocus,
@@ -34,6 +34,12 @@ const updateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 30,
   message: (req) => focusApiCopy(resolveRequestLanguage(req)).rateLimitUpdate || 'Too many requests',
+});
+
+const telemetryLimiter = createRateLimiter({
+  windowMs: 5 * 60 * 1000, // 5 minutos
+  max: 50, // 50 eventos por ventana
+  message: 'Too many telemetry requests',
 });
 
 /**
@@ -131,17 +137,26 @@ router.patch('/active', updateLimiter, async (req, res) => {
     
     // Telemetría: pause/resume si cambió el status
     if (value.status) {
-      const eventType = value.status === 'paused' ? 'focus_paused' : 'focus_resumed';
-      logFocusEvent({
-        userId: req.user._id,
-        eventType,
-        themeId: focus.themeId,
-        metadata: {
-          newStatus: focus.status,
-          weekNumber: focus.weekNumber,
-          source: 'api',
-        },
-      }).catch(err => console.error('[focusRoutes] Telemetry error:', err));
+      let eventType = null;
+      
+      if (value.status === 'paused') {
+        eventType = 'focus_paused';
+      } else if (value.status === 'active') {
+        eventType = 'focus_resumed';
+      }
+      
+      if (eventType) {
+        logFocusEvent({
+          userId: req.user._id,
+          eventType,
+          themeId: focus.themeId,
+          metadata: {
+            newStatus: focus.status,
+            weekNumber: focus.weekNumber,
+            source: 'api',
+          },
+        }).catch(err => console.error('[focusRoutes] Telemetry error:', err));
+      }
     }
     
     return res.json({ success: true, message: copy.updatedSuccess, data: focus });
@@ -201,27 +216,32 @@ router.post('/active/complete', updateLimiter, async (req, res) => {
  * Registrar evento de telemetría de interacción con UI de foco.
  * Body: { eventType, themeId?, metadata? }
  */
-router.post('/telemetry', async (req, res) => {
+router.post('/telemetry', telemetryLimiter, async (req, res) => {
   const copy = req.apiCopy;
   
   try {
-    const { eventType, themeId, metadata } = req.body;
-    
-    if (!eventType) {
-      return res.status(400).json({ success: false, message: 'eventType is required' });
+    const { error, value } = validateBody(getTelemetryEventSchema(copy), req.body);
+    if (error) {
+      return res.status(400).json(validationErrorBody(copy, error));
     }
 
     await logFocusEvent({
       userId: req.user._id,
-      eventType,
-      themeId,
-      metadata: metadata || {},
+      eventType: value.eventType,
+      themeId: value.themeId,
+      metadata: value.metadata || {},
     });
     
-    return res.status(201).json({ success: true, message: 'Telemetry logged' });
+    return res.status(201).json({ 
+      success: true, 
+      message: copy.telemetryLogged || 'Telemetry logged successfully'
+    });
   } catch (err) {
     console.error('[focusRoutes] Error /telemetry:', err);
-    return res.status(500).json({ success: false, message: 'Error logging telemetry' });
+    return res.status(500).json({ 
+      success: false, 
+      message: copy.telemetryError || 'Error logging telemetry'
+    });
   }
 });
 

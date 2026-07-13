@@ -64,6 +64,12 @@ export const completeFocus = async () => {
  */
 export const logFocusTelemetry = async (event) => {
   try {
+    // Validación básica
+    if (!event || !event.eventType) {
+      console.warn('[focusService] eventType is required for telemetry');
+      return;
+    }
+    
     await apiClient.post('/focus/telemetry', event);
   } catch (error) {
     // No bloquear la operación principal si falla la telemetría

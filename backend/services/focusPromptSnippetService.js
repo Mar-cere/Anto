@@ -6,12 +6,42 @@ import { getFocusContextForPrompt } from './focusService.js';
 import { focusApiCopy } from '../utils/focusApiCopy.js';
 
 /**
+ * Sanitizar texto de customGoal para inyección en prompt.
+ * Previene prompt injection eliminando caracteres especiales de markdown y comandos.
+ * @param {string} text - Texto a sanitizar
+ * @returns {string} Texto sanitizado
+ */
+function sanitizeCustomGoalForPrompt(text) {
+  if (!text || typeof text !== 'string') return '';
+  
+  // Limitar longitud (el schema de DB permite 200, pero limitamos a 150 en prompt)
+  let sanitized = text.slice(0, 150);
+  
+  // Eliminar saltos de línea múltiples y tabs
+  sanitized = sanitized.replace(/[\r\n\t]+/g, ' ');
+  
+  // Eliminar múltiples espacios
+  sanitized = sanitized.replace(/\s+/g, ' ');
+  
+  // Trim
+  sanitized = sanitized.trim();
+  
+  return sanitized;
+}
+
+/**
  * Construir snippet del foco activo para el system prompt.
  * @param {string|ObjectId} userId - ID del usuario
  * @param {string} language - 'es' o 'en'
  * @returns {Promise<string|null>} Snippet para system prompt o null si no hay foco activo
  */
 export async function buildFocusPromptSnippet(userId, language = 'es') {
+  // Validar userId
+  if (!userId) {
+    console.warn('[focusPromptSnippetService] userId is required');
+    return null;
+  }
+  
   const focusContext = await getFocusContextForPrompt(userId);
   
   if (!focusContext) {
@@ -39,7 +69,10 @@ export async function buildFocusPromptSnippet(userId, language = 'es') {
   lines.push(`- ${language === 'es' ? 'Semana' : 'Week'}: ${focusContext.weekNumber}/${focusContext.durationWeeks}`);
   
   if (focusContext.customGoal) {
-    lines.push(`- ${language === 'es' ? 'Objetivo del usuario' : 'User goal'}: "${focusContext.customGoal}"`);
+    const sanitizedGoal = sanitizeCustomGoalForPrompt(focusContext.customGoal);
+    if (sanitizedGoal) {
+      lines.push(`- ${language === 'es' ? 'Objetivo del usuario' : 'User goal'}: "${sanitizedGoal}"`);
+    }
   }
   
   lines.push('');
@@ -80,6 +113,8 @@ export async function buildFocusPromptSnippet(userId, language = 'es') {
  * @returns {Promise<boolean>}
  */
 export async function hasActiveFocus(userId) {
+  if (!userId) return false;
+  
   const focusContext = await getFocusContextForPrompt(userId);
   return focusContext !== null;
 }

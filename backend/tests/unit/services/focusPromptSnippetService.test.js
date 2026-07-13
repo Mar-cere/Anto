@@ -21,6 +21,11 @@ describe('focusPromptSnippetService', () => {
   });
 
   describe('buildFocusPromptSnippet', () => {
+    it('debe devolver null cuando userId no está presente', async () => {
+      const snippet = await buildFocusPromptSnippet(null, 'es');
+      expect(snippet).toBeNull();
+    });
+
     it('debe devolver null cuando no hay foco activo', async () => {
       const mockChain = {
         select: jest.fn().mockReturnThis(),
@@ -134,9 +139,69 @@ describe('focusPromptSnippetService', () => {
       expect(snippet).not.toContain('Objetivo del usuario');
       expect(snippet).toContain('- Semana: 3/4');
     });
+
+    it('debe sanitizar customGoal eliminando saltos de línea y espacios múltiples', async () => {
+      const mockUser = {
+        activeFocus: {
+          themeId: 'anxiety',
+          startedAt: new Date(),
+          durationWeeks: 4,
+          customGoal: 'Manejar   mejor\n\nmi   ansiedad\tlaboral',
+          status: FOCUS_STATUS.ACTIVE,
+        },
+      };
+
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue(mockUser),
+      };
+
+      User.findById = jest.fn().mockReturnValue(mockChain);
+
+      const snippet = await buildFocusPromptSnippet('user123', 'es');
+
+      expect(snippet).toBeTruthy();
+      // El customGoal sanitizado debe aparecer sin saltos de línea dobles ni espacios múltiples
+      expect(snippet).toContain('Objetivo del usuario: "Manejar mejor mi ansiedad laboral"');
+      // Verificar que no contiene el formato sin sanitizar
+      expect(snippet).not.toContain('Manejar   mejor');
+      expect(snippet).not.toContain('mi   ansiedad');
+    });
+
+    it('debe truncar customGoal si excede 150 caracteres', async () => {
+      const longGoal = 'A'.repeat(200);
+      const mockUser = {
+        activeFocus: {
+          themeId: 'boundaries',
+          startedAt: new Date(),
+          durationWeeks: 4,
+          customGoal: longGoal,
+          status: FOCUS_STATUS.ACTIVE,
+        },
+      };
+
+      const mockChain = {
+        select: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue(mockUser),
+      };
+
+      User.findById = jest.fn().mockReturnValue(mockChain);
+
+      const snippet = await buildFocusPromptSnippet('user123', 'es');
+
+      expect(snippet).toBeTruthy();
+      const goalMatch = snippet.match(/Objetivo del usuario: "(.+)"/);
+      expect(goalMatch).toBeTruthy();
+      expect(goalMatch[1].length).toBeLessThanOrEqual(150);
+    });
   });
 
   describe('hasActiveFocus', () => {
+    it('debe devolver false cuando userId no está presente', async () => {
+      const result = await hasActiveFocus(null);
+      expect(result).toBe(false);
+    });
+
     it('debe devolver true cuando hay foco activo', async () => {
       const mockUser = {
         activeFocus: {

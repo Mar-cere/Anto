@@ -56,9 +56,37 @@ describe('focusTelemetryService', () => {
         })
       ).resolves.not.toThrow();
     });
+
+    it('debe retornar sin hacer nada si userId no está presente', async () => {
+      FocusTelemetryEvent.create = jest.fn();
+
+      await logFocusEvent({
+        userId: null,
+        eventType: 'focus_started',
+        themeId: 'anxiety',
+      });
+
+      expect(FocusTelemetryEvent.create).not.toHaveBeenCalled();
+    });
+
+    it('debe retornar sin hacer nada si eventType no está presente', async () => {
+      FocusTelemetryEvent.create = jest.fn();
+
+      await logFocusEvent({
+        userId: 'user123',
+        eventType: null,
+        themeId: 'anxiety',
+      });
+
+      expect(FocusTelemetryEvent.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('getFocusEvents', () => {
+    it('debe lanzar error si userId no está presente', async () => {
+      await expect(getFocusEvents(null)).rejects.toThrow('userId is required');
+    });
+
     it('debe obtener eventos de un usuario', async () => {
       const mockEvents = [
         { userId: 'user123', eventType: 'focus_started', timestamp: new Date() },
@@ -109,6 +137,34 @@ describe('focusTelemetryService', () => {
         timestamp: { $gte: since },
       });
       expect(mockChain.limit).toHaveBeenCalledWith(50);
+    });
+
+    it('debe limitar el query a 1000 eventos máximo', async () => {
+      const mockChain = {
+        sort: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue([]),
+      };
+
+      FocusTelemetryEvent.find = jest.fn().mockReturnValue(mockChain);
+
+      await getFocusEvents('user123', { limit: 5000 });
+
+      expect(mockChain.limit).toHaveBeenCalledWith(1000);
+    });
+
+    it('debe usar límite mínimo de 1', async () => {
+      const mockChain = {
+        sort: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        lean: jest.fn().mockResolvedValue([]),
+      };
+
+      FocusTelemetryEvent.find = jest.fn().mockReturnValue(mockChain);
+
+      await getFocusEvents('user123', { limit: -10 });
+
+      expect(mockChain.limit).toHaveBeenCalledWith(1);
     });
   });
 
