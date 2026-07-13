@@ -44,7 +44,7 @@ export async function recordParaphrasMetrics(conversationId, messageId, metricsD
     return;
   }
 
-  if (!metricsData || typeof metricsData !== 'object') {
+  if (!metricsData || typeof metricsData !== 'object' || Array.isArray(metricsData)) {
     console.warn('[recordParaphrasMetrics] Invalid metricsData:', metricsData);
     return;
   }

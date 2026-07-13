@@ -19,6 +19,8 @@ export const DETECTION_LIMITS = {
   MAX_SIMILARITY: 0.8, // Similitud máxima (más allá es copia textual)
   CONFIDENCE_THRESHOLD: 0.5, // Umbral para considerar que hay paráfrasis
   MIN_WORD_LENGTH: 3, // Longitud mínima de palabra para similitud
+  MAX_STRING_LENGTH_FOR_SIMILARITY: 10000, // Máximo para calcular similitud (protección DoS)
+  MAX_WORDS_FOR_SIMILARITY: 1000, // Máximo de palabras para similitud (protección DoS)
 };
 
 /**
@@ -167,33 +169,45 @@ export function calculateSimilarity(str1, str2) {
     return 0;
   }
 
-  // Normalizar y extraer palabras significativas (> MIN_WORD_LENGTH caracteres)
-  const words1 = new Set(
-    str1
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((w) => w.length > DETECTION_LIMITS.MIN_WORD_LENGTH)
-  );
-
-  const words2 = new Set(
-    str2
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((w) => w.length > DETECTION_LIMITS.MIN_WORD_LENGTH)
-  );
-
-  // Manejar caso de conjuntos vacíos
-  if (words1.size === 0 && words2.size === 0) {
+  // Protección DoS: limitar longitud de strings
+  if (
+    str1.length > DETECTION_LIMITS.MAX_STRING_LENGTH_FOR_SIMILARITY ||
+    str2.length > DETECTION_LIMITS.MAX_STRING_LENGTH_FOR_SIMILARITY
+  ) {
+    console.warn('[calculateSimilarity] String too long for similarity calculation, skipping');
     return 0;
   }
 
-  if (words1.size === 0 || words2.size === 0) {
+  // Normalizar y extraer palabras significativas (> MIN_WORD_LENGTH caracteres)
+  const words1Set = new Set(
+    str1
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w && w.length > DETECTION_LIMITS.MIN_WORD_LENGTH)
+      .slice(0, DETECTION_LIMITS.MAX_WORDS_FOR_SIMILARITY) // Limitar cantidad de palabras
+  );
+
+  const words2Set = new Set(
+    str2
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w && w.length > DETECTION_LIMITS.MIN_WORD_LENGTH)
+      .slice(0, DETECTION_LIMITS.MAX_WORDS_FOR_SIMILARITY) // Limitar cantidad de palabras
+  );
+
+  // Manejar caso de conjuntos vacíos
+  if (words1Set.size === 0 && words2Set.size === 0) {
+    return 0;
+  }
+
+  if (words1Set.size === 0 || words2Set.size === 0) {
     return 0;
   }
 
   // Calcular intersección y unión (Jaccard similarity)
-  const intersection = new Set([...words1].filter((w) => words2.has(w)));
-  const union = new Set([...words1, ...words2]);
+  const words1Array = Array.from(words1Set);
+  const intersection = new Set(words1Array.filter((w) => words2Set.has(w)));
+  const union = new Set([...words1Array, ...Array.from(words2Set)]);
 
   return union.size > 0 ? intersection.size / union.size : 0;
 }
