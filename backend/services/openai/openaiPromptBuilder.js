@@ -7,6 +7,10 @@ import Message from '../../models/Message.js';
 import { buildGroundingPolicySnippet } from '../chat/groundingPolicySnippet.js';
 import { buildCombinedFactsSnippet } from '../userFactsGroundingService.js';
 import {
+  buildParaphrasisPolicySnippet,
+  detectsLackOfUnderstanding,
+} from '../chat/paraphrasisPolicySnippet.js';
+import {
   generateCrisisMessage,
   generateCrisisSystemPrompt,
   generateCrisisWarningContextMessage,
@@ -1176,6 +1180,53 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
       }
     } catch (error) {
       console.warn('[buildContextualizedPrompt] Error loading user facts:', error.message);
+    }
+  }
+
+  // Paraphrasis policy (#55): Reflejar emoción/necesidad antes de intervenir
+  if (!contexto.isGuest) {
+    try {
+      // Detectar si usuario expresa falta de comprensión
+      const userExpressesLackOfUnderstanding = detectsLackOfUnderstanding(
+        mensaje.content || contexto.currentMessage
+      );
+
+      // Obtener último turno del asistente para ver si ya se parafraseó
+      const lastAssistantTurn =
+        contexto.safetyHistory?.filter((m) => m.role === 'assistant').pop() || null;
+      const previousTurnWasParaphrasis =
+        lastAssistantTurn?.metadata?.paraphrasis?.wasParaphrasis === true;
+
+      // Detectar si es el primer turno del usuario
+      const userMessages =
+        contexto.safetyHistory?.filter((m) => m.role === 'user') || [];
+      const isFirstTurn = userMessages.length === 0;
+
+      // Construir contexto de paráfrasis
+      const paraphrasContext = {
+        emotionalIntensity: contexto.emotional?.intensity || 5,
+        mainEmotion: contexto.emotional?.mainEmotion,
+        isFirstTurn,
+        isCrisisActive: hasCrisisRisk || false,
+        isFactualQuery: forceFactualMode || false,
+        messageLength: (mensaje.content || contexto.currentMessage || '').length,
+        hasAbruptToneChange: contexto.toneChange?.isAbrupt || false,
+        previousTurnWasParaphrasis,
+        userExpressesLackOfUnderstanding,
+      };
+
+      const paraphrasSnippet = buildParaphrasisPolicySnippet(
+        language,
+        paraphrasContext
+      );
+      if (paraphrasSnippet) {
+        systemMessage += paraphrasSnippet;
+      }
+    } catch (error) {
+      console.warn(
+        '[buildContextualizedPrompt] Error building paraphrasis policy:',
+        error.message
+      );
     }
   }
 
