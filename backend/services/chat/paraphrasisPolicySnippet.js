@@ -52,6 +52,18 @@ const VULNERABLE_EMOTIONS = [
  * @returns {string} Snippet de policy o string vacío si no aplica
  */
 export function buildParaphrasisPolicySnippet(language, context = {}) {
+  // Validar tipo de language
+  if (typeof language !== 'string') {
+    console.warn('[buildParaphrasisPolicySnippet] Invalid language type, defaulting to "es"');
+    language = 'es';
+  }
+
+  // Validar tipo de context
+  if (!context || typeof context !== 'object' || Array.isArray(context)) {
+    console.warn('[buildParaphrasisPolicySnippet] Invalid context type, using empty object');
+    context = {};
+  }
+
   // Reglas de disparo: cuándo se requiere paráfrasis
   const requiresParaphrasis = shouldRequireParaphrasis(context);
 
@@ -132,6 +144,11 @@ Tú: "Te escucho. Cuando sientas que no puedes más..."
  * @returns {boolean} True si requiere paráfrasis
  */
 export function shouldRequireParaphrasis(context = {}) {
+  // Validar tipo de context
+  if (!context || typeof context !== 'object' || Array.isArray(context)) {
+    return false;
+  }
+
   const {
     emotionalIntensity = 5,
     mainEmotion,
@@ -144,22 +161,37 @@ export function shouldRequireParaphrasis(context = {}) {
     userExpressesLackOfUnderstanding = false,
   } = context;
 
+  // Validar y normalizar emotionalIntensity
+  const normalizedIntensity =
+    typeof emotionalIntensity === 'number' && !isNaN(emotionalIntensity) && isFinite(emotionalIntensity)
+      ? Math.max(0, Math.min(10, emotionalIntensity))
+      : 5;
+
+  // Validar y normalizar messageLength
+  const normalizedMessageLength =
+    typeof messageLength === 'number' && !isNaN(messageLength) && isFinite(messageLength) && messageLength >= 0
+      ? messageLength
+      : 0;
+
+  // Validar tipo de mainEmotion
+  const normalizedMainEmotion = typeof mainEmotion === 'string' ? mainEmotion : null;
+
   // Excepciones: NO parafrasear
-  if (isCrisisActive) return false; // Crisis tiene prioridad
-  if (isFactualQuery) return false; // Consulta factual no necesita paráfrasis
-  if (messageLength < PARAPHRASIS_LIMITS.MIN_USER_MESSAGE_LENGTH) return false; // Muy corto
-  if (messageLength > PARAPHRASIS_LIMITS.MAX_USER_MESSAGE_LENGTH) return false; // Muy largo
-  if (previousTurnWasParaphrasis) return false; // Ya parafraseamos en turno anterior
+  if (isCrisisActive === true) return false; // Crisis tiene prioridad
+  if (isFactualQuery === true) return false; // Consulta factual no necesita paráfrasis
+  if (normalizedMessageLength < PARAPHRASIS_LIMITS.MIN_USER_MESSAGE_LENGTH) return false; // Muy corto
+  if (normalizedMessageLength > PARAPHRASIS_LIMITS.MAX_USER_MESSAGE_LENGTH) return false; // Muy largo
+  if (previousTurnWasParaphrasis === true) return false; // Ya parafraseamos en turno anterior
 
   // Reglas de disparo: SÍ parafrasear
-  if (emotionalIntensity >= PARAPHRASIS_LIMITS.MIN_EMOTIONAL_INTENSITY) return true; // Alta carga
-  if (isFirstTurn) return true; // Primer contacto
-  if (hasAbruptToneChange) return true; // Cambio de tono
-  if (userExpressesLackOfUnderstanding) return true; // Usuario se siente incomprendido
+  if (normalizedIntensity >= PARAPHRASIS_LIMITS.MIN_EMOTIONAL_INTENSITY) return true; // Alta carga
+  if (isFirstTurn === true) return true; // Primer contacto
+  if (hasAbruptToneChange === true) return true; // Cambio de tono
+  if (userExpressesLackOfUnderstanding === true) return true; // Usuario se siente incomprendido
 
   // Emociones vulnerables siempre requieren paráfrasis
-  if (mainEmotion) {
-    const emotionLower = mainEmotion.toLowerCase();
+  if (normalizedMainEmotion) {
+    const emotionLower = normalizedMainEmotion.toLowerCase();
     if (VULNERABLE_EMOTIONS.some((vulnEmo) => emotionLower.includes(vulnEmo))) {
       return true;
     }
@@ -208,16 +240,33 @@ export function detectsLackOfUnderstanding(userMessage) {
  * @returns {Object} { valid: boolean, reason?: string }
  */
 export function validateParaphrasisConstraints(context, conversationHistory = []) {
+  // Validar tipo de context
+  if (!context || typeof context !== 'object' || Array.isArray(context)) {
+    return { valid: false, reason: 'invalid_context' };
+  }
+
   const { messageLength = 0 } = context;
 
+  // Validar y normalizar messageLength
+  const normalizedMessageLength =
+    typeof messageLength === 'number' && !isNaN(messageLength) && isFinite(messageLength) && messageLength >= 0
+      ? messageLength
+      : 0;
+
   // Mensaje muy largo: mejor resumir que parafrasear
-  if (messageLength > PARAPHRASIS_LIMITS.MAX_USER_MESSAGE_LENGTH) {
+  if (normalizedMessageLength > PARAPHRASIS_LIMITS.MAX_USER_MESSAGE_LENGTH) {
     return { valid: false, reason: 'message_too_long' };
   }
 
   // Mensaje muy corto
-  if (messageLength < PARAPHRASIS_LIMITS.MIN_USER_MESSAGE_LENGTH) {
+  if (normalizedMessageLength < PARAPHRASIS_LIMITS.MIN_USER_MESSAGE_LENGTH) {
     return { valid: false, reason: 'message_too_short' };
+  }
+
+  // Validar tipo de conversationHistory
+  if (!Array.isArray(conversationHistory)) {
+    console.warn('[validateParaphrasisConstraints] conversationHistory is not an array, skipping count check');
+    return { valid: true };
   }
 
   // Contar paráfrasis consecutivas recientes
@@ -243,17 +292,35 @@ export function validateParaphrasisConstraints(context, conversationHistory = []
  * @returns {number} Cantidad de paráfrasis en el rango
  */
 export function countRecentParaphrasis(conversationHistory, lookbackTurns) {
-  if (!conversationHistory || conversationHistory.length === 0) return 0;
+  if (!conversationHistory || !Array.isArray(conversationHistory) || conversationHistory.length === 0) {
+    return 0;
+  }
 
-  // Tomar los últimos N turnos del asistente
+  // Validar y normalizar lookbackTurns
+  const normalizedLookback =
+    typeof lookbackTurns === 'number' && !isNaN(lookbackTurns) && isFinite(lookbackTurns) && lookbackTurns > 0
+      ? Math.floor(lookbackTurns)
+      : PARAPHRASIS_LIMITS.COOLDOWN_TURNS;
+
+  // Tomar los últimos N turnos del asistente, filtrando mensajes malformados
   const recentAssistantTurns = conversationHistory
-    .filter((msg) => msg.role === 'assistant')
-    .slice(-lookbackTurns);
+    .filter((msg) => {
+      // Validar que msg sea un objeto y tenga role
+      return msg && typeof msg === 'object' && msg.role === 'assistant';
+    })
+    .slice(-normalizedLookback);
 
   // Contar cuántos tienen marca de paráfrasis
-  return recentAssistantTurns.filter(
-    (msg) => msg.metadata?.paraphrasis?.wasParaphrasis === true
-  ).length;
+  return recentAssistantTurns.filter((msg) => {
+    // Acceso seguro a metadata anidado
+    return (
+      msg.metadata &&
+      typeof msg.metadata === 'object' &&
+      msg.metadata.paraphrasis &&
+      typeof msg.metadata.paraphrasis === 'object' &&
+      msg.metadata.paraphrasis.wasParaphrasis === true
+    );
+  }).length;
 }
 
 /**
@@ -264,6 +331,12 @@ export function countRecentParaphrasis(conversationHistory, lookbackTurns) {
  * @returns {Object} Metadatos actualizados con marca de paráfrasis
  */
 export function markTurnAsParaphrasis(metadata = {}) {
+  // Validar tipo de metadata
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    console.warn('[markTurnAsParaphrasis] Invalid metadata type, using empty object');
+    metadata = {};
+  }
+
   return {
     ...metadata,
     paraphrasis: {

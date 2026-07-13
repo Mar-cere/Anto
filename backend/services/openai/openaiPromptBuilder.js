@@ -1191,35 +1191,49 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
         mensaje.content || contexto.currentMessage
       );
 
-      // Obtener último turno del asistente para ver si ya se parafraseó
-      const lastAssistantTurn =
-        contexto.safetyHistory?.filter((m) => m.role === 'assistant').pop() || null;
+      // Obtener último turno del asistente para ver si ya se parafraseó (con validación)
+      const safetyHistory = Array.isArray(contexto.safetyHistory) ? contexto.safetyHistory : [];
+      const lastAssistantTurn = safetyHistory.filter((m) => m && m.role === 'assistant').pop() || null;
       const previousTurnWasParaphrasis =
         lastAssistantTurn?.metadata?.paraphrasis?.wasParaphrasis === true;
 
       // Detectar si es el primer turno del usuario
-      const userMessages =
-        contexto.safetyHistory?.filter((m) => m.role === 'user') || [];
+      const userMessages = safetyHistory.filter((m) => m && m.role === 'user') || [];
       const isFirstTurn = userMessages.length === 0;
 
-      // Construir contexto de paráfrasis
+      // Extraer y validar messageLength
+      const messageContent = String(mensaje.content || contexto.currentMessage || '');
+      const messageLength = messageContent.length;
+
+      // Extraer y validar emotionalIntensity
+      const rawIntensity = contexto.emotional?.intensity;
+      const emotionalIntensity =
+        typeof rawIntensity === 'number' && !isNaN(rawIntensity) && isFinite(rawIntensity)
+          ? Math.max(0, Math.min(10, rawIntensity))
+          : 5;
+
+      // Extraer y validar mainEmotion
+      const rawEmotion = contexto.emotional?.mainEmotion;
+      const mainEmotion = typeof rawEmotion === 'string' ? rawEmotion : undefined;
+
+      // Construir contexto de paráfrasis con valores validados
       const paraphrasContext = {
-        emotionalIntensity: contexto.emotional?.intensity || 5,
-        mainEmotion: contexto.emotional?.mainEmotion,
-        isFirstTurn,
-        isCrisisActive: hasCrisisRisk || false,
-        isFactualQuery: forceFactualMode || false,
-        messageLength: (mensaje.content || contexto.currentMessage || '').length,
-        hasAbruptToneChange: contexto.toneChange?.isAbrupt || false,
-        previousTurnWasParaphrasis,
-        userExpressesLackOfUnderstanding,
+        emotionalIntensity,
+        mainEmotion,
+        isFirstTurn: Boolean(isFirstTurn),
+        isCrisisActive: Boolean(hasCrisisRisk),
+        isFactualQuery: Boolean(forceFactualMode),
+        messageLength,
+        hasAbruptToneChange: Boolean(contexto.toneChange?.isAbrupt),
+        previousTurnWasParaphrasis: Boolean(previousTurnWasParaphrasis),
+        userExpressesLackOfUnderstanding: Boolean(userExpressesLackOfUnderstanding),
       };
 
       const paraphrasSnippet = buildParaphrasisPolicySnippet(
         language,
         paraphrasContext
       );
-      if (paraphrasSnippet) {
+      if (paraphrasSnippet && typeof paraphrasSnippet === 'string') {
         systemMessage += paraphrasSnippet;
       }
     } catch (error) {
