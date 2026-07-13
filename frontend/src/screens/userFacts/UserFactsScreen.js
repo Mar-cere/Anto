@@ -1,6 +1,24 @@
 /**
  * Pantalla de gestión de hechos biográficos del usuario (#63 grounding).
  * Permite visualizar, crear, editar y eliminar hechos que el asistente debe recordar.
+ * 
+ * @component
+ * @description
+ * Implementa la interfaz principal para gestionar hechos biográficos del usuario.
+ * Los hechos se combinan con extracción automática en el backend para proveer
+ * contexto personalizado al LLM y prevenir alucinaciones.
+ * 
+ * Características:
+ * - Lista de hechos agrupados por categoría con iconos
+ * - Estados de carga, error y vacío
+ * - Acciones inline: editar y eliminar
+ * - Confirmación destructiva para eliminación (soft delete)
+ * - Validación de datos en renderizado para seguridad
+ * - Feedback haptic en interacciones
+ * 
+ * @example
+ * // Uso en navegación:
+ * navigation.navigate('UserFacts');
  */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -27,6 +45,12 @@ import { fetchUserFacts, deleteUserFact } from '../../services/userFactsService'
 import { confirmDestructiveAction } from '../../utils/confirmDestructiveAction';
 import UserFactModal from './UserFactModal';
 
+/**
+ * Mapa de iconos para cada categoría de hecho.
+ * Usa iconos de MaterialCommunityIcons para consistencia visual.
+ * 
+ * @constant {Object.<string, string>}
+ */
 const CATEGORY_ICONS = {
   work: 'briefcase-outline',
   family: 'account-group-outline',
@@ -261,12 +285,42 @@ const UserFactsScreen = () => {
     [colors, resolvedScheme, insets]
   );
 
+  /**
+   * Carga los hechos biográficos del usuario desde la API.
+   * Valida y filtra respuestas inválidas para seguridad.
+   * 
+   * @async
+   * @function
+   * @returns {Promise<void>}
+   */
   const loadFacts = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
       const fetchedFacts = await fetchUserFacts({ limit: 100 });
-      setFacts(fetchedFacts);
+      
+      // Validar que la respuesta es un array
+      if (!Array.isArray(fetchedFacts)) {
+        console.warn('[UserFactsScreen] fetchUserFacts did not return an array:', fetchedFacts);
+        setFacts([]);
+        return;
+      }
+      
+      // Validar y filtrar hechos inválidos
+      const validFacts = fetchedFacts.filter((fact) => {
+        if (!fact || typeof fact !== 'object') return false;
+        if (!fact._id || typeof fact._id !== 'string') return false;
+        if (!fact.fact || typeof fact.fact !== 'string') return false;
+        return true;
+      });
+      
+      if (validFacts.length !== fetchedFacts.length) {
+        console.warn(
+          `[UserFactsScreen] Filtered out ${fetchedFacts.length - validFacts.length} invalid facts`
+        );
+      }
+      
+      setFacts(validFacts);
     } catch (err) {
       console.error('[UserFactsScreen] Error loading facts:', err);
       setError(err.message || T.ERROR_LOADING);
@@ -281,6 +335,13 @@ const UserFactsScreen = () => {
     }, [loadFacts])
   );
 
+  /**
+   * Obtiene la etiqueta traducida para una categoría de hecho.
+   * 
+   * @function
+   * @param {string} category - Valor de categoría ('work', 'family', etc.)
+   * @returns {string} Etiqueta traducida o fallback
+   */
   const getCategoryLabel = useCallback(
     (category) => {
       const categoryMap = {
@@ -297,20 +358,50 @@ const UserFactsScreen = () => {
     [T]
   );
 
+  /**
+   * Abre el modal para crear un nuevo hecho.
+   * 
+   * @function
+   */
   const handleAddFact = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setEditingFact(null);
     setModalVisible(true);
   }, []);
 
+  /**
+   * Abre el modal para editar un hecho existente.
+   * 
+   * @function
+   * @param {Object} fact - Hecho a editar
+   * @param {string} fact._id - ID del hecho
+   * @param {string} fact.fact - Texto del hecho
+   * @param {string} fact.category - Categoría del hecho
+   */
   const handleEditFact = useCallback((fact) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setEditingFact(fact);
     setModalVisible(true);
   }, []);
 
+  /**
+   * Elimina un hecho después de confirmación destructiva.
+   * Usa soft delete en el backend.
+   * 
+   * @async
+   * @function
+   * @param {Object} fact - Hecho a eliminar
+   * @param {string} fact._id - ID del hecho
+   */
   const handleDeleteFact = useCallback(
     async (fact) => {
+      // Validar que el fact tiene los datos necesarios
+      if (!fact || !fact._id) {
+        console.error('[UserFactsScreen] Cannot delete fact: missing _id');
+        showToast(T.TOAST_ERROR);
+        return;
+      }
+
       const confirmed = await confirmDestructiveAction({
         title: T.DELETE_CONFIRM_TITLE,
         message: T.DELETE_CONFIRM_MESSAGE,
@@ -328,32 +419,79 @@ const UserFactsScreen = () => {
         showToast(T.TOAST_DELETED);
       } catch (err) {
         console.error('[UserFactsScreen] Error deleting fact:', err);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         showToast(T.TOAST_ERROR);
       }
     },
     [T, showToast]
   );
 
+  /**
+   * Cierra el modal de edición/creación y reinicia estado.
+   * 
+   * @function
+   */
   const handleModalClose = useCallback(() => {
     setModalVisible(false);
     setEditingFact(null);
   }, []);
 
+  /**
+   * Callback ejecutado después de guardar un hecho.
+   * Cierra el modal y recarga la lista.
+   * 
+   * @function
+   */
   const handleFactSaved = useCallback(() => {
     setModalVisible(false);
     setEditingFact(null);
     loadFacts();
   }, [loadFacts]);
 
+  /**
+   * Renderiza una tarjeta de hecho con validación exhaustiva.
+   * Filtra datos inválidos para prevenir errores de UI.
+   * 
+   * @function
+   * @param {Object} props
+   * @param {Object} props.item - Hecho a renderizar
+   * @param {string} props.item._id - ID del hecho
+   * @param {string} props.item.fact - Texto del hecho
+   * @param {string} props.item.category - Categoría
+   * @param {string} [props.item.createdAt] - Fecha de creación (ISO)
+   * @returns {React.Element|null} Tarjeta renderizada o null si inválido
+   */
   const renderFactCard = useCallback(
     ({ item }) => {
-      const factDate = item.createdAt
-        ? new Date(item.createdAt).toLocaleDateString(undefined, {
-            day: 'numeric',
-            month: 'short',
-            year: 'numeric',
-          })
-        : '';
+      // Validar que item tiene los datos necesarios
+      if (!item || !item._id || !item.fact) {
+        console.warn('[UserFactsScreen] Skipping invalid fact item:', item);
+        return null;
+      }
+
+      // Formatear fecha de forma segura
+      let factDate = '';
+      if (item.createdAt) {
+        try {
+          const date = new Date(item.createdAt);
+          if (!isNaN(date.getTime())) {
+            factDate = date.toLocaleDateString(undefined, {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            });
+          }
+        } catch (err) {
+          console.warn('[UserFactsScreen] Invalid date format:', item.createdAt);
+        }
+      }
+
+      // Asegurar que fact es string y no está vacío
+      const factText = String(item.fact || '').trim();
+      if (!factText) {
+        console.warn('[UserFactsScreen] Empty fact text for item:', item._id);
+        return null;
+      }
 
       return (
         <View style={styles.factCard}>
@@ -370,7 +508,7 @@ const UserFactsScreen = () => {
               {factDate && <Text style={styles.factDate}>{factDate}</Text>}
             </View>
           </View>
-          <Text style={styles.factText}>{item.fact}</Text>
+          <Text style={styles.factText}>{factText}</Text>
           <View style={styles.factActions}>
             <TouchableOpacity
               style={[styles.factActionButton, styles.editButton]}
@@ -397,6 +535,12 @@ const UserFactsScreen = () => {
     [styles, colors, T, getCategoryLabel, handleEditFact, handleDeleteFact]
   );
 
+  /**
+   * Renderiza el estado vacío cuando no hay hechos guardados.
+   * 
+   * @function
+   * @returns {React.Element|null}
+   */
   const renderEmpty = useCallback(() => {
     if (loading) return null;
 
@@ -452,7 +596,7 @@ const UserFactsScreen = () => {
       <FlatList
         data={facts}
         renderItem={renderFactCard}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item, index) => (item && item._id) || `fact-${index}`}
         contentContainerStyle={styles.contentContainer}
         ListHeaderComponent={
           facts.length > 0 ? (

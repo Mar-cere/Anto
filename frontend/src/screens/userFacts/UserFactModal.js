@@ -1,5 +1,33 @@
 /**
  * Modal para crear o editar hechos biográficos del usuario (#63 grounding).
+ * 
+ * @component
+ * @description
+ * Modal bottom sheet que permite ingresar o editar un hecho biográfico del usuario.
+ * Incluye validación inline, selección de categoría con pills, y sanitización
+ * de inputs para seguridad.
+ * 
+ * Validaciones:
+ * - Hecho: 5-150 caracteres, no vacío después de trim
+ * - Categoría: debe ser valor válido del enum
+ * - Sanitización: newlines, tabs, múltiples espacios, caracteres problemáticos (<>{})
+ * 
+ * @param {Object} props
+ * @param {boolean} props.visible - Si el modal está visible
+ * @param {Function} props.onClose - Callback al cerrar modal
+ * @param {Function} props.onSaved - Callback después de guardar exitosamente
+ * @param {Object|null} [props.editingFact=null] - Hecho a editar (null = crear nuevo)
+ * @param {string} [props.editingFact._id] - ID del hecho (requerido si es edición)
+ * @param {string} [props.editingFact.fact] - Texto del hecho
+ * @param {string} [props.editingFact.category] - Categoría del hecho
+ * 
+ * @example
+ * <UserFactModal
+ *   visible={modalVisible}
+ *   onClose={() => setModalVisible(false)}
+ *   onSaved={() => refetchFacts()}
+ *   editingFact={selectedFact}
+ * />
  */
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -31,6 +59,11 @@ import {
 } from '../../utils/modalKeyboardUtils';
 import { createUserFact, updateUserFact } from '../../services/userFactsService';
 
+/**
+ * Lista de categorías disponibles con sus iconos asociados.
+ * 
+ * @constant {Array<{value: string, icon: string}>}
+ */
 const CATEGORIES = [
   { value: 'work', icon: 'briefcase-outline' },
   { value: 'family', icon: 'account-group-outline' },
@@ -242,9 +275,17 @@ const UserFactModal = ({ visible, onClose, onSaved, editingFact = null }) => {
   // Sync modal state with editingFact
   useEffect(() => {
     if (visible) {
-      if (editingFact) {
-        setFact(editingFact.fact || '');
-        setCategory(editingFact.category || 'other');
+      if (editingFact && typeof editingFact === 'object') {
+        // Validar que editingFact tenga los datos necesarios
+        const factText =
+          typeof editingFact.fact === 'string' ? editingFact.fact.trim() : '';
+        const factCategory =
+          typeof editingFact.category === 'string' && editingFact.category
+            ? editingFact.category
+            : 'other';
+        
+        setFact(factText);
+        setCategory(factCategory);
       } else {
         setFact('');
         setCategory('other');
@@ -256,6 +297,13 @@ const UserFactModal = ({ visible, onClose, onSaved, editingFact = null }) => {
     syncModalKeyboardWithVisibility(visible, isKeyboardVisible, factInputRef);
   }, [visible, isKeyboardVisible]);
 
+  /**
+   * Obtiene la etiqueta traducida para una categoría de hecho.
+   * 
+   * @function
+   * @param {string} categoryValue - Valor de categoría ('work', 'family', etc.)
+   * @returns {string} Etiqueta traducida o fallback
+   */
   const getCategoryLabel = useCallback(
     (categoryValue) => {
       const categoryMap = {
@@ -272,13 +320,42 @@ const UserFactModal = ({ visible, onClose, onSaved, editingFact = null }) => {
     [T]
   );
 
+  /**
+   * Cierra el modal y reinicia estado.
+   * Valida que onClose sea una función antes de invocarla.
+   * 
+   * @function
+   */
   const handleClose = useCallback(() => {
     Keyboard.dismiss();
     setSaving(false);
-    onClose();
+    
+    // Validar que onClose es función antes de llamarla
+    if (typeof onClose === 'function') {
+      onClose();
+    }
   }, [onClose]);
 
+  /**
+   * Guarda el hecho después de validaciones.
+   * 
+   * Validaciones:
+   * - fact debe ser string no vacío
+   * - fact debe tener 5-150 caracteres después de trim
+   * - category debe ser valor válido del enum
+   * - editingFact._id debe existir si es modo edición
+   * 
+   * @async
+   * @function
+   */
   const handleSave = useCallback(async () => {
+    // Validar que fact es string antes de procesar
+    if (typeof fact !== 'string') {
+      console.error('[UserFactModal] Invalid fact type:', typeof fact);
+      Alert.alert(T.ERROR_TITLE, T.ERROR_EMPTY);
+      return;
+    }
+
     const trimmedFact = fact.trim();
 
     if (!trimmedFact) {
@@ -296,19 +373,23 @@ const UserFactModal = ({ visible, onClose, onSaved, editingFact = null }) => {
       return;
     }
 
+    // Validar que category es válida
+    const validCategories = ['work', 'family', 'study', 'health', 'relationships', 'commitment', 'other'];
+    const safeCategory = validCategories.includes(category) ? category : 'other';
+
     try {
       setSaving(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-      if (editingFact) {
+      if (editingFact && editingFact._id) {
         await updateUserFact(editingFact._id, {
           fact: trimmedFact,
-          category,
+          category: safeCategory,
         });
       } else {
         await createUserFact({
           fact: trimmedFact,
-          category,
+          category: safeCategory,
           source: 'user',
         });
       }
@@ -316,7 +397,11 @@ const UserFactModal = ({ visible, onClose, onSaved, editingFact = null }) => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showToast(T.TOAST_SAVED);
       handleClose();
-      onSaved();
+      
+      // Validar que onSaved es función antes de llamarla
+      if (typeof onSaved === 'function') {
+        onSaved();
+      }
     } catch (err) {
       console.error('[UserFactModal] Error saving fact:', err);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -326,11 +411,29 @@ const UserFactModal = ({ visible, onClose, onSaved, editingFact = null }) => {
     }
   }, [fact, category, editingFact, T, showToast, handleClose, onSaved]);
 
+  /**
+   * Selecciona una categoría después de validar que sea válida.
+   * 
+   * @function
+   * @param {string} categoryValue - Valor de categoría a seleccionar
+   */
   const handleCategorySelect = useCallback((categoryValue) => {
+    // Validar que categoryValue es válido
+    const validCategories = ['work', 'family', 'study', 'health', 'relationships', 'commitment', 'other'];
+    if (!validCategories.includes(categoryValue)) {
+      console.warn('[UserFactModal] Invalid category value:', categoryValue);
+      return;
+    }
+    
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCategory(categoryValue);
   }, []);
 
+  /**
+   * Cierra el teclado y ejecuta hint de scroll modal.
+   * 
+   * @function
+   */
   const handleKeyboardDismiss = useCallback(() => {
     Keyboard.dismiss();
     runModalScrollHint();
@@ -396,30 +499,38 @@ const UserFactModal = ({ visible, onClose, onSaved, editingFact = null }) => {
             <View style={styles.sectionContainer}>
               <Text style={styles.inputLabel}>{T.CATEGORY_LABEL}</Text>
               <View style={styles.categoriesGrid}>
-                {CATEGORIES.map((cat) => (
-                  <TouchableOpacity
-                    key={cat.value}
-                    style={[
-                      styles.categoryChip,
-                      category === cat.value && styles.categoryChipSelected,
-                    ]}
-                    onPress={() => handleCategorySelect(cat.value)}
-                    activeOpacity={0.7}
-                    disabled={saving}>
-                    <MaterialCommunityIcons
-                      name={cat.icon}
-                      size={16}
-                      color={category === cat.value ? colors.primary : colors.textSecondary}
-                    />
-                    <Text
+                {CATEGORIES.map((cat) => {
+                  // Validar estructura de categoría
+                  if (!cat || !cat.value || !cat.icon) {
+                    console.warn('[UserFactModal] Invalid category item:', cat);
+                    return null;
+                  }
+                  
+                  return (
+                    <TouchableOpacity
+                      key={cat.value}
                       style={[
-                        styles.categoryChipText,
-                        category === cat.value && styles.categoryChipTextSelected,
-                      ]}>
-                      {getCategoryLabel(cat.value)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                        styles.categoryChip,
+                        category === cat.value && styles.categoryChipSelected,
+                      ]}
+                      onPress={() => handleCategorySelect(cat.value)}
+                      activeOpacity={0.7}
+                      disabled={saving}>
+                      <MaterialCommunityIcons
+                        name={cat.icon}
+                        size={16}
+                        color={category === cat.value ? colors.primary : colors.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.categoryChipText,
+                          category === cat.value && styles.categoryChipTextSelected,
+                        ]}>
+                        {getCategoryLabel(cat.value)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
 
