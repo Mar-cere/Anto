@@ -4,6 +4,7 @@
 import { INTERVENTION_LABELS_EN } from '../constants/interventionCatalogLabels.en';
 import { resolveInterventionVisual } from '../constants/interventionVisuals';
 import { getDefaultClinicalReview } from './psychoeducationClinicalReview';
+import { getSuggestionRationaleFallback } from './suggestionRationaleFallback';
 
 const TOPIC_BY_KEY = {
   anxiety: 'anxiety',
@@ -272,6 +273,16 @@ export function hydrateInterventionSuggestion(suggestion, language = 'es') {
   if (!next.icon) next = { ...next, icon: visual.emoji };
   if (!next.vectorIcon) next = { ...next, vectorIcon: visual.mciIcon };
   if (!next.accentKey) next = { ...next, accentKey: visual.accentKey };
+
+  const isTechniqueCard =
+    next.interventionType !== 'psychoeducation' &&
+    next.interventionType !== 'micro_guide' &&
+    next.cardVariant !== 'psychoeducation_native' &&
+    next.cardVariant !== 'micro_guide_native';
+  if (isTechniqueCard && !String(next.rationaleShort || '').trim()) {
+    const fallback = getSuggestionRationaleFallback(next.id, lang);
+    if (fallback) next = { ...next, rationaleShort: fallback };
+  }
 
   return next;
 }

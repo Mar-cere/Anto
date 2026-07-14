@@ -1081,7 +1081,6 @@ export const CHAT = {
   CHAT_MENU_A11Y_HINT:
     'Opens a menu with go to last message, customization, privacy, AI information, or clear conversation',
   SUGGESTIONS_TITLE: 'Suggestions for you',
-  SUGGESTIONS_PERSONALIZED_HINT: 'ordered from your history',
   TCC_CONTINUITY_KICKER: 'Pick up where you left off',
   TCC_CONTINUITY_OPEN: 'Open',
   TCC_CONTINUITY_DISMISS_A11Y: 'Hide suggestion',

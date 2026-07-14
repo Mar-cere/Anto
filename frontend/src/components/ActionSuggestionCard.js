@@ -60,7 +60,7 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
         },
         card: {
           flexDirection: 'row',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'space-between',
           borderRadius: 16,
           paddingVertical: 12,
@@ -78,7 +78,7 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
         },
         content: {
           flexDirection: 'row',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           flex: 1,
           minWidth: 0,
         },
@@ -90,16 +90,28 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           justifyContent: 'center',
           backgroundColor: visual.iconBg,
           marginRight: 12,
+          marginTop: 1,
+        },
+        textCol: {
+          flex: 1,
+          minWidth: 0,
         },
         label: {
           fontSize: 15,
           fontWeight: '600',
           lineHeight: 20,
           color: colors.text,
-          flex: 1,
+        },
+        why: {
+          marginTop: 3,
+          fontSize: 12,
+          lineHeight: 16,
+          fontWeight: '400',
+          color: t.FOCUS_META,
         },
         chevron: {
           marginLeft: 8,
+          marginTop: 2,
         },
         previewOverlay: {
           flex: 1,
@@ -297,7 +309,16 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
                 color={visual.accent}
               />
             </View>
-            <Text style={styles.label}>{suggestion.label}</Text>
+            <View style={styles.textCol}>
+              <Text style={styles.label} numberOfLines={2}>
+                {suggestion.label}
+              </Text>
+              {suggestion.rationaleShort ? (
+                <Text style={styles.why} numberOfLines={2}>
+                  {suggestion.rationaleShort}
+                </Text>
+              ) : null}
+            </View>
           </View>
           <Ionicons 
             name="chevron-forward" 
@@ -330,9 +351,9 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
                 />
               </View>
               <Text style={styles.previewTitle}>{suggestion.label}</Text>
-              {suggestion.description && (
+              {(suggestion.rationaleShort || suggestion.description) && (
                 <Text style={styles.previewDescription}>
-                  {suggestion.description}
+                  {suggestion.rationaleShort || suggestion.description}
                 </Text>
               )}
               <Text style={styles.previewHint}>

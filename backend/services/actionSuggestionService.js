@@ -9,6 +9,7 @@ import {
 import { getMicroGuideCardFields } from '../constants/microGuideContent.js';
 import { rankInterventionIds } from './interventionRankingService.js';
 import { hasActionableDistortionInMessage } from '../utils/automaticThoughtGuards.js';
+import { buildSuggestionRationaleShort } from '../utils/actionSuggestionRationale.js';
 
 /** Psicoed por señales en el mensaje (#85 / #127). */
 export const CONTEXTUAL_PSYCHOEDUCATION_RULES = [
@@ -755,12 +756,29 @@ class ActionSuggestionService {
   /**
    * Formatea las sugerencias para mostrar en la UI
    * @param {Array} actionIds - IDs de acciones
+   * @param {string} [language='es']
+   * @param {{ userContent?: string }} [opts]
    * @returns {Array} Array de objetos con información formateada
    */
-  formatSuggestions(actionIds, language = 'es') {
+  formatSuggestions(actionIds, language = 'es', opts = {}) {
+    const userContent = opts.userContent || '';
     return actionIds.map((raw) => {
       const id = String(raw || '').trim();
       const entry = getInterventionCatalogEntry(id);
+      const withWhy = (card) => {
+        if (
+          card.interventionType === 'psychoeducation' ||
+          card.interventionType === 'micro_guide'
+        ) {
+          return card;
+        }
+        const rationaleShort = buildSuggestionRationaleShort({
+          id: card.id,
+          language,
+          userContent,
+        });
+        return rationaleShort ? { ...card, rationaleShort } : card;
+      };
       if (entry) {
         const base = {
           id: entry.id,
@@ -778,37 +796,37 @@ class ActionSuggestionService {
         if (entry.type === 'micro_guide') {
           const card = getMicroGuideCardFields(entry.id, language);
           if (card) {
-            return {
+            return withWhy({
               ...base,
               ...card,
               label: card.previewTitle || base.label,
               description: card.previewSummary,
-            };
+            });
           }
         }
         const psychoTopic = normalizePsychoeducationTopic(entry.params?.topic);
         if (entry.type === 'psychoeducation' && psychoTopic) {
           const card = getPsychoeducationCardFields(psychoTopic, language);
           if (card) {
-            return {
+            return withWhy({
               ...base,
               ...card,
               label: card.previewTitle || base.label,
               params: { ...(entry.params || {}), topic: psychoTopic },
               description: card.previewSummary,
-            };
+            });
           }
         }
-        return base;
+        return withWhy(base);
       }
-      return {
+      return withWhy({
         id,
         label: id || 'Sugerencia',
         icon: '💡',
         screen: null,
         interventionType: 'unknown',
         tags: [],
-      };
+      });
     });
   }
 }

@@ -201,7 +201,9 @@ export async function planChatActionSuggestions({
       contextualAnalysis,
       { rankingScores, userContent },
     );
-    const rawFormatted = actionSuggestionService.formatSuggestions(actionIds, language);
+    const rawFormatted = actionSuggestionService.formatSuggestions(actionIds, language, {
+      userContent,
+    });
     const primaryPsychoeducationId = pickPredominantPsychoeducationId(rawFormatted, {
       userContent,
       mainEmotion: emotionalAnalysis?.mainEmotion,
