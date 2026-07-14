@@ -1,3 +1,6 @@
+/**
+ * Check-in de ánimo del home: chips + validación + CTAs de puente.
+ */
 import * as Haptics from 'expo-haptics';
 import React, { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { View, Text, Pressable, ActivityIndicator } from 'react-native';
@@ -11,8 +14,23 @@ import {
 import { createDashboardStyles } from '../../styles/dashboardTheme';
 import { cacheTodayMoodPayload } from '../../utils/dailyMoodStorage';
 import { buildMoodAckCopy } from '../../utils/dashboardHomeUtils';
+import {
+  isValidMoodCheckInKey,
+  isValidMoodSecondaryAction,
+  resolveMoodAcknowledgment,
+  resolveMoodSecondaryAction,
+  resolveMoodSuggestChat,
+} from '../../utils/moodCheckInActions';
 
-const MoodCheckInCard = memo(({ onMoodSaved, displayName = '', syncedMood = null, focusFetchDone = false }) => {
+const MoodCheckInCard = memo(({
+  onMoodSaved,
+  displayName = '',
+  syncedMood = null,
+  focusFetchDone = false,
+  focusPayload = null,
+  onOpenChat,
+  onSecondaryAction,
+}) => {
   const DASH = useSectionTranslations('DASH');
   const { colors, resolvedScheme } = useTheme();
   const styles = useMemo(
@@ -84,7 +102,7 @@ const MoodCheckInCard = memo(({ onMoodSaved, displayName = '', syncedMood = null
     [onMoodSaved, saving],
   );
 
-  const moodAck = useMemo(() => {
+  const moodAckFallback = useMemo(() => {
     if (!checkIn?.mood) return null;
     return buildMoodAckCopy({
       mood: checkIn.mood,
@@ -93,6 +111,42 @@ const MoodCheckInCard = memo(({ onMoodSaved, displayName = '', syncedMood = null
       texts: DASH,
     });
   }, [checkIn?.mood, checkIn?.dateKey, displayName, DASH]);
+
+  const acknowledgmentLine = useMemo(() => {
+    if (!checkIn?.mood) return null;
+    return resolveMoodAcknowledgment(checkIn, moodAckFallback?.line);
+  }, [checkIn, moodAckFallback?.line]);
+
+  const suggestChat = resolveMoodSuggestChat(checkIn);
+  const secondary = useMemo(() => {
+    const action = resolveMoodSecondaryAction({ checkIn, focus: focusPayload });
+    return isValidMoodSecondaryAction(action) ? action : null;
+  }, [checkIn, focusPayload]);
+  const showActions = Boolean(checkIn?.mood) && !loading;
+  const chatA11y =
+    (suggestChat ? String(checkIn?.antoSnippet || '').trim() : '') || DASH.MOOD_OPEN_CHAT_CTA;
+  const secondaryLabel = secondary?.labelKey ? DASH[secondary.labelKey] : null;
+
+  const handleOpenChat = useCallback(() => {
+    if (!onOpenChat) return;
+    const mood = isValidMoodCheckInKey(checkIn?.mood) ? checkIn.mood : null;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    onOpenChat(
+      mood
+        ? {
+            fromMoodCheckIn: true,
+            mood,
+            chatEmotion: checkIn?.chatEmotion || null,
+          }
+        : null,
+    );
+  }, [onOpenChat, checkIn?.mood, checkIn?.chatEmotion]);
+
+  const handleSecondary = useCallback(() => {
+    if (!secondary || !onSecondaryAction) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    onSecondaryAction(secondary);
+  }, [onSecondaryAction, secondary]);
 
   return (
     <View style={[styles.section, styles.surfaceCard]} accessibilityRole="summary">
@@ -129,10 +183,49 @@ const MoodCheckInCard = memo(({ onMoodSaved, displayName = '', syncedMood = null
         </View>
       )}
 
-      {moodAck?.line ? (
+      {acknowledgmentLine ? (
         <Text style={styles.moodAckText} accessibilityRole="text">
-          {moodAck.line}
+          {acknowledgmentLine}
         </Text>
+      ) : null}
+
+      {showActions && onOpenChat ? (
+        <View style={styles.moodActionRow}>
+          <Pressable
+            onPress={handleOpenChat}
+            style={({ pressed }) => [
+              styles.moodActionChip,
+              suggestChat ? styles.moodActionChipPrimary : styles.moodActionChipSecondary,
+              pressed && { opacity: 0.88 },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={suggestChat ? chatA11y : DASH.MOOD_CTA_CHAT_SOFT}
+          >
+            <Text
+              style={
+                suggestChat
+                  ? styles.moodActionChipTextPrimary
+                  : styles.moodActionChipTextSecondary
+              }
+            >
+              {suggestChat ? DASH.MOOD_OPEN_CHAT_CTA : DASH.MOOD_CTA_CHAT_SOFT}
+            </Text>
+          </Pressable>
+          {secondary && secondaryLabel && onSecondaryAction ? (
+            <Pressable
+              onPress={handleSecondary}
+              style={({ pressed }) => [
+                styles.moodActionChip,
+                styles.moodActionChipSecondary,
+                pressed && { opacity: 0.88 },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={secondaryLabel}
+            >
+              <Text style={styles.moodActionChipTextSecondary}>{secondaryLabel}</Text>
+            </Pressable>
+          ) : null}
+        </View>
       ) : null}
     </View>
   );

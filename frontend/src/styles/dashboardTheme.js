@@ -504,6 +504,36 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       color: colors.primary,
       fontWeight: '500',
     },
+    moodActionRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 12,
+    },
+    moodActionChip: {
+      borderRadius: 999,
+      paddingVertical: 9,
+      paddingHorizontal: 14,
+      borderWidth: StyleSheet.hairlineWidth,
+    },
+    moodActionChipPrimary: {
+      backgroundColor: dark ? 'rgba(122, 162, 247, 0.18)' : 'rgba(91, 124, 214, 0.12)',
+      borderColor: dark ? 'rgba(122, 162, 247, 0.35)' : 'rgba(91, 124, 214, 0.28)',
+    },
+    moodActionChipSecondary: {
+      backgroundColor: dark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(36, 35, 79, 0.04)',
+      borderColor: dark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(36, 35, 79, 0.1)',
+    },
+    moodActionChipTextPrimary: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    moodActionChipTextSecondary: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
     homeInsightCard: {
       padding: 18,
     },

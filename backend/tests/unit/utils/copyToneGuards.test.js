@@ -31,7 +31,8 @@ describe('copyToneGuards', () => {
     const hits = [];
     for (const mood of DAILY_MOOD_VALUES) {
       const meta = getDailyMoodCopy(mood, 'es');
-      for (const value of [meta?.label, meta?.acknowledgment, meta?.antoSnippet]) {
+      const fields = [meta?.label, meta?.antoSnippet, ...(meta?.acknowledgments || [])];
+      for (const value of fields) {
         if (typeof value === 'string' && hasSpanishVoseo(value)) hits.push(value);
       }
     }

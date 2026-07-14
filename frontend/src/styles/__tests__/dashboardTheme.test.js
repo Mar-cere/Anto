@@ -36,6 +36,8 @@ describe('dashboardTheme', () => {
       'heroStreakNumber',
       'homeInsightIconWrap',
       'moodPill',
+      'moodActionRow',
+      'moodActionChip',
       'rowTitle',
     ]) {
       expect(lightStyles[token]).toBeDefined();

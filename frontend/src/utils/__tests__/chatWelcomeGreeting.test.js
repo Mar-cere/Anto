@@ -4,6 +4,7 @@ import {
   isChatWelcomeMessage,
   localizeChatWelcomeMessages,
   pickChatWelcomeGreeting,
+  pickMoodBridgeWelcomeGreeting,
   reconstructPersistedSuggestions,
   reconstructPersistedCommitmentFollowUp,
 } from '../chatWelcomeGreeting';
@@ -60,6 +61,13 @@ describe('chatWelcomeGreeting', () => {
     expect(greeting).toMatch(/¿|¡/);
   });
 
+  it('pickMoodBridgeWelcomeGreeting no pregunta de nuevo el ánimo', () => {
+    const bridge = pickMoodBridgeWelcomeGreeting('anxious', 'es', '2026-07-14');
+    expect(bridge).toMatch(/tenso|home|pesando/i);
+    expect(bridge).not.toMatch(/¿Cómo te sientes/i);
+    expect(pickMoodBridgeWelcomeGreeting('anxious', 'es', '2026-07-14')).toBe(bridge);
+  });
+
   it('getChatWelcomeTimePeriod clasifica tarde', () => {
     expect(getChatWelcomeTimePeriod(new Date('2026-06-04T15:00:00'))).toBe('afternoon');
   });
@@ -85,6 +93,22 @@ describe('chatWelcomeGreeting', () => {
     );
     expect(out[0].content).toMatch(/Good (morning|afternoon|evening)|^Hi!/i);
     expect(out[0].content).not.toMatch(/¿Cómo va tu día/i);
+  });
+
+  it('localizeChatWelcomeMessages conserva puente de check-in', () => {
+    const out = localizeChatWelcomeMessages(
+      [
+        {
+          _id: '1',
+          role: 'assistant',
+          metadata: { type: 'welcome', fromMoodCheckIn: true, moodCheckInMood: 'anxious' },
+          content: 'Vi que llegas tenso.',
+        },
+      ],
+      'en',
+    );
+    expect(out[0].content).toMatch(/tense|home|weighing/i);
+    expect(out[0].content).not.toMatch(/How are you feeling/i);
   });
 
   describe('reconstructPersistedSuggestions', () => {

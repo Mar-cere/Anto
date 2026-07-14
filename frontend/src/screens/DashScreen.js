@@ -70,6 +70,10 @@ import { STORAGE_KEYS as CHAT_STORAGE_KEYS } from './chat/chatScreenConstants';
 import { markTutorialCompleted } from '../utils/tutorialStorage';
 import { buildFocusNextTaskNavParams } from '../utils/focusNextTaskNavigation';
 import { buildFocusNextHabitNavParams } from '../utils/focusNextHabitNavigation';
+import {
+  isValidMoodCheckInKey,
+  isValidMoodSecondaryAction,
+} from '../utils/moodCheckInActions';
 import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes de AsyncStorage
@@ -564,7 +568,7 @@ const DashScreen = () => {
     }
   }, []);
 
-  const goToChatFromOnboarding = useCallback(async () => {
+  const goToChatFromOnboarding = useCallback(async (opts = null) => {
     const canChat = await canAttemptChatAccess(userData);
     if (!canChat) {
       Alert.alert(
@@ -582,12 +586,17 @@ const DashScreen = () => {
       return;
     }
     await setChatEntryBackTarget('dash');
+    const moodKey = String(opts?.mood || '').trim();
+    const fromMood = opts?.fromMoodCheckIn === true && isValidMoodCheckInKey(moodKey);
+    const chatParams = fromMood
+      ? { fromMoodCheckIn: true, moodCheckInMood: moodKey }
+      : undefined;
     const state = navigation.getState?.();
     if (state?.type === 'tab') {
-      navigation.navigate('Chat');
+      navigation.navigate('Chat', chatParams);
       return;
     }
-    navigation.navigate('MainTabs', { screen: 'Chat' });
+    navigation.navigate('MainTabs', { screen: 'Chat', params: chatParams });
   }, [navigation, userData, CHAT]);
 
   const openBehavioralActivationFromFocus = useCallback((slotId) => {
@@ -661,7 +670,7 @@ const DashScreen = () => {
   }, []);
 
   const openConversationFromFocus = useCallback(
-    async (conversationId) => {
+    async (conversationId, options = {}) => {
       if (!conversationId) return;
       const cid = String(conversationId);
       try {
@@ -669,19 +678,65 @@ const DashScreen = () => {
       } catch (_) {
         /* noop */
       }
-      // #202: al retomar la conversación desde el foco, forzar el follow-up de
-      // compromiso vencido en el primer mensaje (aunque el hilo ya tenga historial).
+      const resumeCommitmentFollowUp = options?.resumeCommitmentFollowUp !== false;
+      const chatParams = {
+        openConversationId: cid,
+        ...(resumeCommitmentFollowUp ? { resumeCommitmentFollowUp: true } : {}),
+      };
       const state = navigation.getState?.();
       if (state?.type === 'tab') {
-        navigation.navigate('Chat', { openConversationId: cid, resumeCommitmentFollowUp: true });
+        navigation.navigate('Chat', chatParams);
         return;
       }
       navigation.navigate('MainTabs', {
         screen: 'Chat',
-        params: { openConversationId: cid, resumeCommitmentFollowUp: true },
+        params: chatParams,
       });
     },
     [navigation]
+  );
+
+  const handleMoodSecondaryAction = useCallback(
+    (action) => {
+      if (!isValidMoodSecondaryAction(action)) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      switch (action.kind) {
+        case 'breathing':
+          navigation.navigate('BreathingExercise');
+          return;
+        case 'grounding':
+          navigation.navigate('GroundingTechnique');
+          return;
+        case 'ba_today': {
+          const slotId = String(action.slotId || '').trim();
+          if (!slotId) return;
+          openBehavioralActivationFromFocus(slotId);
+          return;
+        }
+        case 'resume_chat':
+          if (action.conversationId) {
+            openConversationFromFocus(action.conversationId, {
+              resumeCommitmentFollowUp: false,
+            });
+          }
+          return;
+        case 'next_habit':
+          if (action.nextHabit?._id) openNextHabitFromFocus(action.nextHabit);
+          return;
+        case 'next_task':
+          if (action.nextTask?._id) openNextTaskFromFocus(action.nextTask);
+          return;
+        default:
+          break;
+      }
+    },
+    [
+      navigation,
+      openBehavioralActivationFromFocus,
+      openConversationFromFocus,
+      openNextHabitFromFocus,
+      openNextTaskFromFocus,
+    ],
   );
 
   // Tras el recorrido: preferencia opcional o chat (si vino de «Repasar recorrido»).
@@ -844,6 +899,9 @@ const DashScreen = () => {
             displayName={getDashboardDisplayName(userData)}
             syncedMood={focusPayload ? focusPayload.dailyMood : undefined}
             focusFetchDone={!loading}
+            focusPayload={focusPayload}
+            onOpenChat={goToChatFromOnboarding}
+            onSecondaryAction={handleMoodSecondaryAction}
           />
           <DashboardFocusCard
             data={focusPayload}

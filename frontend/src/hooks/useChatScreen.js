@@ -48,6 +48,7 @@ import {
 } from '../utils/tccContinuityDismissStorage';
 import { newClientRequestId } from '../utils/clientRequestId';
 import { isValidMongoObjectId24 } from '../utils/mongoId';
+import { isValidMoodCheckInKey } from '../utils/moodCheckInActions';
 import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProductActions';
 import { sanitizeProposedCommitments } from '../utils/sanitizeProposedCommitments';
 import { createSessionCommitment } from '../services/sessionCommitmentsService';
@@ -61,7 +62,9 @@ import signalsService from '../services/signalsService';
 import useChatTypingTelemetry from './useChatTypingTelemetry';
 import {
   finalizeLoadedChatMessages,
+  isChatWelcomeMessage,
   pickChatWelcomeGreeting,
+  pickMoodBridgeWelcomeGreeting,
 } from '../utils/chatWelcomeGreeting';
 import { getAppLanguage } from '../config/api';
 import {
@@ -539,17 +542,33 @@ export function useChatScreen() {
               return;
           }
         }
+        const moodFromHomeRaw = String(route.params?.moodCheckInMood || '').trim();
+        const moodFromHome = isValidMoodCheckInKey(moodFromHomeRaw) ? moodFromHomeRaw : '';
+        const fromMoodCheckIn = route.params?.fromMoodCheckIn === true && Boolean(moodFromHome);
+        const moodBridge =
+          fromMoodCheckIn
+            ? pickMoodBridgeWelcomeGreeting(moodFromHome, appLanguage)
+            : null;
         const welcomeMessage = {
           id: `${MESSAGE_ID_PREFIXES.WELCOME}-${Date.now()}`,
-          content: pickChatWelcomeGreeting(appLanguage),
+          content: moodBridge || pickChatWelcomeGreeting(appLanguage),
           role: MESSAGE_ROLES.ASSISTANT,
           type: MESSAGE_TYPES.TEXT,
-          metadata: { timestamp: new Date().toISOString(), type: MESSAGE_TYPES.WELCOME },
+          metadata: {
+            timestamp: new Date().toISOString(),
+            type: MESSAGE_TYPES.WELCOME,
+            ...(fromMoodCheckIn ? { fromMoodCheckIn: true, moodCheckInMood: moodFromHome } : {}),
+          },
         };
         setMessages([welcomeMessage]);
         if (captureVisitBaselineRef.current) captureUserTurnBaseline([]);
         setShowSessionIntentionPrompt(true);
         await chatService.saveMessages([welcomeMessage]);
+        if (fromMoodCheckIn) {
+          try {
+            navigation.setParams({ fromMoodCheckIn: undefined, moodCheckInMood: undefined });
+          } catch (_) {}
+        }
         return;
       }
 
@@ -609,10 +628,80 @@ export function useChatScreen() {
     navigation,
     route.params?.openConversationId,
     route.params?.resumeCommitmentFollowUp,
+    route.params?.fromMoodCheckIn,
+    route.params?.moodCheckInMood,
     userId,
     applyMessagePagination,
     hydrateCrisisResourcesFromMessages,
     captureUserTurnBaseline,
+  ]);
+
+  // Si el home ya registró el ánimo y el hilo solo tiene el welcome genérico, lo sustituye.
+  // Espera a que termine el init para no limpiar params antes de tener mensajes.
+  useEffect(() => {
+    if (isLoading) return;
+    const moodFromHomeRaw = String(route.params?.moodCheckInMood || '').trim();
+    const moodFromHome = isValidMoodCheckInKey(moodFromHomeRaw) ? moodFromHomeRaw : '';
+    const fromMoodCheckIn = route.params?.fromMoodCheckIn === true && Boolean(moodFromHome);
+    if (!fromMoodCheckIn) return;
+
+    let cancelled = false;
+    (async () => {
+      const lang = await getAppLanguage();
+      if (cancelled) return;
+      const bridge = pickMoodBridgeWelcomeGreeting(moodFromHome, lang);
+      if (!bridge) {
+        try {
+          navigation.setParams({ fromMoodCheckIn: undefined, moodCheckInMood: undefined });
+        } catch (_) {}
+        return;
+      }
+
+      let replacedOrDone = false;
+      setMessages((prev) => {
+        if (!Array.isArray(prev)) return prev;
+        // Aún no hay mensajes: no limpiar params; el efecto reintentará.
+        if (prev.length === 0) return prev;
+        // Hilo con historial: no hay welcome genérico que pulir.
+        if (prev.length !== 1 || !isChatWelcomeMessage(prev[0])) {
+          replacedOrDone = true;
+          return prev;
+        }
+        const only = prev[0];
+        if (only?.metadata?.fromMoodCheckIn === true) {
+          replacedOrDone = true;
+          return prev;
+        }
+        replacedOrDone = true;
+        return [
+          {
+            ...only,
+            content: bridge,
+            metadata: {
+              ...(only.metadata || {}),
+              type: only?.metadata?.type || 'welcome',
+              fromMoodCheckIn: true,
+              moodCheckInMood: moodFromHome,
+            },
+          },
+        ];
+      });
+
+      if (replacedOrDone) {
+        try {
+          navigation.setParams({ fromMoodCheckIn: undefined, moodCheckInMood: undefined });
+        } catch (_) {}
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isLoading,
+    messages.length,
+    navigation,
+    route.params?.fromMoodCheckIn,
+    route.params?.moodCheckInMood,
   ]);
 
   const loadOlderMessages = useCallback(async () => {

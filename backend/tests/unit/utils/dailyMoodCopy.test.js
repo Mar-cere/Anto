@@ -30,8 +30,23 @@ describe('dailyMoodCopy', () => {
           hits.push({ mood, field, value: meta[field] });
         }
       }
+      (meta?.acknowledgments || []).forEach((value, index) => {
+        if (hasSpanishVoseo(value || '')) {
+          hits.push({ mood, field: `acknowledgments[${index}]`, value });
+        }
+      });
     }
     expect(hits).toEqual([]);
+  });
+
+  it('rota acknowledgment según dateKey', () => {
+    const a = getDailyMoodCopy('anxious', 'es', '2026-07-14');
+    const b = getDailyMoodCopy('anxious', 'es', '2026-07-15');
+    expect(a.acknowledgment).toBeTruthy();
+    expect(b.acknowledgment).toBeTruthy();
+    expect(a.acknowledgments.length).toBeGreaterThan(1);
+    // mismos inputs → mismo texto
+    expect(getDailyMoodCopy('anxious', 'es', '2026-07-14').acknowledgment).toBe(a.acknowledgment);
   });
 
   it('tenso y fatiga sugieren chat; calma y bien no', () => {
@@ -59,9 +74,9 @@ describe('dailyMoodCopy', () => {
   it('genera snippet de prompt en ambos idiomas', () => {
     const esSnippet = buildDailyMoodPromptSnippet({ mood: 'anxious' }, 'es');
     const enSnippet = buildDailyMoodPromptSnippet({ mood: 'anxious' }, 'en');
-    expect(esSnippet).toMatch(/check-in del día/i);
+    expect(esSnippet).toMatch(/NO preguntes cómo se siente/i);
     expect(esSnippet).toMatch(/tenso/i);
-    expect(enSnippet).toMatch(/morning check-in/i);
+    expect(enSnippet).toMatch(/Do NOT ask how they feel again/i);
     expect(enSnippet).toMatch(/tense/i);
   });
 });

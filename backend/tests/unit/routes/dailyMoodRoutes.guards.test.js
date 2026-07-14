@@ -20,6 +20,12 @@ await jest.unstable_mockModule('../../../middleware/auth.js', () => ({
 await jest.unstable_mockModule('../../../services/dailyMoodCheckInService.js', () => ({
   getTodayDailyMoodCheckIn,
   upsertTodayDailyMoodCheckIn,
+  formatCalendarDateKeyInTz: (date = new Date()) =>
+    new Date(date).toISOString().slice(0, 10),
+}));
+
+await jest.unstable_mockModule('../../../services/engagementStreakService.js', () => ({
+  recordEngagementSignal: jest.fn(async () => ({})),
 }));
 
 const { default: dailyMoodRoutes } = await import('../../../routes/dailyMoodRoutes.js');
