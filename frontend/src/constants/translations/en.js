@@ -218,6 +218,7 @@ export const DASH = {
   FOCUS_COMMITMENT_LINKED_TASK: 'Also in your tasks',
   FOCUS_COMMITMENT_LINKED_HABIT: 'Also in your habits',
   FOCUS_COMMITMENT_SAVED_HINT: 'Saved for later',
+  FOCUS_COMMITMENT_OPEN_A11Y: 'Open the conversation for this commitment',
   FOCUS_REMINDER_SECTION: 'Main focus now',
   FOCUS_REMINDER_TAP_CHAT: 'Tap to go to chat',
   FOCUS_PROTOCOL: 'Next step (follow-up)',

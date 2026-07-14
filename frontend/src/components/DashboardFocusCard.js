@@ -678,7 +678,7 @@ const DashboardFocusCard = ({
         {visibleCommitments.length > 0 ? (
           <View style={styles.insetSection}>
             <Text style={styles.insetLabel}>{DASH.FOCUS_COMMITMENTS}</Text>
-            {visibleCommitments.map((item) => {
+            {visibleCommitments.map((item, index) => {
               const commitmentTitle = buildCommitmentDisplayTitle(item, DASH);
               const followUpPrompt = buildCommitmentFollowUpPrompt(item, DASH);
               const linkHint = buildCommitmentLinkHint(item, DASH);
@@ -689,14 +689,55 @@ const DashboardFocusCard = ({
                   (item.followUpAnswer === 'no' &&
                     Number(item.followUpAttempts || 0) >= 1 &&
                     Number(item.followUpAttempts || 0) < MAX_COMMITMENT_FOLLOW_UP_ATTEMPTS));
+              const conversationId = item.conversationId ? String(item.conversationId) : '';
+              const canOpenConversation =
+                !showFollowUp &&
+                !showRenegotiate &&
+                (Boolean(conversationId) || typeof onOpenChat === 'function');
+              const isLastCommitment = index === visibleCommitments.length - 1;
+              const openCommitment = () => {
+                if (!canOpenConversation) return;
+                if (conversationId) {
+                  handleConv(conversationId);
+                  return;
+                }
+                onOpenChat?.();
+              };
               return (
-              <View key={item.id} style={styles.commitmentRow}>
-                <Text style={styles.commitmentLabel} numberOfLines={2}>
-                  {commitmentTitle}
-                </Text>
-                {linkHint ? (
-                  <Text style={styles.commitmentLinkHint}>{linkHint}</Text>
-                ) : null}
+              <Pressable
+                key={item.id}
+                style={({ pressed }) => [
+                  styles.commitmentRow,
+                  isLastCommitment && styles.commitmentRowLast,
+                  canOpenConversation && pressed && styles.commitmentRowPressed,
+                ]}
+                onPress={canOpenConversation ? openCommitment : undefined}
+                disabled={!canOpenConversation}
+                accessibilityRole={canOpenConversation ? 'button' : 'text'}
+                accessibilityLabel={
+                  canOpenConversation
+                    ? `${commitmentTitle}. ${DASH.FOCUS_COMMITMENT_OPEN_A11Y}`
+                    : commitmentTitle
+                }
+              >
+                <View style={styles.commitmentRowInner}>
+                  <View style={styles.commitmentRowCopy}>
+                    <Text style={styles.commitmentLabel} numberOfLines={2}>
+                      {commitmentTitle}
+                    </Text>
+                    {linkHint ? (
+                      <Text style={styles.commitmentLinkHint}>{linkHint}</Text>
+                    ) : null}
+                  </View>
+                  {canOpenConversation ? (
+                    <Ionicons
+                      name="chevron-forward"
+                      size={18}
+                      color={chevronMuted}
+                      style={styles.commitmentChevron}
+                    />
+                  ) : null}
+                </View>
                 {showFollowUp ? (
                   <View
                     style={styles.commitmentActions}
@@ -766,7 +807,7 @@ const DashboardFocusCard = ({
                     </View>
                   </View>
                 ) : null}
-              </View>
+              </Pressable>
             );
             })}
           </View>

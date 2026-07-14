@@ -718,6 +718,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
       id: c.id,
       label: c.label,
       status: c.status,
+      conversationId: c.conversationId || null,
       followUpAt: c.followUpAt,
       followUpAnswer: c.followUpAnswer,
       followUpAttempts: c.followUpAttempts ?? 0,

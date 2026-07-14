@@ -96,6 +96,14 @@ describe('dashboardFocusCard guard', () => {
     expect(src).toMatch(/isCommitmentFollowUpDue/);
   });
 
+  it('DashboardFocusCard abre el chat desde compromisos guardados', () => {
+    const src = readSrc('components/DashboardFocusCard.js');
+    expect(src).toMatch(/FOCUS_COMMITMENT_OPEN_A11Y/);
+    expect(src).toMatch(/canOpenConversation/);
+    expect(src).toMatch(/handleConv\(conversationId\)/);
+    expect(src).toMatch(/chevron-forward/);
+  });
+
   it('filterDashboardCommitments solo expone compromisos accionables', () => {
     const src = readSrc('utils/commitmentLabelUtils.js');
     expect(src).toMatch(/isDashboardCommitmentActionable/);

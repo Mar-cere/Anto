@@ -62,7 +62,7 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
     },
     card: {
       ...t.FOCUS_PANEL,
-      paddingBottom: 20,
+      paddingBottom: 14,
     },
     groupLabel: {
       ...dash.SECTION_TITLE,
@@ -167,7 +167,7 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       fontWeight: '600',
     },
     insetSection: {
-      marginBottom: 16,
+      marginBottom: 0,
       paddingTop: 14,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: t.FOCUS_BORDER_SUBTLE,
@@ -189,11 +189,29 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       lineHeight: 18,
     },
     commitmentRow: {
-      marginBottom: 12,
+      marginBottom: 8,
       paddingVertical: 12,
       paddingHorizontal: 14,
       borderRadius: 14,
       backgroundColor: resolvedScheme === 'dark' ? 'rgba(255, 255, 255, 0.05)' : 'rgba(36, 35, 79, 0.035)',
+    },
+    commitmentRowLast: {
+      marginBottom: 0,
+    },
+    commitmentRowPressed: {
+      opacity: 0.88,
+    },
+    commitmentRowInner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    commitmentRowCopy: {
+      flex: 1,
+      minWidth: 0,
+    },
+    commitmentChevron: {
+      marginLeft: 4,
     },
     commitmentLabel: {
       color: colors.text,
