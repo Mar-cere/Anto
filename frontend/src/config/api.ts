@@ -148,6 +148,9 @@ export const ENDPOINTS = {
   /** Hechos biográficos del usuario (#63 grounding) */
   USER_FACTS: '/api/user-facts',
   USER_FACT_BY_ID: (id: string) => `/api/user-facts/${id}`,
+  /** Sesiones programadas (#15) */
+  SCHEDULED_SESSIONS: '/api/scheduled-sessions',
+  SCHEDULED_SESSION_BY_ID: (id: string) => `/api/scheduled-sessions/${id}`,
   PUSH_TOKEN: '/api/notifications/push-token',
   TEST_NOTIFICATION_WARNING: '/api/notifications/test/crisis-warning',
   TEST_NOTIFICATION_MEDIUM: '/api/notifications/test/crisis-medium',

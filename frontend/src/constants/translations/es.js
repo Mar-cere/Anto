@@ -3269,6 +3269,85 @@ export const USER_FACTS = {
   CATEGORY_OTHER: 'Otro',
 };
 
+export const SCHEDULED_SESSIONS = {
+  SCREEN_TITLE: 'Sesiones programadas',
+  EMPTY_TITLE: 'No hay sesiones programadas',
+  EMPTY_MESSAGE:
+    'Configura recordatorios semanales para tus sesiones con Anto. Te avisaremos en los días y horarios que elijas.',
+  EMPTY_CTA: 'Programar primera sesión',
+  ADD_SESSION_CTA: 'Agregar sesión',
+  SESSION_CARD_EDIT: 'Editar',
+  SESSION_CARD_DELETE: 'Eliminar',
+  SESSION_CARD_TOGGLE_OFF: 'Desactivar',
+  SESSION_CARD_TOGGLE_ON: 'Activar',
+  DELETE_CONFIRM_TITLE: 'Eliminar sesión',
+  DELETE_CONFIRM_MESSAGE:
+    'Esta sesión se eliminará permanentemente. Esta acción no se puede deshacer.',
+  DELETE_CANCEL: 'Cancelar',
+  DELETE_CONFIRM: 'Eliminar',
+  TOAST_DELETED: 'Sesión eliminada',
+  TOAST_ERROR: 'No se pudo completar. Intenta de nuevo.',
+  TOAST_SAVED: 'Sesión guardada',
+  TOAST_TOGGLED_ON: 'Sesión activada',
+  TOAST_TOGGLED_OFF: 'Sesión desactivada',
+  TOAST_PAUSED: 'Sesiones pausadas',
+  TOAST_RESUMED: 'Sesiones reanudadas',
+  LOADING: 'Cargando sesiones…',
+  ERROR_LOADING: 'No se pudieron cargar las sesiones',
+  RETRY: 'Reintentar',
+  PAUSE_ALL_CTA: 'Pausar todas',
+  RESUME_ALL_CTA: 'Reanudar',
+  PAUSED_BANNER_TITLE: 'Sesiones pausadas',
+  PAUSED_BANNER_MESSAGE: 'Tus sesiones están pausadas hasta el {{date}}',
+
+  // Modal crear/editar
+  MODAL_CREATE_TITLE: 'Nueva sesión',
+  MODAL_EDIT_TITLE: 'Editar sesión',
+  MODAL_DONE: 'Listo',
+  MODAL_CANCEL: 'Cancelar',
+  MODAL_SAVE: 'Guardar',
+  MODAL_SAVING: 'Guardando…',
+  MODAL_DAY_LABEL: 'Día de la semana',
+  MODAL_TIME_LABEL: 'Hora',
+  MODAL_TIME_PLACEHOLDER: 'Selecciona una hora',
+  MODAL_LABEL_LABEL: 'Etiqueta (opcional)',
+  MODAL_LABEL_PLACEHOLDER: 'Ej: Sesión mañana',
+  MODAL_LABEL_HINT: 'Dale un nombre personalizado a esta sesión',
+  MODAL_ERROR_TITLE: 'Error',
+  MODAL_ERROR_INVALID_DAY: 'Selecciona un día de la semana',
+  MODAL_ERROR_INVALID_TIME: 'Selecciona una hora válida',
+  MODAL_ERROR_DUPLICATE: 'Ya existe una sesión para este día y hora',
+  MODAL_ERROR_LIMIT_REACHED: 'Has alcanzado el límite de 10 sesiones',
+  MODAL_ERROR_ACTIVE_LIMIT: 'Has alcanzado el límite de 7 sesiones activas',
+
+  // Modal pausar
+  PAUSE_MODAL_TITLE: 'Pausar sesiones',
+  PAUSE_MODAL_MESSAGE:
+    '¿Por cuántos días quieres pausar todas las notificaciones de sesiones?',
+  PAUSE_MODAL_DAYS_LABEL: 'Días',
+  PAUSE_MODAL_CONFIRM: 'Pausar',
+  PAUSE_MODAL_CANCEL: 'Cancelar',
+  PAUSE_MODAL_ERROR_INVALID: 'Los días deben estar entre 1 y 90',
+
+  // Días de la semana
+  DAY_SUNDAY: 'Domingo',
+  DAY_MONDAY: 'Lunes',
+  DAY_TUESDAY: 'Martes',
+  DAY_WEDNESDAY: 'Miércoles',
+  DAY_THURSDAY: 'Jueves',
+  DAY_FRIDAY: 'Viernes',
+  DAY_SATURDAY: 'Sábado',
+
+  // Días abreviados
+  DAY_SHORT_SUNDAY: 'Dom',
+  DAY_SHORT_MONDAY: 'Lun',
+  DAY_SHORT_TUESDAY: 'Mar',
+  DAY_SHORT_WEDNESDAY: 'Mié',
+  DAY_SHORT_THURSDAY: 'Jue',
+  DAY_SHORT_FRIDAY: 'Vie',
+  DAY_SHORT_SATURDAY: 'Sáb',
+};
+
 // Exportar todas las traducciones agrupadas
 export default {
   HOME,
@@ -3291,6 +3370,7 @@ export default {
   PROFILE,
   SUBSCRIPTION,
   USER_FACTS,
+  SCHEDULED_SESSIONS,
   API_ERRORS,
 };
 
