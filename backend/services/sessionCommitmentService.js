@@ -10,7 +10,7 @@ import {
   failsClinicalGuardrails,
   sanitizeObservationalText,
 } from '../utils/clinicalContentGuardrails.js';
-import { isGenericInterventionCatalogLabel } from '../utils/commitmentLabelUtils.js';
+import { isGenericInterventionCatalogLabel, looksLikeChatBubbleLabel, SHORT_SOFT_RESUME_LABEL_ES } from '../utils/commitmentLabelUtils.js';
 
 const MAX_LABEL = 240;
 const MAX_ACTIVE_COMMITMENTS = 12;
@@ -67,6 +67,10 @@ function normalizeLabel(raw) {
   const safe = sanitizeObservationalText(label, MAX_LABEL);
   if (!safe) return { error: 'labelClinical' };
   if (isGenericInterventionCatalogLabel(safe)) return { error: 'labelGeneric' };
+  // Nunca persistir monólogos del asistente como «compromiso»
+  if (looksLikeChatBubbleLabel(safe)) {
+    return { label: SHORT_SOFT_RESUME_LABEL_ES };
+  }
   return { label: safe };
 }
 

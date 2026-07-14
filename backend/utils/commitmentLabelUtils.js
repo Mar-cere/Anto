@@ -47,3 +47,23 @@ export function isBehavioralActivationLabel(label) {
     return catalogLabel && normalizeCommitmentLabel(catalogLabel) === normalized;
   });
 }
+
+const MAX_CONCRETE_LABEL = 100;
+export const SHORT_SOFT_RESUME_LABEL_ES = 'Volver a este tema cuando te venga bien';
+export const SHORT_SOFT_RESUME_LABEL_EN = 'Come back to this topic when you want';
+
+/** Eco de burbuja del chat: no sirve como etiqueta de compromiso. */
+export function looksLikeChatBubbleLabel(text) {
+  const t = String(text || '').trim();
+  if (!t) return true;
+  if (t.length > MAX_CONCRETE_LABEL) return true;
+  if ((t.match(/[?.!¿¡]/g) || []).length >= 2) return true;
+  if (
+    /^(est[aá]\s+bien|entiendo|tiene\s+sentido|te\s+escucho|suena\s+a|s[ií],\s+ambas|it'?s\s+(ok|okay|fine)|i\s+understand)\b/i.test(
+      t,
+    )
+  ) {
+    return true;
+  }
+  return false;
+}

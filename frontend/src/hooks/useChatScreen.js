@@ -52,6 +52,7 @@ import { sanitizeProposedProductActions } from '../utils/sanitizeProposedProduct
 import { sanitizeProposedCommitments } from '../utils/sanitizeProposedCommitments';
 import { createSessionCommitment } from '../services/sessionCommitmentsService';
 import { postCommitmentTelemetry } from '../utils/commitmentTelemetry';
+import { looksLikeChatBubbleCommitmentLabel } from '../utils/commitmentLabelUtils';
 import {
   parseGuestHandoffPendingFromStorage,
   parseUserIdFromUserDataStorage,
@@ -814,7 +815,10 @@ export function useChatScreen() {
       try {
         const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
         const assistantMessageId = proposalsMessage?.metadata?.assistantMessageId;
-        const label = String(proposal?.label || '').trim();
+        let label = String(proposal?.label || '').trim();
+        if (!label || label.length < 2 || looksLikeChatBubbleCommitmentLabel(label)) {
+          label = String(texts.CHAT_COMMITMENT_DEFAULT_LABEL || '').trim();
+        }
         if (!label || label.length < 2) {
           showToast({ message: texts.CHAT_COMMITMENT_SAVE_ERROR, type: 'warning' });
           return false;

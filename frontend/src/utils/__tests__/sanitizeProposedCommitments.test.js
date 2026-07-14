@@ -22,6 +22,18 @@ describe('sanitizeProposedCommitments', () => {
     expect(out[0].label).toBe('Caminar diez minutos');
   });
 
+  it('limpia eco de burbuja del chat (la UI usará el default)', () => {
+    const out = sanitizeProposedCommitments([
+      {
+        id: 'uuid-bubble',
+        label:
+          'Está bien no saberlo ahora; a veces solo se siente la carga sin poder nombrarla. Si quieres, seguimos.',
+      },
+    ]);
+    expect(out).toHaveLength(1);
+    expect(out[0].label).toBe('');
+  });
+
   it('limita a una propuesta por turno', () => {
     const out = sanitizeProposedCommitments([
       { id: '1', label: 'Primero' },

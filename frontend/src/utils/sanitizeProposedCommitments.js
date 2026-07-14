@@ -1,3 +1,5 @@
+import { looksLikeChatBubbleCommitmentLabel } from './commitmentLabelUtils';
+
 const MAX_ITEMS = 1;
 const MAX_LABEL = 240;
 
@@ -17,17 +19,24 @@ export function sanitizeProposedCommitments(raw) {
         typeof item.label === 'string' &&
         item.label.trim().length >= 2,
     )
-    .map((item) => ({
-      id: item.id,
-      label: String(item.label).trim().replace(/\s+/g, ' ').slice(0, MAX_LABEL),
-      rationaleShort:
-        typeof item.rationaleShort === 'string' ? item.rationaleShort.trim().slice(0, 200) : undefined,
-      sourceMeta:
-        item.sourceMeta && typeof item.sourceMeta === 'object' && !Array.isArray(item.sourceMeta)
-          ? item.sourceMeta
-          : undefined,
-      suggestTask: item.suggestTask === true,
-      suggestHabit: item.suggestHabit === true,
-    }))
+    .map((item) => {
+      let label = String(item.label).trim().replace(/\s+/g, ' ').slice(0, MAX_LABEL);
+      // Monólogo del asistente: vacío → ChatMessageItem / save usan el default corto
+      if (looksLikeChatBubbleCommitmentLabel(label)) {
+        label = '';
+      }
+      return {
+        id: item.id,
+        label,
+        rationaleShort:
+          typeof item.rationaleShort === 'string' ? item.rationaleShort.trim().slice(0, 200) : undefined,
+        sourceMeta:
+          item.sourceMeta && typeof item.sourceMeta === 'object' && !Array.isArray(item.sourceMeta)
+            ? item.sourceMeta
+            : undefined,
+        suggestTask: item.suggestTask === true,
+        suggestHabit: item.suggestHabit === true,
+      };
+    })
     .slice(0, MAX_ITEMS);
 }

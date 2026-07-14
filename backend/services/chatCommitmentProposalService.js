@@ -9,6 +9,10 @@ import {
   failsClinicalGuardrails,
   sanitizeObservationalText,
 } from '../utils/clinicalContentGuardrails.js';
+import {
+  looksLikeChatBubbleLabel,
+  SHORT_SOFT_RESUME_LABEL_ES,
+} from '../utils/commitmentLabelUtils.js';
 import { countActiveSessionCommitments, FOCUS_VISIBLE_LIMIT } from './sessionCommitmentService.js';
 import {
   getProductActionNeedLevel,
@@ -19,9 +23,10 @@ import conversationCommitmentProposalCapService from './conversationCommitmentPr
 import metricsService from './metricsService.js';
 import { isUserInPostCrisisCommitmentCooldown } from '../utils/commitmentPostCrisisGuard.js';
 
+export { looksLikeChatBubbleLabel } from '../utils/commitmentLabelUtils.js';
+
 const MAX_LABEL = 240;
-const MAX_CONCRETE_LABEL = 100;
-const SHORT_SOFT_RESUME_LABEL = 'Retomar este tramo cuando te venga bien';
+const SHORT_SOFT_RESUME_LABEL = SHORT_SOFT_RESUME_LABEL_ES;
 
 const COMMITMENT_AGREEMENT_CUES =
   /\b(voy\s+a\s+(?:intentar|probar|retomar|hacer|dejar|empezar)|esta\s+semana\s+(?:voy|probar[eé]|intentar[eé])|lo\s+dejamos\s+para\s+retomar|quedamos\s+en|un\s+paso\s+(?:pequeño|chico|concreto)|micro\s*-?\s*paso|retomar(?:lo|é|e)?\s+(?:cuando|mañana|esta\s+semana)|antes\s+de\s+dormir\s+(?:voy|probar[eé])|cuando\s+me\s+venga\s+bien)\b/i;
@@ -49,22 +54,6 @@ function clampLabel(raw) {
   if (t.length < 2) return '';
   if (failsClinicalGuardrails(t)) return '';
   return sanitizeObservationalText(t, MAX_LABEL) || '';
-}
-
-/** Evita usar la burbuja completa del chat como etiqueta editable. */
-export function looksLikeChatBubbleLabel(text) {
-  const t = String(text || '').trim();
-  if (!t) return true;
-  if (t.length > MAX_CONCRETE_LABEL) return true;
-  if ((t.match(/[?.!¿¡]/g) || []).length >= 2) return true;
-  if (
-    /^(est[aá]\s+bien|entiendo|tiene\s+sentido|te\s+escucho|suena\s+a|s[ií],\s+ambas|it'?s\s+(ok|okay|fine)|i\s+understand)\b/i.test(
-      t,
-    )
-  ) {
-    return true;
-  }
-  return false;
 }
 
 function isSoftCloseAssistant(assistantContent) {
@@ -200,8 +189,8 @@ export async function buildProposedCommitments(input) {
   const needLevel = getProductActionNeedLevel(content);
   const rationaleShort =
     needLevel === 'high'
-      ? 'Por lo que comentaste, puede ayudarte retomarlo entre conversaciones.'
-      : 'Si te sirve, podemos dejarlo anotado para retomarlo cuando quieras.';
+      ? 'Por lo que comentaste, puede ayudarte anotarlo para más adelante.'
+      : 'Si te sirve, lo dejamos anotado para cuando quieras.';
 
   return [
     {

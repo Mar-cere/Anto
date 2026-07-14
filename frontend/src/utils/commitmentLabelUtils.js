@@ -96,6 +96,8 @@ const MAX_DASHBOARD_FOLLOW_UP_ATTEMPTS = 2; // alineado con backend MAX_FOLLOW_U
 export function isDashboardCommitmentActionable(commitment, options = {}) {
   if (!commitment || commitment.status !== 'active') return false;
   if (shouldHideDashboardCommitmentFollowUp(commitment, options)) return false;
+  // No mostrar ecos de burbuja del chat (p. ej. «Está bien no saberlo ahora…»)
+  if (looksLikeChatBubbleCommitmentLabel(commitment.label)) return false;
   if (!isConcreteCommitmentLabel(commitment.label)) return false;
 
   const attempts = Number(commitment.followUpAttempts || 0);

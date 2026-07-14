@@ -86,7 +86,7 @@ describe('chatCommitmentProposalService (#202)', () => {
       assistantMessageId,
     });
     expect(items).toHaveLength(1);
-    expect(items[0].label).toBe('Retomar este tramo cuando te venga bien');
+    expect(items[0].label).toBe('Volver a este tema cuando te venga bien');
     expect(items[0].label.length).toBeLessThan(80);
     expect(items[0].label).not.toMatch(/Está bien no saberlo/);
   });

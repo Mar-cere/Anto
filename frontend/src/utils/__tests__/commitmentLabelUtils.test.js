@@ -80,13 +80,27 @@ describe('commitmentLabelUtils', () => {
   it('muestra compromisos recién guardados aunque el follow-up aún no venza', () => {
     const freshlySaved = {
       id: 'fresh',
-      label: 'Retomar este tramo cuando te venga bien',
+      label: 'Volver a este tema cuando te venga bien',
       status: 'active',
       followUpAnswer: 'pending',
       followUpDue: false,
       source: 'chat_proposed',
     };
     expect(isDashboardCommitmentActionable(freshlySaved)).toBe(true);
+  });
+
+  it('oculta compromisos que son eco de burbuja del chat', () => {
+    const bubbleEcho = {
+      id: 'bubble',
+      label:
+        'Está bien no saberlo ahora; a veces solo se siente la carga sin poder nombrarla. Si quieres, seguimos.',
+      status: 'active',
+      followUpAnswer: 'pending',
+      followUpDue: false,
+      source: 'chat_proposed',
+    };
+    expect(looksLikeChatBubbleCommitmentLabel(bubbleEcho.label)).toBe(true);
+    expect(isDashboardCommitmentActionable(bubbleEcho)).toBe(false);
   });
 
   it('muestra renegociación tras responder no', () => {
