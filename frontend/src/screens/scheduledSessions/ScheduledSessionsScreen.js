@@ -57,8 +57,16 @@ export default function ScheduledSessionsScreen({ navigation }) {
         return;
       }
 
+      // Filtrar sesiones inválidas antes de ordenar
+      const validSessions = data.filter((session) => {
+        if (!session || typeof session !== 'object') return false;
+        if (!session.id || session.dayOfWeek === undefined || !session.time) return false;
+        if (typeof session.dayOfWeek !== 'number' || typeof session.time !== 'string') return false;
+        return true;
+      });
+
       // Ordenar por día de la semana y luego por hora
-      const sorted = data.sort((a, b) => {
+      const sorted = validSessions.sort((a, b) => {
         if (a.dayOfWeek !== b.dayOfWeek) {
           return a.dayOfWeek - b.dayOfWeek;
         }
@@ -76,6 +84,13 @@ export default function ScheduledSessionsScreen({ navigation }) {
   };
 
   const handleToggleSession = async (session) => {
+    // Validar session
+    if (!session || !session.id || typeof session.id !== 'string') {
+      console.warn('[ScheduledSessionsScreen] Invalid session for toggle:', session);
+      showToast(copy.TOAST_ERROR, 'error');
+      return;
+    }
+
     try {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       
@@ -90,11 +105,19 @@ export default function ScheduledSessionsScreen({ navigation }) {
       showToast(newIsActive ? copy.TOAST_TOGGLED_ON : copy.TOAST_TOGGLED_OFF, 'success');
     } catch (err) {
       console.error('[ScheduledSessionsScreen] Error toggling session:', err);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       showToast(copy.TOAST_ERROR, 'error');
     }
   };
 
   const handleDeleteSession = (session) => {
+    // Validar session
+    if (!session || !session.id || typeof session.id !== 'string') {
+      console.warn('[ScheduledSessionsScreen] Invalid session for delete:', session);
+      showToast(copy.TOAST_ERROR, 'error');
+      return;
+    }
+
     Alert.alert(copy.DELETE_CONFIRM_TITLE, copy.DELETE_CONFIRM_MESSAGE, [
       {
         text: copy.DELETE_CANCEL,
@@ -123,6 +146,12 @@ export default function ScheduledSessionsScreen({ navigation }) {
   };
 
   const getDayName = (dayOfWeek) => {
+    // Validar que dayOfWeek sea un número válido
+    if (typeof dayOfWeek !== 'number' || isNaN(dayOfWeek) || !Number.isInteger(dayOfWeek)) {
+      console.warn('[ScheduledSessionsScreen] Invalid dayOfWeek:', dayOfWeek);
+      return '';
+    }
+
     const days = [
       copy.DAY_SUNDAY,
       copy.DAY_MONDAY,
@@ -132,6 +161,13 @@ export default function ScheduledSessionsScreen({ navigation }) {
       copy.DAY_FRIDAY,
       copy.DAY_SATURDAY,
     ];
+    
+    // Validar rango
+    if (dayOfWeek < 0 || dayOfWeek >= days.length) {
+      console.warn('[ScheduledSessionsScreen] dayOfWeek out of range:', dayOfWeek);
+      return '';
+    }
+    
     return days[dayOfWeek] || '';
   };
 
@@ -143,6 +179,9 @@ export default function ScheduledSessionsScreen({ navigation }) {
 
     const dayName = getDayName(session.dayOfWeek);
     const isPaused = session.isPausedGlobally === true;
+    
+    // Validar y sanitizar label
+    const label = session.label && typeof session.label === 'string' ? session.label.trim() : null;
 
     return (
       <View
@@ -178,7 +217,7 @@ export default function ScheduledSessionsScreen({ navigation }) {
             >
               {session.time}
             </Text>
-            {session.label ? (
+            {label ? (
               <Text
                 style={[
                   styles.sessionLabel,
@@ -187,8 +226,10 @@ export default function ScheduledSessionsScreen({ navigation }) {
                     ...typography.bodySmall,
                   },
                 ]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
               >
-                {session.label}
+                {label}
               </Text>
             ) : null}
             {isPaused ? (

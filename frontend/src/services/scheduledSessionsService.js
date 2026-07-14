@@ -39,20 +39,23 @@ function sanitizeText(text) {
  * @throws {Error} Si el input es inválido
  */
 function sanitizeSessionInput(input) {
-  if (!input || typeof input !== 'object') {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new Error('Invalid session input: must be an object');
   }
 
   // Validar dayOfWeek (requerido para creación)
   if (input.dayOfWeek !== undefined) {
     const dayOfWeek = Number(input.dayOfWeek);
-    if (!Number.isInteger(dayOfWeek) || dayOfWeek < LIMITS.MIN_DAY_OF_WEEK || dayOfWeek > LIMITS.MAX_DAY_OF_WEEK) {
+    if (!Number.isInteger(dayOfWeek) || isNaN(dayOfWeek) || dayOfWeek < LIMITS.MIN_DAY_OF_WEEK || dayOfWeek > LIMITS.MAX_DAY_OF_WEEK) {
       throw new Error(`dayOfWeek must be an integer between ${LIMITS.MIN_DAY_OF_WEEK} and ${LIMITS.MAX_DAY_OF_WEEK}`);
     }
   }
 
   // Validar time (requerido para creación)
   if (input.time !== undefined) {
+    if (typeof input.time !== 'string') {
+      throw new Error('time must be a string');
+    }
     const time = String(input.time).trim();
     if (!TIME_PATTERN.test(time)) {
       throw new Error('time must be in HH:mm format (24-hour)');
@@ -90,7 +93,10 @@ function sanitizeSessionInput(input) {
 
   // Validar y añadir notificationId si presente
   if (input.notificationId !== undefined && input.notificationId !== null) {
-    sanitized.notificationId = String(input.notificationId).trim();
+    const notificationId = String(input.notificationId).trim();
+    if (notificationId.length > 0) {
+      sanitized.notificationId = notificationId;
+    }
   }
 
   return sanitized;
@@ -102,21 +108,46 @@ function sanitizeSessionInput(input) {
  * @returns {Object|null} Sesión sanitizada o null si inválida
  */
 function sanitizeSessionOutput(session) {
-  if (!session || typeof session !== 'object') return null;
+  if (!session || typeof session !== 'object' || Array.isArray(session)) return null;
 
   // Validar que tenga al menos id, dayOfWeek, time
   if (!session.id || session.dayOfWeek === undefined || !session.time) return null;
 
+  // Validar dayOfWeek es un número válido
+  const dayOfWeek = Number(session.dayOfWeek);
+  if (isNaN(dayOfWeek) || !Number.isInteger(dayOfWeek) || dayOfWeek < LIMITS.MIN_DAY_OF_WEEK || dayOfWeek > LIMITS.MAX_DAY_OF_WEEK) {
+    console.warn('[sanitizeSessionOutput] Invalid dayOfWeek:', session.dayOfWeek);
+    return null;
+  }
+
+  // Validar time tiene formato válido
+  const time = String(session.time).trim();
+  if (!TIME_PATTERN.test(time)) {
+    console.warn('[sanitizeSessionOutput] Invalid time format:', session.time);
+    return null;
+  }
+
+  // Helper para validar y parsear fechas
+  const parseDate = (dateValue) => {
+    if (!dateValue) return null;
+    try {
+      const date = new Date(dateValue);
+      return isNaN(date.getTime()) ? null : date;
+    } catch {
+      return null;
+    }
+  };
+
   return {
-    id: String(session.id),
-    dayOfWeek: Number(session.dayOfWeek),
-    time: String(session.time).trim(),
+    id: String(session.id).trim(),
+    dayOfWeek,
+    time,
     isActive: Boolean(session.isActive !== false),
     label: session.label ? sanitizeText(String(session.label)).slice(0, LIMITS.MAX_LABEL_LENGTH) : null,
-    notificationId: session.notificationId ? String(session.notificationId) : null,
+    notificationId: session.notificationId ? String(session.notificationId).trim() : null,
     isPausedGlobally: Boolean(session.isPausedGlobally),
-    createdAt: session.createdAt ? new Date(session.createdAt) : null,
-    updatedAt: session.updatedAt ? new Date(session.updatedAt) : null,
+    createdAt: parseDate(session.createdAt),
+    updatedAt: parseDate(session.updatedAt),
   };
 }
 
@@ -175,6 +206,11 @@ export async function fetchScheduledSessions() {
  */
 export async function createScheduledSession(sessionData) {
   try {
+    // Validar sessionData
+    if (!sessionData || typeof sessionData !== 'object' || Array.isArray(sessionData)) {
+      throw new Error('sessionData must be a valid object');
+    }
+
     const sanitized = sanitizeSessionInput(sessionData);
 
     // Validar que tenga dayOfWeek y time (requeridos para creación)
@@ -227,6 +263,11 @@ export async function updateScheduledSession(sessionId, updates) {
     // Validar sessionId
     if (!sessionId || typeof sessionId !== 'string' || sessionId.trim().length === 0) {
       throw new Error('Invalid sessionId');
+    }
+
+    // Validar updates
+    if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
+      throw new Error('updates must be a valid object');
     }
 
     const sanitized = sanitizeSessionInput(updates);
@@ -308,7 +349,15 @@ export async function deleteScheduledSession(sessionId, hardDelete = false) {
 export async function pauseAllSessions(pauseDays) {
   try {
     // Validar pauseDays
+    if (typeof pauseDays !== 'number') {
+      throw new Error('pauseDays must be a number');
+    }
+    
     const numPauseDays = Number(pauseDays);
+    if (isNaN(numPauseDays) || !isFinite(numPauseDays)) {
+      throw new Error('pauseDays must be a valid finite number');
+    }
+    
     if (!Number.isInteger(numPauseDays) || numPauseDays < LIMITS.MIN_PAUSE_DAYS || numPauseDays > LIMITS.MAX_PAUSE_DAYS) {
       throw new Error(`pauseDays must be an integer between ${LIMITS.MIN_PAUSE_DAYS} and ${LIMITS.MAX_PAUSE_DAYS}`);
     }
@@ -320,9 +369,20 @@ export async function pauseAllSessions(pauseDays) {
       throw new Error('Invalid API response format');
     }
 
+    // Validar pausedUntil es una fecha válida
+    const parseDate = (dateValue) => {
+      if (!dateValue) return null;
+      try {
+        const date = new Date(dateValue);
+        return isNaN(date.getTime()) ? null : date;
+      } catch {
+        return null;
+      }
+    };
+
     return {
-      pausedUntil: response.data.pausedUntil ? new Date(response.data.pausedUntil) : null,
-      pauseDays: Number(response.data.pauseDays),
+      pausedUntil: parseDate(response.data.pausedUntil),
+      pauseDays: Number(response.data.pauseDays) || 0,
     };
   } catch (error) {
     console.error('[pauseAllSessions] Error pausing sessions:', error);
