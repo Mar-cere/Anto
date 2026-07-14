@@ -70,7 +70,17 @@ export function isLowValueEmotionalCheckout(content) {
 }
 
 function hasConcreteActionAnchor(content) {
-  return CONCRETE_ACTION_ANCHORS.test(content);
+  const text = String(content || '');
+  if (!CONCRETE_ACTION_ANCHORS.test(text)) return false;
+  // Nombrar malestar + "falta de rutina" es tema, no un to-do concreto.
+  if (
+    /\bfalta\s+de\s+(?:rutina|horario|sue[nñ]o)|sin\s+rutina|estr[eé]s\s+y\s+falta|falta\s+de\s+rutina\s+o\s+horario\b/i.test(
+      text,
+    )
+  ) {
+    return false;
+  }
+  return true;
 }
 
 function isAbstractWithoutAction(content) {
@@ -297,6 +307,31 @@ function clampTitle(raw, minLen = 3, maxLen = 100) {
   return 'Paso acordado en el chat'.slice(0, maxLen);
 }
 
+/** Títulos genéricos que no aportan un paso accionable. */
+export function isGenericProductActionTitle(title) {
+  const t = String(title || '')
+    .trim()
+    .replace(/\s+/g, ' ');
+  if (!t) return true;
+  return /^(definir|crear|establecer|hacer|mejorar|organizar)\s+(una?\s+)?(rutina|h[aá]bito)(\s+\w+){0,4}$/i.test(
+    t,
+  );
+}
+
+/**
+ * Si el asistente aún explora con una pregunta abierta, no competir con una card de tarea.
+ * @param {string} assistantContent
+ * @param {string} userContent
+ */
+export function assistantStillExploringWithQuestion(assistantContent, userContent = '') {
+  if (EXPLICIT_TASK_TO_APP.test(userContent) || EXPLICIT_HABIT_TO_APP.test(userContent)) {
+    return false;
+  }
+  const text = String(assistantContent || '').trim();
+  if (!text) return false;
+  return /[?¿]/.test(text);
+}
+
 function deriveTaskTitle(content, firstLine) {
   if (isShortExplicitTaskCommand(content)) {
     return 'Paso acordado en el chat';
@@ -374,7 +409,11 @@ const HABIT_FREQUENCIES = new Set(['daily', 'weekly', 'monthly']);
 export function mergeTaskDraftFromLlm(baseline, llm) {
   const out = { ...baseline };
   if (llm.title != null && String(llm.title).trim() !== '') {
-    out.title = clampTitle(String(llm.title), 3, 100);
+    const nextTitle = clampTitle(String(llm.title), 3, 100);
+    // Conserva baseline si el LLM inventa un título genérico de rutina
+    if (!isGenericProductActionTitle(nextTitle) || isGenericProductActionTitle(out.title)) {
+      out.title = nextTitle;
+    }
   }
   if (llm.description != null) {
     out.description = String(llm.description).trim().slice(0, 500);
@@ -590,6 +629,7 @@ export function buildProposedProductActions(input) {
     riskLevel,
     isCrisis,
     userContent,
+    assistantContent = '',
     sessionIntention,
     conversationId,
     assistantMessageId,
@@ -615,6 +655,14 @@ export function buildProposedProductActions(input) {
     return [];
   }
 
+  // No proponer producto mientras el mismo turno del asistente sigue explorando con pregunta.
+  if (
+    !confirmationContext &&
+    assistantStillExploringWithQuestion(assistantContent, userContent)
+  ) {
+    return [];
+  }
+
   const intention = normalizeSessionIntention(sessionIntention);
   const allowsDraft =
     confirmationContext != null || sessionAllowsProductDraft(intention, content);
@@ -633,6 +681,9 @@ export function buildProposedProductActions(input) {
     const habitTitle = EXPLICIT_HABIT_TO_APP.test(firstLine) && firstLine.split(/\s+/).filter(Boolean).length <= 8
       ? 'Hábito acordado en el chat'
       : firstLine;
+    if (isGenericProductActionTitle(habitTitle) && !isExplicitProductActionRequest(content)) {
+      return [];
+    }
     return [
       {
         type: 'propose_habit',
@@ -654,6 +705,9 @@ export function buildProposedProductActions(input) {
   }
 
   const taskTitle = deriveTaskTitle(content, firstLine);
+  if (isGenericProductActionTitle(taskTitle) && !isExplicitProductActionRequest(content)) {
+    return [];
+  }
 
   return [
     {

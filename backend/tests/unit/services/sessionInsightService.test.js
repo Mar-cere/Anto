@@ -515,5 +515,64 @@ describe('buildSessionInsight', () => {
     expect(['ansiedad', 'miedo']).toContain(insight.dominantEmotion.key);
     expect(insight.dominantEmotion.intensity).toBeGreaterThanOrEqual(6);
   });
+
+  it('no marca Calma mixta ni Soledad tras charla de estrés y sueño', async () => {
+    const now = Date.now();
+    mockMessageFind.mockReturnValue(
+      chainLean([
+        {
+          role: 'user',
+          content: 'Relativamente bien, solo que he tenido problemas para dormir',
+          metadata: {
+            crisis: { riskLevel: 'LOW' },
+            context: { emotional: { mainEmotion: 'neutral', intensity: 4, topic: 'soledad' } },
+          },
+          createdAt: new Date(now - 200000),
+        },
+        {
+          role: 'assistant',
+          content: '¿Te cuesta conciliar el sueño?',
+          metadata: { context: { emotional: { mainEmotion: 'neutral', intensity: 4, topic: 'soledad' } } },
+          createdAt: new Date(now - 180000),
+        },
+        {
+          role: 'user',
+          content: 'Me cuesta dormirme, luego me cuesta despertar porque siento que no descanse',
+          metadata: {
+            crisis: { riskLevel: 'LOW' },
+            context: { emotional: { mainEmotion: 'neutral', intensity: 5, topic: 'soledad' } },
+          },
+          createdAt: new Date(now - 100000),
+        },
+        {
+          role: 'assistant',
+          content: '¿Desde hace cuánto?',
+          metadata: { context: { emotional: { mainEmotion: 'neutral', intensity: 4 } } },
+          createdAt: new Date(now - 80000),
+        },
+        {
+          role: 'user',
+          content: 'Estrés y falta de rutina o horario',
+          metadata: {
+            crisis: { riskLevel: 'LOW' },
+            context: { emotional: { mainEmotion: 'neutral', intensity: 5, topic: 'general' } },
+          },
+          createdAt: new Date(now - 40000),
+        },
+        {
+          role: 'assistant',
+          content: 'Tiene sentido',
+          metadata: { context: { emotional: { mainEmotion: 'neutral', intensity: 3 } } },
+          createdAt: new Date(now - 20000),
+        },
+      ]),
+    );
+
+    const insight = await buildSessionInsight({ userId, conversationId, language: 'es' });
+    expect(insight.eligible).toBe(true);
+    expect(insight.dominantEmotion.key).not.toBe('neutral');
+    expect(insight.themes.join(' ')).toMatch(/Sueño|Salud|Vida diaria/i);
+    expect(insight.themes.join(' ')).not.toMatch(/Soledad/i);
+  });
 });
 

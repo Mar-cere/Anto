@@ -24,6 +24,17 @@ const DEMOTIVATING_PATTERNS = [
   /\bno\s+avance\b/i,
 ];
 
+/** Insights warm genéricos / desalineados con malestar. */
+const VAGUE_WELLNESS_PATTERNS = [
+  /\bespacio\s+de\s+calma\b/i,
+  /\bspace\s+of\s+calm\b/i,
+  /\bdescubrir\s+nuevos\s+patrones\b/i,
+  /\bdiscover(?:ing)?\s+new\s+patterns\b/i,
+  /\ben\s+tu\s+viaje\b/i,
+  /\bon\s+your\s+journey\b/i,
+  /\bcada\s+peque[nñ]o\s+paso\s+que\s+elijas\b/i,
+];
+
 export function isHomeInsightLlmEnabled() {
   if (!process.env.OPENAI_API_KEY) return false;
   if (process.env.HOME_INSIGHT_LLM_ENABLED === 'false') return false;
@@ -40,10 +51,17 @@ export function isDemotivatingHomeInsightText(text) {
   return DEMOTIVATING_PATTERNS.some((re) => re.test(raw));
 }
 
+export function isVagueWellnessHomeInsightText(text) {
+  const raw = String(text || '').trim();
+  if (!raw) return true;
+  return VAGUE_WELLNESS_PATTERNS.some((re) => re.test(raw));
+}
+
 export function validateHomeInsightLlmText(text) {
   const sanitized = sanitizeObservationalText(text, HOME_INSIGHT_MAX_LEN);
   if (!sanitized || sanitized.length < HOME_INSIGHT_MIN_LEN) return null;
   if (isDemotivatingHomeInsightText(sanitized)) return null;
+  if (isVagueWellnessHomeInsightText(sanitized)) return null;
   return sanitized;
 }
 
@@ -97,6 +115,8 @@ function systemPrompt(language) {
       'Tone: warm, curious, validating — invite reflection, never shame.',
       'Rules:',
       '- One sentence only, max 200 characters.',
+      '- Ground the sentence in the themes/emotions/samples from the JSON (sleep, stress, etc.).',
+      '- Never invent a calm week or "space of calm" if themes/emotions show distress.',
       '- Highlight a pattern, small win, or gentle observation.',
       '- Never mention zero counts, failures, or what the user did not do.',
       '- No diagnosis, no clinical labels, no guilt.',
@@ -106,9 +126,11 @@ function systemPrompt(language) {
   }
   return [
     'Escribes un insight breve para el home de una app de salud mental (Anto).',
-    'Tono: cálido, curioso, validante — invita a mirar el proceso, nunca avergonzar.',
+    'Tono: cálido, curioso, validante — invita a mirar el patrón, nunca avergonzar.',
     'Reglas:',
     '- Una sola oración, máximo 200 caracteres.',
+    '- Ancla la frase en los temas/emociones/muestras del JSON (sueño, estrés, etc.).',
+    '- Nunca inventes una semana de calma o un «espacio de calma» si temas/emociones muestran malestar.',
     '- Destaca un patrón, un micro-logro o una observación amable.',
     '- Nunca menciones ceros, fracasos ni lo que la persona no hizo.',
     '- Sin diagnóstico, sin etiquetas clínicas, sin culpa.',
@@ -308,7 +330,7 @@ export function buildWarmDeterministicHomeInsight(summary, language = 'es') {
       candidates.push('Volviste a la app esta semana — aparecer cuenta, incluso en días tranquilos.');
     }
     if (topTopic && topTopic !== 'general') {
-      candidates.push(`Aparecieron temas alrededor de ${topTopic} — puede haber un hilo que merezca mirarse con calma.`);
+      candidates.push(`Aparecieron temas alrededor de ${topTopic} — puede haber un hilo que merezca seguir explorando.`);
     }
     candidates.push('Cada gesto pequeño de cuidado suma; esta semana aún tiene espacio para uno más.');
   }

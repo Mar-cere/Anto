@@ -125,6 +125,7 @@ Si proposalType es "propose_habit", usa:
 - priority: "low" | "medium" | "high"
 
 Reglas: prioriza el mensaje del usuario; el mensaje del asistente es solo contexto. Si falta detalle, reutiliza valores razonables del baselineDraft. No anides otro objeto "draft".
+No inventes títulos genéricos como "Definir una rutina diaria simple" o "Crear un hábito": el title debe ser un micro-paso concreto que el usuario ya nombró o acordó.
 Si el payload incluye psychoeducationContext (topicTitle, microSteps), el title debe pertenecer al mismo tema general. Puedes adaptarlo a lo que el usuario dijo (p. ej. si habla de no poder dormir por rumiar, una tarea de anotar preocupaciones antes de acostarse encaja con el módulo de sueño). Solo evita saltar a temas ajenos (p. ej. ordenar la cocina si el módulo es sueño).`;
 
   const userPayload = {

@@ -134,6 +134,30 @@ describe('chatProductActionProposalService', () => {
     expect(actions[0].draft.title).toBe('Bloque de estudio prioritario');
   });
 
+  it('no propone tarea al solo nombrar estrés y falta de rutina (exploración)', () => {
+    const actions = buildProposedProductActions({
+      ...base,
+      userContent: 'Estrés y falta de rutina o horario',
+      sessionIntention: 'organize',
+      riskLevel: 'LOW',
+      isCrisis: false,
+    });
+    expect(actions).toEqual([]);
+  });
+
+  it('no propone tarea si el asistente aún pregunta en el mismo turno', () => {
+    const actions = buildProposedProductActions({
+      ...base,
+      userContent: 'Quiero organizar la semana y dejar algo concreto para mañana',
+      sessionIntention: 'plan',
+      riskLevel: 'LOW',
+      isCrisis: false,
+      assistantContent:
+        'Entonces el sueño se te desordena; ¿tu problema principal es acostarte tarde o que la cabeza no se apaga?',
+    });
+    expect(actions).toEqual([]);
+  });
+
   it('buildProposedProductActions no propone tarea abstracta sin ancla accionable', () => {
     const actions = buildProposedProductActions({
       ...base,

@@ -27,6 +27,14 @@ describe('homeInsightLlmService', () => {
     expect(ok).toContain('Volviste a la app');
   });
 
+  it('rechaza eslóganes de calma genéricos', () => {
+    expect(
+      validateHomeInsightLlmText(
+        'Esta semana ha sido un espacio de calma, y cada pequeño paso que elijas dar te acercará a descubrir nuevos patrones en tu viaje.',
+      ),
+    ).toBeNull();
+  });
+
   it('buildWarmDeterministicHomeInsight prioriza hábitos sin mencionar ceros', () => {
     const text = buildWarmDeterministicHomeInsight(
       {

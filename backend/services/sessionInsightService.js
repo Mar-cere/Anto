@@ -26,6 +26,7 @@ import {
   isSessionInsightHeadlineLlmEnabled,
 } from './sessionInsightHeadlineService.js';
 import { inferChatSessionPhase } from './chat/sessionPhaseHints.js';
+import topicDetector from './topicDetector.js';
 
 const MIN_USER_TURNS = 2;
 const MIN_USER_CHARS = 40;
@@ -87,8 +88,17 @@ const EMOTION_WEIGHTS = {
 const PANIC_LEXICON =
   /\b(?:crisis\s+de\s+p[aá]nico|ataque\s+de\s+p[aá]nico|ataque\s+de\s+ansiedad|\bp[aá]nico\b|panic\s+attack)\b/i;
 
+/** Carga de malestar (estrés / sueño / agotamiento) aunque el metadata diga neutral. */
+const DISTRESS_LOAD_LEXICON =
+  /\b(?:estr[eé]s|agobia|angusti|ansios|preocup|agotad|cansancio|insomnio|no\s+(?:puedo|lograr|consigo)\s+dormir|me\s+cuesta\s+dormir|dormir\s+mal|falta\s+de\s+(?:sue[nñ]o|descanso|rutina)|cabeza\s+no\s+se\s+apaga|no\s+descanso)\b/i;
+
 function isPanicUserContent(content) {
   return PANIC_LEXICON.test(String(content || ''));
+}
+
+function isDistressUserContent(content) {
+  const text = String(content || '');
+  return PANIC_LEXICON.test(text) || DISTRESS_LOAD_LEXICON.test(text);
 }
 
 function countUserStats(msgs) {
@@ -140,7 +150,19 @@ function resolveEmotionalForMessage(msgs, index) {
             ? emotional.mainEmotion
             : 'ansiedad',
         intensity: Math.max(baseIntensity, 8),
-        topic: emotional?.topic || 'salud',
+        topic: emotional?.topic || topicDetector.detectTopic(m.content) || 'salud',
+      };
+    }
+    if (isDistressUserContent(m.content)) {
+      const baseIntensity = Number(emotional?.intensity) || 5;
+      return {
+        ...(emotional || {}),
+        mainEmotion:
+          emotional?.mainEmotion && emotional.mainEmotion !== 'neutral'
+            ? emotional.mainEmotion
+            : 'ansiedad',
+        intensity: Math.max(baseIntensity, 6),
+        topic: emotional?.topic || topicDetector.detectTopic(m.content) || 'salud',
       };
     }
     const risk = resolveCrisisRiskForUserTurn(msgs, index);
@@ -168,10 +190,12 @@ function aggregateDominantEmotion(msgs) {
   let peakIntensity = 0;
   let peakEmotion = 'neutral';
   let sawPanicLexicon = false;
+  let sawDistressLexicon = false;
 
   msgs.forEach((msg, index) => {
     if (msg.role !== 'user') return;
     if (isPanicUserContent(msg.content)) sawPanicLexicon = true;
+    if (isDistressUserContent(msg.content)) sawDistressLexicon = true;
     const emotional = resolveEmotionalForMessage(msgs, index);
     const emotion = String(emotional?.mainEmotion || 'neutral').toLowerCase();
     const intensity = Number(emotional?.intensity) || 5;
@@ -190,9 +214,9 @@ function aggregateDominantEmotion(msgs) {
   let dominantEmotion =
     Object.entries(scores).sort((a, b) => b[1] - a[1])[0]?.[0] || 'neutral';
 
-  // Tras pánico / pico alto, no dejar que turnos calmados ganeen «Calma mixta»
+  // Tras pánico / carga de malestar / pico alto, no dejar «Calma mixta»
   if (
-    (sawPanicLexicon || peakIntensity >= 7) &&
+    (sawPanicLexicon || sawDistressLexicon || peakIntensity >= 6) &&
     (dominantEmotion === 'neutral' || dominantEmotion === 'alegria')
   ) {
     dominantEmotion = peakEmotion !== 'neutral' ? peakEmotion : 'ansiedad';
@@ -206,13 +230,24 @@ function aggregateDominantEmotion(msgs) {
   return { dominantEmotion, avgIntensity };
 }
 
+function resolveSessionThemeTopic(content, metadataTopic) {
+  const detected = topicDetector.detectTopic(content);
+  const meta = String(metadataTopic || '').toLowerCase();
+  if (detected && detected !== 'general') return detected;
+  // «soledad» en metadata suele venir del keyword «solo»; no lo uses sin señal clara
+  if (meta === 'soledad' && !/\b(?:me\s+siento\s+sol[oa]|soledad|aislad)/i.test(String(content || ''))) {
+    return 'general';
+  }
+  return meta || 'general';
+}
+
 function collectThemes(msgs, language) {
   const counts = new Map();
   for (let i = 0; i < msgs.length; i += 1) {
     const msg = msgs[i];
     if (msg.role !== 'user') continue;
     const emotional = resolveEmotionalForMessage(msgs, i);
-    const topic = String(emotional?.topic || 'general').toLowerCase();
+    const topic = resolveSessionThemeTopic(msg.content, emotional?.topic);
     counts.set(topic, (counts.get(topic) || 0) + 1);
   }
   return [...counts.entries()]

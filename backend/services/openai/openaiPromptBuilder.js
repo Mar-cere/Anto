@@ -44,6 +44,7 @@ import {
 import {
   buildAntiRepeatTriageSnippet,
   buildAntiRepeatedSoftAskSnippet,
+  buildPartialFollowUpSnippet,
   resolveUserMessage,
   shouldSuppressRepeatTriage
 } from '../chat/chatTriageLoopHints.js';
@@ -433,7 +434,8 @@ function buildTurnPolicySnippet(conversationPattern = {}, contextual = {}, opts 
     : `- Si hay respuestas cortas (racha: ${shortReplyStreak}) o carga cognitiva (${load}), usa baja carga: A/B, escala 0-10 o “una frase”.`;
 
   return `\n\n### Política de turno (core, prioridad alta)
-- Evita interrogatorio: máximo ${maxConsecutiveQuestions} preguntas seguidas; si llegas al límite, el siguiente turno debe traer avance concreto.
+- **Una sola pregunta por mensaje** (como máximo un "?" / un "¿…?"). No combines dos intenciones con "y qué…", "y cómo…", "and what…".
+- Evita interrogatorio: máximo ${maxConsecutiveQuestions} turnos seguidos con pregunta; si llegas al límite, el siguiente turno debe traer avance concreto sin nueva pregunta.
 ${lowLoadLine}
 - Estilo de apertura detectado: ${disclosureStyle}. Si hay límite saludable, no presiones por detalles.
 - No indiques microtécnicas corporales automáticas; solo si el usuario las pide explícitamente.
@@ -536,7 +538,7 @@ function buildAntiRobotRewriteSnippet() {
 - Frases cortas y lenguaje natural; evita plantillas repetidas.
 - No encadenes validaciones genéricas ("entiendo", "es válido").
 - **Anti-eco:** no abras con "Entiendo que…" / "I understand that…" + repetición cercana de lo que dijo el usuario; refleja emoción o matiz con palabras nuevas y avanza.
-- Mantén 1-2 párrafos y una sola pregunta cuando corresponda.
+- Mantén 1-2 párrafos y **como máximo una** pregunta. Prohibido: "¿A… y qué B?" en el mismo mensaje.
 - Varía la estructura entre turnos para no sonar mecánico.`;
 }
 
@@ -868,7 +870,7 @@ export const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emoci
 - Si no elige, mantén un equilibrio **cercano a B**: conversación natural con preguntas útiles y ejercicios **ocasionales**, no un deber en cada mensaje.
 
 ### Formato de respuesta (reglas)
-- Por defecto: 1–2 párrafos cortos + **como mucho** una pregunta que invite a seguir hablando.
+- Por defecto: 1–2 párrafos cortos + **como mucho** una pregunta que invite a seguir hablando (nunca dos en el mismo mensaje: ni dos "?", ni "¿… y qué…?").
 - **Sin listas con viñetas** salvo petición explícita del usuario o crisis/protocolo claro. Evita “sugerencias” numeradas o bloques tipo plan; el chat no es un manual.
 - Solo usa bullets/planes/protocolos cuando:
   - el usuario lo pide explícitamente, o
@@ -1107,6 +1109,7 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   });
   systemMessage += buildAntiRepeatTriageSnippet(contexto, language);
   systemMessage += buildAntiRepeatedSoftAskSnippet(contexto, language);
+  systemMessage += buildPartialFollowUpSnippet(contexto, language);
 
   const intentionSnippet = getSessionIntentionSystemSnippet(sessionIntention);
   if (intentionSnippet) systemMessage += intentionSnippet;

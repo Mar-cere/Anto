@@ -10,6 +10,15 @@ describe('openaiService — guardrails de calidad de respuesta', () => {
     expect(qCount).toBe(1);
   });
 
+  it('enforceSingleQuestion parte "¿A y qué B?" en una sola intención', () => {
+    const input =
+      'Eso suele dejarte con sueño cortado. ¿Desde hace cuánto te está pasando y qué sueles hacer justo antes de acostarte?';
+    const output = openaiService.enforceSingleQuestion(input);
+    expect((output.match(/\?/g) || []).length).toBe(1);
+    expect(output).toMatch(/Desde hace cuánto te está pasando\?/);
+    expect(output).not.toMatch(/qué sueles hacer/);
+  });
+
   it('enforceShortResponseQuality limita longitud y frases', () => {
     const input =
       'Primero quiero decirte que te leo con mucha atención. Lo que cuentas suena pesado y válido. Si te parece, podemos ordenar esto en pasos para hoy. ¿Qué parte te pesa más en este momento?';

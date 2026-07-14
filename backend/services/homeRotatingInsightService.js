@@ -48,6 +48,37 @@ export function homeInsightRotationSeed(dateKey = new Date().toISOString().slice
   return `home-insight:${dateKey}`;
 }
 
+/**
+ * Destino de navegación coherente con el CTA (evita mandar a progreso/grafo vacío).
+ * @param {string} ctaKey
+ * @param {{ hasGraph?: boolean }} [opts]
+ */
+export function destinationForHomeInsightCta(ctaKey, { hasGraph = false } = {}) {
+  switch (String(ctaKey || '')) {
+    case 'HOME_INSIGHT_CTA_WEEKLY':
+      return 'WeeklyInsight';
+    case 'HOME_INSIGHT_CTA_GRAPH':
+      return hasGraph ? 'InterventionGraph' : 'Chat';
+    case 'HOME_INSIGHT_CTA_SUMMARY':
+      return 'ActivitySummary';
+    case 'HOME_INSIGHT_CTA_CHAT':
+      return 'Chat';
+    case 'HOME_INSIGHT_CTA_PROGRESS':
+      return hasGraph ? 'ActivitySummary' : 'Chat';
+    default:
+      return hasGraph ? 'ActivitySummary' : 'Chat';
+  }
+}
+
+function ctaForHomeInsightContext({ hasWeekly, hasGraph, preferredCta }) {
+  if (preferredCta === 'HOME_INSIGHT_CTA_WEEKLY' && hasWeekly) return preferredCta;
+  if (preferredCta === 'HOME_INSIGHT_CTA_GRAPH' && hasGraph) return preferredCta;
+  if (preferredCta === 'HOME_INSIGHT_CTA_SUMMARY') return preferredCta;
+  if (hasWeekly) return 'HOME_INSIGHT_CTA_WEEKLY';
+  if (hasGraph) return 'HOME_INSIGHT_CTA_GRAPH';
+  return 'HOME_INSIGHT_CTA_CHAT';
+}
+
 function normalizeText(text) {
   return String(text || '').replace(/\s+/g, ' ').trim().slice(0, HOME_INSIGHT_MAX_TEXT);
 }
@@ -234,23 +265,6 @@ async function computeHomeRotatingInsightUncached(userId, opts = {}) {
     });
   }
 
-  const llmText = await generateHomeInsightWithLlm(userId, {
-    summary: opts.summary,
-    weeklyInsight: weeklyDoc,
-    graphCorrelations,
-    language,
-  }).catch(() => null);
-
-  if (llmText) {
-    return sanitizeHomeInsightForClient({
-      text: llmText,
-      source: 'llm',
-      ctaKey: 'HOME_INSIGHT_CTA_PROGRESS',
-      destination: 'ActivitySummary',
-      rotationSeed,
-    });
-  }
-
   const candidates = buildHomeInsightCandidates({
     weeklyInsight: weeklyDoc,
     summary: opts.summary,
@@ -259,12 +273,42 @@ async function computeHomeRotatingInsightUncached(userId, opts = {}) {
   });
 
   const picked = pickHomeRotatingInsight(candidates, rotationSeed);
+  const hasGraph = Array.isArray(graphCorrelations) && graphCorrelations.length > 0;
+  const hasWeekly = Boolean(
+    weeklyDoc &&
+      ((Array.isArray(weeklyDoc.insights) && weeklyDoc.insights.length > 0) ||
+        weeklyDoc.headline),
+  );
+
   if (picked) {
+    const ctaKey = ctaForHomeInsightContext({
+      hasWeekly,
+      hasGraph,
+      preferredCta: picked.ctaKey,
+    });
     return sanitizeHomeInsightForClient({
       text: picked.text,
       source: picked.source,
-      ctaKey: picked.ctaKey,
-      destination: 'ActivitySummary',
+      ctaKey,
+      destination: destinationForHomeInsightCta(ctaKey, { hasGraph }),
+      rotationSeed,
+    });
+  }
+
+  const llmText = await generateHomeInsightWithLlm(userId, {
+    summary: opts.summary,
+    weeklyInsight: weeklyDoc,
+    graphCorrelations,
+    language,
+  }).catch(() => null);
+
+  if (llmText) {
+    const ctaKey = ctaForHomeInsightContext({ hasWeekly, hasGraph, preferredCta: null });
+    return sanitizeHomeInsightForClient({
+      text: llmText,
+      source: 'llm',
+      ctaKey,
+      destination: destinationForHomeInsightCta(ctaKey, { hasGraph }),
       rotationSeed,
     });
   }
@@ -272,11 +316,12 @@ async function computeHomeRotatingInsightUncached(userId, opts = {}) {
   const warmFallback = buildWarmDeterministicHomeInsight(opts.summary, language);
   if (!warmFallback) return null;
 
+  const ctaKey = ctaForHomeInsightContext({ hasWeekly, hasGraph, preferredCta: null });
   return sanitizeHomeInsightForClient({
     text: warmFallback,
     source: 'summary',
-    ctaKey: 'HOME_INSIGHT_CTA_PROGRESS',
-    destination: 'ActivitySummary',
+    ctaKey,
+    destination: destinationForHomeInsightCta(ctaKey, { hasGraph }),
     rotationSeed,
   });
 }

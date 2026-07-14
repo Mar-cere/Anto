@@ -101,6 +101,7 @@ const TOPIC_ES = {
   pasado: 'Pasado',
   soledad: 'Soledad',
   dinero: 'Dinero',
+  sueño: 'Sueño',
 };
 
 const TOPIC_EN = {
@@ -116,6 +117,7 @@ const TOPIC_EN = {
   pasado: 'Past',
   soledad: 'Loneliness',
   dinero: 'Money',
+  sueño: 'Sleep',
 };
 
 const INTENTION_ES = {

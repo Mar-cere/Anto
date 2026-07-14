@@ -60,6 +60,17 @@ describe('TopicDetector Service', () => {
       expect(topic).toBe('soledad');
     });
 
+    it('no confunde "solo que" / problemas de sueño con soledad', () => {
+      expect(topicDetector.detectTopic('Relativamente bien, solo que he tenido problemas para dormir')).toBe(
+        'sueño',
+      );
+      expect(topicDetector.detectTopic('Me cuesta dormirme y luego me cuesta despertar')).toBe('sueño');
+    });
+
+    it('debe detectar tema de sueño', () => {
+      expect(topicDetector.detectTopic('Llevo dos semanas con insomnio y no descanso')).toBe('sueño');
+    });
+
     it('debe detectar tema de pérdida', () => {
       const topic = topicDetector.detectTopic('Estoy en duelo por la pérdida de un ser querido');
       

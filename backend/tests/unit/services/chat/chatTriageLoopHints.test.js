@@ -2,9 +2,13 @@ import { describe, expect, it } from '@jest/globals';
 import {
   buildAntiRepeatTriageSnippet,
   buildAntiRepeatedSoftAskSnippet,
+  buildPartialFollowUpSnippet,
+  extractDeferredQuestionHint,
+  isCompoundDoubleAsk,
   isMultiOptionTriageQuestion,
   isSoftReliefQuestion,
   isTotalizingReply,
+  shouldRecoverPartialFollowUp,
   shouldSuppressRepeatTriage,
   shouldSuppressRepeatedSoftAsk
 } from '../../../../services/chat/chatTriageLoopHints.js';
@@ -197,6 +201,42 @@ describe('chatTriageLoopHints', () => {
       });
       expect(snip).toContain('Evitar pregunta de alivio reformulada');
       expect(snip).toMatch(/No\*\* vuelvas|ya respondió/i);
+    });
+  });
+
+  describe('compound ask y seguimiento parcial', () => {
+    it('detecta doble pregunta unida con "y qué"', () => {
+      const q =
+        '¿Desde hace cuánto te está pasando y qué sueles hacer justo antes de acostarte?';
+      expect(isCompoundDoubleAsk(q)).toBe(true);
+      expect(extractDeferredQuestionHint(q)).toMatch(/sueles hacer|antes de acostarte/i);
+    });
+
+    it('recupera hilo de rutina nocturna tras respuesta solo de duración', () => {
+      expect(
+        shouldRecoverPartialFollowUp({
+          userMessage: 'Llevo unas dos semanas así creo',
+          safetyHistory: [
+            {
+              role: 'assistant',
+              content:
+                'Eso suele dejarte con sueño cortado. ¿Desde hace cuánto te está pasando?',
+            },
+          ],
+        }),
+      ).toBe(true);
+
+      const snip = buildPartialFollowUpSnippet({
+        currentMessage: 'Llevo unas dos semanas así creo',
+        safetyHistory: [
+          {
+            role: 'assistant',
+            content: 'Eso suele dejarte con sueño cortado. ¿Desde hace cuánto te está pasando?',
+          },
+        ],
+      });
+      expect(snip).toContain('Recuperar pregunta pendiente');
+      expect(snip).toMatch(/antes de acostarte|pantalla|cafeína/i);
     });
   });
 });

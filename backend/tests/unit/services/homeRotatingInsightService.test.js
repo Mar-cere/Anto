@@ -1,5 +1,6 @@
 import {
   buildHomeInsightCandidates,
+  destinationForHomeInsightCta,
   homeInsightRotationSeed,
   pickHomeRotatingInsight,
   pickStableVariantIndex,
@@ -53,6 +54,19 @@ describe('homeRotatingInsightService', () => {
       pickHomeRotatingInsight(candidates, seed),
     );
     expect(pickStableVariantIndex(seed, 2)).toBeGreaterThanOrEqual(0);
+  });
+
+  it('destina CTA de progreso/grafo vacío al chat', () => {
+    expect(destinationForHomeInsightCta('HOME_INSIGHT_CTA_PROGRESS', { hasGraph: false })).toBe(
+      'Chat',
+    );
+    expect(destinationForHomeInsightCta('HOME_INSIGHT_CTA_GRAPH', { hasGraph: false })).toBe('Chat');
+    expect(destinationForHomeInsightCta('HOME_INSIGHT_CTA_WEEKLY', { hasGraph: false })).toBe(
+      'WeeklyInsight',
+    );
+    expect(destinationForHomeInsightCta('HOME_INSIGHT_CTA_PROGRESS', { hasGraph: true })).toBe(
+      'ActivitySummary',
+    );
   });
 
   it('serializa y parsea entradas de caché', () => {

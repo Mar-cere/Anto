@@ -778,6 +778,7 @@ export const setupSocketIO = (server) => {
             riskLevel,
             isCrisis,
             userContent: messageText,
+            assistantContent: response.content,
             sessionIntention: conversation?.sessionIntention,
             conversationId: conversation._id,
             assistantMessageId: assistantMessage._id,

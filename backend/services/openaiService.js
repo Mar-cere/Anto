@@ -1691,26 +1691,75 @@ class OpenAIService {
 
   enforceSingleQuestion(respuesta = '') {
     if (!respuesta) return respuesta;
-    const questionMatches = respuesta.match(/[?]/g) || [];
-    if (questionMatches.length <= 1) return respuesta;
+    let text = String(respuesta);
 
-    let firstQuestionSeen = false;
-    let normalized = '';
-    for (const ch of respuesta) {
-      if (ch === '?') {
-        if (!firstQuestionSeen) {
-          firstQuestionSeen = true;
-          normalized += ch;
+    // 1) A lo sumo un signo de interrogación de cierre
+    const questionMatches = text.match(/[?]/g) || [];
+    if (questionMatches.length > 1) {
+      let firstQuestionSeen = false;
+      let normalized = '';
+      for (const ch of text) {
+        if (ch === '?') {
+          if (!firstQuestionSeen) {
+            firstQuestionSeen = true;
+            normalized += ch;
+          } else {
+            normalized += '.';
+          }
+        } else if (ch === '¿' && firstQuestionSeen) {
+          normalized += ' ';
         } else {
-          normalized += '.';
+          normalized += ch;
         }
-      } else if (ch === '¿' && firstQuestionSeen) {
-        normalized += ' ';
-      } else {
-        normalized += ch;
+      }
+      text = normalized.replace(/\s{2,}/g, ' ').trim();
+    }
+
+    // 2) Quitar segunda intención unida con "y qué… / and what…"
+    text = this.stripCompoundSecondAsk(text);
+    return text;
+  }
+
+  /**
+   * Deja solo la primera intención en "¿A y qué B?" / "… and what B?".
+   */
+  stripCompoundSecondAsk(respuesta = '') {
+    const text = String(respuesta || '');
+    if (!text) return text;
+
+    const joinEs =
+      /\s+y\s+(?=qu[eé]\b|c[oó]mo\b|cu[aá]l(?:es)?\b|cu[aá]ndo\b|d[oó]nde\b|por\s+qu[eé]\b|desde\s+(?:hace|cu[aá]ndo)|qu[eé]\s+sueles)/i;
+    const joinEn = /\s+and\s+(?=what\b|how\b|which\b|when\b|where\b|why\b)/i;
+
+    const invOpen = text.lastIndexOf('¿');
+    if (invOpen >= 0) {
+      const close = text.indexOf('?', invOpen);
+      if (close > invOpen) {
+        const body = text.slice(invOpen + 1, close);
+        if (joinEs.test(body)) {
+          const first = body.split(joinEs)[0].trim().replace(/[,;:\s]+$/, '');
+          return `${text.slice(0, invOpen)}¿${first}?${text.slice(close + 1)}`
+            .replace(/\s{2,}/g, ' ')
+            .trim();
+        }
       }
     }
-    return normalized.replace(/\s{2,}/g, ' ').trim();
+
+    // Inglés / sin ¿: corta en el join dentro de la última oración con ?
+    const qClose = text.lastIndexOf('?');
+    if (qClose > 0) {
+      const sentenceStart = Math.max(text.lastIndexOf('.', qClose - 1), text.lastIndexOf('!', qClose - 1)) + 1;
+      const sentence = text.slice(sentenceStart, qClose);
+      if (joinEn.test(sentence) || joinEs.test(sentence)) {
+        const join = joinEn.test(sentence) ? joinEn : joinEs;
+        const first = sentence.split(join)[0].trim().replace(/[,;:\s]+$/, '');
+        return `${text.slice(0, sentenceStart)}${first}?${text.slice(qClose + 1)}`
+          .replace(/\s{2,}/g, ' ')
+          .trim();
+      }
+    }
+
+    return text;
   }
 
   enforceShortResponseQuality(respuesta = '') {
