@@ -135,7 +135,13 @@ const userSchema = new mongoose.Schema({
               type: Number,
               required: true,
               min: [0, 'El día de la semana debe estar entre 0 (domingo) y 6 (sábado)'],
-              max: [6, 'El día de la semana debe estar entre 0 (domingo) y 6 (sábado)']
+              max: [6, 'El día de la semana debe estar entre 0 (domingo) y 6 (sábado)'],
+              validate: {
+                validator: function(v) {
+                  return Number.isInteger(v);
+                },
+                message: 'El día de la semana debe ser un número entero'
+              }
             },
             time: {
               type: String,
@@ -151,7 +157,15 @@ const userSchema = new mongoose.Schema({
               type: String,
               default: null,
               trim: true,
-              maxlength: [50, 'La etiqueta no puede exceder 50 caracteres']
+              maxlength: [50, 'La etiqueta no puede exceder 50 caracteres'],
+              validate: {
+                validator: function(v) {
+                  if (!v) return true; // null o vacío es válido
+                  // Rechazar newlines, tabs, caracteres problemáticos
+                  return !/[\r\n\t<>{}]/.test(v);
+                },
+                message: 'La etiqueta contiene caracteres no permitidos'
+              }
             },
             notificationId: {
               type: String,
@@ -169,12 +183,31 @@ const userSchema = new mongoose.Schema({
             }
           }],
           default: [],
-          validate: {
-            validator: function(v) {
-              return v.length <= 10;
+          validate: [
+            {
+              validator: function(v) {
+                return v.length <= 10;
+              },
+              message: 'Máximo 10 sesiones programadas permitidas'
             },
-            message: 'Máximo 10 sesiones programadas permitidas'
-          }
+            {
+              validator: function(v) {
+                // Validar unicidad de IDs
+                const ids = v.map(s => s.id).filter(id => id);
+                const uniqueIds = new Set(ids);
+                return ids.length === uniqueIds.size;
+              },
+              message: 'Los IDs de sesión deben ser únicos'
+            },
+            {
+              validator: function(v) {
+                // Validar máximo de sesiones activas
+                const activeSessions = v.filter(s => s.isActive === true);
+                return activeSessions.length <= 7;
+              },
+              message: 'Máximo 7 sesiones activas simultáneas permitidas'
+            }
+          ]
         },
         lastNotificationAt: {
           type: Date,

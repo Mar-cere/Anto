@@ -15,6 +15,11 @@ const MAX_PAUSE_DAYS = 90;
  * @returns {Array} Array de sesiones programadas
  */
 export async function getScheduledSessions(userId) {
+  // Validar userId
+  if (!userId || (typeof userId !== 'string' && typeof userId !== 'object')) {
+    throw new Error('Invalid userId');
+  }
+
   const user = await User.findById(userId).select('preferences.notifications.scheduledSessions').lean();
   
   if (!user?.preferences?.notifications?.scheduledSessions) {
@@ -22,6 +27,12 @@ export async function getScheduledSessions(userId) {
   }
 
   const { sessions = [], pausedUntil } = user.preferences.notifications.scheduledSessions;
+  
+  // Validar que sessions sea array
+  if (!Array.isArray(sessions)) {
+    console.warn(`[getScheduledSessions] sessions is not an array for user ${userId}`);
+    return [];
+  }
   
   // Filtrar sesiones activas si están pausadas globalmente
   const now = new Date();
@@ -52,7 +63,35 @@ export async function getSessionById(userId, sessionId) {
  * @throws {Error} Si se alcanzó el límite o ya existe una sesión para ese día/hora
  */
 export async function createSession(userId, payload) {
+  // Validar userId
+  if (!userId || (typeof userId !== 'string' && typeof userId !== 'object')) {
+    const error = new Error('Invalid userId');
+    error.code = 'INVALID_INPUT';
+    throw error;
+  }
+
+  // Validar payload
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    const error = new Error('Invalid payload');
+    error.code = 'INVALID_INPUT';
+    throw error;
+  }
+
   const { dayOfWeek, time, label } = payload;
+
+  // Validar dayOfWeek (ya validado por Joi, pero reforzamos aquí)
+  if (typeof dayOfWeek !== 'number' || !Number.isInteger(dayOfWeek) || dayOfWeek < 0 || dayOfWeek > 6) {
+    const error = new Error('Invalid dayOfWeek');
+    error.code = 'INVALID_INPUT';
+    throw error;
+  }
+
+  // Validar time (ya validado por Joi, pero reforzamos aquí)
+  if (typeof time !== 'string' || !/^([01]\d|2[0-3]):([0-5]\d)$/.test(time.trim())) {
+    const error = new Error('Invalid time format');
+    error.code = 'INVALID_INPUT';
+    throw error;
+  }
 
   const user = await User.findById(userId);
   if (!user) {
@@ -73,6 +112,13 @@ export async function createSession(userId, payload) {
 
   const { sessions } = user.preferences.notifications.scheduledSessions;
 
+  // Validar que sessions sea array
+  if (!Array.isArray(sessions)) {
+    const error = new Error('Sessions data corrupted');
+    error.code = 'DATA_CORRUPTED';
+    throw error;
+  }
+
   // Validar límite total de sesiones
   if (sessions.length >= MAX_TOTAL_SESSIONS) {
     const error = new Error('Maximum number of scheduled sessions reached');
@@ -81,7 +127,7 @@ export async function createSession(userId, payload) {
   }
 
   // Validar límite de sesiones activas
-  const activeSessions = sessions.filter((s) => s.isActive);
+  const activeSessions = sessions.filter((s) => s && s.isActive === true);
   if (activeSessions.length >= MAX_ACTIVE_SESSIONS) {
     const error = new Error('Maximum number of active sessions reached');
     error.code = 'ACTIVE_LIMIT_REACHED';
@@ -89,7 +135,8 @@ export async function createSession(userId, payload) {
   }
 
   // Validar que no exista una sesión para ese día/hora
-  const duplicate = sessions.find((s) => s.dayOfWeek === dayOfWeek && s.time === time);
+  const trimmedTime = time.trim();
+  const duplicate = sessions.find((s) => s && s.dayOfWeek === dayOfWeek && s.time === trimmedTime);
   if (duplicate) {
     const error = new Error('A session is already scheduled for this day and time');
     error.code = 'DUPLICATE_TIME';
@@ -100,9 +147,9 @@ export async function createSession(userId, payload) {
   const newSession = {
     id: crypto.randomBytes(16).toString('hex'),
     dayOfWeek,
-    time: time.trim(),
+    time: trimmedTime,
     isActive: true,
-    label: label?.trim() || null,
+    label: label && typeof label === 'string' ? label.trim() : null,
     notificationId: null,
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -110,7 +157,16 @@ export async function createSession(userId, payload) {
 
   sessions.push(newSession);
   user.markModified('preferences.notifications.scheduledSessions');
-  await user.save();
+  
+  try {
+    await user.save();
+  } catch (err) {
+    console.error('[createSession] Error saving user:', err);
+    const error = new Error('Failed to save session');
+    error.code = 'SAVE_ERROR';
+    error.details = err.message;
+    throw error;
+  }
 
   return newSession;
 }
@@ -124,6 +180,27 @@ export async function createSession(userId, payload) {
  * @throws {Error} Si la sesión no existe o hay un duplicado
  */
 export async function updateSession(userId, sessionId, updates) {
+  // Validar userId
+  if (!userId || (typeof userId !== 'string' && typeof userId !== 'object')) {
+    const error = new Error('Invalid userId');
+    error.code = 'INVALID_INPUT';
+    throw error;
+  }
+
+  // Validar sessionId
+  if (!sessionId || typeof sessionId !== 'string' || sessionId.trim().length === 0) {
+    const error = new Error('Invalid sessionId');
+    error.code = 'INVALID_INPUT';
+    throw error;
+  }
+
+  // Validar updates
+  if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
+    const error = new Error('Invalid updates');
+    error.code = 'INVALID_INPUT';
+    throw error;
+  }
+
   const user = await User.findById(userId);
   if (!user) {
     const error = new Error('User not found');
@@ -132,7 +209,15 @@ export async function updateSession(userId, sessionId, updates) {
   }
 
   const sessions = user.preferences.notifications.scheduledSessions?.sessions || [];
-  const sessionIndex = sessions.findIndex((s) => s.id === sessionId);
+
+  // Validar que sessions sea array
+  if (!Array.isArray(sessions)) {
+    const error = new Error('Sessions data corrupted');
+    error.code = 'DATA_CORRUPTED';
+    throw error;
+  }
+
+  const sessionIndex = sessions.findIndex((s) => s && s.id === sessionId.trim());
 
   if (sessionIndex === -1) {
     const error = new Error('Session not found');
@@ -142,13 +227,31 @@ export async function updateSession(userId, sessionId, updates) {
 
   const session = sessions[sessionIndex];
 
+  // Si se actualiza dayOfWeek, validar tipo
+  if (updates.dayOfWeek !== undefined) {
+    if (typeof updates.dayOfWeek !== 'number' || !Number.isInteger(updates.dayOfWeek) || updates.dayOfWeek < 0 || updates.dayOfWeek > 6) {
+      const error = new Error('Invalid dayOfWeek');
+      error.code = 'INVALID_INPUT';
+      throw error;
+    }
+  }
+
+  // Si se actualiza time, validar formato
+  if (updates.time !== undefined) {
+    if (typeof updates.time !== 'string' || !/^([01]\d|2[0-3]):([0-5]\d)$/.test(updates.time.trim())) {
+      const error = new Error('Invalid time format');
+      error.code = 'INVALID_INPUT';
+      throw error;
+    }
+  }
+
   // Si se actualiza dayOfWeek o time, validar duplicados
   const newDayOfWeek = updates.dayOfWeek !== undefined ? updates.dayOfWeek : session.dayOfWeek;
   const newTime = updates.time !== undefined ? updates.time.trim() : session.time;
 
   if (updates.dayOfWeek !== undefined || updates.time !== undefined) {
     const duplicate = sessions.find(
-      (s, idx) => idx !== sessionIndex && s.dayOfWeek === newDayOfWeek && s.time === newTime
+      (s, idx) => idx !== sessionIndex && s && s.dayOfWeek === newDayOfWeek && s.time === newTime
     );
     if (duplicate) {
       const error = new Error('A session is already scheduled for this day and time');
@@ -159,7 +262,7 @@ export async function updateSession(userId, sessionId, updates) {
 
   // Si se activa una sesión, validar límite de activas
   if (updates.isActive === true && !session.isActive) {
-    const activeSessions = sessions.filter((s, idx) => idx !== sessionIndex && s.isActive);
+    const activeSessions = sessions.filter((s, idx) => idx !== sessionIndex && s && s.isActive === true);
     if (activeSessions.length >= MAX_ACTIVE_SESSIONS) {
       const error = new Error('Maximum number of active sessions reached');
       error.code = 'ACTIVE_LIMIT_REACHED';
@@ -170,13 +273,33 @@ export async function updateSession(userId, sessionId, updates) {
   // Aplicar actualizaciones
   if (updates.dayOfWeek !== undefined) session.dayOfWeek = updates.dayOfWeek;
   if (updates.time !== undefined) session.time = updates.time.trim();
-  if (updates.isActive !== undefined) session.isActive = updates.isActive;
-  if (updates.label !== undefined) session.label = updates.label?.trim() || null;
-  if (updates.notificationId !== undefined) session.notificationId = updates.notificationId?.trim() || null;
+  if (updates.isActive !== undefined) {
+    if (typeof updates.isActive !== 'boolean') {
+      const error = new Error('Invalid isActive value');
+      error.code = 'INVALID_INPUT';
+      throw error;
+    }
+    session.isActive = updates.isActive;
+  }
+  if (updates.label !== undefined) {
+    session.label = updates.label && typeof updates.label === 'string' ? updates.label.trim() : null;
+  }
+  if (updates.notificationId !== undefined) {
+    session.notificationId = updates.notificationId && typeof updates.notificationId === 'string' ? updates.notificationId.trim() : null;
+  }
   session.updatedAt = new Date();
 
   user.markModified('preferences.notifications.scheduledSessions');
-  await user.save();
+  
+  try {
+    await user.save();
+  } catch (err) {
+    console.error('[updateSession] Error saving user:', err);
+    const error = new Error('Failed to update session');
+    error.code = 'SAVE_ERROR';
+    error.details = err.message;
+    throw error;
+  }
 
   return session;
 }
@@ -190,6 +313,25 @@ export async function updateSession(userId, sessionId, updates) {
  * @throws {Error} Si la sesión no existe
  */
 export async function deleteSession(userId, sessionId, hardDelete = false) {
+  // Validar userId
+  if (!userId || (typeof userId !== 'string' && typeof userId !== 'object')) {
+    const error = new Error('Invalid userId');
+    error.code = 'INVALID_INPUT';
+    throw error;
+  }
+
+  // Validar sessionId
+  if (!sessionId || typeof sessionId !== 'string' || sessionId.trim().length === 0) {
+    const error = new Error('Invalid sessionId');
+    error.code = 'INVALID_INPUT';
+    throw error;
+  }
+
+  // Validar hardDelete
+  if (typeof hardDelete !== 'boolean') {
+    hardDelete = false;
+  }
+
   const user = await User.findById(userId);
   if (!user) {
     const error = new Error('User not found');
@@ -198,7 +340,15 @@ export async function deleteSession(userId, sessionId, hardDelete = false) {
   }
 
   const sessions = user.preferences.notifications.scheduledSessions?.sessions || [];
-  const sessionIndex = sessions.findIndex((s) => s.id === sessionId);
+
+  // Validar que sessions sea array
+  if (!Array.isArray(sessions)) {
+    const error = new Error('Sessions data corrupted');
+    error.code = 'DATA_CORRUPTED';
+    throw error;
+  }
+
+  const sessionIndex = sessions.findIndex((s) => s && s.id === sessionId.trim());
 
   if (sessionIndex === -1) {
     const error = new Error('Session not found');
@@ -218,7 +368,16 @@ export async function deleteSession(userId, sessionId, hardDelete = false) {
   }
 
   user.markModified('preferences.notifications.scheduledSessions');
-  await user.save();
+  
+  try {
+    await user.save();
+  } catch (err) {
+    console.error('[deleteSession] Error saving user:', err);
+    const error = new Error('Failed to delete session');
+    error.code = 'SAVE_ERROR';
+    error.details = err.message;
+    throw error;
+  }
 
   return session;
 }
@@ -231,7 +390,23 @@ export async function deleteSession(userId, sessionId, hardDelete = false) {
  * @throws {Error} Si pauseDays es inválido
  */
 export async function pauseAllSessions(userId, pauseDays) {
-  if (pauseDays < 1 || pauseDays > MAX_PAUSE_DAYS) {
+  // Validar userId
+  if (!userId || (typeof userId !== 'string' && typeof userId !== 'object')) {
+    const error = new Error('Invalid userId');
+    error.code = 'INVALID_INPUT';
+    throw error;
+  }
+
+  // Validar pauseDays (tipo, NaN, Infinity, rango)
+  if (typeof pauseDays !== 'number' || isNaN(pauseDays) || !isFinite(pauseDays)) {
+    const error = new Error('pauseDays must be a valid number');
+    error.code = 'INVALID_PAUSE_DAYS';
+    throw error;
+  }
+
+  // Normalizar a entero y validar rango
+  const normalizedPauseDays = Math.floor(pauseDays);
+  if (normalizedPauseDays < 1 || normalizedPauseDays > MAX_PAUSE_DAYS) {
     const error = new Error(`pauseDays must be between 1 and ${MAX_PAUSE_DAYS}`);
     error.code = 'INVALID_PAUSE_DAYS';
     throw error;
@@ -255,15 +430,24 @@ export async function pauseAllSessions(userId, pauseDays) {
   }
 
   const pausedUntil = new Date();
-  pausedUntil.setDate(pausedUntil.getDate() + pauseDays);
+  pausedUntil.setDate(pausedUntil.getDate() + normalizedPauseDays);
 
   user.preferences.notifications.scheduledSessions.pausedUntil = pausedUntil;
   user.markModified('preferences.notifications.scheduledSessions');
-  await user.save();
+  
+  try {
+    await user.save();
+  } catch (err) {
+    console.error('[pauseAllSessions] Error saving user:', err);
+    const error = new Error('Failed to pause sessions');
+    error.code = 'SAVE_ERROR';
+    error.details = err.message;
+    throw error;
+  }
 
   return {
     pausedUntil,
-    pauseDays,
+    pauseDays: normalizedPauseDays,
   };
 }
 
@@ -273,6 +457,13 @@ export async function pauseAllSessions(userId, pauseDays) {
  * @returns {Object} Estado actualizado { resumed: true }
  */
 export async function resumeAllSessions(userId) {
+  // Validar userId
+  if (!userId || (typeof userId !== 'string' && typeof userId !== 'object')) {
+    const error = new Error('Invalid userId');
+    error.code = 'INVALID_INPUT';
+    throw error;
+  }
+
   const user = await User.findById(userId);
   if (!user) {
     const error = new Error('User not found');
@@ -289,7 +480,16 @@ export async function resumeAllSessions(userId) {
 
   user.preferences.notifications.scheduledSessions.pausedUntil = null;
   user.markModified('preferences.notifications.scheduledSessions');
-  await user.save();
+  
+  try {
+    await user.save();
+  } catch (err) {
+    console.error('[resumeAllSessions] Error saving user:', err);
+    const error = new Error('Failed to resume sessions');
+    error.code = 'SAVE_ERROR';
+    error.details = err.message;
+    throw error;
+  }
 
   return {
     resumed: true,

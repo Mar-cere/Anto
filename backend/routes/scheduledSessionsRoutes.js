@@ -92,6 +92,10 @@ router.post('/', crudLimiter, async (req, res) => {
   } catch (err) {
     console.error('[scheduledSessionsRoutes] Error creating session:', err);
 
+    // Errores de validación de input
+    if (err.code === 'INVALID_INPUT') {
+      return res.status(400).json({ message: err.message || copy.createError });
+    }
     // Errores de negocio con códigos específicos
     if (err.code === 'LIMIT_REACHED') {
       return res.status(400).json({ message: copy.limitReached });
@@ -101,6 +105,10 @@ router.post('/', crudLimiter, async (req, res) => {
     }
     if (err.code === 'DUPLICATE_TIME') {
       return res.status(400).json({ message: copy.duplicateTime });
+    }
+    // Errores de base de datos
+    if (err.code === 'SAVE_ERROR' || err.code === 'DATA_CORRUPTED') {
+      return res.status(500).json({ message: copy.internalError });
     }
 
     return res.status(500).json({ message: copy.createError });
@@ -136,6 +144,10 @@ router.put('/:sessionId', crudLimiter, async (req, res) => {
   } catch (err) {
     console.error('[scheduledSessionsRoutes] Error updating session:', err);
 
+    // Errores de validación de input
+    if (err.code === 'INVALID_INPUT') {
+      return res.status(400).json({ message: err.message || copy.updateError });
+    }
     if (err.code === 'SESSION_NOT_FOUND') {
       return res.status(404).json({ message: copy.notFound });
     }
@@ -144,6 +156,10 @@ router.put('/:sessionId', crudLimiter, async (req, res) => {
     }
     if (err.code === 'DUPLICATE_TIME') {
       return res.status(400).json({ message: copy.duplicateTime });
+    }
+    // Errores de base de datos
+    if (err.code === 'SAVE_ERROR' || err.code === 'DATA_CORRUPTED') {
+      return res.status(500).json({ message: copy.internalError });
     }
 
     return res.status(500).json({ message: copy.updateError });
@@ -177,8 +193,16 @@ router.delete('/:sessionId', crudLimiter, async (req, res) => {
   } catch (err) {
     console.error('[scheduledSessionsRoutes] Error deleting session:', err);
 
+    // Errores de validación de input
+    if (err.code === 'INVALID_INPUT') {
+      return res.status(400).json({ message: err.message || copy.deleteError });
+    }
     if (err.code === 'SESSION_NOT_FOUND') {
       return res.status(404).json({ message: copy.notFound });
+    }
+    // Errores de base de datos
+    if (err.code === 'SAVE_ERROR' || err.code === 'DATA_CORRUPTED') {
+      return res.status(500).json({ message: copy.internalError });
     }
 
     return res.status(500).json({ message: copy.deleteError });
@@ -208,8 +232,16 @@ router.post('/pause', crudLimiter, async (req, res) => {
   } catch (err) {
     console.error('[scheduledSessionsRoutes] Error pausing sessions:', err);
 
+    // Errores de validación de input
+    if (err.code === 'INVALID_INPUT') {
+      return res.status(400).json({ message: err.message || copy.pauseError });
+    }
     if (err.code === 'INVALID_PAUSE_DAYS') {
       return res.status(400).json({ message: copy.joiPauseDaysRange });
+    }
+    // Errores de base de datos
+    if (err.code === 'SAVE_ERROR') {
+      return res.status(500).json({ message: copy.internalError });
     }
 
     return res.status(500).json({ message: copy.pauseError });
@@ -232,6 +264,16 @@ router.post('/resume', crudLimiter, async (req, res) => {
     });
   } catch (err) {
     console.error('[scheduledSessionsRoutes] Error resuming sessions:', err);
+    
+    // Errores de validación de input
+    if (err.code === 'INVALID_INPUT') {
+      return res.status(400).json({ message: err.message || copy.resumeError });
+    }
+    // Errores de base de datos
+    if (err.code === 'SAVE_ERROR') {
+      return res.status(500).json({ message: copy.internalError });
+    }
+    
     return res.status(500).json({ message: copy.resumeError });
   }
 });
