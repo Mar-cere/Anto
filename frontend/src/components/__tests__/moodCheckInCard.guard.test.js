@@ -18,6 +18,10 @@ describe('MoodCheckInCard guard', () => {
     expect(src).toMatch(/onSecondaryAction/);
     expect(src).toMatch(/fromMoodCheckIn/);
     expect(src).toMatch(/MOOD_OPEN_CHAT_CTA/);
+    expect(src).toMatch(/shouldExpandMoodCheckInOnMount/);
+    expect(src).toMatch(/markMoodCheckInCollapsed/);
+    expect(src).toMatch(/MOOD_CHECKIN_AUTO_COLLAPSE_MS/);
+    expect(src).toMatch(/moodCollapsedRow/);
   });
 
   it('DashScreen cablea chat contextual y acciones secundarias', () => {

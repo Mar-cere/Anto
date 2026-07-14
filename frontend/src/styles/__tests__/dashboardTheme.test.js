@@ -38,6 +38,8 @@ describe('dashboardTheme', () => {
       'moodPill',
       'moodActionRow',
       'moodActionChip',
+      'moodCollapsedRow',
+      'moodCollapsedLabel',
       'rowTitle',
     ]) {
       expect(lightStyles[token]).toBeDefined();

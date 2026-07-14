@@ -534,6 +534,41 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       fontWeight: '600',
       color: colors.textSecondary,
     },
+    moodExpandedHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 8,
+    },
+    moodExpandedTitle: {
+      flex: 1,
+      minWidth: 0,
+    },
+    moodCollapseIconBtn: {
+      paddingTop: 2,
+      paddingLeft: 4,
+    },
+    moodCollapsedRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      minHeight: 44,
+    },
+    moodCollapsedTextCol: {
+      flex: 1,
+      minWidth: 0,
+      gap: 2,
+    },
+    moodCollapsedLabel: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: colors.text,
+      letterSpacing: -0.2,
+    },
+    moodCollapsedHint: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: colors.textMuted,
+    },
     homeInsightCard: {
       padding: 18,
     },
