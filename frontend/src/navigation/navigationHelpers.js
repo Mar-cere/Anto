@@ -24,11 +24,17 @@ export const CHAT_BACK_TARGET = {
 };
 
 /**
- * @param {{ startGuest?: boolean, chatBackTarget?: 'home' | 'dash' }} [options]
+ * @param {{
+ *   startGuest?: boolean,
+ *   chatBackTarget?: 'home' | 'dash',
+ *   resumeTccLite?: object,
+ *   chatParams?: Record<string, unknown>,
+ * }} [options]
  *   — `startGuest`: modo invitado. `chatBackTarget`: solo `home` se persiste en params (dash es el default).
+ *   — `chatParams`: params extra para la pestaña Chat (p. ej. sesión programada desde push).
  */
 export function getResetToMainTabsWithChatState(options = {}) {
-  const { startGuest, chatBackTarget, resumeTccLite } = options;
+  const { startGuest, chatBackTarget, resumeTccLite, chatParams } = options;
   return {
     index: 0,
     routes: [
@@ -44,6 +50,9 @@ export function getResetToMainTabsWithChatState(options = {}) {
             }
             if (resumeTccLite && typeof resumeTccLite === 'object') {
               params.resumeTccLite = resumeTccLite;
+            }
+            if (chatParams && typeof chatParams === 'object' && !Array.isArray(chatParams)) {
+              Object.assign(params, chatParams);
             }
             return Object.keys(params).length ? { name: 'Chat', params } : { name: 'Chat' };
           }),

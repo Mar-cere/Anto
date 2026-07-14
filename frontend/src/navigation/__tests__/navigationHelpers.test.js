@@ -54,4 +54,20 @@ describe('navigationHelpers', () => {
     expect(state.routes[0].state.index).toBeGreaterThanOrEqual(0);
     expect(Array.isArray(state.routes[0].state.routes)).toBe(true);
   });
+
+  it('getResetToMainTabsWithChatState acepta chatParams de sesión programada', () => {
+    const state = getResetToMainTabsWithChatState({
+      chatParams: {
+        scheduledSessionId: 'sess-1',
+        source: 'scheduled_session_notification',
+        responseLatency: 1200,
+      },
+    });
+    const chatRoute = state.routes[0].state.routes.find((r) => r.name === 'Chat');
+    expect(chatRoute.params).toEqual({
+      scheduledSessionId: 'sess-1',
+      source: 'scheduled_session_notification',
+      responseLatency: 1200,
+    });
+  });
 });
