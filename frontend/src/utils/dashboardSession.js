@@ -12,8 +12,8 @@ let sessionId = null;
 /** @type {MoodCheckInUiState|null} */
 let moodCheckInUiState = null;
 
-/** Retardo antes de auto-colapsar tras guardar ánimo (ms). */
-export const MOOD_CHECKIN_AUTO_COLLAPSE_MS = 700;
+/** Retardo antes de auto-colapsar tras guardar ánimo (ms). Da tiempo a leer ack + CTAs. */
+export const MOOD_CHECKIN_AUTO_COLLAPSE_MS = 4500;
 
 /**
  * Token estable mientras viva el proceso JS.

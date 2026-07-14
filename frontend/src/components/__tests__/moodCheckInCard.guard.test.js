@@ -22,6 +22,8 @@ describe('MoodCheckInCard guard', () => {
     expect(src).toMatch(/markMoodCheckInCollapsed/);
     expect(src).toMatch(/MOOD_CHECKIN_AUTO_COLLAPSE_MS/);
     expect(src).toMatch(/moodCollapsedRow/);
+    expect(src).toMatch(/shouldShowMoodOpenChatChip/);
+    expect(src).toMatch(/LayoutAnimation/);
   });
 
   it('DashScreen cablea chat contextual y acciones secundarias', () => {

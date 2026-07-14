@@ -4,6 +4,8 @@ import {
   resolveMoodAcknowledgment,
   resolveMoodSecondaryAction,
   resolveMoodSuggestChat,
+  resolveMoodCollapsedLabel,
+  shouldShowMoodOpenChatChip,
 } from '../moodCheckInActions';
 
 describe('moodCheckInActions', () => {
@@ -87,5 +89,27 @@ describe('moodCheckInActions', () => {
       }),
     ).toBe(true);
     expect(isValidMoodSecondaryAction({ kind: 'resume_chat', conversationId: 'x' })).toBe(false);
+  });
+
+  it('oculta Contarle a Anto si la secundaria es retomar chat', () => {
+    expect(shouldShowMoodOpenChatChip({ kind: 'resume_chat' })).toBe(false);
+    expect(shouldShowMoodOpenChatChip({ kind: 'next_habit' })).toBe(true);
+    expect(shouldShowMoodOpenChatChip({ kind: 'breathing' })).toBe(true);
+    expect(shouldShowMoodOpenChatChip(null)).toBe(true);
+  });
+
+  it('resuelve frases humanas al colapsar por ánimo', () => {
+    const es = {
+      MOOD_COLLAPSED_CALM: 'En calma',
+      MOOD_COLLAPSED_ANXIOUS: 'Un poco tenso',
+      MOOD_COLLAPSED_TIRED: 'Con fatiga',
+      MOOD_COLLAPSED_GOOD: 'Bastante bien',
+      MOOD_COLLAPSED_TODAY: '{mood}',
+      MOOD_CALM: 'Calma',
+    };
+    expect(resolveMoodCollapsedLabel('calm', es)).toBe('En calma');
+    expect(resolveMoodCollapsedLabel('anxious', es)).toBe('Un poco tenso');
+    expect(resolveMoodCollapsedLabel('tired', es)).toBe('Con fatiga');
+    expect(resolveMoodCollapsedLabel('good', es)).toBe('Bastante bien');
   });
 });

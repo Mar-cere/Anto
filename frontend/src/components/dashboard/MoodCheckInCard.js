@@ -1,10 +1,18 @@
 /**
- * Check-in de ánimo del home: chips + CTAs; colapsa tras el ritual de sesión.
+ * Check-in de ánimo del home: chips + CTAs; colapsa con animación tras el ritual.
  */
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  ActivityIndicator,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import {
@@ -29,7 +37,28 @@ import {
   resolveMoodAcknowledgment,
   resolveMoodSecondaryAction,
   resolveMoodSuggestChat,
+  resolveMoodCollapsedLabel,
+  shouldShowMoodOpenChatChip,
 } from '../../utils/moodCheckInActions';
+
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const MOOD_LAYOUT_ANIM_MS = 360;
+
+function animateMoodCheckInLayout() {
+  LayoutAnimation.configureNext(
+    LayoutAnimation.create(
+      MOOD_LAYOUT_ANIM_MS,
+      LayoutAnimation.Types.easeInEaseOut,
+      LayoutAnimation.Properties.opacity,
+    ),
+  );
+}
 
 const MoodCheckInCard = memo(({
   onMoodSaved,
@@ -60,22 +89,28 @@ const MoodCheckInCard = memo(({
     }
   }, []);
 
+  const setExpandedAnimated = useCallback((nextExpanded) => {
+    animateMoodCheckInLayout();
+    setExpanded(nextExpanded);
+  }, []);
+
   const collapse = useCallback(() => {
     clearAutoCollapse();
     markMoodCheckInCollapsed();
-    setExpanded(false);
-  }, [clearAutoCollapse]);
+    setExpandedAnimated(false);
+  }, [clearAutoCollapse, setExpandedAnimated]);
 
   const expand = useCallback(() => {
     clearAutoCollapse();
     markMoodCheckInExpanded();
-    setExpanded(true);
-  }, [clearAutoCollapse]);
+    setExpandedAnimated(true);
+  }, [clearAutoCollapse, setExpandedAnimated]);
 
   const scheduleAutoCollapse = useCallback(() => {
     clearAutoCollapse();
     autoCollapseTimerRef.current = setTimeout(() => {
       markMoodCheckInCollapsed();
+      animateMoodCheckInLayout();
       setExpanded(false);
       autoCollapseTimerRef.current = null;
     }, MOOD_CHECKIN_AUTO_COLLAPSE_MS);
@@ -188,18 +223,20 @@ const MoodCheckInCard = memo(({
     const action = resolveMoodSecondaryAction({ checkIn, focus: focusPayload });
     return isValidMoodSecondaryAction(action) ? action : null;
   }, [checkIn, focusPayload]);
-  const showActions = Boolean(checkIn?.mood) && !loading && expanded;
+  const secondaryLabel = secondary?.labelKey ? DASH[secondary.labelKey] : null;
+  const showChatChip = Boolean(onOpenChat) && shouldShowMoodOpenChatChip(secondary);
+  const showSecondaryChip = Boolean(secondary && secondaryLabel && onSecondaryAction);
+  const showActions =
+    Boolean(checkIn?.mood) && !loading && expanded && (showChatChip || showSecondaryChip);
   const chatA11y =
     (suggestChat ? String(checkIn?.antoSnippet || '').trim() : '') || DASH.MOOD_OPEN_CHAT_CTA;
-  const secondaryLabel = secondary?.labelKey ? DASH[secondary.labelKey] : null;
+  const resumeAsPrimaryChat = secondary?.kind === 'resume_chat' && !showChatChip;
 
   const hasMood = isValidMoodCheckInKey(checkIn?.mood);
   const showCollapsed = !loading && hasMood && !expanded;
-  const moodLabel = hasMood ? labels[checkIn.mood] : '';
-  const collapsedToday = String(DASH.MOOD_COLLAPSED_TODAY || 'Hoy: {mood}').replace(
-    '{mood}',
-    moodLabel,
-  );
+  const collapsedLabel = hasMood
+    ? resolveMoodCollapsedLabel(checkIn.mood, DASH)
+    : '';
 
   const handleOpenChat = useCallback(() => {
     if (!onOpenChat) return;
@@ -228,9 +265,9 @@ const MoodCheckInCard = memo(({
     else expand();
   }, [expanded, collapse, expand]);
 
-  if (showCollapsed) {
-    return (
-      <View style={[styles.section, styles.surfaceCard]} accessibilityRole="summary">
+  return (
+    <View style={[styles.section, styles.surfaceCard]} accessibilityRole="summary">
+      {showCollapsed ? (
         <Pressable
           onPress={handleToggleCollapsed}
           style={({ pressed }) => [
@@ -243,112 +280,124 @@ const MoodCheckInCard = memo(({
         >
           <View style={styles.moodCollapsedTextCol}>
             <Text style={styles.moodCollapsedLabel} numberOfLines={1}>
-              {collapsedToday}
+              {collapsedLabel}
             </Text>
             <Text style={styles.moodCollapsedHint}>{DASH.MOOD_COLLAPSED_HINT}</Text>
           </View>
           <Ionicons name="chevron-down" size={18} color={colors.textMuted} />
         </Pressable>
-      </View>
-    );
-  }
-
-  return (
-    <View style={[styles.section, styles.surfaceCard]} accessibilityRole="summary">
-      <View style={styles.moodExpandedHeader}>
-        <Text style={[styles.questionTitle, styles.moodExpandedTitle]}>{DASH.MOOD_QUESTION}</Text>
-        {hasMood ? (
-          <Pressable
-            onPress={handleToggleCollapsed}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityState={{ expanded: true }}
-            accessibilityLabel={DASH.MOOD_COLLAPSE_A11Y}
-            style={({ pressed }) => [
-              styles.moodCollapseIconBtn,
-              pressed && { opacity: 0.7 },
-            ]}
-          >
-            <Ionicons name="chevron-up" size={18} color={colors.textMuted} />
-          </Pressable>
-        ) : null}
-      </View>
-
-      {loading ? (
-        <ActivityIndicator color={colors.primary} style={{ marginTop: 16 }} />
       ) : (
-        <View style={styles.moodRow}>
-          {MOOD_OPTIONS.map((key) => {
-            const isSelected = checkIn?.mood === key;
-            return (
-              <Pressable
-                key={key}
-                onPress={() => onSelect(key)}
-                disabled={saving}
-                style={({ pressed }) => [
-                  styles.moodPill,
-                  isSelected ? styles.moodPillSelected : styles.moodPillDefault,
-                  pressed && { opacity: 0.88, transform: [{ scale: 0.97 }] },
-                ]}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isSelected }}
-                accessibilityLabel={labels[key]}
-              >
-                <Text
-                  style={[styles.moodPillText, isSelected && styles.moodPillTextSelected]}
-                >
-                  {labels[key]}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
-
-      {acknowledgmentLine ? (
-        <Text style={styles.moodAckText} accessibilityRole="text">
-          {acknowledgmentLine}
-        </Text>
-      ) : null}
-
-      {showActions && onOpenChat ? (
-        <View style={styles.moodActionRow}>
-          <Pressable
-            onPress={handleOpenChat}
-            style={({ pressed }) => [
-              styles.moodActionChip,
-              suggestChat ? styles.moodActionChipPrimary : styles.moodActionChipSecondary,
-              pressed && { opacity: 0.88 },
-            ]}
-            accessibilityRole="button"
-            accessibilityLabel={suggestChat ? chatA11y : DASH.MOOD_CTA_CHAT_SOFT}
-          >
-            <Text
-              style={
-                suggestChat
-                  ? styles.moodActionChipTextPrimary
-                  : styles.moodActionChipTextSecondary
-              }
-            >
-              {suggestChat ? DASH.MOOD_OPEN_CHAT_CTA : DASH.MOOD_CTA_CHAT_SOFT}
+        <>
+          <View style={styles.moodExpandedHeader}>
+            <Text style={[styles.questionTitle, styles.moodExpandedTitle]}>
+              {DASH.MOOD_QUESTION}
             </Text>
-          </Pressable>
-          {secondary && secondaryLabel && onSecondaryAction ? (
-            <Pressable
-              onPress={handleSecondary}
-              style={({ pressed }) => [
-                styles.moodActionChip,
-                styles.moodActionChipSecondary,
-                pressed && { opacity: 0.88 },
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={secondaryLabel}
-            >
-              <Text style={styles.moodActionChipTextSecondary}>{secondaryLabel}</Text>
-            </Pressable>
+            {hasMood ? (
+              <Pressable
+                onPress={handleToggleCollapsed}
+                hitSlop={10}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: true }}
+                accessibilityLabel={DASH.MOOD_COLLAPSE_A11Y}
+                style={({ pressed }) => [
+                  styles.moodCollapseIconBtn,
+                  pressed && { opacity: 0.7 },
+                ]}
+              >
+                <Ionicons name="chevron-up" size={18} color={colors.textMuted} />
+              </Pressable>
+            ) : null}
+          </View>
+
+          {loading ? (
+            <ActivityIndicator color={colors.primary} style={{ marginTop: 16 }} />
+          ) : (
+            <View style={styles.moodRow}>
+              {MOOD_OPTIONS.map((key) => {
+                const isSelected = checkIn?.mood === key;
+                return (
+                  <Pressable
+                    key={key}
+                    onPress={() => onSelect(key)}
+                    disabled={saving}
+                    style={({ pressed }) => [
+                      styles.moodPill,
+                      isSelected ? styles.moodPillSelected : styles.moodPillDefault,
+                      pressed && { opacity: 0.88, transform: [{ scale: 0.97 }] },
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                    accessibilityLabel={labels[key]}
+                  >
+                    <Text
+                      style={[styles.moodPillText, isSelected && styles.moodPillTextSelected]}
+                    >
+                      {labels[key]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
+          {acknowledgmentLine ? (
+            <Text style={styles.moodAckText} accessibilityRole="text">
+              {acknowledgmentLine}
+            </Text>
           ) : null}
-        </View>
-      ) : null}
+
+          {showActions ? (
+            <View style={styles.moodActionRow}>
+              {showChatChip ? (
+                <Pressable
+                  onPress={handleOpenChat}
+                  style={({ pressed }) => [
+                    styles.moodActionChip,
+                    suggestChat ? styles.moodActionChipPrimary : styles.moodActionChipSecondary,
+                    pressed && { opacity: 0.88 },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={suggestChat ? chatA11y : DASH.MOOD_CTA_CHAT_SOFT}
+                >
+                  <Text
+                    style={
+                      suggestChat
+                        ? styles.moodActionChipTextPrimary
+                        : styles.moodActionChipTextSecondary
+                    }
+                  >
+                    {suggestChat ? DASH.MOOD_OPEN_CHAT_CTA : DASH.MOOD_CTA_CHAT_SOFT}
+                  </Text>
+                </Pressable>
+              ) : null}
+              {showSecondaryChip ? (
+                <Pressable
+                  onPress={handleSecondary}
+                  style={({ pressed }) => [
+                    styles.moodActionChip,
+                    resumeAsPrimaryChat
+                      ? styles.moodActionChipPrimary
+                      : styles.moodActionChipSecondary,
+                    pressed && { opacity: 0.88 },
+                  ]}
+                  accessibilityRole="button"
+                  accessibilityLabel={secondaryLabel}
+                >
+                  <Text
+                    style={
+                      resumeAsPrimaryChat
+                        ? styles.moodActionChipTextPrimary
+                        : styles.moodActionChipTextSecondary
+                    }
+                  >
+                    {secondaryLabel}
+                  </Text>
+                </Pressable>
+              ) : null}
+            </View>
+          ) : null}
+        </>
+      )}
     </View>
   );
 });

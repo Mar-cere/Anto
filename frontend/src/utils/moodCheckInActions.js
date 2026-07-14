@@ -137,3 +137,32 @@ export function isValidMoodSecondaryAction(action) {
   if (kind === 'next_task' && !action.nextTask?._id) return false;
   return true;
 }
+
+/**
+ * Evita chips redundantes: si ya hay «Retomar el chat», no mostrar «Contarle a Anto».
+ * @param {{ kind?: string }|null|undefined} secondaryAction
+ * @returns {boolean}
+ */
+export function shouldShowMoodOpenChatChip(secondaryAction) {
+  return secondaryAction?.kind !== 'resume_chat';
+}
+
+/**
+ * Texto humano del check-in colapsado (frase completa por ánimo, no plantilla forzada).
+ * @param {string} mood
+ * @param {Record<string, string>} texts
+ * @returns {string}
+ */
+export function resolveMoodCollapsedLabel(mood, texts = {}) {
+  const key = String(mood || '').trim();
+  const byMood = {
+    calm: texts.MOOD_COLLAPSED_CALM,
+    anxious: texts.MOOD_COLLAPSED_ANXIOUS,
+    tired: texts.MOOD_COLLAPSED_TIRED,
+    good: texts.MOOD_COLLAPSED_GOOD,
+  };
+  const phrase = String(byMood[key] || '').trim();
+  if (phrase) return phrase;
+  const fallbackMood = String(texts[`MOOD_${key.toUpperCase()}`] || key).trim();
+  return String(texts.MOOD_COLLAPSED_TODAY || '{mood}').replace('{mood}', fallbackMood);
+}
