@@ -2,7 +2,7 @@
  * Modelo de telemetría para sesiones programadas (#15).
  * Registra eventos de notificaciones enviadas, sesiones iniciadas, y métricas de adherencia.
  */
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const scheduledSessionEventSchema = new mongoose.Schema(
   {
