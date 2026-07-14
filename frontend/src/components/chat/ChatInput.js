@@ -4,8 +4,9 @@
 
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -39,9 +40,25 @@ export default function ChatInput({
   const { resolvedScheme } = useTheme();
   const insets = useSafeAreaInsets();
   const dark = resolvedScheme === 'dark';
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
-  const bottomPad =
-    Math.max(0, Number(insets?.bottom) || 0) + LAYOUT.INPUT_DOCK_PADDING_BOTTOM_EXTRA;
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = Keyboard.addListener(showEvent, () => setKeyboardVisible(true));
+    const onHide = Keyboard.addListener(hideEvent, () => setKeyboardVisible(false));
+    return () => {
+      onShow.remove();
+      onHide.remove();
+    };
+  }, []);
+
+  // Con teclado abierto el home indicator queda detrás; no sumar insets.bottom ahí.
+  // Sin teclado: un respiro corto sobre el safe area (evita el bloque vacío excesivo).
+  const safeBottom = Math.max(0, Number(insets?.bottom) || 0);
+  const bottomPad = keyboardVisible
+    ? LAYOUT.INPUT_DOCK_PADDING_BOTTOM_KEYBOARD
+    : safeBottom + LAYOUT.INPUT_DOCK_PADDING_BOTTOM_EXTRA;
 
   const styles = useMemo(
     () =>

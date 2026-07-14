@@ -249,8 +249,10 @@ export const LAYOUT = {
   MESSAGE_BUBBLE_CORNER_RADIUS: 6,
   INPUT_CONTAINER_PADDING_HORIZONTAL: GUTTER,
   INPUT_CONTAINER_PADDING_VERTICAL: 10,
-  /** Respiro interno sobre el safe area (ya no deja hueco debajo del composer). */
-  INPUT_DOCK_PADDING_BOTTOM_EXTRA: 10,
+  /** Respiro corto sobre el safe area (sin teclado). */
+  INPUT_DOCK_PADDING_BOTTOM_EXTRA: 4,
+  /** Padding inferior del dock con teclado abierto (el safe area ya no aplica). */
+  INPUT_DOCK_PADDING_BOTTOM_KEYBOARD: 8,
   INPUT_BORDER_RADIUS: 22,
   INPUT_PADDING_HORIZONTAL: GUTTER,
   INPUT_PADDING_VERTICAL: 10,
