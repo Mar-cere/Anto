@@ -64,19 +64,27 @@ function getNotificationCopy(sessionId, language = 'es', label = null) {
     sessionId = '0';
   }
   
+  // Validar y normalizar language
+  if (typeof language !== 'string') {
+    language = 'es';
+  }
   const lang = language === 'en' ? 'en' : 'es';
   const variations = NOTIFICATION_COPY[lang];
   
   // Rotar variación según sessionId (hash simple)
   const hash = sessionId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const variation = variations[hash % variations.length];
+  const variationIndex = Math.abs(hash) % variations.length; // Usar Math.abs por si hash es negativo
+  const variation = variations[variationIndex];
   
-  // Si hay label, personalizarlo
-  if (label && typeof label === 'string' && label.trim().length > 0) {
-    return {
-      title: lang === 'es' ? `Es tu momento: ${label}` : `Your session: ${label}`,
-      body: variation.body,
-    };
+  // Si hay label, personalizarlo con límite y sanitización
+  if (label && typeof label === 'string') {
+    const sanitizedLabel = label.trim().slice(0, 50); // Límite 50 chars
+    if (sanitizedLabel.length > 0) {
+      return {
+        title: lang === 'es' ? `Es tu momento: ${sanitizedLabel}` : `Your session: ${sanitizedLabel}`,
+        body: variation.body,
+      };
+    }
   }
   
   return variation;
@@ -106,7 +114,20 @@ function calculateNextTrigger(dayOfWeek, time) {
       return null;
     }
     
-    const [hours, minutes] = time.split(':').map(Number);
+    const timeParts = time.split(':');
+    if (timeParts.length !== 2) {
+      console.warn('[calculateNextTrigger] Invalid time split:', time);
+      return null;
+    }
+    
+    const hours = Number(timeParts[0]);
+    const minutes = Number(timeParts[1]);
+    
+    // Validar que hours y minutes sean válidos después del parsing
+    if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      console.warn('[calculateNextTrigger] Invalid hours/minutes:', { hours, minutes });
+      return null;
+    }
     
     const now = new Date();
     const nextTrigger = new Date();
@@ -128,6 +149,12 @@ function calculateNextTrigger(dayOfWeek, time) {
     
     nextTrigger.setDate(now.getDate() + daysUntil);
     nextTrigger.setHours(hours, minutes, 0, 0);
+    
+    // Validar que la fecha resultante sea válida
+    if (isNaN(nextTrigger.getTime())) {
+      console.warn('[calculateNextTrigger] Invalid resulting date');
+      return null;
+    }
     
     return nextTrigger;
   } catch (error) {
@@ -153,7 +180,7 @@ export async function scheduleSessionNotification(session, language = 'es') {
       throw new Error('Invalid session object');
     }
     
-    if (!session.id || typeof session.id !== 'string') {
+    if (!session.id || typeof session.id !== 'string' || session.id.trim().length === 0) {
       throw new Error('Invalid session.id');
     }
     
@@ -165,13 +192,27 @@ export async function scheduleSessionNotification(session, language = 'es') {
       throw new Error('session.time is required');
     }
     
-    // Solicitar permisos si es necesario
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
+    // Validar y normalizar language
+    if (typeof language !== 'string') {
+      language = 'es';
+    }
     
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+    // Solicitar permisos si es necesario
+    const permissionsResult = await Notifications.getPermissionsAsync();
+    if (!permissionsResult || typeof permissionsResult !== 'object') {
+      console.warn('[scheduleSessionNotification] Invalid permissions result');
+      return null;
+    }
+    
+    let finalStatus = permissionsResult.status;
+    
+    if (finalStatus !== 'granted') {
+      const requestResult = await Notifications.requestPermissionsAsync();
+      if (!requestResult || typeof requestResult !== 'object') {
+        console.warn('[scheduleSessionNotification] Invalid request result');
+        return null;
+      }
+      finalStatus = requestResult.status;
     }
     
     if (finalStatus !== 'granted') {
@@ -186,27 +227,52 @@ export async function scheduleSessionNotification(session, language = 'es') {
     }
     
     // Obtener copy
-    const { title, body } = getNotificationCopy(session.id, language, session.label);
+    const copy = getNotificationCopy(session.id, language, session.label);
+    if (!copy || !copy.title || !copy.body) {
+      console.warn('[scheduleSessionNotification] Invalid notification copy');
+      throw new Error('Failed to generate notification copy');
+    }
+    
+    // Validar trigger values antes de programar
+    const timeParts = session.time.split(':');
+    const hour = parseInt(timeParts[0], 10);
+    const minute = parseInt(timeParts[1], 10);
+    
+    if (isNaN(hour) || isNaN(minute)) {
+      throw new Error('Invalid hour/minute values');
+    }
+    
+    // Validar weekday para Expo (1-7)
+    const weekday = session.dayOfWeek + 1;
+    if (weekday < 1 || weekday > 7) {
+      throw new Error('Invalid weekday value for Expo');
+    }
     
     // Programar notificación recurrente (semanal)
     const notificationId = await Notifications.scheduleNotificationAsync({
       content: {
-        title,
-        body,
+        title: copy.title,
+        body: copy.body,
         data: {
-          sessionId: session.id,
+          sessionId: session.id.trim(),
           type: 'scheduled_session',
           timestamp: trigger.toISOString(),
         },
         sound: true,
       },
       trigger: {
-        weekday: session.dayOfWeek + 1, // Expo usa 1-7 (domingo=1)
-        hour: parseInt(session.time.split(':')[0], 10),
-        minute: parseInt(session.time.split(':')[1], 10),
+        weekday,
+        hour,
+        minute,
         repeats: true,
       },
     });
+    
+    // Validar que se recibió un notificationId válido
+    if (!notificationId || typeof notificationId !== 'string' || notificationId.trim().length === 0) {
+      console.warn('[scheduleSessionNotification] Invalid notificationId returned:', notificationId);
+      return null;
+    }
     
     console.log('[scheduleSessionNotification] Scheduled:', { sessionId: session.id, notificationId });
     
@@ -252,13 +318,39 @@ export async function rescheduleAllSessions(sessions, language = 'es') {
       return [];
     }
     
+    // Validar y normalizar language
+    if (typeof language !== 'string') {
+      language = 'es';
+    }
+    
+    // Límite de sesiones para evitar loops infinitos
+    const MAX_SESSIONS = 50;
+    if (sessions.length > MAX_SESSIONS) {
+      console.warn(`[rescheduleAllSessions] Too many sessions (${sessions.length}), limiting to ${MAX_SESSIONS}`);
+      sessions = sessions.slice(0, MAX_SESSIONS);
+    }
+    
     const results = [];
     
     for (const session of sessions) {
-      // Validar sesión
-      if (!session || !session.id || session.dayOfWeek === undefined || !session.time) {
+      // Validar que session es un objeto
+      if (!session || typeof session !== 'object' || Array.isArray(session)) {
+        console.warn('[rescheduleAllSessions] Skipping invalid session (not object):', session);
+        results.push({ sessionId: 'unknown', success: false, error: 'Invalid session type' });
+        continue;
+      }
+      
+      // Validar sesión tiene campos requeridos
+      if (!session.id || session.dayOfWeek === undefined || !session.time) {
         console.warn('[rescheduleAllSessions] Skipping invalid session:', session);
-        results.push({ sessionId: session?.id || 'unknown', success: false, error: 'Invalid session' });
+        results.push({ sessionId: session.id || 'unknown', success: false, error: 'Missing required fields' });
+        continue;
+      }
+      
+      // Validar tipos
+      if (typeof session.id !== 'string') {
+        console.warn('[rescheduleAllSessions] Skipping session with invalid id type:', session);
+        results.push({ sessionId: 'invalid-id', success: false, error: 'Invalid id type' });
         continue;
       }
       
@@ -270,7 +362,7 @@ export async function rescheduleAllSessions(sessions, language = 'es') {
       }
       
       // Cancelar notificación previa si existe
-      if (session.notificationId) {
+      if (session.notificationId && typeof session.notificationId === 'string') {
         await cancelSessionNotification(session.notificationId);
       }
       
@@ -312,10 +404,23 @@ export async function cancelAllSessionNotifications(sessions) {
       return 0;
     }
     
+    // Límite de sesiones para evitar loops infinitos
+    const MAX_SESSIONS = 50;
+    if (sessions.length > MAX_SESSIONS) {
+      console.warn(`[cancelAllSessionNotifications] Too many sessions (${sessions.length}), limiting to ${MAX_SESSIONS}`);
+      sessions = sessions.slice(0, MAX_SESSIONS);
+    }
+    
     let cancelledCount = 0;
     
     for (const session of sessions) {
-      if (session && session.notificationId) {
+      // Validar que session es un objeto válido
+      if (!session || typeof session !== 'object' || Array.isArray(session)) {
+        continue;
+      }
+      
+      // Validar que notificationId es válido
+      if (session.notificationId && typeof session.notificationId === 'string' && session.notificationId.trim().length > 0) {
         const success = await cancelSessionNotification(session.notificationId);
         if (success) {
           cancelledCount++;
