@@ -17,6 +17,7 @@ jest.mock('react-native', () => ({
 jest.mock('../../styles/globalStyles', () => ({ colors: {} }));
 
 import { renderHook, act } from '@testing-library/react-native';
+import { useSubscription } from '../../context/SubscriptionContext';
 import { useSubscriptionScreen } from '../useSubscriptionScreen';
 
 const mockNavigation = { goBack: jest.fn(), replace: jest.fn() };
@@ -33,6 +34,7 @@ jest.mock('../../services/paymentService', () => ({
     cancelSubscription: jest.fn(),
     restorePurchases: jest.fn(),
     purchaseWithStoreKit: jest.fn(),
+    refreshSubscriptionStatusAfterPayment: jest.fn(),
   },
 }));
 jest.mock('../../services/storeKitService', () => ({
@@ -43,6 +45,21 @@ jest.mock('../../utils/apiErrorHandler', () => ({ getApiErrorMessage: (e) => e?.
 
 jest.mock('../../context/ToastContext', () => ({
   useToast: () => ({ showToast: jest.fn() }),
+}));
+
+jest.mock('../../context/SubscriptionContext', () => ({
+  useSubscription: jest.fn(() => ({
+    subscriptionStatus: { success: true, hasSubscription: false },
+    trialInfo: null,
+    loading: false,
+    hasPremiumAccess: false,
+    hasChatAccess: () => false,
+    refreshSubscription: jest.fn().mockResolvedValue({ success: true, hasSubscription: false }),
+    refreshTrialInfo: jest.fn(),
+    refreshAll: jest.fn(),
+    syncAfterPayment: jest.fn().mockResolvedValue({ success: true, hasSubscription: true, status: 'premium' }),
+    applySubscriptionStatus: jest.fn(),
+  })),
 }));
 
 describe('useSubscriptionScreen', () => {
@@ -56,6 +73,18 @@ describe('useSubscriptionScreen', () => {
     jest.clearAllMocks();
     const { default: paymentService } = require('../../services/paymentService');
     paymentService.getSubscriptionStatus.mockResolvedValue({ success: true, hasSubscription: false });
+    useSubscription.mockReturnValue({
+      subscriptionStatus: { success: true, hasSubscription: false },
+      trialInfo: null,
+      loading: false,
+      hasPremiumAccess: false,
+      hasChatAccess: () => false,
+      refreshSubscription: jest.fn().mockResolvedValue({ success: true, hasSubscription: false }),
+      refreshTrialInfo: jest.fn(),
+      refreshAll: jest.fn(),
+      syncAfterPayment: jest.fn().mockResolvedValue({ success: true, hasSubscription: true, status: 'premium' }),
+      applySubscriptionStatus: jest.fn(),
+    });
   });
 
   it('debe retornar las claves esperadas', async () => {
@@ -96,16 +125,31 @@ describe('useSubscriptionScreen', () => {
     expect(result.current.plans[0]).toHaveProperty('formattedAmount');
   });
 
-  it('loadData debe dejar subscriptionStatus cuando getSubscriptionStatus tiene success', async () => {
+  it('loadData debe dejar subscriptionStatus cuando el contexto tiene premium', async () => {
+    useSubscription.mockReturnValue({
+      subscriptionStatus: {
+        success: true,
+        hasSubscription: true,
+        status: 'premium',
+        plan: 'yearly',
+      },
+      trialInfo: null,
+      loading: false,
+      hasPremiumAccess: true,
+      hasChatAccess: () => true,
+      refreshSubscription: jest.fn().mockResolvedValue({
+        success: true,
+        hasSubscription: true,
+        status: 'premium',
+        plan: 'yearly',
+      }),
+      refreshTrialInfo: jest.fn(),
+      refreshAll: jest.fn(),
+      syncAfterPayment: jest.fn(),
+      applySubscriptionStatus: jest.fn(),
+    });
     const { result } = renderHook(() => useSubscriptionScreen());
     await flushInitialEffects();
-    const { default: paymentService } = require('../../services/paymentService');
-    paymentService.getSubscriptionStatus.mockResolvedValue({
-      success: true,
-      hasSubscription: true,
-      status: 'premium',
-      plan: 'yearly',
-    });
     await act(async () => {
       await result.current.loadData();
     });
@@ -117,15 +161,25 @@ describe('useSubscriptionScreen', () => {
     });
   });
 
-  it('loadData debe poner subscriptionStatus en null si getSubscriptionStatus falla', async () => {
+  it('loadData invoca refreshSubscription del contexto', async () => {
+    const refreshSubscription = jest.fn().mockResolvedValue({ success: true, hasSubscription: false });
+    useSubscription.mockReturnValue({
+      subscriptionStatus: null,
+      trialInfo: null,
+      loading: false,
+      hasPremiumAccess: false,
+      hasChatAccess: () => false,
+      refreshSubscription,
+      refreshTrialInfo: jest.fn(),
+      refreshAll: jest.fn(),
+      syncAfterPayment: jest.fn(),
+      applySubscriptionStatus: jest.fn(),
+    });
     const { result } = renderHook(() => useSubscriptionScreen());
     await flushInitialEffects();
-    const { default: paymentService } = require('../../services/paymentService');
-    paymentService.getSubscriptionStatus.mockRejectedValue(new Error('Network error'));
     await act(async () => {
       await result.current.loadData();
     });
-    expect(result.current.subscriptionStatus).toBe(null);
-    expect(result.current.plans).toHaveLength(4);
+    expect(refreshSubscription).toHaveBeenCalled();
   });
 });

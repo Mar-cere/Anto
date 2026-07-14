@@ -15,6 +15,7 @@ import {
   MIN_APP_STORE_RECEIPT_BASE64_LENGTH,
 } from '../utils/appleReceiptNormalize';
 import storeKitService from './storeKitService';
+import { subscriptionLooksCurrentlyUsable } from '../utils/subscriptionAccess';
 
 const TRIAL_INFO_CLIENT_CACHE_MS = 60 * 1000;
 let trialInfoClientCache = null;
@@ -37,6 +38,89 @@ export function clearSubscriptionStatusClientCache() {
   subscriptionStatusClientCache = null;
   subscriptionStatusClientCacheExpiresAt = 0;
   subscriptionStatusInFlight = null;
+}
+
+function mapValidatedSubscriptionToClientStatus(validationSubscription) {
+  if (!validationSubscription || typeof validationSubscription !== 'object') {
+    return null;
+  }
+  const status = String(validationSubscription.status || '').toLowerCase();
+  const isPremiumLike = status === 'premium' || status === 'active';
+  if (!isPremiumLike && validationSubscription.isActive !== true) {
+    return null;
+  }
+  const startDate =
+    validationSubscription.startDate ||
+    validationSubscription.subscriptionStartDate ||
+    validationSubscription.currentPeriodStart ||
+    null;
+  const endDate =
+    validationSubscription.endDate ||
+    validationSubscription.subscriptionEndDate ||
+    validationSubscription.currentPeriodEnd ||
+    null;
+  return {
+    success: true,
+    hasSubscription: true,
+    status: validationSubscription.status || 'premium',
+    plan: validationSubscription.plan,
+    isActive: validationSubscription.isActive !== false,
+    isInTrial: false,
+    subscriptionStartDate: startDate,
+    subscriptionEndDate: endDate,
+    currentPeriodStart: startDate,
+    currentPeriodEnd: endDate,
+    trialStartDate: null,
+    trialEndDate: null,
+  };
+}
+
+/**
+ * Tras validate-receipt exitoso, sembrar caché cliente para que la UI refleje premium de inmediato.
+ * @param {object|null|undefined} validationSubscription
+ * @returns {boolean}
+ */
+export function applyValidatedSubscriptionToClientCache(validationSubscription) {
+  const mapped = mapValidatedSubscriptionToClientStatus(validationSubscription);
+  if (!mapped) return false;
+
+  subscriptionStatusClientCache = mapped;
+  subscriptionStatusClientCacheExpiresAt = Date.now() + SUBSCRIPTION_STATUS_CLIENT_CACHE_MS;
+
+  try {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    const { success: _success, ...persistable } = mapped;
+    void AsyncStorage.setItem('subscription_status_cache', JSON.stringify(persistable)).catch(() => {});
+  } catch (_) {
+    /* no crítico */
+  }
+
+  return true;
+}
+
+function notifySubscriptionStatusChanged(validationSubscription = null) {
+  clearSubscriptionStatusClientCache();
+  clearTrialInfoClientCache();
+  if (validationSubscription) {
+    applyValidatedSubscriptionToClientCache(validationSubscription);
+  }
+  if (typeof subscriptionStatusChangeHandler === 'function') {
+    try {
+      subscriptionStatusChangeHandler(validationSubscription);
+    } catch (handlerError) {
+      console.warn('[PaymentService] Error en subscriptionStatusChangeHandler:', handlerError);
+    }
+  }
+}
+
+let subscriptionStatusChangeHandler = null;
+
+/**
+ * Registra un callback global (SubscriptionContext) para propagar cambios tras validate-receipt.
+ * @param {((validationSubscription: object|null) => void)|null} handler
+ */
+export function setSubscriptionStatusChangeHandler(handler) {
+  subscriptionStatusChangeHandler = typeof handler === 'function' ? handler : null;
 }
 
 function classifyStoreKitError(result) {
@@ -387,6 +471,7 @@ class PaymentService {
 
         const totalDuration = Date.now() - validationStartTime;
         if (response.success) {
+          notifySubscriptionStatusChanged(response.subscription || null);
           console.log('[PaymentService] ✅ Validación exitosa', {
             productId: receiptData.productId,
             hasSubscription: !!response.subscription,
@@ -536,6 +621,7 @@ class PaymentService {
             validationErrors: [msg],
           };
         }
+        notifySubscriptionStatusChanged(response?.subscription || null);
         console.log('[PaymentService] Compra restaurada validada:', {
           productId: latest.productId,
         });
@@ -543,6 +629,7 @@ class PaymentService {
           success: true,
           purchases: result.purchases,
           validation: response,
+          subscription: response?.subscription || null,
         };
       } catch (error) {
         const msg =
@@ -636,6 +723,50 @@ class PaymentService {
 
     trialInfoInFlight = request;
     return request;
+  }
+
+  /**
+   * Refrescar estado de suscripción tras compra o restauración (limpia caché y consulta API).
+   * @param {{ validationSubscription?: object|null, maxAttempts?: number }} [opts]
+   * @returns {Promise<Object>}
+   */
+  async refreshSubscriptionStatusAfterPayment(opts = {}) {
+    const validationSubscription = opts.validationSubscription || null;
+    const maxAttempts = Number.isFinite(opts.maxAttempts) ? opts.maxAttempts : 5;
+
+    if (validationSubscription) {
+      applyValidatedSubscriptionToClientCache(validationSubscription);
+    } else {
+      clearSubscriptionStatusClientCache();
+    }
+    clearTrialInfoClientCache();
+
+    let latestStatus = null;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      latestStatus = await this.getSubscriptionStatus({ forceRefresh: true });
+      if (subscriptionLooksCurrentlyUsable(latestStatus)) {
+        return latestStatus;
+      }
+      if (attempt < maxAttempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      }
+    }
+
+    if (validationSubscription) {
+      const optimistic = mapValidatedSubscriptionToClientStatus(validationSubscription);
+      if (optimistic) {
+        applyValidatedSubscriptionToClientCache(validationSubscription);
+        return optimistic;
+      }
+    }
+
+    return (
+      latestStatus || {
+        success: false,
+        error: 'No se pudo actualizar el estado de suscripción',
+        errorCode: 'SUBSCRIPTION_STATUS_ERROR',
+      }
+    );
   }
 
   /**

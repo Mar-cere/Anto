@@ -7,8 +7,6 @@ import { subscriptionLooksCurrentlyUsable } from './subscriptionAccess';
 
 const FIRST_SESSION_GRACE_MS = 24 * 60 * 60 * 1000;
 
-export { FIRST_SESSION_GRACE_MS };
-
 export function accountWithinFirstSessionGrace(createdAt) {
   if (!createdAt) return false;
   const createdMs = new Date(createdAt).getTime();
@@ -17,23 +15,44 @@ export function accountWithinFirstSessionGrace(createdAt) {
   return ageMs >= 0 && ageMs <= FIRST_SESSION_GRACE_MS;
 }
 
-export async function canAttemptChatAccess(userData = null) {
+export { FIRST_SESSION_GRACE_MS };
+
+export function resolveChatAccess({ subscriptionStatus = null, trialInfo = null, userData = null } = {}) {
+  if (subscriptionLooksCurrentlyUsable(subscriptionStatus)) {
+    return true;
+  }
+  if (trialInfo?.success && trialInfo?.isInTrial) {
+    return true;
+  }
+  if (accountWithinFirstSessionGrace(userData?.createdAt)) {
+    return true;
+  }
+  return false;
+}
+
+export async function canAttemptChatAccess(userData = null, opts = {}) {
   try {
+    const hasPreloadedStatus = opts.subscriptionStatus != null;
+    const hasPreloadedTrial = opts.trialInfo != null;
+
+    if (hasPreloadedStatus || hasPreloadedTrial) {
+      return resolveChatAccess({
+        subscriptionStatus: opts.subscriptionStatus,
+        trialInfo: opts.trialInfo,
+        userData,
+      });
+    }
+
     const [status, trial] = await Promise.all([
       paymentService.getSubscriptionStatus(),
       paymentService.getTrialInfo(),
     ]);
 
-    if (subscriptionLooksCurrentlyUsable(status)) {
-      return true;
-    }
-    if (trial?.success && trial?.isInTrial) {
-      return true;
-    }
-    if (accountWithinFirstSessionGrace(userData?.createdAt)) {
-      return true;
-    }
-    return false;
+    return resolveChatAccess({
+      subscriptionStatus: status,
+      trialInfo: trial,
+      userData,
+    });
   } catch (_) {
     return accountWithinFirstSessionGrace(userData?.createdAt);
   }

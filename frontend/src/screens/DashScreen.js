@@ -53,11 +53,11 @@ import {
   resolveDashboardStreakDays,
 } from '../utils/dashboardHomeUtils';
 import { areNotificationsEnabled, registerForPushNotifications, requestNotificationPermissions } from '../services/pushNotificationService';
-import paymentService from '../services/paymentService';
 import TrialBanner from '../components/TrialBanner';
 import OfflineBanner from '../components/OfflineBanner';
 import NotificationsPromptBanner from '../components/NotificationsPromptBanner';
 import { useTheme } from '../context/ThemeContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import {
   computeNextPromptAt,
   getNotificationsPromptNextAtKey,
@@ -187,7 +187,7 @@ const DashScreen = () => {
   const [hasCheckedTutorial, setHasCheckedTutorial] = useState(false);
   const [showOnboardingQuestions, setShowOnboardingQuestions] = useState(false);
   const [highlightElement, setHighlightElement] = useState(null);
-  const [trialInfo, setTrialInfo] = useState(null);
+  const { trialInfo, hasChatAccess } = useSubscription();
   const [trialBannerDismissed, setTrialBannerDismissed] = useState(false);
   const [, setEmergencyAlertNotification] = useState(null);
   const [showNotificationsPrompt, setShowNotificationsPrompt] = useState(false);
@@ -394,17 +394,6 @@ const DashScreen = () => {
       registerForPushNotifications().catch((error) => {
         console.error('Error registrando notificaciones push:', error);
       });
-
-      paymentService
-        .getTrialInfo()
-        .then((trialInfoResult) => {
-          if (trialInfoResult.success && trialInfoResult.isInTrial) {
-            setTrialInfo(trialInfoResult);
-          }
-        })
-        .catch((error) => {
-          console.error('Error cargando info de trial:', error);
-        });
     } catch (error) {
       console.error('Error en loadData:', error);
       setError(DASH.ERROR_GENERIC);
@@ -570,7 +559,10 @@ const DashScreen = () => {
   }, []);
 
   const goToChatFromOnboarding = useCallback(async (opts = null) => {
-    const canChat = await canAttemptChatAccess(userData);
+    let canChat = hasChatAccess(userData);
+    if (!canChat) {
+      canChat = await canAttemptChatAccess(userData);
+    }
     if (!canChat) {
       Alert.alert(
         CHAT.SUBSCRIPTION_REQUIRED_TITLE || 'Suscripción requerida',
@@ -598,7 +590,7 @@ const DashScreen = () => {
       return;
     }
     navigation.navigate('MainTabs', { screen: 'Chat', params: chatParams });
-  }, [navigation, userData, CHAT]);
+  }, [navigation, userData, CHAT, hasChatAccess]);
 
   const openBehavioralActivationFromFocus = useCallback((slotId) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});

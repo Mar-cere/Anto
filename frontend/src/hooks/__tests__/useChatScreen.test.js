@@ -35,6 +35,21 @@ jest.mock('../../context/AuthContext', () => ({
   useAuth: () => ({ user: { createdAt: new Date().toISOString() } }),
 }));
 
+jest.mock('../../context/SubscriptionContext', () => ({
+  useSubscription: () => ({
+    subscriptionStatus: { success: true, hasSubscription: true, status: 'premium' },
+    trialInfo: { success: true, isInTrial: false },
+    loading: false,
+    hasPremiumAccess: true,
+    hasChatAccess: () => true,
+    refreshTrialInfo: jest.fn().mockResolvedValue({ success: true, isInTrial: false }),
+    refreshSubscription: jest.fn(),
+    refreshAll: jest.fn(),
+    syncAfterPayment: jest.fn(),
+    applySubscriptionStatus: jest.fn(),
+  }),
+}));
+
 jest.mock('../../utils/chatAccessGate', () => ({
   canAttemptChatAccess: jest.fn().mockResolvedValue(true),
 }));
@@ -80,11 +95,6 @@ jest.mock('../../services/chatService', () => ({
     prepareGuestHandoffBeforeClear: jest.fn(() => Promise.resolve()),
     clearGuestHandoff: jest.fn(() => Promise.resolve()),
   },
-}));
-
-jest.mock('../../services/paymentService', () => ({
-  __esModule: true,
-  default: { getTrialInfo: jest.fn().mockResolvedValue({ success: true, isInTrial: false }) },
 }));
 
 jest.mock('../../services/websocketService', () => ({

@@ -9,9 +9,9 @@ import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, AppState, InteractionManager, Platform, Vibration } from 'react-native';
 import chatService from '../services/chatService';
-import paymentService from '../services/paymentService';
 import websocketService from '../services/websocketService';
 import { useAuth } from '../context/AuthContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { canAttemptChatAccess } from '../utils/chatAccessGate';
 import { isSubscriptionRequiredError } from '../utils/subscriptionAccess';
 import { useNetworkStatus } from './useNetworkStatus';
@@ -129,8 +129,11 @@ export function useChatScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { user } = useAuth();
+  const { trialInfo, hasChatAccess, refreshTrialInfo } = useSubscription();
   const userRef = useRef(user);
+  const hasChatAccessRef = useRef(hasChatAccess);
   userRef.current = user;
+  hasChatAccessRef.current = hasChatAccess;
   const userId = user?._id ?? user?.id ?? null;
   const { showToast } = useToast();
   const { isConnected, isInternetReachable } = useNetworkStatus();
@@ -146,7 +149,6 @@ export function useChatScreen() {
   const [error, setError] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const [trialInfo, setTrialInfo] = useState(null);
   const [trialBannerDismissed, setTrialBannerDismissed] = useState(false);
   /** Modo invitado: mensajes restantes (null si no aplica) */
   const [guestQuota, setGuestQuota] = useState(null);
@@ -335,17 +337,11 @@ export function useChatScreen() {
 
   const loadTrialInfo = useCallback(async () => {
     try {
-      const trialInfoResult = await paymentService.getTrialInfo();
-      if (trialInfoResult.success && trialInfoResult.isInTrial) {
-        setTrialInfo(trialInfoResult);
-      } else {
-        setTrialInfo(null);
-      }
+      await refreshTrialInfo({ forceRefresh: true });
     } catch (err) {
       console.error('[ChatScreen] Error cargando info de trial:', err);
-      setTrialInfo(null);
     }
-  }, []);
+  }, [refreshTrialInfo]);
 
   const handleTrialBannerDismiss = useCallback(() => {
     setTrialBannerDismissed(true);
@@ -485,7 +481,10 @@ export function useChatScreen() {
 
       if (userToken) {
         setGuestQuota(null);
-        const mayUseChat = await canAttemptChatAccess(userRef.current);
+        let mayUseChat = hasChatAccessRef.current(userRef.current);
+        if (!mayUseChat) {
+          mayUseChat = await canAttemptChatAccess(userRef.current);
+        }
         if (!mayUseChat) {
           Alert.alert(texts.SUBSCRIPTION_REQUIRED_TITLE, texts.SUBSCRIPTION_REQUIRED_DEFAULT, [
             { text: texts.COMMON_CANCEL, style: 'cancel', onPress: () => navigation.goBack() },

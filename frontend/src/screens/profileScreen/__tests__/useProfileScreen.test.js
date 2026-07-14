@@ -37,19 +37,28 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
-jest.mock('../../../services/paymentService', () => ({
-  __esModule: true,
-  default: {
-    getSubscriptionStatus: jest.fn(),
-  },
+jest.mock('../../../context/SubscriptionContext', () => ({
+  useSubscription: jest.fn(() => ({
+    subscriptionStatus: { success: true, hasSubscription: true, status: 'premium', plan: 'yearly' },
+    trialInfo: null,
+    loading: false,
+    hasPremiumAccess: true,
+    hasChatAccess: () => true,
+    refreshSubscription: jest.fn(),
+    refreshTrialInfo: jest.fn(),
+    refreshAll: jest.fn(),
+    syncAfterPayment: jest.fn(),
+    applySubscriptionStatus: jest.fn(),
+  })),
 }));
+
 jest.mock('../../../styles/globalStyles', () => ({ colors: {} }));
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { renderHook, act } from '@testing-library/react-native';
 import { Alert } from 'react-native';
 import { api } from '../../../config/api';
-import paymentService from '../../../services/paymentService';
+import { useSubscription } from '../../../context/SubscriptionContext';
 import { toastHookWrapper } from '../../../test-utils/toastHookWrapper';
 import { useProfileScreen } from '../useProfileScreen';
 
@@ -68,7 +77,18 @@ describe('useProfileScreen', () => {
     AsyncStorage.clear();
     api.get.mockResolvedValue({ contacts: [] });
     api.delete.mockResolvedValue({});
-    paymentService.getSubscriptionStatus.mockResolvedValue({ success: true });
+    useSubscription.mockReturnValue({
+      subscriptionStatus: { success: true, hasSubscription: true, status: 'premium', plan: 'yearly' },
+      trialInfo: null,
+      loading: false,
+      hasPremiumAccess: true,
+      hasChatAccess: () => true,
+      refreshSubscription: jest.fn(),
+      refreshTrialInfo: jest.fn(),
+      refreshAll: jest.fn(),
+      syncAfterPayment: jest.fn(),
+      applySubscriptionStatus: jest.fn(),
+    });
   });
 
   it('debe retornar las claves esperadas', async () => {
@@ -99,29 +119,35 @@ describe('useProfileScreen', () => {
     expect(typeof result.current.closeEditContact).toBe('function');
   });
 
-  it('al montar debe cargar contactos y estado de suscripción', async () => {
+  it('al montar debe cargar contactos y exponer suscripción del contexto', async () => {
     api.get.mockResolvedValue({ contacts: [{ id: '1', name: 'Contact' }] });
     const { result } = renderHook(() => useProfileScreen(mockNavigation), hookOptions);
     await act(async () => {
       await new Promise((r) => setTimeout(r, 100));
     });
     expect(api.get).toHaveBeenCalledWith('/api/users/me/emergency-contacts');
-    expect(paymentService.getSubscriptionStatus).toHaveBeenCalled();
     expect(result.current.emergencyContacts).toEqual([{ id: '1', _id: '1', name: 'Contact' }]);
-    expect(result.current.subscriptionStatus).toMatchObject({ success: true });
+    expect(result.current.subscriptionStatus).toMatchObject({ success: true, status: 'premium' });
     expect(result.current.loading).toBe(false);
   });
 
-  it('cuando getSubscriptionStatus responde success false deja subscriptionStatus en null', async () => {
-    paymentService.getSubscriptionStatus.mockResolvedValue({
-      success: false,
-      errorCode: 'UNAUTHORIZED',
+  it('expone subscriptionStatus null cuando el contexto no tiene suscripción', async () => {
+    useSubscription.mockReturnValue({
+      subscriptionStatus: null,
+      trialInfo: null,
+      loading: false,
+      hasPremiumAccess: false,
+      hasChatAccess: () => false,
+      refreshSubscription: jest.fn(),
+      refreshTrialInfo: jest.fn(),
+      refreshAll: jest.fn(),
+      syncAfterPayment: jest.fn(),
+      applySubscriptionStatus: jest.fn(),
     });
     const { result } = renderHook(() => useProfileScreen(mockNavigation), hookOptions);
     await act(async () => {
       await new Promise((r) => setTimeout(r, 100));
     });
-    expect(paymentService.getSubscriptionStatus).toHaveBeenCalled();
     expect(result.current.subscriptionStatus).toBeNull();
   });
 

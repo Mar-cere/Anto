@@ -2,12 +2,12 @@
  * Hook para ProfileScreen: datos de usuario, estadísticas, contactos, suscripción y logout.
  */
 import { useCallback, useEffect, useState } from 'react';
+import { useSubscription } from '../../context/SubscriptionContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert, Animated, Easing } from 'react-native';
 import { api, ENDPOINTS } from '../../config/api';
 import { ROUTES } from '../../constants/routes';
 import { useToast } from '../../context/ToastContext';
-import paymentService from '../../services/paymentService';
 import {
   DEFAULT_USER_DATA,
   DEFAULT_DETAILED_STATS,
@@ -19,41 +19,9 @@ import { STORAGE_KEYS as CHAT_STORAGE_KEYS } from '../chat/chatScreenConstants';
 import { isValidMongoObjectId24 } from '../../utils/mongoId';
 import { normalizeEmergencyContactsList } from '../../utils/emergencyContactUtils';
 
-function resolveSubscriptionStatusErrorMessage(errorCode, texts) {
-  const code = String(errorCode || '').toUpperCase();
-  if (code === 'NETWORK_ERROR') {
-    return (
-      texts.SUBSCRIPTION_STATUS_NETWORK_ERROR ||
-      texts.SUBSCRIPTION_STATUS_ERROR ||
-      texts.ERROR_LOAD_MESSAGE
-    );
-  }
-  if (code === 'TIMEOUT' || code === 'ETIMEDOUT') {
-    return (
-      texts.SUBSCRIPTION_STATUS_TIMEOUT_ERROR ||
-      texts.SUBSCRIPTION_STATUS_ERROR ||
-      texts.ERROR_LOAD_MESSAGE
-    );
-  }
-  if (code === 'RATE_LIMIT') {
-    return (
-      texts.SUBSCRIPTION_STATUS_RATE_LIMIT_ERROR ||
-      texts.SUBSCRIPTION_STATUS_ERROR ||
-      texts.ERROR_LOAD_MESSAGE
-    );
-  }
-  return texts.SUBSCRIPTION_STATUS_ERROR || texts.ERROR_LOAD_MESSAGE;
-}
-
 export function useProfileScreen(navigation) {
   const TEXTS = useProfileTexts();
-  const {
-    ERROR_LOAD_MESSAGE,
-    SUBSCRIPTION_STATUS_ERROR,
-    SUBSCRIPTION_STATUS_NETWORK_ERROR,
-    SUBSCRIPTION_STATUS_TIMEOUT_ERROR,
-    SUBSCRIPTION_STATUS_RATE_LIMIT_ERROR,
-  } = TEXTS;
+  const { ERROR_LOAD_MESSAGE } = TEXTS;
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -65,7 +33,7 @@ export function useProfileScreen(navigation) {
   const [showEditContactModal, setShowEditContactModal] = useState(false);
   const [selectedContact, setSelectedContact] = useState(null);
   const [loadingContacts, setLoadingContacts] = useState(false);
-  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  const { subscriptionStatus } = useSubscription();
   /** Continuidad del último chat (#4 + #47); null si no hay o error. */
   const [lastSessionSummary, setLastSessionSummary] = useState(null);
 
@@ -117,47 +85,6 @@ export function useProfileScreen(navigation) {
     }
   }, []);
 
-  const loadSubscriptionStatus = useCallback(async () => {
-    try {
-      const response = await paymentService.getSubscriptionStatus();
-      if (response?.success) {
-        setSubscriptionStatus(response);
-      } else {
-        setSubscriptionStatus(null);
-        showToast({
-          message: resolveSubscriptionStatusErrorMessage(response?.errorCode, {
-            ERROR_LOAD_MESSAGE,
-            SUBSCRIPTION_STATUS_ERROR,
-            SUBSCRIPTION_STATUS_NETWORK_ERROR,
-            SUBSCRIPTION_STATUS_TIMEOUT_ERROR,
-            SUBSCRIPTION_STATUS_RATE_LIMIT_ERROR,
-          }),
-          type: 'warning',
-        });
-      }
-    } catch (error) {
-      console.error('[ProfileScreen] Error cargando suscripción:', error);
-      setSubscriptionStatus(null);
-      showToast({
-        message: resolveSubscriptionStatusErrorMessage(error?.code, {
-          ERROR_LOAD_MESSAGE,
-          SUBSCRIPTION_STATUS_ERROR,
-          SUBSCRIPTION_STATUS_NETWORK_ERROR,
-          SUBSCRIPTION_STATUS_TIMEOUT_ERROR,
-          SUBSCRIPTION_STATUS_RATE_LIMIT_ERROR,
-        }),
-        type: 'warning',
-      });
-    }
-  }, [
-    showToast,
-    ERROR_LOAD_MESSAGE,
-    SUBSCRIPTION_STATUS_ERROR,
-    SUBSCRIPTION_STATUS_NETWORK_ERROR,
-    SUBSCRIPTION_STATUS_TIMEOUT_ERROR,
-    SUBSCRIPTION_STATUS_RATE_LIMIT_ERROR,
-  ]);
-
   const loadLastSessionSummary = useCallback(async () => {
     try {
       const token = await AsyncStorage.getItem(STORAGE_KEYS.USER_TOKEN);
@@ -180,9 +107,8 @@ export function useProfileScreen(navigation) {
   useEffect(() => {
     loadUserData();
     loadEmergencyContacts();
-    loadSubscriptionStatus();
     loadLastSessionSummary();
-  }, [loadUserData, loadEmergencyContacts, loadSubscriptionStatus, loadLastSessionSummary]);
+  }, [loadUserData, loadEmergencyContacts, loadLastSessionSummary]);
 
   const triggerRefreshAnim = useCallback(() => {
     Animated.sequence([
@@ -206,9 +132,8 @@ export function useProfileScreen(navigation) {
     triggerRefreshAnim();
     loadUserData();
     loadEmergencyContacts();
-    loadSubscriptionStatus();
     loadLastSessionSummary();
-  }, [loadUserData, loadEmergencyContacts, loadSubscriptionStatus, loadLastSessionSummary, triggerRefreshAnim]);
+  }, [loadUserData, loadEmergencyContacts, loadLastSessionSummary, triggerRefreshAnim]);
 
   const handleDeleteContact = useCallback(
     async (contactId) => {

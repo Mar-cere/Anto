@@ -15,6 +15,7 @@ import {
 } from '../screens/subscription/subscriptionScreenConstants';
 import { API_URL } from '../config/api';
 import { useToast } from '../context/ToastContext';
+import { useSubscription } from '../context/SubscriptionContext';
 import { subscriptionLooksCurrentlyUsable } from '../utils/subscriptionAccess';
 
 function extractErrorCode(errorLike) {
@@ -89,8 +90,13 @@ export function useSubscriptionScreen() {
   const TEXTS = useSubscriptionTexts();
   const navigation = useNavigation();
   const { showToast } = useToast();
+  const {
+    subscriptionStatus,
+    syncAfterPayment,
+    refreshSubscription,
+    applySubscriptionStatus,
+  } = useSubscription();
   const [plans, setPlans] = useState([]);
-  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -103,32 +109,33 @@ export function useSubscriptionScreen() {
   const apiBase = (API_URL || '').replace(/\/$/, '');
   const PAYMENT_SUCCESS_RETURN_URL = `${apiBase}/api/payments/return/success`;
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (opts = {}) => {
+    const forceRefresh = opts.forceRefresh === true;
     try {
       setError(null);
-      setLoading(true);
+      if (!opts.silent) {
+        setLoading(true);
+      }
       setPlans(
         HARDCODED_PLANS.map((plan) => ({
           ...plan,
           name: localizePlanName(plan.id, TEXTS, plan.name),
         })),
       );
-      try {
-        const statusResponse = await paymentService.getSubscriptionStatus();
-        if (statusResponse.success) {
-          setSubscriptionStatus(statusResponse);
-        } else {
-          setSubscriptionStatus(null);
-        }
-      } catch {
-        setSubscriptionStatus(null);
-      }
+      await refreshSubscription(forceRefresh ? { forceRefresh: true } : undefined);
     } catch {
       setError(TEXTS.ERROR);
     } finally {
-      setLoading(false);
+      if (!opts.silent) {
+        setLoading(false);
+      }
     }
-  }, [TEXTS]);
+  }, [TEXTS, refreshSubscription]);
+
+  const syncSubscriptionAfterPayment = useCallback(
+    async (validationSubscription = null) => syncAfterPayment(validationSubscription),
+    [syncAfterPayment],
+  );
 
   useEffect(() => {
     loadData();
@@ -141,10 +148,11 @@ export function useSubscriptionScreen() {
         let attempts = 5;
         while (attempts > 0 && !cancelled) {
           try {
-            const status = await paymentService.getSubscriptionStatus();
+            const status = await paymentService.getSubscriptionStatus({ forceRefresh: true });
             if (subscriptionLooksCurrentlyUsable(status)) {
               setPendingPaymentVerification(false);
-              await loadData();
+              applySubscriptionStatus(status);
+              await loadData({ forceRefresh: true, silent: true });
               return true;
             }
           } catch (_) {}
@@ -165,7 +173,7 @@ export function useSubscriptionScreen() {
       return () => {
         cancelled = true;
       };
-    }, [loadData, pendingPaymentVerification])
+    }, [loadData, pendingPaymentVerification, applySubscriptionStatus])
   );
 
   useEffect(() => {
@@ -175,10 +183,11 @@ export function useSubscriptionScreen() {
       let attempts = 5;
       while (attempts > 0 && !cancelled) {
         try {
-          const status = await paymentService.getSubscriptionStatus();
+          const status = await paymentService.getSubscriptionStatus({ forceRefresh: true });
           if (subscriptionLooksCurrentlyUsable(status)) {
             setPendingPaymentVerification(false);
-            await loadData();
+            applySubscriptionStatus(status);
+            await loadData({ forceRefresh: true, silent: true });
             showToast({
                 message: TEXTS.PAYMENT_VERIFIED_ACTIVE,
               type: 'success',
@@ -230,7 +239,7 @@ export function useSubscriptionScreen() {
       cancelled = true;
       subscription.remove();
     };
-  }, [loadData, showToast, TEXTS]);
+  }, [loadData, showToast, TEXTS, applySubscriptionStatus]);
 
   const handleSubscribe = useCallback(
     async (planIdOrPlan) => {
@@ -292,37 +301,31 @@ export function useSubscriptionScreen() {
               throw new Error(TEXTS.SUBSCRIPTION_UNEXPECTED_ERROR);
             }
             if (purchaseResult.success) {
-              const validatedOnServer = !!purchaseResult.subscription;
-              if (!validatedOnServer) {
-                await new Promise((r) => setTimeout(r, 1500));
+              const freshStatus = await syncSubscriptionAfterPayment(
+                purchaseResult.subscription || null,
+              );
+              if (!subscriptionLooksCurrentlyUsable(freshStatus)) {
+                showToast({
+                  message: TEXTS.PAYMENT_RETURN_VALIDATING,
+                  type: 'default',
+                  duration: 4500,
+                });
+              } else {
+                showToast({ message: TEXTS.SUBSCRIPTION_ACTIVATED, type: 'success' });
               }
-              let retries = validatedOnServer ? 1 : 5;
-              let statusUpdated = validatedOnServer;
-              while (retries > 0 && !statusUpdated) {
-                try {
-                  await loadData();
-                  const newStatus = await paymentService.getSubscriptionStatus({ forceRefresh: true });
-                  if (subscriptionLooksCurrentlyUsable(newStatus)) statusUpdated = true;
-                  else await new Promise((r) => setTimeout(r, 1000));
-                } catch (_) {}
-                retries--;
-              }
-              showToast({ message: TEXTS.SUBSCRIPTION_ACTIVATED, type: 'success' });
-              await loadData();
               navigation.goBack();
             } else if (!purchaseResult.cancelled) {
               // Si App Store falla pero el backend ya reporta una suscripción activa,
               // interpretamos esto como un "no-op" (por ejemplo: "Ya estás suscrito").
               try {
-                await loadData();
-                const newStatus = await paymentService.getSubscriptionStatus();
+                const newStatus = await paymentService.refreshSubscriptionStatusAfterPayment();
                 if (subscriptionLooksCurrentlyUsable(newStatus)) {
+                  applySubscriptionStatus(newStatus);
                   showToast({
                     message: TEXTS.SUBSCRIPTION_ALREADY_ACTIVE,
                     type: 'default',
                     duration: 4000,
                   });
-                  await loadData();
                   navigation.goBack();
                   return;
                 }
@@ -335,7 +338,11 @@ export function useSubscriptionScreen() {
                 TEXTS,
                 TEXTS.SUBSCRIPTION_GENERIC_ERROR,
               );
-              if (purchaseResult.purchase) setTimeout(() => loadData(), 2000);
+              if (purchaseResult.purchase) {
+                setTimeout(() => {
+                  syncSubscriptionAfterPayment();
+                }, 2000);
+              }
               showToast({ message: errorMessage, type: 'error', duration: 5000 });
             }
           } catch (error) {
@@ -405,6 +412,8 @@ export function useSubscriptionScreen() {
     [
       subscribing,
       loadData,
+      syncSubscriptionAfterPayment,
+      applySubscriptionStatus,
       plans,
       subscriptionStatus,
       navigation,
@@ -521,14 +530,24 @@ export function useSubscriptionScreen() {
       const result = await paymentService.restorePurchases();
       if (result.success) {
         if (result.purchases?.length > 0) {
-          showToast({
-            message: TEXTS.RESTORE_SUCCESS_COUNT.replace(
-              '{count}',
-              String(result.purchases.length),
-            ),
-            type: 'success',
-          });
-          await loadData();
+          const freshStatus = await syncSubscriptionAfterPayment(
+            result.subscription || result.validation?.subscription || null,
+          );
+          if (subscriptionLooksCurrentlyUsable(freshStatus)) {
+            showToast({
+              message: TEXTS.RESTORE_SUCCESS_COUNT.replace(
+                '{count}',
+                String(result.purchases.length),
+              ),
+              type: 'success',
+            });
+          } else {
+            showToast({
+              message: TEXTS.PAYMENT_RETURN_VALIDATING,
+              type: 'default',
+              duration: 4500,
+            });
+          }
         } else {
           showToast({
             message: TEXTS.RESTORE_NONE,
@@ -549,7 +568,7 @@ export function useSubscriptionScreen() {
     } finally {
       setSubscribing(false);
     }
-  }, [loadData, showToast, TEXTS]);
+  }, [syncSubscriptionAfterPayment, showToast, TEXTS]);
 
   const handlePaymentSuccess = useCallback(() => {
     setShowPaymentWebView(false);
@@ -559,8 +578,8 @@ export function useSubscriptionScreen() {
       message: TEXTS.PAYMENT_SUCCESS_TOAST,
       type: 'success',
     });
-    loadData();
-  }, [loadData, showToast, TEXTS]);
+    syncSubscriptionAfterPayment();
+  }, [syncSubscriptionAfterPayment, showToast, TEXTS]);
 
   const handlePaymentCancel = useCallback(() => {
     setShowPaymentWebView(false);

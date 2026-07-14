@@ -3,6 +3,7 @@ import {
   assertChatAccessOrThrow,
   canAttemptChatAccess,
   FIRST_SESSION_GRACE_MS,
+  resolveChatAccess,
 } from '../chatAccessGate';
 import paymentService from '../../services/paymentService';
 import { subscriptionLooksCurrentlyUsable } from '../subscriptionAccess';
@@ -29,6 +30,21 @@ describe('chatAccessGate', () => {
 
   it('FIRST_SESSION_GRACE_MS exportado para paridad con backend', () => {
     expect(FIRST_SESSION_GRACE_MS).toBe(24 * 60 * 60 * 1000);
+  });
+
+  it('resolveChatAccess true con suscripción usable', () => {
+    expect(
+      resolveChatAccess({
+        subscriptionStatus: {
+          success: true,
+          hasSubscription: true,
+          status: 'premium',
+          isActive: true,
+        },
+        trialInfo: { success: true, isInTrial: false },
+        userData: { createdAt: new Date(0) },
+      }),
+    ).toBe(true);
   });
 
   it('canAttemptChatAccess true con suscripción usable', async () => {

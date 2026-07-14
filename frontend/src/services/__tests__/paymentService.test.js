@@ -52,6 +52,7 @@ jest.mock('react-native', () => ({
 
 // Importar después de mocks
 import paymentService, {
+  applyValidatedSubscriptionToClientCache,
   clearSubscriptionStatusClientCache,
   clearTrialInfoClientCache,
 } from '../paymentService';
@@ -432,6 +433,96 @@ describe('PaymentService', () => {
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
       expect(result.errorCode).toBe('NETWORK_ERROR');
+    });
+
+    it('forceRefresh evita devolver caché en memoria obsoleta', async () => {
+      applyValidatedSubscriptionToClientCache({
+        status: 'premium',
+        plan: 'yearly',
+        isActive: true,
+        startDate: '2026-01-01T00:00:00.000Z',
+        endDate: '2027-01-01T00:00:00.000Z',
+      });
+
+      const cached = await paymentService.getSubscriptionStatus();
+      expect(cached.plan).toBe('yearly');
+
+      if (apiMock) {
+        apiMock.get.mockResolvedValue({
+          hasSubscription: true,
+          status: 'premium',
+          plan: 'monthly',
+          isActive: true,
+          subscriptionEndDate: '2027-02-01T00:00:00.000Z',
+        });
+      }
+
+      const refreshed = await paymentService.getSubscriptionStatus({ forceRefresh: true });
+      expect(refreshed.plan).toBe('monthly');
+      if (apiMock) {
+        expect(apiMock.get).toHaveBeenLastCalledWith(
+          '/api/payments/subscription-status',
+          expect.objectContaining({ _t: expect.any(String) }),
+        );
+      }
+    });
+  });
+
+  describe('refreshSubscriptionStatusAfterPayment', () => {
+    it('devuelve estado premium tras validación aunque la API tarde', async () => {
+      if (apiMock) {
+        apiMock.get
+          .mockResolvedValueOnce({
+            hasSubscription: false,
+            status: 'free',
+          })
+          .mockResolvedValueOnce({
+            hasSubscription: true,
+            status: 'premium',
+            plan: 'yearly',
+            isActive: true,
+            subscriptionEndDate: '2027-01-01T00:00:00.000Z',
+          });
+      }
+
+      const result = await paymentService.refreshSubscriptionStatusAfterPayment({
+        validationSubscription: {
+          status: 'premium',
+          plan: 'yearly',
+          isActive: true,
+          startDate: '2026-01-01T00:00:00.000Z',
+          endDate: '2027-01-01T00:00:00.000Z',
+        },
+        maxAttempts: 2,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.status).toBe('premium');
+      expect(result.plan).toBe('yearly');
+    });
+
+    it('usa estado optimista de validate-receipt si la API no confirma premium', async () => {
+      if (apiMock) {
+        apiMock.get.mockResolvedValue({
+          hasSubscription: false,
+          status: 'free',
+        });
+      }
+
+      const result = await paymentService.refreshSubscriptionStatusAfterPayment({
+        validationSubscription: {
+          status: 'premium',
+          plan: 'monthly',
+          isActive: true,
+          startDate: '2026-01-01T00:00:00.000Z',
+          endDate: '2026-02-01T00:00:00.000Z',
+        },
+        maxAttempts: 1,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.status).toBe('premium');
+      expect(result.plan).toBe('monthly');
     });
   });
 

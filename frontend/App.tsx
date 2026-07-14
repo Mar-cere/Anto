@@ -12,6 +12,7 @@ import React from 'react';
 import { StatusBar, StyleSheet, View } from 'react-native';
 import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
 import { AuthProvider } from './src/context/AuthContext';
+import { SubscriptionProvider } from './src/context/SubscriptionContext';
 import { LanguageProvider } from './src/context/LanguageContext';
 import {
   ThemePreferenceSync,
@@ -69,13 +70,15 @@ export default function App() {
         <ThemeProvider>
           <ErrorBoundary>
             <AuthProvider>
-              <LanguageAuthSync />
-              <DeviceRegionSync />
-              <DeviceTimezoneSync />
-              <ThemePreferenceSync />
-              <ToastProvider>
-                <AppContent />
-              </ToastProvider>
+              <SubscriptionProvider>
+                <LanguageAuthSync />
+                <DeviceRegionSync />
+                <DeviceTimezoneSync />
+                <ThemePreferenceSync />
+                <ToastProvider>
+                  <AppContent />
+                </ToastProvider>
+              </SubscriptionProvider>
             </AuthProvider>
           </ErrorBoundary>
         </ThemeProvider>
