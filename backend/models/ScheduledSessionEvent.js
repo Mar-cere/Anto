@@ -241,4 +241,4 @@ scheduledSessionEventSchema.statics.getAdherenceStats = async function (filters 
 
 const ScheduledSessionEvent = mongoose.model('ScheduledSessionEvent', scheduledSessionEventSchema);
 
-module.exports = ScheduledSessionEvent;
+export default ScheduledSessionEvent;
