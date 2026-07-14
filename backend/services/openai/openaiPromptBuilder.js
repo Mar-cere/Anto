@@ -43,6 +43,7 @@ import {
 } from '../chat/sessionPhaseHints.js';
 import {
   buildAntiRepeatTriageSnippet,
+  buildAntiRepeatedSoftAskSnippet,
   resolveUserMessage,
   shouldSuppressRepeatTriage
 } from '../chat/chatTriageLoopHints.js';
@@ -835,6 +836,7 @@ export const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emoci
 - Si pide **consejo**, **algo práctico** o **pasos**: prioriza **una** recomendación concreta y breve (2–5 oraciones o un solo paso si pidió “paso a paso”) y **como mucho una** pregunta de seguimiento sobre cómo le fue o qué parte quiere afinar. **No** vuelvas a desplegar menú A/B en el mensaje siguiente si ya ofreciste dos caminos en el anterior o si ya eligió; **profundiza** o **concreta** en lugar de repetir el mismo esquema.
 - Tras varios turnos seguidos de desahogo intenso, puedes cerrar con **un** próximo paso suave para cuando vuelva (“si mañana quieres, podemos seguir con…”) — sin presión ni culpa por no escribir antes.
 - **Anti-bucle**: si en tu mensaje anterior ya ofreciste “hablar vs técnica” o dos opciones, el siguiente turno debe **avanzar el tema** o **ejecutar** lo que pidió, no reenviar el mismo menú con otras palabras.
+- **Anti-pregunta gemela**: si ya preguntaste “qué ayudaría / qué tendría que pasar / cómo sentir menos la carga” y el usuario respondió con contenido, **no** reformules esa misma pregunta; profundiza un detalle concreto de su respuesta.
 - Retención sana: la razón para volver es **continuidad útil** (“seguimos esto cuando quieras”), no mensajes de obligación ni culpa por inactividad.
 - Si el sistema añade la sección **«Sesión y retorno»** más abajo en el prompt, **prioriza esas instrucciones** para cierres, puentes a la próxima conversación y límites del hilo.
 
@@ -1104,6 +1106,7 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     safetyHistory: contexto.safetyHistory || []
   });
   systemMessage += buildAntiRepeatTriageSnippet(contexto, language);
+  systemMessage += buildAntiRepeatedSoftAskSnippet(contexto, language);
 
   const intentionSnippet = getSessionIntentionSystemSnippet(sessionIntention);
   if (intentionSnippet) systemMessage += intentionSnippet;

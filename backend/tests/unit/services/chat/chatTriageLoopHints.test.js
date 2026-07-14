@@ -1,9 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 import {
   buildAntiRepeatTriageSnippet,
+  buildAntiRepeatedSoftAskSnippet,
   isMultiOptionTriageQuestion,
+  isSoftReliefQuestion,
   isTotalizingReply,
-  shouldSuppressRepeatTriage
+  shouldSuppressRepeatTriage,
+  shouldSuppressRepeatedSoftAsk
 } from '../../../../services/chat/chatTriageLoopHints.js';
 
 describe('chatTriageLoopHints', () => {
@@ -126,7 +129,7 @@ describe('chatTriageLoopHints', () => {
         ]
       });
       expect(snip).toContain('Evitar triage repetido');
-      expect(snip).toContain('pregunta abierta');
+      expect(snip).toMatch(/no\s+sea|qué te ayudaría/i);
       expect(snip).toContain('ambos');
     });
 
@@ -142,7 +145,7 @@ describe('chatTriageLoopHints', () => {
         ]
       });
       expect(snip).toContain('Evitar triage repetido');
-      expect(snip).toMatch(/renombr/i);
+      expect(snip).toMatch(/re-listar|sin\s+\*\*re-listar/i);
     });
 
     it('devuelve vacío cuando no aplica', () => {
@@ -152,6 +155,48 @@ describe('chatTriageLoopHints', () => {
           safetyHistory: []
         })
       ).toBe('');
+    });
+  });
+
+  describe('soft relief follow-up', () => {
+    const softAsk =
+      'Sí, ambas pesan: la separación y la sensación de fallarles, y juntas pueden dejarte muy desgastado. ¿Qué te ayudaría hoy a sentir un poco menos esa carga?';
+
+    it('detecta preguntas de alivio / condiciones', () => {
+      expect(isSoftReliefQuestion(softAsk)).toBe(true);
+      expect(
+        isSoftReliefQuestion(
+          'Tiene sentido. ¿Qué tendría que pasar para que esa separación te diera menos miedo?',
+        ),
+      ).toBe(true);
+      expect(isSoftReliefQuestion('¿Qué te gustaría contarme ahora?')).toBe(false);
+    });
+
+    it('activa tras respuesta sustancial a soft-ask', () => {
+      expect(
+        shouldSuppressRepeatedSoftAsk({
+          userMessage: 'Que me sienta mas segura de la separación, verlos mas maduros, no lo se',
+          safetyHistory: [{ role: 'assistant', content: softAsk }]
+        })
+      ).toBe(true);
+    });
+
+    it('no activa con respuesta corta totalizadora (cae en triage)', () => {
+      expect(
+        shouldSuppressRepeatedSoftAsk({
+          userMessage: 'Ambas',
+          safetyHistory: [{ role: 'assistant', content: softAsk }]
+        })
+      ).toBe(false);
+    });
+
+    it('buildAntiRepeatedSoftAskSnippet pide no reformular', () => {
+      const snip = buildAntiRepeatedSoftAskSnippet({
+        currentMessage: 'Que me sienta mas segura de la separación, verlos mas maduros, no lo se',
+        safetyHistory: [{ role: 'assistant', content: softAsk }]
+      });
+      expect(snip).toContain('Evitar pregunta de alivio reformulada');
+      expect(snip).toMatch(/No\*\* vuelvas|ya respondió/i);
     });
   });
 });

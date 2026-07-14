@@ -20,12 +20,14 @@ import metricsService from './metricsService.js';
 import { isUserInPostCrisisCommitmentCooldown } from '../utils/commitmentPostCrisisGuard.js';
 
 const MAX_LABEL = 240;
+const MAX_CONCRETE_LABEL = 100;
+const SHORT_SOFT_RESUME_LABEL = 'Retomar este tramo cuando te venga bien';
 
 const COMMITMENT_AGREEMENT_CUES =
   /\b(voy\s+a\s+(?:intentar|probar|retomar|hacer|dejar|empezar)|esta\s+semana\s+(?:voy|probar[eé]|intentar[eé])|lo\s+dejamos\s+para\s+retomar|quedamos\s+en|un\s+paso\s+(?:pequeño|chico|concreto)|micro\s*-?\s*paso|retomar(?:lo|é|e)?\s+(?:cuando|mañana|esta\s+semana)|antes\s+de\s+dormir\s+(?:voy|probar[eé])|cuando\s+me\s+venga\s+bien)\b/i;
 
 const ASSISTANT_COMMITMENT_CLOSE =
-  /\b(lo\s+dejamos\s+para\s+retomar|quedamos\s+en|un\s+paso\s+pequeño|algo\s+concreto\s+para\s+retomar|cuando\s+te\s+venga\s+bien\s+retomar)\b/i;
+  /\b(lo\s+dejamos\s+para\s+retomar|quedamos\s+en|un\s+paso\s+pequeño|algo\s+concreto\s+para\s+retomar|cuando\s+te\s+venga\s+bien\s+retomar|retomar(?:lo)?\s+cuando\s+(?:te\s+)?(?:venga\s+bien|quieras)|cerrar\s+(?:aqu[ií]\s+)?este\s+tramo)\b/i;
 
 const NO_COMMITMENT_INTENT =
   /\b(no\s+quiero\s+compromisos?|sin\s+compromisos?|no\s+me\s+sugieras?\s+compromisos?|solo\s+escuchar|solo\s+desahogar)\b/i;
@@ -49,27 +51,55 @@ function clampLabel(raw) {
   return sanitizeObservationalText(t, MAX_LABEL) || '';
 }
 
+/** Evita usar la burbuja completa del chat como etiqueta editable. */
+export function looksLikeChatBubbleLabel(text) {
+  const t = String(text || '').trim();
+  if (!t) return true;
+  if (t.length > MAX_CONCRETE_LABEL) return true;
+  if ((t.match(/[?.!¿¡]/g) || []).length >= 2) return true;
+  if (
+    /^(est[aá]\s+bien|entiendo|tiene\s+sentido|te\s+escucho|suena\s+a|s[ií],\s+ambas|it'?s\s+(ok|okay|fine)|i\s+understand)\b/i.test(
+      t,
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
+function isSoftCloseAssistant(assistantContent) {
+  return ASSISTANT_COMMITMENT_CLOSE.test(String(assistantContent || ''));
+}
+
 function deriveCommitmentLabel(userContent, assistantContent) {
   const userLine = String(userContent || '')
     .trim()
     .split('\n')[0]
     .trim();
+
+  // Preferencia: acuerdo concreto del usuario (corto), nunca el monólogo del asistente.
+  if (userLine && COMMITMENT_AGREEMENT_CUES.test(userLine) && !looksLikeChatBubbleLabel(userLine)) {
+    const fromUser = clampLabel(userLine);
+    if (fromUser) return fromUser;
+  }
+
+  if (isSoftCloseAssistant(assistantContent)) {
+    return clampLabel(SHORT_SOFT_RESUME_LABEL);
+  }
+
   const assistantLine = String(assistantContent || '')
     .trim()
     .split('\n')
     .slice(-1)[0]
     .trim();
 
-  const candidates = [userLine, assistantLine].filter(Boolean);
-  for (const line of candidates) {
-    if (COMMITMENT_AGREEMENT_CUES.test(line)) {
-      const label = clampLabel(line);
-      if (label) return label;
-    }
-  }
-
-  if (ASSISTANT_COMMITMENT_CLOSE.test(assistantContent || '')) {
-    return clampLabel('Retomar el paso que acordamos en el chat');
+  if (
+    assistantLine &&
+    COMMITMENT_AGREEMENT_CUES.test(assistantLine) &&
+    !looksLikeChatBubbleLabel(assistantLine)
+  ) {
+    const fromAssistant = clampLabel(assistantLine);
+    if (fromAssistant) return fromAssistant;
   }
 
   return '';

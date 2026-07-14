@@ -218,6 +218,7 @@ export const DASH = {
   FOCUS_COMMITMENT_RENEGOTIATE_SAVE: 'Guardar ajuste',
   FOCUS_COMMITMENT_LINKED_TASK: 'También en tus tareas',
   FOCUS_COMMITMENT_LINKED_HABIT: 'También en tus hábitos',
+  FOCUS_COMMITMENT_SAVED_HINT: 'Guardado para retomar más adelante',
   FOCUS_REMINDER_SECTION: 'Lo principal ahora',
   FOCUS_REMINDER_TAP_CHAT: 'Toca para ir al chat',
   FOCUS_PROTOCOL: 'Próximo paso (seguimiento)',
@@ -1202,9 +1203,13 @@ export const CHAT = {
   PRODUCT_PROPOSAL_DISMISS: 'No aplica',
   CHAT_COMMITMENT_PROPOSE_TITLE: '¿Lo dejamos para retomar?',
   CHAT_COMMITMENT_SAVE: 'Guardar',
+  CHAT_COMMITMENT_SAVING: 'Guardando…',
+  CHAT_COMMITMENT_SAVED: 'Listo: lo guardamos para retomar',
+  CHAT_COMMITMENT_SAVE_ERROR: 'No se pudo guardar. Prueba de nuevo.',
   CHAT_COMMITMENT_EDIT_SAVE: 'Editar y guardar',
   CHAT_COMMITMENT_DISMISS: 'Ahora no',
-  CHAT_COMMITMENT_LABEL_PLACEHOLDER: 'Texto del acuerdo',
+  CHAT_COMMITMENT_LABEL_PLACEHOLDER: 'Algo breve para retomar',
+  CHAT_COMMITMENT_DEFAULT_LABEL: 'Retomar este tramo cuando te venga bien',
   PRODUCT_STATUS_COOLDOWN_WITH_MIN:
     'Sugerencias en pausa unos minutos ({minutes} min) para no saturar la conversación.',
   PRODUCT_STATUS_COOLDOWN:

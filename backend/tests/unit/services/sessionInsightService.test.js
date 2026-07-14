@@ -449,5 +449,71 @@ describe('buildSessionInsight', () => {
     expect(insight.suggestedStep).toBeNull();
     expect(mockGenerateHeadline).not.toHaveBeenCalled();
   });
+
+  it('no marca Calma mixta tras crisis de pánico verbalizada con cierre calmado', async () => {
+    const now = Date.now();
+    mockMessageFind.mockReturnValue(
+      chainLean([
+        {
+          role: 'user',
+          content: 'Hoy no me siento bien, tuve una crisis de pánico en la mañana',
+          metadata: {
+            crisis: { riskLevel: 'LOW' },
+            context: { emotional: { mainEmotion: 'neutral', intensity: 4, topic: 'salud' } },
+          },
+          createdAt: new Date(now - 200000),
+        },
+        {
+          role: 'assistant',
+          content: 'Entiendo que fue muy intenso',
+          metadata: {
+            context: { emotional: { mainEmotion: 'neutral', intensity: 4, topic: 'salud' } },
+            crisis: { riskLevel: 'LOW' },
+          },
+          createdAt: new Date(now - 180000),
+        },
+        {
+          role: 'user',
+          content: 'Si he descansado un poco pero no quita el susto',
+          metadata: {
+            crisis: { riskLevel: 'LOW' },
+            context: { emotional: { mainEmotion: 'miedo', intensity: 5, topic: 'general' } },
+          },
+          createdAt: new Date(now - 100000),
+        },
+        {
+          role: 'assistant',
+          content: 'Te acompaño en eso',
+          metadata: {
+            context: { emotional: { mainEmotion: 'neutral', intensity: 4, topic: 'general' } },
+          },
+          createdAt: new Date(now - 80000),
+        },
+        {
+          role: 'user',
+          content: 'No lo se',
+          metadata: {
+            crisis: { riskLevel: 'LOW' },
+            context: { emotional: { mainEmotion: 'neutral', intensity: 3, topic: 'general' } },
+          },
+          createdAt: new Date(now - 40000),
+        },
+        {
+          role: 'assistant',
+          content: 'Está bien no saberlo ahora',
+          metadata: {
+            context: { emotional: { mainEmotion: 'neutral', intensity: 3, topic: 'general' } },
+          },
+          createdAt: new Date(now - 20000),
+        },
+      ]),
+    );
+
+    const insight = await buildSessionInsight({ userId, conversationId, language: 'es' });
+    expect(insight.eligible).toBe(true);
+    expect(insight.dominantEmotion.key).not.toBe('neutral');
+    expect(['ansiedad', 'miedo']).toContain(insight.dominantEmotion.key);
+    expect(insight.dominantEmotion.intensity).toBeGreaterThanOrEqual(6);
+  });
 });
 

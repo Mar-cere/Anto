@@ -5,6 +5,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import ActionSuggestionCard from '../ActionSuggestionCard';
 import { useLanguage } from '../../context/LanguageContext';
 import { hydrateInterventionSuggestion } from '../../utils/psychoeducationTopic';
@@ -30,7 +31,16 @@ import {
   buildCommitmentDisplayTitle,
   isGenericCommitmentLabel,
 } from '../../utils/commitmentDisplayCopy';
+import { looksLikeChatBubbleCommitmentLabel } from '../../utils/commitmentLabelUtils';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+
+function resolveCommitmentProposalLabel(proposal, texts) {
+  const raw = String(proposal?.label || '').trim();
+  if (!raw || looksLikeChatBubbleCommitmentLabel(raw)) {
+    return texts.CHAT_COMMITMENT_DEFAULT_LABEL || '';
+  }
+  return raw;
+}
 
 function AnimatedDot({ delay, dotStyle, styles }) {
   const anim = useRef(new Animated.Value(0)).current;
@@ -238,8 +248,12 @@ const createStyles = (themeColors, c) =>
     fontSize: 13,
     marginTop: 7,
     backgroundColor: themeColors.chromeInput,
+    minHeight: 40,
+    textAlignVertical: 'top',
   },
-  proposalActionsRow: {
+  proposalEditInputMultiline: {
+    minHeight: 56,
+  },  proposalActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 10,
@@ -393,6 +407,7 @@ function ChatMessageItem({
   const styles = useMemo(() => createStyles(colors, chatColors), [colors, chatColors]);
 
   const [proposalDraftEdits, setProposalDraftEdits] = useState({});
+  const [commitmentSavingId, setCommitmentSavingId] = useState(null);
   const message = item.userMessage || item.assistantMessage || item;
   const isUser = message.role === MESSAGE_ROLES.USER;
   const rawId = message._id || message.id;
@@ -486,47 +501,84 @@ function ChatMessageItem({
     return (
       <View style={styles.suggestionsContainer}>
         <Text style={styles.suggestionsTitle}>{TEXTS.CHAT_COMMITMENT_PROPOSE_TITLE}</Text>
-        {message.proposedCommitments.map((proposal) => (
+        {message.proposedCommitments.map((proposal) => {
+          const defaultLabel = resolveCommitmentProposalLabel(proposal, TEXTS);
+          const edited = proposalDraftEdits[proposal.id]?.label;
+          const value = edited != null ? edited : defaultLabel;
+          const isSaving = commitmentSavingId === proposal.id;
+          const isBusy = Boolean(commitmentSavingId);
+          return (
           <View key={proposal.id} style={styles.productProposalCard}>
             {proposal.rationaleShort ? (
               <Text style={styles.productProposalWhy}>{proposal.rationaleShort}</Text>
             ) : null}
             <TextInput
-              style={styles.proposalEditInput}
+              style={[styles.proposalEditInput, styles.proposalEditInputMultiline]}
               placeholder={TEXTS.CHAT_COMMITMENT_LABEL_PLACEHOLDER}
               placeholderTextColor={colors.textMuted ?? colors.textSecondary}
-              value={proposalDraftEdits[proposal.id]?.label ?? proposal.label ?? ''}
-              onChangeText={(value) =>
+              value={value}
+              multiline
+              numberOfLines={3}
+              maxLength={120}
+              editable={!isBusy}
+              onChangeText={(next) =>
                 setProposalDraftEdits((prev) => ({
                   ...prev,
-                  [proposal.id]: { ...(prev[proposal.id] || {}), label: value },
+                  [proposal.id]: { ...(prev[proposal.id] || {}), label: next },
                 }))
               }
             />
             <View style={styles.proposalActionsRow}>
               <TouchableOpacity
-                style={styles.proposalPrimaryBtn}
-                onPress={() => {
-                  const edit = proposalDraftEdits[proposal.id] || {};
-                  onCommitmentProposalPress?.(
-                    { ...proposal, label: edit.label || proposal.label },
-                    message,
-                  );
+                style={[styles.proposalPrimaryBtn, isBusy && { opacity: 0.65 }]}
+                disabled={isBusy}
+                onPress={async () => {
+                  if (isBusy) return;
+                  setCommitmentSavingId(proposal.id);
+                  try {
+                    const edit = proposalDraftEdits[proposal.id] || {};
+                    const ok = await onCommitmentProposalPress?.(
+                      {
+                        ...proposal,
+                        label: (edit.label != null ? edit.label : defaultLabel) || proposal.label,
+                      },
+                      message,
+                    );
+                    if (ok) {
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+                        () => {},
+                      );
+                    } else {
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
+                        () => {},
+                      );
+                    }
+                  } finally {
+                    setCommitmentSavingId(null);
+                  }
                 }}
                 accessibilityRole="button"
+                accessibilityState={{ disabled: isBusy, busy: isSaving }}
               >
-                <Text style={styles.proposalPrimaryBtnText}>{TEXTS.CHAT_COMMITMENT_SAVE}</Text>
+                <Text style={styles.proposalPrimaryBtnText}>
+                  {isSaving
+                    ? TEXTS.CHAT_COMMITMENT_SAVING
+                    : TEXTS.CHAT_COMMITMENT_SAVE}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.proposalGhostBtn}
+                style={[styles.proposalGhostBtn, isBusy && { opacity: 0.65 }]}
+                disabled={isBusy}
                 onPress={() => onCommitmentProposalReject?.(message)}
                 accessibilityRole="button"
+                accessibilityState={{ disabled: isBusy }}
               >
                 <Text style={styles.proposalGhostBtnText}>{TEXTS.CHAT_COMMITMENT_DISMISS}</Text>
               </TouchableOpacity>
             </View>
           </View>
-        ))}
+          );
+        })}
       </View>
     );
   }

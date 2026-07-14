@@ -58,6 +58,22 @@ export function isConcreteCommitmentLabel(label, stepLabel = '') {
   return !isGenericInterventionLabel(normalized);
 }
 
+/** Etiquetas que son eco de la burbuja del chat (no un acuerdo corto). */
+export function looksLikeChatBubbleCommitmentLabel(label) {
+  const t = String(label || '').trim();
+  if (!t) return true;
+  if (t.length > 100) return true;
+  if ((t.match(/[?.!¿¡]/g) || []).length >= 2) return true;
+  if (
+    /^(est[aá]\s+bien|entiendo|tiene\s+sentido|te\s+escucho|suena\s+a|s[ií],\s+ambas|it'?s\s+(ok|okay|fine)|i\s+understand)\b/i.test(
+      t,
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
 /**
  * Oculta seguimiento en dashboard cuando el compromiso BA duplica la fila del plan semanal
  * o la etiqueta es genérica (sin acción concreta).
@@ -73,17 +89,20 @@ export function shouldHideDashboardCommitmentFollowUp(commitment, { hasBaWeekRow
 const MAX_DASHBOARD_FOLLOW_UP_ATTEMPTS = 2; // alineado con backend MAX_FOLLOW_UP_ATTEMPTS
 
 /**
- * Solo mostrar en dashboard cuando hay seguimiento o renegociación accionable.
- * Evita filas vacías con solo «Tu compromiso».
+ * Solo mostrar en dashboard cuando el compromiso es accionable o recién guardado.
+ * Evita filas fantasma (vacías / genéricas); sí muestra pendientes recién creados
+ * (chips de seguimiento solo cuando followUpDue).
  */
 export function isDashboardCommitmentActionable(commitment, options = {}) {
   if (!commitment || commitment.status !== 'active') return false;
   if (shouldHideDashboardCommitmentFollowUp(commitment, options)) return false;
+  if (!isConcreteCommitmentLabel(commitment.label)) return false;
 
   const attempts = Number(commitment.followUpAttempts || 0);
   if (attempts >= MAX_DASHBOARD_FOLLOW_UP_ATTEMPTS) return false;
 
-  if (commitment.followUpAnswer === 'pending' && commitment.followUpDue === true) {
+  // Compromiso guardado y pendiente: visible ya (p. ej. tras Guardar en el chat)
+  if (commitment.followUpAnswer === 'pending') {
     return true;
   }
 

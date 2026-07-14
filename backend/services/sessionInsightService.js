@@ -83,6 +83,14 @@ const EMOTION_WEIGHTS = {
   neutral: 0,
 };
 
+/** Pánico verbalizado (sin riskLevel de protocolo) no debe quedar como «Calma mixta». */
+const PANIC_LEXICON =
+  /\b(?:crisis\s+de\s+p[aá]nico|ataque\s+de\s+p[aá]nico|ataque\s+de\s+ansiedad|\bp[aá]nico\b|panic\s+attack)\b/i;
+
+function isPanicUserContent(content) {
+  return PANIC_LEXICON.test(String(content || ''));
+}
+
 function countUserStats(msgs) {
   let turns = 0;
   let chars = 0;
@@ -123,6 +131,18 @@ function resolveEmotionalForMessage(msgs, index) {
         emotional = next?.metadata?.context?.emotional;
       }
     }
+    if (isPanicUserContent(m.content)) {
+      const baseIntensity = Number(emotional?.intensity) || 5;
+      return {
+        ...(emotional || {}),
+        mainEmotion:
+          emotional?.mainEmotion && emotional.mainEmotion !== 'neutral'
+            ? emotional.mainEmotion
+            : 'ansiedad',
+        intensity: Math.max(baseIntensity, 8),
+        topic: emotional?.topic || 'salud',
+      };
+    }
     const risk = resolveCrisisRiskForUserTurn(msgs, index);
     if (risk === 'HIGH' || risk === 'MEDIUM' || risk === 'WARNING') {
       const baseIntensity = Number(emotional?.intensity) || 5;
@@ -146,9 +166,12 @@ function aggregateDominantEmotion(msgs) {
   let weightedIntensity = 0;
   let weightSum = 0;
   let peakIntensity = 0;
+  let peakEmotion = 'neutral';
+  let sawPanicLexicon = false;
 
   msgs.forEach((msg, index) => {
     if (msg.role !== 'user') return;
+    if (isPanicUserContent(msg.content)) sawPanicLexicon = true;
     const emotional = resolveEmotionalForMessage(msgs, index);
     const emotion = String(emotional?.mainEmotion || 'neutral').toLowerCase();
     const intensity = Number(emotional?.intensity) || 5;
@@ -158,13 +181,24 @@ function aggregateDominantEmotion(msgs) {
     scores[emotion] = (scores[emotion] || 0) + weight;
     weightedIntensity += intensity * weight;
     weightSum += weight;
-    peakIntensity = Math.max(peakIntensity, intensity);
+    if (intensity > peakIntensity || (intensity === peakIntensity && emotion !== 'neutral')) {
+      peakIntensity = intensity;
+      if (emotion !== 'neutral') peakEmotion = emotion;
+    }
   });
 
-  const dominantEmotion =
+  let dominantEmotion =
     Object.entries(scores).sort((a, b) => b[1] - a[1])[0]?.[0] || 'neutral';
-  const weightedAvg =
-    weightSum > 0 ? weightedIntensity / weightSum : 5;
+
+  // Tras pánico / pico alto, no dejar que turnos calmados ganeen «Calma mixta»
+  if (
+    (sawPanicLexicon || peakIntensity >= 7) &&
+    (dominantEmotion === 'neutral' || dominantEmotion === 'alegria')
+  ) {
+    dominantEmotion = peakEmotion !== 'neutral' ? peakEmotion : 'ansiedad';
+  }
+
+  const weightedAvg = weightSum > 0 ? weightedIntensity / weightSum : 5;
   // No diluir picos (p. ej. crisis de pánico) con turnos posteriores más calmados
   const avgIntensity =
     Math.round(Math.max(weightedAvg, peakIntensity * 0.7 + weightedAvg * 0.3) * 10) / 10;

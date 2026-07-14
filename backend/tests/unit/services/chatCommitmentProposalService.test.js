@@ -68,7 +68,27 @@ describe('chatCommitmentProposalService (#202)', () => {
     });
     expect(items).toHaveLength(1);
     expect(items[0].label.length).toBeGreaterThan(2);
+    expect(items[0].label).toMatch(/caminar/i);
     expect(items[0].id).toBeTruthy();
+  });
+
+  it('no usa la burbuja completa del asistente como etiqueta', async () => {
+    const assistant =
+      'Está bien no saberlo ahora; a veces solo se siente la carga sin poder nombrarla. Si quieres, seguimos por ahí sin apurarte. Si te sirve, podemos cerrar aquí este tramo y retomarlo cuando quieras desde este punto.';
+    const items = await buildProposedCommitments({
+      userId,
+      riskLevel: 'LOW',
+      isCrisis: false,
+      userContent: 'No lo se',
+      assistantContent: assistant,
+      sessionIntention: 'plan',
+      conversationId,
+      assistantMessageId,
+    });
+    expect(items).toHaveLength(1);
+    expect(items[0].label).toBe('Retomar este tramo cuando te venga bien');
+    expect(items[0].label.length).toBeLessThan(80);
+    expect(items[0].label).not.toMatch(/Está bien no saberlo/);
   });
 
   it('no propone texto genérico sin señales de acuerdo', async () => {

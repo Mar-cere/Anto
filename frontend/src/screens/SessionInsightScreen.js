@@ -740,7 +740,9 @@ export default function SessionInsightScreen() {
               {renderStepIconOrb(resolveTccLiteResumeVisual())}
               <View style={{ flex: 1 }}>
                 <Text style={styles.stepTitle}>{TEXTS.CTA_TCC_LITE_CHAT}</Text>
-                {tccLiteResume.distortionLabel ? (
+                {tccLiteResume.distortionLabel &&
+                String(tccLiteResume.distortionLabel).trim().toLowerCase() !==
+                  String(pattern?.name || '').trim().toLowerCase() ? (
                   <Text style={styles.stepReason}>{tccLiteResume.distortionLabel}</Text>
                 ) : null}
               </View>

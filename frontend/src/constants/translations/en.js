@@ -217,6 +217,7 @@ export const DASH = {
   FOCUS_COMMITMENT_RENEGOTIATE_SAVE: 'Save adjustment',
   FOCUS_COMMITMENT_LINKED_TASK: 'Also in your tasks',
   FOCUS_COMMITMENT_LINKED_HABIT: 'Also in your habits',
+  FOCUS_COMMITMENT_SAVED_HINT: 'Saved to pick up later',
   FOCUS_REMINDER_SECTION: 'Main focus now',
   FOCUS_REMINDER_TAP_CHAT: 'Tap to go to chat',
   FOCUS_PROTOCOL: 'Next step (follow-up)',
@@ -1197,9 +1198,13 @@ export const CHAT = {
   PRODUCT_PROPOSAL_DISMISS: 'Not relevant',
   CHAT_COMMITMENT_PROPOSE_TITLE: 'Save this to revisit later?',
   CHAT_COMMITMENT_SAVE: 'Save',
+  CHAT_COMMITMENT_SAVING: 'Saving…',
+  CHAT_COMMITMENT_SAVED: 'Saved — you can pick this up later',
+  CHAT_COMMITMENT_SAVE_ERROR: 'Could not save. Please try again.',
   CHAT_COMMITMENT_EDIT_SAVE: 'Edit and save',
   CHAT_COMMITMENT_DISMISS: 'Not now',
-  CHAT_COMMITMENT_LABEL_PLACEHOLDER: 'Agreement text',
+  CHAT_COMMITMENT_LABEL_PLACEHOLDER: 'Something short to revisit',
+  CHAT_COMMITMENT_DEFAULT_LABEL: 'Pick this up again when you want',
   PRODUCT_STATUS_COOLDOWN_WITH_MIN:
     'Suggestions are paused for a few minutes ({minutes} min) to avoid overwhelming the conversation.',
   PRODUCT_STATUS_COOLDOWN:

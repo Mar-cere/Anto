@@ -57,10 +57,11 @@ describe('sessionUi hardening guard', () => {
       expect(src).toMatch(/visibleCommitments/);
     });
 
-    it('commitmentLabelUtils evita tarjetas fantasma sin seguimiento', () => {
+    it('commitmentLabelUtils muestra pendientes concretos y filtra fantasma', () => {
       const src = readSrc('utils/commitmentLabelUtils.js');
       expect(src).toMatch(/isDashboardCommitmentActionable/);
-      expect(src).toMatch(/followUpDue === true/);
+      expect(src).toMatch(/isConcreteCommitmentLabel\(commitment\.label\)/);
+      expect(src).toMatch(/followUpAnswer === 'pending'/);
       expect(src).not.toMatch(/followUpAnswer !== 'pending'\) return false/);
     });
   });

@@ -810,12 +810,16 @@ export function useChatScreen() {
 
   const handleCommitmentProposalPress = useCallback(
     async (proposal, proposalsMessage) => {
+      const texts = textsRef.current;
       try {
         const convId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
         const assistantMessageId = proposalsMessage?.metadata?.assistantMessageId;
         const label = String(proposal?.label || '').trim();
-        if (!label || label.length < 2) return;
-        await createSessionCommitment({
+        if (!label || label.length < 2) {
+          showToast({ message: texts.CHAT_COMMITMENT_SAVE_ERROR, type: 'warning' });
+          return false;
+        }
+        const created = await createSessionCommitment({
           label,
           conversationId:
             convId && isValidMongoObjectId24(convId) ? String(convId) : undefined,
@@ -829,6 +833,10 @@ export function useChatScreen() {
               : {}),
           },
         });
+        if (!created) {
+          showToast({ message: texts.CHAT_COMMITMENT_SAVE_ERROR, type: 'error' });
+          return false;
+        }
         setMessages((prev) =>
           prev.filter((m) => {
             const id = m.id || m._id;
@@ -836,11 +844,18 @@ export function useChatScreen() {
             return String(id) !== String(targetId);
           }),
         );
+        showToast({ message: texts.CHAT_COMMITMENT_SAVED, type: 'success' });
+        return true;
       } catch (e) {
         console.warn('[useChatScreen] commitment proposal:', e?.message || e);
+        showToast({
+          message: textsRef.current.CHAT_COMMITMENT_SAVE_ERROR,
+          type: 'error',
+        });
+        return false;
       }
     },
-    [],
+    [showToast],
   );
 
   const handleCommitmentProposalReject = useCallback(async (proposalsMessage) => {

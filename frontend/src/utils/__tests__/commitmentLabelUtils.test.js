@@ -3,6 +3,7 @@ import {
   formatCommitmentFollowUpPrompt,
   isConcreteCommitmentLabel,
   isDashboardCommitmentActionable,
+  looksLikeChatBubbleCommitmentLabel,
   shouldHideDashboardCommitmentFollowUp,
 } from '../commitmentLabelUtils';
 
@@ -12,6 +13,17 @@ describe('commitmentLabelUtils', () => {
     expect(isConcreteCommitmentLabel('Activación conductual', 'Activación conductual')).toBe(false);
     expect(isConcreteCommitmentLabel('Activación conductual')).toBe(false);
     expect(isConcreteCommitmentLabel('a')).toBe(false);
+  });
+
+  it('detecta eco de burbuja del chat como etiqueta inválida para editar', () => {
+    expect(
+      looksLikeChatBubbleCommitmentLabel(
+        'Está bien no saberlo ahora; a veces solo se siente la carga sin poder nombrarla. Si quieres, seguimos.',
+      ),
+    ).toBe(true);
+    expect(looksLikeChatBubbleCommitmentLabel('Retomar este tramo cuando te venga bien')).toBe(
+      false,
+    );
   });
 
   it('oculta compromiso BA cuando hay fila de plan semanal', () => {
@@ -65,6 +77,18 @@ describe('commitmentLabelUtils', () => {
     expect(filterDashboardCommitments([ghost, answered, actionable])).toEqual([actionable]);
   });
 
+  it('muestra compromisos recién guardados aunque el follow-up aún no venza', () => {
+    const freshlySaved = {
+      id: 'fresh',
+      label: 'Retomar este tramo cuando te venga bien',
+      status: 'active',
+      followUpAnswer: 'pending',
+      followUpDue: false,
+      source: 'chat_proposed',
+    };
+    expect(isDashboardCommitmentActionable(freshlySaved)).toBe(true);
+  });
+
   it('muestra renegociación tras responder no', () => {
     const item = {
       id: 'reneg',
@@ -77,7 +101,7 @@ describe('commitmentLabelUtils', () => {
     expect(isDashboardCommitmentActionable(item)).toBe(true);
   });
 
-  it('oculta compromisos completados, omitidos o sin plazo vencido', () => {
+  it('oculta compromisos completados, omitidos o agotados', () => {
     expect(
       isDashboardCommitmentActionable({
         id: '1',
@@ -103,15 +127,6 @@ describe('commitmentLabelUtils', () => {
         status: 'active',
         followUpAnswer: 'partial',
         followUpDue: true,
-      }),
-    ).toBe(false);
-    expect(
-      isDashboardCommitmentActionable({
-        id: '4',
-        label: 'X',
-        status: 'active',
-        followUpAnswer: 'pending',
-        followUpDue: false,
       }),
     ).toBe(false);
     expect(

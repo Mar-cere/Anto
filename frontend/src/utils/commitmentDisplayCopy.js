@@ -117,5 +117,8 @@ export function buildCommitmentLinkHint(item, texts = {}) {
   if (item?.sourceMeta?.taskId) {
     return texts.FOCUS_COMMITMENT_LINKED_TASK || null;
   }
+  if (item?.followUpAnswer === 'pending' && item?.followUpDue !== true) {
+    return texts.FOCUS_COMMITMENT_SAVED_HINT || null;
+  }
   return null;
 }

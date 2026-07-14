@@ -99,7 +99,7 @@ describe('dashboardFocusCard guard', () => {
   it('filterDashboardCommitments solo expone compromisos accionables', () => {
     const src = readSrc('utils/commitmentLabelUtils.js');
     expect(src).toMatch(/isDashboardCommitmentActionable/);
-    expect(src).toMatch(/followUpDue === true/);
+    expect(src).toMatch(/isConcreteCommitmentLabel\(commitment\.label\)/);
     expect(src).toMatch(/MAX_DASHBOARD_FOLLOW_UP_ATTEMPTS = 2/);
   });
 });

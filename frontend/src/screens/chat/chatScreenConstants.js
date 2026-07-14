@@ -144,9 +144,13 @@ export const TEXTS = {
   PRODUCT_PROPOSAL_DISMISS: 'No aplica',
   CHAT_COMMITMENT_PROPOSE_TITLE: '¿Lo dejamos para retomar?',
   CHAT_COMMITMENT_SAVE: 'Guardar',
+  CHAT_COMMITMENT_SAVING: 'Guardando…',
+  CHAT_COMMITMENT_SAVED: 'Listo: lo guardamos para retomar',
+  CHAT_COMMITMENT_SAVE_ERROR: 'No se pudo guardar. Prueba de nuevo.',
   CHAT_COMMITMENT_EDIT_SAVE: 'Editar y guardar',
   CHAT_COMMITMENT_DISMISS: 'Ahora no',
-  CHAT_COMMITMENT_LABEL_PLACEHOLDER: 'Texto del acuerdo',
+  CHAT_COMMITMENT_LABEL_PLACEHOLDER: 'Algo breve para retomar',
+  CHAT_COMMITMENT_DEFAULT_LABEL: 'Retomar este tramo cuando te venga bien',
   PRODUCT_STATUS_COOLDOWN_WITH_MIN:
     'Sugerencias en pausa unos minutos ({minutes} min) para no saturar la conversación.',
   PRODUCT_STATUS_COOLDOWN:
