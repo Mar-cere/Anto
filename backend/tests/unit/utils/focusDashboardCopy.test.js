@@ -27,7 +27,7 @@ describe('focusDashboardCopy', () => {
       conversationId: 'abc'
     };
     const out = localizeLastSessionSummaryForDisplay(raw, 'en');
-    expect(out.headline).toBe('Chat continuity');
+    expect(out.headline).toBe('Resume chat');
     expect(out.snippet).toMatch(/Open your last conversation/i);
   });
 

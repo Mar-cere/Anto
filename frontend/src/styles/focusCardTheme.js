@@ -107,7 +107,6 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       alignItems: 'center',
       flexWrap: 'nowrap',
       width: '100%',
-      gap: 8,
     },
     lastSessionTitleBlock: {
       width: '100%',
@@ -127,12 +126,6 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       paddingVertical: 2,
       borderRadius: 8,
       overflow: 'hidden',
-      flexShrink: 0,
-      maxWidth: '42%',
-    },
-    lastSessionBadgeInline: {
-      marginTop: 0,
-      alignSelf: 'center',
     },
     protocolRow: {
       flexDirection: 'row',

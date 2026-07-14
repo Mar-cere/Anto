@@ -26,12 +26,7 @@ import {
   resolveFocusNextHabit,
   resolveFocusNextHabitSubtitle,
 } from '../utils/focusNextHabitNavigation';
-import {
-  commitmentBelongsToContinuityThread,
-  filterDashboardCommitments,
-  isConcreteCommitmentLabel,
-  looksLikeChatBubbleCommitmentLabel,
-} from '../utils/commitmentLabelUtils';
+import { filterDashboardCommitments } from '../utils/commitmentLabelUtils';
 import { postCommitmentTelemetry } from '../utils/commitmentTelemetry';
 
 const MAX_COMMITMENT_FOLLOW_UP_ATTEMPTS = 2;
@@ -180,20 +175,10 @@ const FocusActionRow = memo(({
       <Ionicons name={icon} size={22} color={iconColor} />
     </View>
     <View style={styles.actionCopy}>
-      {badge ? (
-        <View style={styles.lastSessionTitleRow}>
-          <Text style={[styles.actionTitle, styles.lastSessionHeadline]} numberOfLines={1}>
-            {title}
-          </Text>
-          <Text style={[styles.lastSessionBadge, styles.lastSessionBadgeInline]} numberOfLines={1}>
-            {badge}
-          </Text>
-        </View>
-      ) : (
-        <Text style={styles.actionTitle} numberOfLines={2}>
-          {title}
-        </Text>
-      )}
+      <Text style={styles.actionTitle} numberOfLines={2}>
+        {title}
+      </Text>
+      {badge ? <Text style={styles.lastSessionBadge}>{badge}</Text> : null}
       {subtitle ? (
         <Text style={styles.actionMeta} numberOfLines={subtitleLines}>
           {subtitle}
@@ -267,24 +252,6 @@ const DashboardFocusCard = ({
       }),
     [commitments, baWeekNext, hasChatContinuity, lastSessionConvId],
   );
-
-  /** Compromiso pendiente oculto bajo continuidad: pista suave en la fila del chat. */
-  const continuityCommitmentHint = useMemo(() => {
-    if (!hasChatContinuity) return null;
-    const pending = (commitments || []).find(
-      (item) =>
-        item?.status === 'active' &&
-        item?.followUpAnswer === 'pending' &&
-        item?.followUpDue !== true &&
-        !looksLikeChatBubbleCommitmentLabel(item?.label) &&
-        isConcreteCommitmentLabel(item?.label) &&
-        commitmentBelongsToContinuityThread(item, lastSessionConvId),
-    );
-    if (!pending) return null;
-    const label = String(pending.label || '').trim();
-    if (!label) return null;
-    return label.length > 72 ? `${label.slice(0, 71)}…` : label;
-  }, [commitments, hasChatContinuity, lastSessionConvId]);
 
   const reportedFollowUpRef = useRef(new Set());
   const isCommitmentFollowUpDue = useCallback((item) => {
@@ -566,12 +533,7 @@ const DashboardFocusCard = ({
         ? DASH.FOCUS_CHAT_CONTINUITY_RECENT_BADGE
         : lastSession?.placeholder
           ? DASH.FOCUS_CHAT_CONTINUITY_BADGE
-          : continuityCommitmentHint
-            ? DASH.FOCUS_CHAT_CONTINUITY_PARKED_BADGE
-            : null;
-      const continuityA11yHint = continuityCommitmentHint
-        ? ` ${DASH.FOCUS_CHAT_CONTINUITY_PARKED_BADGE}. ${continuityCommitmentHint}`
-        : '';
+          : null;
       rows.push({
         key: 'last-session',
         icon: 'reader-outline',
@@ -580,8 +542,8 @@ const DashboardFocusCard = ({
         badge: continuityBadge,
         onPress: onLastSessionPress,
         showChevron: true,
-        subtitleLines: 1,
-        a11yLabel: `${continuityTitle}. ${lastSessionFullText}${continuityA11yHint}`,
+        subtitleLines: 2,
+        a11yLabel: `${continuityTitle}. ${lastSessionFullText}`,
       });
     }
     return rows;
@@ -600,7 +562,6 @@ const DashboardFocusCard = ({
     lastSession,
     lastSessionText,
     lastSessionFullText,
-    continuityCommitmentHint,
     reminderIsPressable,
     onReminderPress,
     onBaWeekPress,

@@ -92,8 +92,8 @@ describe('dashboardFocusCard guard', () => {
     const src = readSrc('components/DashboardFocusCard.js');
     expect(src).toMatch(/hasChatContinuity/);
     expect(src).toMatch(/continuityConversationId/);
-    expect(src).toMatch(/continuityCommitmentHint/);
-    expect(src).toMatch(/FOCUS_CHAT_CONTINUITY_PARKED_BADGE/);
+    expect(src).not.toMatch(/FOCUS_CHAT_CONTINUITY_PARKED_BADGE/);
+    expect(src).not.toMatch(/continuityCommitmentHint/);
   });
 
   it('DashboardFocusCard registra telemetría follow_up_shown en dashboard', () => {

@@ -12,7 +12,7 @@ export function focusLocale(language) {
 
 const COPY = {
   es: {
-    chatContinuityHeadline: 'Continuidad del chat',
+    chatContinuityHeadline: 'Retomar el chat',
     chatContinuityInviteDefault:
       'Tu conversación sigue en el chat, en privado. Retoma cuando quieras.',
     chatContinuityInviteRecent:
@@ -70,7 +70,7 @@ const COPY = {
       ' Si hay protocolHintFromRecord, intégralo como micro-paso en lenguaje natural y neutro; si no hay, sugiere un siguiente paso suave sin inventar historial clínico.'
   },
   en: {
-    chatContinuityHeadline: 'Chat continuity',
+    chatContinuityHeadline: 'Resume chat',
     chatContinuityInviteDefault:
       'Your conversation is still in chat, privately. Pick it up whenever you want.',
     chatContinuityInviteRecent:

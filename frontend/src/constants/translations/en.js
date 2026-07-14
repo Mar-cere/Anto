@@ -262,10 +262,9 @@ export const DASH = {
     'Start the chat with Anto. There you can share how you feel and receive support.',
   FIRST_SESSION_HINT_GO_TO_CHAT: 'Start chat',
   FIRST_SESSION_HINT_GOT_IT: 'Got it',
-  FOCUS_CHAT_CONTINUITY_HEADLINE: 'Chat continuity',
+  FOCUS_CHAT_CONTINUITY_HEADLINE: 'Resume chat',
   FOCUS_CHAT_CONTINUITY_BADGE: 'Quick glance',
   FOCUS_CHAT_CONTINUITY_RECENT_BADGE: 'Recent activity',
-  FOCUS_CHAT_CONTINUITY_PARKED_BADGE: 'For later',
   FOCUS_PRELOADED_LAST_CHAT_TITLE_EN: 'Resume your last conversation',
   FOCUS_PRELOADED_LAST_CHAT_SUBTITLE_EN:
     'Last chat activity: {days} days ago.',
