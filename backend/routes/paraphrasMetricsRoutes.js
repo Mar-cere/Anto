@@ -16,6 +16,54 @@ import { analyzeRetentionImpact } from '../services/analytics/retentionImpactAna
 const router = express.Router();
 
 /**
+ * Valida y normaliza filtros de fechas ISO.
+ * @param {string} startDate - Fecha inicio en formato ISO
+ * @param {string} endDate - Fecha fin en formato ISO
+ * @returns {Object} { valid: boolean, error?: string, normalized?: {startDate, endDate} }
+ */
+function validateDateFilters(startDate, endDate) {
+  const result = { valid: true };
+  
+  if (startDate) {
+    const parsed = new Date(startDate);
+    if (isNaN(parsed.getTime())) {
+      return { valid: false, error: 'Invalid startDate format' };
+    }
+    result.startDate = parsed.toISOString();
+  }
+  
+  if (endDate) {
+    const parsed = new Date(endDate);
+    if (isNaN(parsed.getTime())) {
+      return { valid: false, error: 'Invalid endDate format' };
+    }
+    result.endDate = parsed.toISOString();
+  }
+  
+  // Validar que startDate < endDate si ambos están presentes
+  if (result.startDate && result.endDate) {
+    if (new Date(result.startDate) > new Date(result.endDate)) {
+      return { valid: false, error: 'startDate must be before endDate' };
+    }
+  }
+  
+  return { valid: true, normalized: result };
+}
+
+/**
+ * Valida que un string sea un MongoDB ObjectId válido.
+ * @param {string} id - ID a validar
+ * @returns {boolean}
+ */
+function isValidObjectId(id) {
+  if (!id || typeof id !== 'string') {
+    return false;
+  }
+  // MongoDB ObjectId tiene 24 caracteres hexadecimales
+  return /^[0-9a-fA-F]{24}$/.test(id);
+}
+
+/**
  * GET /api/internal/paraphrasis/stats
  * 
  * Obtiene estadísticas agregadas de paráfrasis.
@@ -40,11 +88,35 @@ router.get(
     try {
       const { userId, conversationId, startDate, endDate } = req.query;
 
+      // Validar ObjectIds
+      if (userId && !isValidObjectId(userId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid userId format',
+        });
+      }
+
+      if (conversationId && !isValidObjectId(conversationId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid conversationId format',
+        });
+      }
+
+      // Validar y normalizar fechas
+      const dateValidation = validateDateFilters(startDate, endDate);
+      if (!dateValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          error: dateValidation.error,
+        });
+      }
+
       const filters = {};
       if (userId) filters.userId = userId;
       if (conversationId) filters.conversationId = conversationId;
-      if (startDate) filters.startDate = startDate;
-      if (endDate) filters.endDate = endDate;
+      if (dateValidation.normalized?.startDate) filters.startDate = dateValidation.normalized.startDate;
+      if (dateValidation.normalized?.endDate) filters.endDate = dateValidation.normalized.endDate;
 
       const stats = await getParaphrasStats(filters);
 
@@ -88,10 +160,18 @@ router.get(
       const { userId } = req.params;
       const { limit } = req.query;
 
+      // Validar userId
+      if (!isValidObjectId(userId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Invalid userId format',
+        });
+      }
+
       const options = {};
       if (limit) {
         const parsedLimit = parseInt(limit, 10);
-        if (!isNaN(parsedLimit) && parsedLimit > 0) {
+        if (!isNaN(parsedLimit) && isFinite(parsedLimit) && parsedLimit > 0) {
           options.limit = Math.min(parsedLimit, 100);
         }
       }
@@ -134,15 +214,27 @@ router.get(
     try {
       const { startDate, endDate } = req.query;
 
-      const adherenceRate = await calculateAdherenceRate(startDate, endDate);
+      // Validar y normalizar fechas
+      const dateValidation = validateDateFilters(startDate, endDate);
+      if (!dateValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          error: dateValidation.error,
+        });
+      }
+
+      const adherenceRate = await calculateAdherenceRate(
+        dateValidation.normalized?.startDate,
+        dateValidation.normalized?.endDate
+      );
 
       res.json({
         success: true,
         data: {
           adherenceRate,
           period: {
-            startDate: startDate || null,
-            endDate: endDate || null,
+            startDate: dateValidation.normalized?.startDate || null,
+            endDate: dateValidation.normalized?.endDate || null,
           },
         },
       });
@@ -182,7 +274,19 @@ router.get(
     try {
       const { startDate, endDate } = req.query;
 
-      const correlation = await analyzeWaiCorrelation({ startDate, endDate });
+      // Validar y normalizar fechas
+      const dateValidation = validateDateFilters(startDate, endDate);
+      if (!dateValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          error: dateValidation.error,
+        });
+      }
+
+      const correlation = await analyzeWaiCorrelation({
+        startDate: dateValidation.normalized?.startDate,
+        endDate: dateValidation.normalized?.endDate,
+      });
 
       res.json({
         success: true,
@@ -223,13 +327,33 @@ router.get(
     try {
       const { startDate, endDate, cohortSize } = req.query;
 
+      // Validar y normalizar fechas
+      const dateValidation = validateDateFilters(startDate, endDate);
+      if (!dateValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          error: dateValidation.error,
+        });
+      }
+
       const options = {};
-      if (startDate) options.startDate = startDate;
-      if (endDate) options.endDate = endDate;
+      if (dateValidation.normalized?.startDate) options.startDate = dateValidation.normalized.startDate;
+      if (dateValidation.normalized?.endDate) options.endDate = dateValidation.normalized.endDate;
+      
       if (cohortSize) {
         const parsed = parseInt(cohortSize, 10);
-        if (!isNaN(parsed) && parsed > 0) {
+        if (!isNaN(parsed) && isFinite(parsed) && parsed > 0 && parsed <= 10000) {
           options.cohortSize = parsed;
+        } else if (isNaN(parsed) || !isFinite(parsed) || parsed <= 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'cohortSize must be a positive number',
+          });
+        } else {
+          return res.status(400).json({
+            success: false,
+            error: 'cohortSize must be <= 10000',
+          });
         }
       }
 
@@ -272,11 +396,25 @@ router.get(
     try {
       const { startDate, endDate } = req.query;
 
+      // Validar y normalizar fechas
+      const dateValidation = validateDateFilters(startDate, endDate);
+      if (!dateValidation.valid) {
+        return res.status(400).json({
+          success: false,
+          error: dateValidation.error,
+        });
+      }
+
+      const dateFilters = {
+        startDate: dateValidation.normalized?.startDate,
+        endDate: dateValidation.normalized?.endDate,
+      };
+
       // Ejecutar todos los análisis en paralelo
       const [stats, waiCorrelation, retentionImpact] = await Promise.allSettled([
-        getParaphrasStats({ startDate, endDate }),
-        analyzeWaiCorrelation({ startDate, endDate }),
-        analyzeRetentionImpact({ startDate, endDate }),
+        getParaphrasStats(dateFilters),
+        analyzeWaiCorrelation(dateFilters),
+        analyzeRetentionImpact(dateFilters),
       ]);
 
       res.json({

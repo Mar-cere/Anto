@@ -407,6 +407,27 @@ export async function finalizeChatTurnEnhancements({
   // contiene paráfrasis y registrar métricas para análisis de impacto.
   if (assistantMessageId && assistantMessageContent && userContent && paraphrasisContext) {
     try {
+      // Validar tipos de parámetros críticos
+      if (typeof assistantMessageContent !== 'string' || assistantMessageContent.length === 0) {
+        console.warn('[finalizeChatTurnEnhancements] Invalid assistantMessageContent type');
+        return;
+      }
+
+      if (typeof userContent !== 'string' || userContent.length === 0) {
+        console.warn('[finalizeChatTurnEnhancements] Invalid userContent type');
+        return;
+      }
+
+      if (!paraphrasisContext || typeof paraphrasisContext !== 'object' || Array.isArray(paraphrasisContext)) {
+        console.warn('[finalizeChatTurnEnhancements] Invalid paraphrasisContext type');
+        return;
+      }
+
+      if (!conversationId || typeof conversationId !== 'string') {
+        console.warn('[finalizeChatTurnEnhancements] Invalid conversationId');
+        return;
+      }
+
       // Determinar si se requería paráfrasis según las reglas de la policy
       const wasRequired = shouldRequireParaphrasis(paraphrasisContext);
 
@@ -416,6 +437,17 @@ export async function finalizeChatTurnEnhancements({
         userContent,
         paraphrasisContext.language || 'es'
       );
+
+      // Validar resultado de detección
+      if (
+        !paraphrasisDetection ||
+        typeof paraphrasisDetection !== 'object' ||
+        typeof paraphrasisDetection.hasParaphrasis !== 'boolean' ||
+        typeof paraphrasisDetection.confidence !== 'number'
+      ) {
+        console.warn('[finalizeChatTurnEnhancements] Invalid paraphrasisDetection result');
+        return;
+      }
 
       // Registrar métricas de paráfrasis
       await recordParaphrasMetrics(conversationId, assistantMessageId, {
@@ -428,15 +460,23 @@ export async function finalizeChatTurnEnhancements({
       // Si se detectó paráfrasis, marcar en metadata para cooldown
       if (paraphrasisDetection.hasParaphrasis && wasRequired) {
         const markedMetadata = markTurnAsParaphrasis({});
-        await Message.updateOne(
-          { _id: assistantMessageId },
-          {
-            $set: {
-              'metadata.paraphrasis.wasParaphrasis': markedMetadata.paraphrasis.wasParaphrasis,
-              'metadata.paraphrasis.timestamp': markedMetadata.paraphrasis.timestamp,
+        
+        // Validar que markTurnAsParaphrasis retornó metadata válido
+        if (
+          markedMetadata &&
+          markedMetadata.paraphrasis &&
+          typeof markedMetadata.paraphrasis.wasParaphrasis === 'boolean'
+        ) {
+          await Message.updateOne(
+            { _id: assistantMessageId },
+            {
+              $set: {
+                'metadata.paraphrasis.wasParaphrasis': markedMetadata.paraphrasis.wasParaphrasis,
+                'metadata.paraphrasis.timestamp': markedMetadata.paraphrasis.timestamp,
+              },
             },
-          },
-        ).catch(() => {});
+          ).catch(() => {});
+        }
       }
     } catch (error) {
       // Best-effort: no fallar el flujo si las métricas de paráfrasis fallan

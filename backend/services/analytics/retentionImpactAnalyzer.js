@@ -46,54 +46,117 @@ async function calculateCohortRetention(userIds, cohortStartDate, retentionDays)
  * @returns {Promise<Object>} Análisis de impacto en retención
  */
 export async function analyzeRetentionImpact(options = {}) {
+  // Validar tipo de options
+  if (!options || typeof options !== 'object' || Array.isArray(options)) {
+    console.warn('[analyzeRetentionImpact] Invalid options type, using empty object');
+    options = {};
+  }
+
   const { startDate, endDate, cohortSize = 100 } = options;
+
+  // Validar y normalizar cohortSize
+  let normalizedCohortSize = 100;
+  if (typeof cohortSize === 'number' && !isNaN(cohortSize) && isFinite(cohortSize) && cohortSize > 0) {
+    normalizedCohortSize = Math.min(Math.max(Math.floor(cohortSize), 10), 10000);
+  }
 
   const matchFilters = {};
   if (startDate || endDate) {
     matchFilters.createdAt = {};
-    if (startDate) matchFilters.createdAt.$gte = new Date(startDate);
-    if (endDate) matchFilters.createdAt.$lte = new Date(endDate);
+    if (startDate) {
+      try {
+        matchFilters.createdAt.$gte = new Date(startDate);
+        if (isNaN(matchFilters.createdAt.$gte.getTime())) {
+          console.warn('[analyzeRetentionImpact] Invalid startDate, ignoring');
+          delete matchFilters.createdAt.$gte;
+        }
+      } catch (error) {
+        console.warn('[analyzeRetentionImpact] Error parsing startDate:', error);
+      }
+    }
+    if (endDate) {
+      try {
+        matchFilters.createdAt.$lte = new Date(endDate);
+        if (isNaN(matchFilters.createdAt.$lte.getTime())) {
+          console.warn('[analyzeRetentionImpact] Invalid endDate, ignoring');
+          delete matchFilters.createdAt.$lte;
+        }
+      } catch (error) {
+        console.warn('[analyzeRetentionImpact] Error parsing endDate:', error);
+      }
+    }
+    // Si no quedó ningún filtro de fecha válido, eliminar el objeto
+    if (Object.keys(matchFilters.createdAt).length === 0) {
+      delete matchFilters.createdAt;
+    }
   }
 
-  // Obtener conversaciones con métricas de paráfrasis
-  const conversations = await Conversation.aggregate([
-    { $match: matchFilters },
-    {
-      $match: {
-        'metrics.paraphrasisRequired': { $exists: true, $gt: 0 },
-      },
-    },
-    {
-      $project: {
-        _id: 1,
-        userId: 1,
-        paraphrasisRequired: '$metrics.paraphrasisRequired',
-        paraphrasisDetected: '$metrics.paraphrasisDetected',
-        paraphrasisRate: {
-          $cond: {
-            if: { $gt: ['$metrics.paraphrasisRequired', 0] },
-            then: { $divide: ['$metrics.paraphrasisDetected', '$metrics.paraphrasisRequired'] },
-            else: 0,
-          },
+  let conversations;
+  try {
+    // Obtener conversaciones con métricas de paráfrasis
+    conversations = await Conversation.aggregate([
+      { $match: matchFilters },
+      {
+        $match: {
+          'metrics.paraphrasisRequired': { $exists: true, $gt: 0 },
         },
-        createdAt: 1,
       },
-    },
-  ]);
+      {
+        $project: {
+          _id: 1,
+          userId: 1,
+          paraphrasisRequired: '$metrics.paraphrasisRequired',
+          paraphrasisDetected: '$metrics.paraphrasisDetected',
+          paraphrasisRate: {
+            $cond: {
+              if: { $gt: ['$metrics.paraphrasisRequired', 0] },
+              then: { $divide: ['$metrics.paraphrasisDetected', '$metrics.paraphrasisRequired'] },
+              else: 0,
+            },
+          },
+          createdAt: 1,
+        },
+      },
+    ]);
+  } catch (error) {
+    console.error('[analyzeRetentionImpact] Database error:', error);
+    return {
+      retentionD7: null,
+      retentionD30: null,
+      sampleSize: 0,
+      relativeLift: null,
+      error: 'Database error: ' + error.message,
+    };
+  }
 
-  if (conversations.length < cohortSize) {
+  if (conversations.length < normalizedCohortSize) {
     return {
       retentionD7: null,
       retentionD30: null,
       sampleSize: conversations.length,
       relativeLift: null,
-      error: `Insufficient data for retention analysis (minimum ${cohortSize} conversations required)`,
+      error: `Insufficient data for retention analysis (minimum ${normalizedCohortSize} conversations required)`,
     };
   }
 
   // Agrupar usuarios por experiencia de paráfrasis
   const userParaphrasisExperience = {};
   conversations.forEach((conv) => {
+    // Validar datos de conversación
+    if (!conv || !conv.userId || typeof conv.userId !== 'string') {
+      console.warn('[analyzeRetentionImpact] Invalid conversation data, skipping');
+      return;
+    }
+
+    if (
+      typeof conv.paraphrasisRequired !== 'number' ||
+      typeof conv.paraphrasisDetected !== 'number' ||
+      !conv.createdAt
+    ) {
+      console.warn('[analyzeRetentionImpact] Invalid metrics data for conversation, skipping');
+      return;
+    }
+
     if (!userParaphrasisExperience[conv.userId]) {
       userParaphrasisExperience[conv.userId] = {
         totalRequired: 0,
@@ -131,13 +194,13 @@ export async function analyzeRetentionImpact(options = {}) {
     }
   });
 
-  if (usersWithParaphrasis.length < cohortSize / 2 || usersWithoutParaphrasis.length < cohortSize / 2) {
+  if (usersWithParaphrasis.length < normalizedCohortSize / 2 || usersWithoutParaphrasis.length < normalizedCohortSize / 2) {
     return {
       retentionD7: null,
       retentionD30: null,
       sampleSize: conversations.length,
       relativeLift: null,
-      error: `Insufficient users in each cohort (need at least ${cohortSize / 2} per group)`,
+      error: `Insufficient users in each cohort (need at least ${normalizedCohortSize / 2} per group)`,
       groupSizes: {
         withParaphrasis: usersWithParaphrasis.length,
         withoutParaphrasis: usersWithoutParaphrasis.length,

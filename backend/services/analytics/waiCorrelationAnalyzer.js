@@ -47,51 +47,94 @@ function calculatePearsonCorrelation(x, y) {
  * @returns {Promise<Object>} Análisis de correlación
  */
 export async function analyzeWaiCorrelation(options = {}) {
+  // Validar tipo de options
+  if (!options || typeof options !== 'object' || Array.isArray(options)) {
+    console.warn('[analyzeWaiCorrelation] Invalid options type, using empty object');
+    options = {};
+  }
+
   const { startDate, endDate } = options;
 
   const matchFilters = {};
   if (startDate || endDate) {
     matchFilters.createdAt = {};
-    if (startDate) matchFilters.createdAt.$gte = new Date(startDate);
-    if (endDate) matchFilters.createdAt.$lte = new Date(endDate);
+    if (startDate) {
+      try {
+        matchFilters.createdAt.$gte = new Date(startDate);
+        if (isNaN(matchFilters.createdAt.$gte.getTime())) {
+          console.warn('[analyzeWaiCorrelation] Invalid startDate, ignoring');
+          delete matchFilters.createdAt.$gte;
+        }
+      } catch (error) {
+        console.warn('[analyzeWaiCorrelation] Error parsing startDate:', error);
+      }
+    }
+    if (endDate) {
+      try {
+        matchFilters.createdAt.$lte = new Date(endDate);
+        if (isNaN(matchFilters.createdAt.$lte.getTime())) {
+          console.warn('[analyzeWaiCorrelation] Invalid endDate, ignoring');
+          delete matchFilters.createdAt.$lte;
+        }
+      } catch (error) {
+        console.warn('[analyzeWaiCorrelation] Error parsing endDate:', error);
+      }
+    }
+    // Si no quedó ningún filtro de fecha válido, eliminar el objeto
+    if (Object.keys(matchFilters.createdAt).length === 0) {
+      delete matchFilters.createdAt;
+    }
   }
 
-  // Obtener conversaciones con métricas de paráfrasis y WAI feedback
-  const conversations = await Conversation.aggregate([
-    { $match: matchFilters },
-    {
-      $lookup: {
-        from: 'sessionalliancefeedbacks',
-        localField: '_id',
-        foreignField: 'conversationId',
-        as: 'waiFeedback',
-      },
-    },
-    {
-      $match: {
-        'metrics.paraphrasisRequired': { $exists: true, $gt: 0 },
-        'waiFeedback.0': { $exists: true },
-        'waiFeedback.0.status': 'SUBMITTED',
-      },
-    },
-    {
-      $project: {
-        _id: 1,
-        userId: 1,
-        paraphrasisRequired: '$metrics.paraphrasisRequired',
-        paraphrasisDetected: '$metrics.paraphrasisDetected',
-        paraphrasisRate: {
-          $cond: {
-            if: { $gt: ['$metrics.paraphrasisRequired', 0] },
-            then: { $divide: ['$metrics.paraphrasisDetected', '$metrics.paraphrasisRequired'] },
-            else: 0,
-          },
+  let conversations;
+  try {
+    // Obtener conversaciones con métricas de paráfrasis y WAI feedback
+    conversations = await Conversation.aggregate([
+      { $match: matchFilters },
+      {
+        $lookup: {
+          from: 'sessionalliancefeedbacks',
+          localField: '_id',
+          foreignField: 'conversationId',
+          as: 'waiFeedback',
         },
-        waiFeedback: { $arrayElemAt: ['$waiFeedback', 0] },
-        createdAt: 1,
       },
-    },
-  ]);
+      {
+        $match: {
+          'metrics.paraphrasisRequired': { $exists: true, $gt: 0 },
+          'waiFeedback.0': { $exists: true },
+          'waiFeedback.0.status': 'SUBMITTED',
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          userId: 1,
+          paraphrasisRequired: '$metrics.paraphrasisRequired',
+          paraphrasisDetected: '$metrics.paraphrasisDetected',
+          paraphrasisRate: {
+            $cond: {
+              if: { $gt: ['$metrics.paraphrasisRequired', 0] },
+              then: { $divide: ['$metrics.paraphrasisDetected', '$metrics.paraphrasisRequired'] },
+              else: 0,
+            },
+          },
+          waiFeedback: { $arrayElemAt: ['$waiFeedback', 0] },
+          createdAt: 1,
+        },
+      },
+    ]);
+  } catch (error) {
+    console.error('[analyzeWaiCorrelation] Database error:', error);
+    return {
+      correlation: null,
+      sampleSize: 0,
+      avgWaiWithParaphrasis: null,
+      avgWaiWithoutParaphrasis: null,
+      waiDimensions: null,
+      error: 'Database error: ' + error.message,
+    };
+  }
 
   if (conversations.length < 10) {
     return {
