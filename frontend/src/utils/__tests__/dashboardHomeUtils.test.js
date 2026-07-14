@@ -12,6 +12,7 @@ import {
   resolveDashboardStreakDays,
   getLastSessionDisplayText,
   hasDashboardChatContinuity,
+  truncateFocusPreviewText,
 } from '../dashboardHomeUtils';
 
 const HERO_TEXTS_ES = {
@@ -144,6 +145,16 @@ describe('dashboardHomeUtils', () => {
   it('no marca continuidad sin texto visible', () => {
     expect(hasDashboardChatContinuity(null)).toBe(false);
     expect(hasDashboardChatContinuity({ snippet: '  ', bridge: '' })).toBe(false);
+  });
+
+  it('recorta preview del foco en límite de palabra', () => {
+    const long =
+      'Has estado lidiando con problemas para dormir, especialmente al intentar conciliar el sueño tras un día exigente';
+    const preview = truncateFocusPreviewText(long, 72);
+    expect(preview.endsWith('…')).toBe(true);
+    expect(preview.length).toBeLessThanOrEqual(73);
+    expect(preview).not.toMatch(/concili…$/);
+    expect(truncateFocusPreviewText('Corto', 72)).toBe('Corto');
   });
 
   it('genera reacción de ánimo para el check-in', () => {

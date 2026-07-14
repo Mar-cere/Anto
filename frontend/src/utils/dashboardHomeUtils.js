@@ -266,6 +266,24 @@ export function getLastSessionDisplayText(lastSession) {
     : 'Tu conversación sigue en el chat, en privado. Retoma cuando quieras.';
 }
 
+/**
+ * Recorte suave para filas del foco: evita bloques densos y cortes a media palabra.
+ * @param {string} text
+ * @param {number} [maxLen=110]
+ */
+export function truncateFocusPreviewText(text, maxLen = 110) {
+  const normalized = String(text || '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!normalized) return '';
+  const limit = Math.max(24, Number(maxLen) || 110);
+  if (normalized.length <= limit) return normalized;
+  const slice = normalized.slice(0, limit - 1);
+  const lastSpace = slice.lastIndexOf(' ');
+  const base = lastSpace > Math.floor(limit * 0.45) ? slice.slice(0, lastSpace) : slice;
+  return `${base}…`;
+}
+
 export function hasDashboardChatContinuity(lastSession) {
   return Boolean(getLastSessionDisplayText(lastSession));
 }

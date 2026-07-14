@@ -10,7 +10,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { createDashboardFocusStyles } from '../styles/focusCardTheme';
 import { updateSessionCommitment, renegotiateSessionCommitment } from '../services/sessionCommitmentsService';
-import { getLastSessionDisplayText } from '../utils/dashboardHomeUtils';
+import { getLastSessionDisplayText, truncateFocusPreviewText } from '../utils/dashboardHomeUtils';
 import {
   buildCommitmentDisplayTitle,
   buildCommitmentFollowUpPrompt,
@@ -26,7 +26,12 @@ import {
   resolveFocusNextHabit,
   resolveFocusNextHabitSubtitle,
 } from '../utils/focusNextHabitNavigation';
-import { filterDashboardCommitments } from '../utils/commitmentLabelUtils';
+import {
+  commitmentBelongsToContinuityThread,
+  filterDashboardCommitments,
+  isConcreteCommitmentLabel,
+  looksLikeChatBubbleCommitmentLabel,
+} from '../utils/commitmentLabelUtils';
 import { postCommitmentTelemetry } from '../utils/commitmentTelemetry';
 
 const MAX_COMMITMENT_FOLLOW_UP_ATTEMPTS = 2;
@@ -148,7 +153,19 @@ function normalizePreloadedChatCopy(reminder, language, DASH) {
   return reminder;
 }
 
-const FocusActionRow = memo(({ icon, title, subtitle, badge, onPress, a11yLabel, styles, iconColor, chevronColor, showChevron }) => (
+const FocusActionRow = memo(({
+  icon,
+  title,
+  subtitle,
+  badge,
+  onPress,
+  a11yLabel,
+  styles,
+  iconColor,
+  chevronColor,
+  showChevron,
+  subtitleLines = 2,
+}) => (
   <Pressable
     onPress={onPress}
     disabled={!onPress}
@@ -164,11 +181,13 @@ const FocusActionRow = memo(({ icon, title, subtitle, badge, onPress, a11yLabel,
     </View>
     <View style={styles.actionCopy}>
       {badge ? (
-        <View style={styles.lastSessionTitleBlock}>
-          <Text style={[styles.actionTitle, styles.lastSessionHeadline]} numberOfLines={2}>
+        <View style={styles.lastSessionTitleRow}>
+          <Text style={[styles.actionTitle, styles.lastSessionHeadline]} numberOfLines={1}>
             {title}
           </Text>
-          <Text style={styles.lastSessionBadge}>{badge}</Text>
+          <Text style={[styles.lastSessionBadge, styles.lastSessionBadgeInline]} numberOfLines={1}>
+            {badge}
+          </Text>
         </View>
       ) : (
         <Text style={styles.actionTitle} numberOfLines={2}>
@@ -176,7 +195,7 @@ const FocusActionRow = memo(({ icon, title, subtitle, badge, onPress, a11yLabel,
         </Text>
       )}
       {subtitle ? (
-        <Text style={styles.actionMeta} numberOfLines={badge ? 3 : 2}>
+        <Text style={styles.actionMeta} numberOfLines={subtitleLines}>
           {subtitle}
         </Text>
       ) : null}
@@ -227,10 +246,46 @@ const DashboardFocusCard = ({
   const baWeekNext = data?.baWeekNext;
   const exposureNext = data?.exposureNext;
   const commitments = Array.isArray(data?.commitments) ? data.commitments : [];
-  const visibleCommitments = useMemo(
-    () => filterDashboardCommitments(commitments, { hasBaWeekRow: Boolean(baWeekNext) }),
-    [commitments, baWeekNext],
+
+  const lastSessionFullText = useMemo(
+    () => getLastSessionDisplayText(lastSession),
+    [lastSession],
   );
+  const lastSessionText = useMemo(
+    () => truncateFocusPreviewText(lastSessionFullText, 88),
+    [lastSessionFullText],
+  );
+  const hasChatContinuity = Boolean(lastSessionFullText);
+  const lastSessionConvId = lastSession?.conversationId ? String(lastSession.conversationId) : null;
+
+  const visibleCommitments = useMemo(
+    () =>
+      filterDashboardCommitments(commitments, {
+        hasBaWeekRow: Boolean(baWeekNext),
+        hasChatContinuity,
+        continuityConversationId: lastSessionConvId,
+      }),
+    [commitments, baWeekNext, hasChatContinuity, lastSessionConvId],
+  );
+
+  /** Compromiso pendiente oculto bajo continuidad: pista suave en la fila del chat. */
+  const continuityCommitmentHint = useMemo(() => {
+    if (!hasChatContinuity) return null;
+    const pending = (commitments || []).find(
+      (item) =>
+        item?.status === 'active' &&
+        item?.followUpAnswer === 'pending' &&
+        item?.followUpDue !== true &&
+        !looksLikeChatBubbleCommitmentLabel(item?.label) &&
+        isConcreteCommitmentLabel(item?.label) &&
+        commitmentBelongsToContinuityThread(item, lastSessionConvId),
+    );
+    if (!pending) return null;
+    const label = String(pending.label || '').trim();
+    if (!label) return null;
+    return label.length > 72 ? `${label.slice(0, 71)}…` : label;
+  }, [commitments, hasChatContinuity, lastSessionConvId]);
+
   const reportedFollowUpRef = useRef(new Set());
   const isCommitmentFollowUpDue = useCallback((item) => {
     return (
@@ -351,14 +406,6 @@ const DashboardFocusCard = ({
     const localized = normalizeReminderForLanguage(picked, language, DASH);
     return normalizePreloadedChatCopy(localized, language, DASH);
   }, [reminder?.candidates, isCompact, language, DASH]);
-
-  const lastSessionText = useMemo(
-    () => getLastSessionDisplayText(lastSession),
-    [lastSession],
-  );
-
-  const hasChatContinuity = Boolean(lastSessionText);
-  const lastSessionConvId = lastSession?.conversationId ? String(lastSession.conversationId) : null;
 
   const showChatReminder =
     displayedReminder && !(hasChatContinuity && displayedReminder.kind === 'chat');
@@ -514,19 +561,27 @@ const DashboardFocusCard = ({
       });
     }
     if (showLastSessionRow) {
+      const continuityTitle = lastSession?.headline || DASH.FOCUS_CHAT_CONTINUITY_HEADLINE;
+      const continuityBadge = lastSession?.recentActivityPending
+        ? DASH.FOCUS_CHAT_CONTINUITY_RECENT_BADGE
+        : lastSession?.placeholder
+          ? DASH.FOCUS_CHAT_CONTINUITY_BADGE
+          : continuityCommitmentHint
+            ? DASH.FOCUS_CHAT_CONTINUITY_PARKED_BADGE
+            : null;
+      const continuityA11yHint = continuityCommitmentHint
+        ? ` ${DASH.FOCUS_CHAT_CONTINUITY_PARKED_BADGE}. ${continuityCommitmentHint}`
+        : '';
       rows.push({
         key: 'last-session',
         icon: 'reader-outline',
-        title: lastSession?.headline || DASH.FOCUS_CHAT_CONTINUITY_HEADLINE,
+        title: continuityTitle,
         subtitle: lastSessionText,
-        badge: lastSession?.recentActivityPending
-          ? DASH.FOCUS_CHAT_CONTINUITY_RECENT_BADGE
-          : lastSession?.placeholder
-            ? DASH.FOCUS_CHAT_CONTINUITY_BADGE
-            : null,
+        badge: continuityBadge,
         onPress: onLastSessionPress,
         showChevron: true,
-        a11yLabel: `${lastSession?.headline || DASH.FOCUS_CHAT_CONTINUITY_HEADLINE}. ${lastSessionText}`,
+        subtitleLines: 1,
+        a11yLabel: `${continuityTitle}. ${lastSessionFullText}${continuityA11yHint}`,
       });
     }
     return rows;
@@ -544,6 +599,8 @@ const DashboardFocusCard = ({
     showLastSessionRow,
     lastSession,
     lastSessionText,
+    lastSessionFullText,
+    continuityCommitmentHint,
     reminderIsPressable,
     onReminderPress,
     onBaWeekPress,
@@ -645,6 +702,7 @@ const DashboardFocusCard = ({
                     onPress={row.onPress}
                     a11yLabel={row.a11yLabel}
                     showChevron={row.showChevron}
+                    subtitleLines={row.subtitleLines}
                     styles={styles}
                     iconColor={colors.primary}
                     chevronColor={chevronMuted}

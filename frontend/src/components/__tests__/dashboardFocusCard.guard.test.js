@@ -88,6 +88,14 @@ describe('dashboardFocusCard guard', () => {
     expect(src).toMatch(/followUpDue === true/);
   });
 
+  it('DashboardFocusCard no duplica continuidad del chat con compromiso pendiente del mismo hilo', () => {
+    const src = readSrc('components/DashboardFocusCard.js');
+    expect(src).toMatch(/hasChatContinuity/);
+    expect(src).toMatch(/continuityConversationId/);
+    expect(src).toMatch(/continuityCommitmentHint/);
+    expect(src).toMatch(/FOCUS_CHAT_CONTINUITY_PARKED_BADGE/);
+  });
+
   it('DashboardFocusCard registra telemetría follow_up_shown en dashboard', () => {
     const src = readSrc('components/DashboardFocusCard.js');
     expect(src).toMatch(/postCommitmentTelemetry/);

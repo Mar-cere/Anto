@@ -89,6 +89,44 @@ describe('commitmentLabelUtils', () => {
     expect(isDashboardCommitmentActionable(freshlySaved)).toBe(true);
   });
 
+  it('con continuidad del chat, oculta el compromiso pendiente que solo invita a retomar el hilo', () => {
+    const parked = {
+      id: 'parked',
+      label: 'Retomar este tramo cuando te venga bien',
+      status: 'active',
+      followUpAnswer: 'pending',
+      followUpDue: false,
+      conversationId: 'conv-1',
+      source: 'chat_proposed',
+    };
+    const dueCheckIn = {
+      id: 'due',
+      label: 'Probar 5 minutos de respiración',
+      status: 'active',
+      followUpAnswer: 'pending',
+      followUpDue: true,
+      conversationId: 'conv-1',
+    };
+    expect(
+      isDashboardCommitmentActionable(parked, {
+        hasChatContinuity: true,
+        continuityConversationId: 'conv-1',
+      }),
+    ).toBe(false);
+    expect(
+      isDashboardCommitmentActionable(dueCheckIn, {
+        hasChatContinuity: true,
+        continuityConversationId: 'conv-1',
+      }),
+    ).toBe(true);
+    expect(
+      filterDashboardCommitments([parked, dueCheckIn], {
+        hasChatContinuity: true,
+        continuityConversationId: 'conv-1',
+      }).map((c) => c.id),
+    ).toEqual(['due']);
+  });
+
   it('oculta compromisos que son eco de burbuja del chat', () => {
     const bubbleEcho = {
       id: 'bubble',

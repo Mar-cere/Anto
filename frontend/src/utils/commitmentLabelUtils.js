@@ -92,6 +92,9 @@ const MAX_DASHBOARD_FOLLOW_UP_ATTEMPTS = 2; // alineado con backend MAX_FOLLOW_U
  * Solo mostrar en dashboard cuando el compromiso es accionable o recién guardado.
  * Evita filas fantasma (vacías / genéricas); sí muestra pendientes recién creados
  * (chips de seguimiento solo cuando followUpDue).
+ *
+ * @param {object} commitment
+ * @param {{ hasBaWeekRow?: boolean, hasChatContinuity?: boolean, continuityConversationId?: string|null }} [options]
  */
 export function isDashboardCommitmentActionable(commitment, options = {}) {
   if (!commitment || commitment.status !== 'active') return false;
@@ -103,8 +106,21 @@ export function isDashboardCommitmentActionable(commitment, options = {}) {
   const attempts = Number(commitment.followUpAttempts || 0);
   if (attempts >= MAX_DASHBOARD_FOLLOW_UP_ATTEMPTS) return false;
 
-  // Compromiso guardado y pendiente: visible ya (p. ej. tras Guardar en el chat)
-  if (commitment.followUpAnswer === 'pending') {
+  const followUpDue = commitment.followUpDue === true;
+  const pending = commitment.followUpAnswer === 'pending';
+
+  // Continuidad del chat ya invita a retomar el hilo: no duplicar con «guardado para más adelante».
+  // Sí mostrar cuando toca follow-up (Sí / En parte / Aún no) — otra tarea.
+  if (
+    options.hasChatContinuity &&
+    pending &&
+    !followUpDue &&
+    commitmentBelongsToContinuityThread(commitment, options.continuityConversationId)
+  ) {
+    return false;
+  }
+
+  if (pending) {
     return true;
   }
 
@@ -117,6 +133,18 @@ export function isDashboardCommitmentActionable(commitment, options = {}) {
   }
 
   return false;
+}
+
+/**
+ * @param {object} commitment
+ * @param {string|null|undefined} continuityConversationId
+ */
+export function commitmentBelongsToContinuityThread(commitment, continuityConversationId) {
+  const cid = String(continuityConversationId || '').trim();
+  if (!cid) return true; // misma intención de «volver al chat» aunque no haya id
+  const commitmentCid = String(commitment?.conversationId || '').trim();
+  if (!commitmentCid) return true;
+  return commitmentCid === cid;
 }
 
 export function filterDashboardCommitments(commitments, options = {}) {

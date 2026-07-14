@@ -267,6 +267,7 @@ export const DASH = {
   FOCUS_CHAT_CONTINUITY_HEADLINE: 'Continuidad del chat',
   FOCUS_CHAT_CONTINUITY_BADGE: 'Vista rápida',
   FOCUS_CHAT_CONTINUITY_RECENT_BADGE: 'Actividad reciente',
+  FOCUS_CHAT_CONTINUITY_PARKED_BADGE: 'Para más adelante',
   FOCUS_PRELOADED_LAST_CHAT_TITLE_EN: 'Retoma tu última conversación',
   FOCUS_PRELOADED_LAST_CHAT_SUBTITLE_EN:
     'Última actividad en el chat: hace {days} días.',
