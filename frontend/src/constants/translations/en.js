@@ -94,7 +94,6 @@ export const ONBOARDING = {
   BENEFIT_1: 'Personalized chat based on how you feel',
   BENEFIT_2: 'CBT techniques and clinical scales (PHQ-9, GAD-7)',
   BENEFIT_3: 'Weekly summary, habits, and crisis resources',
-  BENEFITS_HEADING: 'What you get with Anto',
   DISCLAIMER:
     'Anto does not diagnose and is not a substitute for professional therapy or emergency care.',
   SKIP: 'Skip',
@@ -103,8 +102,6 @@ export const ONBOARDING = {
   GET_STARTED: 'See how it works',
   FINISH: 'Choose my focus',
   SWIPE_TO_SKIP: 'Swipe down to skip',
-  ARROW_HINT: 'Look below',
-  ARROW_HINT_UP: 'Look above',
   STEP_HIGHLIGHTS_HEADING: 'What you can do here',
   STEP_1_LABEL: 'Step 1 · Chat',
   STEP_1_TITLE: 'Talk when you need to',

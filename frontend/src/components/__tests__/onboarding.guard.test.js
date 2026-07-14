@@ -231,7 +231,8 @@ describe('onboarding guard', () => {
     expect(card).toMatch(/resolveOnboardingBrandAccent/);
 
     const tutorial = readSrc('components/OnboardingTutorial.js');
-    expect(tutorial).toMatch(/TEXTS\.BENEFITS_HEADING/);
+    expect(tutorial).not.toMatch(/TEXTS\.BENEFITS_HEADING/);
+    expect(tutorial).not.toMatch(/ARROW_HINT/);
     expect(tutorial).not.toMatch(/currentStepData\.stepLabel/);
     expect(tutorial).toMatch(/OnboardingBenefitCard text=\{currentStepData\.benefit\}/);
     expect(tutorial).toMatch(/primaryBright \|\| brandAccent/);

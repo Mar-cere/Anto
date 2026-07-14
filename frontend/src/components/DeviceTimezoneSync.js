@@ -20,21 +20,25 @@ function guessDeviceTimezone() {
 export default function DeviceTimezoneSync() {
   const { user, applyLocalUser } = useAuth();
   const runningRef = useRef(false);
-  const userId = user?._id ?? user?.id;
+  const preferencesRef = useRef(user?.preferences || {});
+  const userId = user?._id ?? user?.id ?? null;
+  const userTimezone =
+    typeof user?.preferences?.timezone === 'string' ? user.preferences.timezone : null;
+
+  preferencesRef.current = user?.preferences || {};
 
   useEffect(() => {
-    if (!user) return undefined;
+    if (!userId) return undefined;
 
     const maybeSync = async () => {
       if (runningRef.current) return;
       const deviceTz = guessDeviceTimezone();
       if (!deviceTz) return;
-      const currentTz = user?.preferences?.timezone;
-      if (currentTz === deviceTz) return;
+      if (userTimezone === deviceTz) return;
 
       runningRef.current = true;
       try {
-        const currentPreferences = user?.preferences || {};
+        const currentPreferences = preferencesRef.current || {};
         const result = await api.put(ENDPOINTS.UPDATE_PROFILE, {
           preferences: { ...currentPreferences, timezone: deviceTz },
         });
@@ -53,7 +57,7 @@ export default function DeviceTimezoneSync() {
       if (state === 'active') void maybeSync();
     });
     return () => sub.remove();
-  }, [applyLocalUser, user, userId]);
+  }, [applyLocalUser, userId, userTimezone]);
 
   return null;
 }

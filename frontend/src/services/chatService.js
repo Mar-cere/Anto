@@ -36,7 +36,7 @@ async function readStoredUserData() {
 }
 
 // Inicializar el servicio (conversación + socket de chat)
-export const initializeSocket = async () => {
+export const initializeSocket = async (options = {}) => {
   try {
     devLog('Inicializando servicio de chat');
     
@@ -46,7 +46,9 @@ export const initializeSocket = async () => {
       return false;
     }
 
-    await assertChatAccessOrThrow(await readStoredUserData());
+    if (options.skipAccessCheck !== true) {
+      await assertChatAccessOrThrow(await readStoredUserData());
+    }
 
     let conversationId = await AsyncStorage.getItem('currentConversationId');
     

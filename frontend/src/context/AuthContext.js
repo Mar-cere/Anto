@@ -12,6 +12,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { api, ENDPOINTS, login as apiLogin, logout as apiLogout } from '../config/api';
+import {
+  clearSubscriptionStatusClientCache,
+  clearTrialInfoClientCache,
+} from '../services/paymentService';
 import { updateUser as updateUserService } from '../services/userService';
 import {
   AUTH_STORAGE_KEYS,
@@ -19,6 +23,7 @@ import {
   registerOnSessionInvalidated,
 } from '../utils/authTokenRefresh';
 import { isAuthError, isNetworkError } from '../utils/apiErrorHandler';
+import { areUserSnapshotsEqual } from '../utils/userSnapshotEqual';
 
 const STORAGE_KEYS = AUTH_STORAGE_KEYS;
 
@@ -127,6 +132,8 @@ export const AuthProvider = ({ children }) => {
     try {
       await apiLogout();
     } finally {
+      clearTrialInfoClientCache();
+      clearSubscriptionStatusClientCache();
       setUser(null);
     }
   }, []);
@@ -139,11 +146,12 @@ export const AuthProvider = ({ children }) => {
 
   /**
    * Aplica un snapshot de usuario tras PUT /me (evita GET /me con caché obsoleta).
+   * No llama setUser si el snapshot es idéntico → evita cascadas en chat/focus.
    */
   const applyLocalUser = useCallback(async (userSnapshot) => {
     if (!userSnapshot || typeof userSnapshot !== 'object') return;
     await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userSnapshot));
-    setUser(userSnapshot);
+    setUser((prev) => (areUserSnapshotsEqual(prev, userSnapshot) ? prev : userSnapshot));
   }, []);
 
   const value = {

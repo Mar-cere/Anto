@@ -156,15 +156,16 @@ if (
 }
 
 if (
-  tutorial.includes('TEXTS.BENEFITS_HEADING') &&
   tutorial.includes('OnboardingBenefitCard text={currentStepData.benefit}') &&
   tutorial.includes('OnboardingStepHighlights') &&
+  !tutorial.includes('TEXTS.BENEFITS_HEADING') &&
+  !tutorial.includes('ARROW_HINT') &&
   !tutorial.includes('colors.warning') &&
   !tutorial.includes('colors.success')
 ) {
-  pass('onboarding: eyebrow unificado, beneficio y highlights por paso');
+  pass('onboarding: beneficio y highlights por paso sin eyebrow ni arrow hint');
 } else {
-  fail('onboarding: eyebrow unificado, beneficio y highlights por paso');
+  fail('onboarding: beneficio y highlights por paso sin eyebrow ni arrow hint');
 }
 
 if (brand.includes('getOnboardingConicSegments')) {

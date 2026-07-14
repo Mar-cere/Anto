@@ -51,7 +51,10 @@ jest.mock('react-native', () => ({
 }));
 
 // Importar después de mocks
-import paymentService, { clearTrialInfoClientCache } from '../paymentService';
+import paymentService, {
+  clearSubscriptionStatusClientCache,
+  clearTrialInfoClientCache,
+} from '../paymentService';
 import { Linking, Platform } from 'react-native';
 import storeKitService from '../storeKitService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -72,6 +75,8 @@ describe('PaymentService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    clearTrialInfoClientCache();
+    clearSubscriptionStatusClientCache();
     mockLinking.canOpenURL.mockResolvedValue(true);
     mockLinking.openURL.mockResolvedValue(undefined);
   });

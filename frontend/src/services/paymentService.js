@@ -21,10 +21,22 @@ let trialInfoClientCache = null;
 let trialInfoClientCacheExpiresAt = 0;
 let trialInfoInFlight = null;
 
+/** Caché corta en memoria para no duplicar GET /subscription-status en el mismo foco de chat. */
+const SUBSCRIPTION_STATUS_CLIENT_CACHE_MS = 20 * 1000;
+let subscriptionStatusClientCache = null;
+let subscriptionStatusClientCacheExpiresAt = 0;
+let subscriptionStatusInFlight = null;
+
 export function clearTrialInfoClientCache() {
   trialInfoClientCache = null;
   trialInfoClientCacheExpiresAt = 0;
   trialInfoInFlight = null;
+}
+
+export function clearSubscriptionStatusClientCache() {
+  subscriptionStatusClientCache = null;
+  subscriptionStatusClientCacheExpiresAt = 0;
+  subscriptionStatusInFlight = null;
 }
 
 function classifyStoreKitError(result) {
@@ -633,6 +645,21 @@ class PaymentService {
    */
   async getSubscriptionStatus(opts = {}) {
     const forceRefresh = opts.forceRefresh === true;
+    const now = Date.now();
+
+    if (
+      !forceRefresh &&
+      subscriptionStatusClientCache &&
+      now < subscriptionStatusClientCacheExpiresAt
+    ) {
+      return subscriptionStatusClientCache;
+    }
+
+    if (!forceRefresh && subscriptionStatusInFlight) {
+      return subscriptionStatusInFlight;
+    }
+
+    const request = (async () => {
     try {
       if (forceRefresh) {
         try {
@@ -641,6 +668,7 @@ class PaymentService {
         } catch (cacheError) {
           console.warn('[PaymentService] Error limpiando caché local de suscripción:', cacheError);
         }
+        clearSubscriptionStatusClientCache();
       }
 
       const response = forceRefresh
@@ -655,11 +683,14 @@ class PaymentService {
           const cached = await AsyncStorage.getItem('subscription_status_cache');
           if (cached) {
             const parsed = JSON.parse(cached);
-            return {
+            const result = {
               success: true,
               ...parsed,
               fromCache: true
             };
+            subscriptionStatusClientCache = result;
+            subscriptionStatusClientCacheExpiresAt = Date.now() + SUBSCRIPTION_STATUS_CLIENT_CACHE_MS;
+            return result;
           }
         } catch (cacheError) {
           console.warn('[PaymentService] Error leyendo caché local:', cacheError);
@@ -682,10 +713,13 @@ class PaymentService {
         console.warn('[PaymentService] Error guardando caché local:', cacheError);
       }
       
-      return {
+      const result = {
         success: true,
         ...response,
       };
+      subscriptionStatusClientCache = result;
+      subscriptionStatusClientCacheExpiresAt = Date.now() + SUBSCRIPTION_STATUS_CLIENT_CACHE_MS;
+      return result;
     } catch (error) {
       console.error('Error obteniendo estado de suscripción:', error);
       return {
@@ -693,7 +727,15 @@ class PaymentService {
         error: error.message || 'Error al obtener estado de suscripción',
         errorCode: resolveServiceErrorCode(error, 'SUBSCRIPTION_STATUS_ERROR'),
       };
+    } finally {
+      subscriptionStatusInFlight = null;
     }
+    })();
+
+    if (!forceRefresh) {
+      subscriptionStatusInFlight = request;
+    }
+    return request;
   }
 
   /**

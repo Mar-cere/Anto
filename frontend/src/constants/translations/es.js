@@ -94,7 +94,6 @@ export const ONBOARDING = {
   BENEFIT_1: 'Chat personalizado según cómo te sientes',
   BENEFIT_2: 'Técnicas de TCC y escalas clínicas (PHQ-9, GAD-7)',
   BENEFIT_3: 'Resumen semanal, hábitos y recursos de crisis',
-  BENEFITS_HEADING: 'Lo que obtienes con Anto',
   DISCLAIMER:
     'Anto no diagnostica ni sustituye terapia profesional ni atención de emergencia.',
   SKIP: 'Omitir',
@@ -103,8 +102,6 @@ export const ONBOARDING = {
   GET_STARTED: 'Ver cómo funciona',
   FINISH: 'Elegir mi foco',
   SWIPE_TO_SKIP: 'Desliza hacia abajo para omitir',
-  ARROW_HINT: 'Mira abajo',
-  ARROW_HINT_UP: 'Mira arriba',
   STEP_HIGHLIGHTS_HEADING: 'Qué puedes hacer aquí',
   STEP_1_LABEL: 'Paso 1 · Chat',
   STEP_1_TITLE: 'Habla cuando lo necesites',

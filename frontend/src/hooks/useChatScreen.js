@@ -125,6 +125,9 @@ export function useChatScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { user } = useAuth();
+  const userRef = useRef(user);
+  userRef.current = user;
+  const userId = user?._id ?? user?.id ?? null;
   const { showToast } = useToast();
   const { isConnected, isInternetReachable } = useNetworkStatus();
   const isOffline = !isConnected || isInternetReachable === false;
@@ -167,6 +170,8 @@ export function useChatScreen() {
   const pendingResumeCommitmentFollowUpRef = useRef(false);
   /** Invalida respuestas en vuelo de loadTccContinuity (p. ej. tras borrar el chat). */
   const tccContinuityRequestIdRef = useRef(0);
+  /** Descarta inits de conversación solapados (anti race / anti loop). */
+  const conversationInitGenerationRef = useRef(0);
   const handleSendRef = useRef(null);
   /** Evita doble POST / doble respuesta del asistente si el usuario envía dos veces muy rápido. */
   const sendRequestInFlightRef = useRef(false);
@@ -425,9 +430,14 @@ export function useChatScreen() {
   }, [navigation]);
 
   const initializeConversation = useCallback(async () => {
+    const initGeneration = conversationInitGenerationRef.current + 1;
+    conversationInitGenerationRef.current = initGeneration;
+    const stillCurrent = () => conversationInitGenerationRef.current === initGeneration;
     const texts = textsRef.current;
     const appLanguage = await getAppLanguage();
+    if (!stillCurrent()) return;
     const dedupeAndSetMessages = (serverMessages, sessionIntentionMeta, flags) => {
+      if (!stillCurrent()) return false;
       const isRegistered = flags?.isRegistered === true;
       if (!serverMessages || serverMessages.length === 0) return false;
       const uniqueMessages = serverMessages.reduce((acc, message) => {
@@ -471,7 +481,7 @@ export function useChatScreen() {
 
       if (userToken) {
         setGuestQuota(null);
-        const mayUseChat = await canAttemptChatAccess(user);
+        const mayUseChat = await canAttemptChatAccess(userRef.current);
         if (!mayUseChat) {
           Alert.alert(texts.SUBSCRIPTION_REQUIRED_TITLE, texts.SUBSCRIPTION_REQUIRED_DEFAULT, [
             { text: texts.COMMON_CANCEL, style: 'cancel', onPress: () => navigation.goBack() },
@@ -484,7 +494,7 @@ export function useChatScreen() {
           setShowSessionIntentionPrompt(false);
           return;
         }
-        await chatService.initializeSocket();
+        await chatService.initializeSocket({ skipAccessCheck: true });
         const paramOpenId = route.params?.openConversationId;
         if (paramOpenId && isValidMongoObjectId24(String(paramOpenId))) {
           const cidParam = String(paramOpenId);
@@ -510,7 +520,7 @@ export function useChatScreen() {
         }
         const idAfterFetch = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
         if (!idAfterFetch) {
-          await chatService.initializeSocket();
+          await chatService.initializeSocket({ skipAccessCheck: true });
           conversationId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
           if (conversationId) {
             const retryPack = await chatService.getMessages(conversationId);
@@ -586,17 +596,19 @@ export function useChatScreen() {
       console.error('[ChatScreen] Error al inicializar chat:', err.message);
       setError(texts.NETWORK_ERROR_INIT);
     } finally {
-      setIsLoading(false);
-      stickToBottomRef.current = true;
-      InteractionManager.runAfterInteractions(() => {
-        scrollToBottomStableRef.current?.(false, { force: true });
-      });
+      if (stillCurrent()) {
+        setIsLoading(false);
+        stickToBottomRef.current = true;
+        InteractionManager.runAfterInteractions(() => {
+          scrollToBottomStableRef.current?.(false, { force: true });
+        });
+      }
     }
   }, [
     navigation,
     route.params?.openConversationId,
     route.params?.resumeCommitmentFollowUp,
-    user,
+    userId,
     applyMessagePagination,
     hydrateCrisisResourcesFromMessages,
     captureUserTurnBaseline,
@@ -1868,6 +1880,22 @@ export function useChatScreen() {
     }
   }, []);
 
+  const initializeConversationRef = useRef(initializeConversation);
+  const loadTrialInfoRef = useRef(loadTrialInfo);
+  const loadTccContinuityRef = useRef(loadTccContinuity);
+  const offerGuestHandoffIfPendingRef = useRef(offerGuestHandoffIfPending);
+  const scheduleLastSessionSummaryDeferredRef = useRef(scheduleLastSessionSummaryDeferred);
+  const cancelActiveStreamRef = useRef(cancelActiveStream);
+  const captureUserTurnBaselineRef = useRef(captureUserTurnBaseline);
+
+  initializeConversationRef.current = initializeConversation;
+  loadTrialInfoRef.current = loadTrialInfo;
+  loadTccContinuityRef.current = loadTccContinuity;
+  offerGuestHandoffIfPendingRef.current = offerGuestHandoffIfPending;
+  scheduleLastSessionSummaryDeferredRef.current = scheduleLastSessionSummaryDeferred;
+  cancelActiveStreamRef.current = cancelActiveStream;
+  captureUserTurnBaselineRef.current = captureUserTurnBaseline;
+
   const hasUserMessagesInChat = useMemo(
     () => hasNonemptyUserTurns(messages),
     [messages],
@@ -1964,44 +1992,46 @@ export function useChatScreen() {
   useFocusEffect(
     useCallback(() => {
       captureVisitBaselineRef.current = true;
+      let active = true;
       (async () => {
         if (await chatService.isGuestChatMode()) {
+          if (!active) return;
           setTrialInfo(null);
         } else {
-          loadTrialInfo();
+          await loadTrialInfoRef.current();
         }
+        if (!active) return;
         const p = await getOfflinePendingMessage();
+        if (!active) return;
         setOfflinePendingMessage(p);
-        await initializeConversation();
+        await initializeConversationRef.current();
+        if (!active) return;
         if (captureVisitBaselineRef.current) {
-          captureUserTurnBaseline(messagesRef.current);
+          captureUserTurnBaselineRef.current(messagesRef.current);
         }
         if (!(await chatService.isGuestChatMode())) {
-          await loadTccContinuity();
+          if (!active) return;
+          await loadTccContinuityRef.current();
         }
       })();
       const handoffTimer = setTimeout(() => {
-        offerGuestHandoffIfPending();
+        if (active) void offerGuestHandoffIfPendingRef.current();
       }, 650);
       return () => {
+        active = false;
         clearTimeout(handoffTimer);
         if (contentSizeScrollTimerRef.current) {
           clearTimeout(contentSizeScrollTimerRef.current);
           contentSizeScrollTimerRef.current = null;
         }
-        cancelActiveStream();
-        void scheduleLastSessionSummaryDeferred();
+        cancelActiveStreamRef.current();
+        void scheduleLastSessionSummaryDeferredRef.current();
         setShowSessionIntentionPrompt(false);
       };
-    }, [
-      loadTrialInfo,
-      loadTccContinuity,
-      initializeConversation,
-      offerGuestHandoffIfPending,
-      scheduleLastSessionSummaryDeferred,
-      cancelActiveStream,
-      captureUserTurnBaseline,
-    ])
+      // Solo foco/blur real. Funciones vía refs para no cancelar el stream al
+      // actualizar el objeto `user` (timezone/región) ni recrear callbacks.
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- intención: deps vacías
+    }, [])
   );
 
   return {

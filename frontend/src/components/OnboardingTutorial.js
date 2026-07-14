@@ -47,7 +47,6 @@ const DEFAULT_TEXTS = {
   BENEFIT_1: 'Chat personalizado según cómo te sientes',
   BENEFIT_2: 'Técnicas de TCC y escalas clínicas (PHQ-9, GAD-7)',
   BENEFIT_3: 'Resumen semanal, hábitos y recursos de crisis',
-  BENEFITS_HEADING: 'Lo que obtienes con Anto',
   DISCLAIMER:
     'Anto no diagnostica ni sustituye terapia profesional ni atención de emergencia.',
   SKIP: 'Omitir',
@@ -56,8 +55,6 @@ const DEFAULT_TEXTS = {
   GET_STARTED: 'Ver cómo funciona',
   FINISH: 'Elegir mi foco',
   SWIPE_TO_SKIP: 'Desliza hacia abajo para omitir',
-  ARROW_HINT: 'Mira abajo',
-  ARROW_HINT_UP: 'Mira arriba',
   STEP_1_TITLE: 'Habla cuando lo necesites',
   STEP_1_DESCRIPTION:
     'El chat es el corazón de Anto: comparte lo que te pasa y recibe apoyo práctico, sin juicios.',
@@ -113,8 +110,7 @@ const OnboardingTutorial = ({
     () => ({ ...DEFAULT_TEXTS, ...translated }),
     [translated],
   );
-  const { colors, resolvedScheme } = useTheme();
-  const dark = resolvedScheme === 'dark';
+  const { colors } = useTheme();
   const [currentStep, setCurrentStep] = useState(-1);
   const [fadeAnim] = useState(new Animated.Value(1));
   const [scaleAnim] = useState(new Animated.Value(1));
@@ -171,20 +167,12 @@ const OnboardingTutorial = ({
           width: '100%',
           alignItems: 'center',
         },
-        eyebrow: {
-          fontSize: 11,
-          fontWeight: '700',
-          letterSpacing: 1.2,
-          textTransform: 'uppercase',
-          color: dark ? colors.primaryBright || colors.primary : colors.primary,
-          marginBottom: 10,
-          textAlign: 'center',
-        },
         title: {
           fontSize: 26,
           fontWeight: '800',
           color: colors.text,
           textAlign: 'center',
+          marginTop: 12,
           marginBottom: 12,
           letterSpacing: -0.3,
         },
@@ -217,7 +205,7 @@ const OnboardingTutorial = ({
           borderRadius: 2,
           overflow: 'hidden',
           marginTop: 4,
-          marginBottom: 8,
+          marginBottom: 4,
         },
         progressFill: {
           height: '100%',
@@ -226,7 +214,6 @@ const OnboardingTutorial = ({
         progressRow: {
           width: '100%',
           flexDirection: 'row',
-          justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: 6,
         },
@@ -234,15 +221,6 @@ const OnboardingTutorial = ({
           fontSize: 12,
           fontWeight: '700',
           color: colors.textSecondary,
-        },
-        arrowHint: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 4,
-        },
-        arrowText: {
-          fontSize: 12,
-          fontWeight: '600',
         },
         footer: {
           flexDirection: 'row',
@@ -263,7 +241,7 @@ const OnboardingTutorial = ({
           opacity: 0.4,
         },
       }),
-    [colors, dark],
+    [colors],
   );
 
   const panResponder = useRef(
@@ -435,24 +413,6 @@ const OnboardingTutorial = ({
           <Text style={styles.progressText}>
             {currentStep + 1} / {totalSteps}
           </Text>
-          {currentStepData.highlightElement ? (
-            <View style={styles.arrowHint}>
-              <MaterialCommunityIcons
-                name={
-                  currentStepData.highlightElement === 'home-focus'
-                    ? 'arrow-up'
-                    : 'arrow-down'
-                }
-                size={15}
-                color={progressAccent}
-              />
-              <Text style={[styles.arrowText, { color: progressAccent }]}>
-                {currentStepData.highlightElement === 'home-focus'
-                  ? TEXTS.ARROW_HINT_UP
-                  : TEXTS.ARROW_HINT}
-              </Text>
-            </View>
-          ) : null}
         </View>
         <View style={styles.progressBar}>
           <View
@@ -463,7 +423,6 @@ const OnboardingTutorial = ({
           />
         </View>
 
-        <Text style={styles.eyebrow}>{TEXTS.BENEFITS_HEADING}</Text>
         <Text style={styles.title}>{currentStepData.title}</Text>
         <Text style={styles.description}>{currentStepData.description}</Text>
 

@@ -10,17 +10,23 @@ import { inferDeviceRegionCountry } from '../utils/deviceRegion';
 export default function DeviceRegionSync() {
   const { user, applyLocalUser } = useAuth();
   const syncedRef = useRef(false);
-  const userId = user?._id ?? user?.id;
+  const preferencesRef = useRef(user?.preferences || {});
+  const userId = user?._id ?? user?.id ?? null;
+  const userRegionCountry =
+    user?.preferences?.regionCountry != null && String(user.preferences.regionCountry).trim()
+      ? String(user.preferences.regionCountry).trim()
+      : null;
+
+  preferencesRef.current = user?.preferences || {};
 
   useEffect(() => {
     syncedRef.current = false;
   }, [userId]);
 
   useEffect(() => {
-    if (!user || syncedRef.current) return;
+    if (!userId || syncedRef.current) return;
 
-    const currentRegion = user?.preferences?.regionCountry;
-    if (currentRegion != null && String(currentRegion).trim()) {
+    if (userRegionCountry) {
       syncedRef.current = true;
       return;
     }
@@ -34,7 +40,7 @@ export default function DeviceRegionSync() {
     syncedRef.current = true;
     (async () => {
       try {
-        const currentPreferences = user?.preferences || {};
+        const currentPreferences = preferencesRef.current || {};
         const result = await api.put(ENDPOINTS.UPDATE_PROFILE, {
           preferences: { ...currentPreferences, regionCountry: iso },
         });
@@ -45,7 +51,7 @@ export default function DeviceRegionSync() {
         // silencioso
       }
     })();
-  }, [applyLocalUser, user, userId]);
+  }, [applyLocalUser, userId, userRegionCountry]);
 
   return null;
 }

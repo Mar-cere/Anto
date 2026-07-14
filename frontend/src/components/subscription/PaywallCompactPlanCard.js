@@ -24,6 +24,8 @@ function PaywallCompactPlanCard({
   );
   const labelKey = PLAN_DURATION_LABEL_KEYS[plan.id];
   const durationLabel = (labelKey && texts[labelKey]) || plan.name;
+  const isSelected = Boolean(selected);
+  const isDisabled = Boolean(disabled);
 
   const styles = useMemo(
     () =>
@@ -34,11 +36,11 @@ function PaywallCompactPlanCard({
           borderRadius: 16,
           paddingVertical: 14,
           paddingHorizontal: 10,
-          borderWidth: selected ? 2 : StyleSheet.hairlineWidth,
-          borderColor: selected ? colors.primary : colors.border,
+          borderWidth: isSelected ? 2 : StyleSheet.hairlineWidth,
+          borderColor: isSelected ? colors.primary : colors.border,
           backgroundColor:
             resolvedScheme === 'dark' ? colors.chromeCard : colors.settingsSectionSurface,
-          opacity: disabled ? 0.55 : 1,
+          opacity: isDisabled ? 0.55 : 1,
         },
         duration: {
           fontSize: 11,
@@ -76,11 +78,11 @@ function PaywallCompactPlanCard({
           color: colors.success,
         },
       }),
-    [colors, resolvedScheme, selected, disabled],
+    [colors, resolvedScheme, isSelected, isDisabled],
   );
 
   const handlePress = () => {
-    if (disabled) return;
+    if (isDisabled) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     onSelect?.(plan);
   };
@@ -94,9 +96,9 @@ function PaywallCompactPlanCard({
     <Pressable
       style={styles.card}
       onPress={handlePress}
-      disabled={disabled}
+      disabled={isDisabled}
       accessibilityRole="button"
-      accessibilityState={{ selected, disabled }}
+      accessibilityState={{ selected: isSelected, disabled: isDisabled }}
     >
       <Text style={styles.duration} numberOfLines={1}>
         {durationLabel}

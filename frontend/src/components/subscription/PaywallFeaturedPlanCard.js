@@ -21,6 +21,8 @@ function PaywallFeaturedPlanCard({
     [plan, monthlyPlan],
   );
   const durationLabel = texts.PAYWALL_DURATION_YEAR || plan.name;
+  const isSelected = Boolean(selected);
+  const isDisabled = Boolean(disabled);
 
   const dark = resolvedScheme === 'dark';
   const styles = useMemo(
@@ -30,9 +32,9 @@ function PaywallFeaturedPlanCard({
           borderRadius: 20,
           overflow: 'hidden',
           marginBottom: 14,
-          borderWidth: selected ? 2 : StyleSheet.hairlineWidth,
-          borderColor: selected ? colors.primaryBright || colors.primary : colors.border,
-          opacity: disabled ? 0.55 : 1,
+          borderWidth: isSelected ? 2 : StyleSheet.hairlineWidth,
+          borderColor: isSelected ? colors.primaryBright || colors.primary : colors.border,
+          opacity: isDisabled ? 0.55 : 1,
         },
         inner: {
           padding: 18,
@@ -102,11 +104,11 @@ function PaywallFeaturedPlanCard({
           fontWeight: '700',
         },
       }),
-    [colors, disabled, selected],
+    [colors, isDisabled, isSelected],
   );
 
   const handlePress = () => {
-    if (disabled) return;
+    if (isDisabled) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     onSelect?.(plan);
   };
@@ -120,9 +122,9 @@ function PaywallFeaturedPlanCard({
     <Pressable
       style={styles.card}
       onPress={handlePress}
-      disabled={disabled}
+      disabled={isDisabled}
       accessibilityRole="button"
-      accessibilityState={{ selected, disabled }}
+      accessibilityState={{ selected: isSelected, disabled: isDisabled }}
     >
       <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
         <Svg width="100%" height="100%" preserveAspectRatio="none">

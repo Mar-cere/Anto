@@ -27,6 +27,7 @@ class WebSocketService {
     this.reconnectDelay = 1000;
     this.lastUserId = null;
     this.chatTurnCleanup = null;
+    this._connectInFlight = null;
   }
 
   _bindSocketHandlers(userId) {
@@ -103,15 +104,28 @@ class WebSocketService {
         return false;
       }
 
-      this.lastUserId = userId ? String(userId) : this.lastUserId;
+      const nextId = userId ? String(userId) : this.lastUserId;
 
       if (this.socket?.connected) {
-        if (userId) {
-          this.socket.emit(CHAT_SOCKET_EVENTS.AUTHENTICATE, { userId });
+        if (nextId) {
+          this.lastUserId = nextId;
+          this.socket.emit(CHAT_SOCKET_EVENTS.AUTHENTICATE, { userId: nextId });
         }
         this.isConnected = true;
         return true;
       }
+
+      // Reutilizar conexión en vuelo del mismo usuario (evita disconnect+create en loops de init).
+      if (
+        this._connectInFlight &&
+        nextId &&
+        this.lastUserId &&
+        String(this.lastUserId) === String(nextId)
+      ) {
+        return this._connectInFlight;
+      }
+
+      this.lastUserId = nextId;
 
       if (this.socket) {
         this.socket.disconnect();
@@ -129,8 +143,8 @@ class WebSocketService {
       this.socket.on('connect', () => {
         this.isConnected = true;
         this.reconnectAttempts = 0;
-        if (userId) {
-          this.socket.emit(CHAT_SOCKET_EVENTS.AUTHENTICATE, { userId });
+        if (nextId) {
+          this.socket.emit(CHAT_SOCKET_EVENTS.AUTHENTICATE, { userId: nextId });
         }
       });
 
@@ -138,11 +152,19 @@ class WebSocketService {
         this.isConnected = false;
       });
 
-      this._bindSocketHandlers(userId);
+      this._bindSocketHandlers(nextId);
 
-      const ok = await this._waitForSocketConnect();
-      this.isConnected = ok && Boolean(this.socket?.connected);
-      return this.isConnected;
+      this._connectInFlight = (async () => {
+        try {
+          const ok = await this._waitForSocketConnect();
+          this.isConnected = ok && Boolean(this.socket?.connected);
+          return this.isConnected;
+        } finally {
+          this._connectInFlight = null;
+        }
+      })();
+
+      return this._connectInFlight;
     } catch (error) {
       console.error('[WebSocketService] Error conectando:', error);
       this.emit('error', error);

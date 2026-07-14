@@ -237,14 +237,18 @@ export default function SubscriptionContent({
 
   const resolvePlanDisabled = (plan) => {
     if (!plan?.id) return true;
-    const isCurrentPlan =
-      subscriptionStatus?.plan && plan.id === subscriptionStatus.plan && hasActiveSubscription;
-    return subscribing || isCurrentPlan;
+    const isCurrentPlan = Boolean(
+      subscriptionStatus?.plan &&
+        plan.id === subscriptionStatus.plan &&
+        hasActiveSubscription,
+    );
+    return Boolean(subscribing) || isCurrentPlan;
   };
 
   const chosenPlan = planById[chosenPlanId];
-  const ctaDisabled =
-    subscribing || !chosenPlanId || !chosenPlan || resolvePlanDisabled(chosenPlan);
+  const ctaDisabled = Boolean(
+    subscribing || !chosenPlanId || !chosenPlan || resolvePlanDisabled(chosenPlan),
+  );
 
   const handleSelectPlan = (plan) => {
     if (!plan?.id || resolvePlanDisabled(plan)) return;
