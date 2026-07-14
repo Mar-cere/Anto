@@ -122,6 +122,13 @@ describe('dashboardFocusCard guard', () => {
     expect(src).toMatch(/editingGoal/);
   });
 
+  it('no reserva bloque "elegir foco" encima de Lo principal ahora si ya hay filas', () => {
+    const src = readSrc('components/DashboardFocusCard.js');
+    expect(src).toMatch(/showStartFocusCta/);
+    expect(src).toMatch(/actionRows\.length === 0/);
+    expect(src).toMatch(/activeFocusInlineLink/);
+  });
+
   it('DashScreen cablea updateFocus para objetivo del foco', () => {
     const src = readSrc('screens/DashScreen.js');
     expect(src).toMatch(/handleSaveCustomGoal/);

@@ -482,8 +482,14 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       marginTop: 4,
     },
     activeFocusStartBlock: {
-      marginBottom: 14,
-      gap: 6,
+      marginBottom: 12,
+      gap: 4,
+      paddingVertical: 4,
+    },
+    activeFocusInlineLink: {
+      alignSelf: 'flex-start',
+      marginTop: 12,
+      paddingVertical: 2,
     },
     activeFocusStartHint: {
       color: t.FOCUS_META,

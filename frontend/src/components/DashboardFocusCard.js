@@ -610,10 +610,17 @@ const DashboardFocusCard = ({
   const showSparseChatLink =
     Boolean(focus?.isSparseActivity && onOpenChat) && !hasAlternateChatEntry;
 
-  const showFocusHero =
-    Boolean(focus?.line) && !hasChatContinuity && !focus?.suppressForChatContinuity;
+  const showFocusHero = (() => {
+    const line = String(focus?.line || '').trim();
+    if (!line) return false;
+    if (hasChatContinuity || focus?.suppressForChatContinuity) return false;
+    return true;
+  })();
   
   const hasActiveFocus = Boolean(activeFocus?.themeId && activeFocus.status === 'active');
+  // No ocupar aire encima de la lista si ya hay «Lo principal ahora».
+  const showStartFocusCta =
+    !hasActiveFocus && Boolean(onOpenFocusOnboarding) && actionRows.length === 0;
 
   useEffect(() => {
     if (!hasActiveFocus && editingGoal) {
@@ -743,7 +750,7 @@ const DashboardFocusCard = ({
               </Text>
             </View>
           </View>
-        ) : onOpenFocusOnboarding ? (
+        ) : showStartFocusCta ? (
           <Pressable
             onPress={onOpenFocusOnboarding}
             style={({ pressed }) => [
@@ -760,7 +767,7 @@ const DashboardFocusCard = ({
 
         {showFocusHero ? (
           <Text style={styles.focusHero} accessibilityRole="text">
-            {focus.line}
+            {String(focus.line).trim()}
           </Text>
         ) : null}
 
@@ -789,6 +796,19 @@ const DashboardFocusCard = ({
                 </View>
               ))}
             </View>
+            {!hasActiveFocus && onOpenFocusOnboarding ? (
+              <Pressable
+                onPress={onOpenFocusOnboarding}
+                style={({ pressed }) => [
+                  styles.activeFocusInlineLink,
+                  pressed && { opacity: 0.85 },
+                ]}
+                accessibilityRole="button"
+                accessibilityLabel={FOCUS_PROGRESS.GOAL_START_CTA}
+              >
+                <Text style={styles.activeFocusStartCta}>{FOCUS_PROGRESS.GOAL_START_CTA}</Text>
+              </Pressable>
+            ) : null}
           </>
         ) : null}
 
