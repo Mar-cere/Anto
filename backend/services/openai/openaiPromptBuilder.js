@@ -7,6 +7,10 @@ import Message from '../../models/Message.js';
 import { buildGroundingPolicySnippet } from '../chat/groundingPolicySnippet.js';
 import { buildCombinedFactsSnippet } from '../userFactsGroundingService.js';
 import {
+  buildParaphrasisPolicySnippet,
+  detectsLackOfUnderstanding,
+} from '../chat/paraphrasisPolicySnippet.js';
+import {
   generateCrisisMessage,
   generateCrisisSystemPrompt,
   generateCrisisWarningContextMessage,
@@ -1176,6 +1180,67 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
       }
     } catch (error) {
       console.warn('[buildContextualizedPrompt] Error loading user facts:', error.message);
+    }
+  }
+
+  // Paraphrasis policy (#55): Reflejar emoción/necesidad antes de intervenir
+  if (!contexto.isGuest) {
+    try {
+      // Detectar si usuario expresa falta de comprensión
+      const userExpressesLackOfUnderstanding = detectsLackOfUnderstanding(
+        mensaje.content || contexto.currentMessage
+      );
+
+      // Obtener último turno del asistente para ver si ya se parafraseó (con validación)
+      const safetyHistory = Array.isArray(contexto.safetyHistory) ? contexto.safetyHistory : [];
+      const lastAssistantTurn = safetyHistory.filter((m) => m && m.role === 'assistant').pop() || null;
+      const previousTurnWasParaphrasis =
+        lastAssistantTurn?.metadata?.paraphrasis?.wasParaphrasis === true;
+
+      // Detectar si es el primer turno del usuario
+      const userMessages = safetyHistory.filter((m) => m && m.role === 'user') || [];
+      const isFirstTurn = userMessages.length === 0;
+
+      // Extraer y validar messageLength
+      const messageContent = String(mensaje.content || contexto.currentMessage || '');
+      const messageLength = messageContent.length;
+
+      // Extraer y validar emotionalIntensity
+      const rawIntensity = contexto.emotional?.intensity;
+      const emotionalIntensity =
+        typeof rawIntensity === 'number' && !isNaN(rawIntensity) && isFinite(rawIntensity)
+          ? Math.max(0, Math.min(10, rawIntensity))
+          : 5;
+
+      // Extraer y validar mainEmotion
+      const rawEmotion = contexto.emotional?.mainEmotion;
+      const mainEmotion = typeof rawEmotion === 'string' ? rawEmotion : undefined;
+
+      // Construir contexto de paráfrasis con valores validados
+      const paraphrasContext = {
+        emotionalIntensity,
+        mainEmotion,
+        isFirstTurn: Boolean(isFirstTurn),
+        isCrisisActive: Boolean(hasCrisisRisk),
+        isFactualQuery: Boolean(forceFactualMode),
+        messageLength,
+        hasAbruptToneChange: Boolean(contexto.toneChange?.isAbrupt),
+        previousTurnWasParaphrasis: Boolean(previousTurnWasParaphrasis),
+        userExpressesLackOfUnderstanding: Boolean(userExpressesLackOfUnderstanding),
+      };
+
+      const paraphrasSnippet = buildParaphrasisPolicySnippet(
+        language,
+        paraphrasContext
+      );
+      if (paraphrasSnippet && typeof paraphrasSnippet === 'string') {
+        systemMessage += paraphrasSnippet;
+      }
+    } catch (error) {
+      console.warn(
+        '[buildContextualizedPrompt] Error building paraphrasis policy:',
+        error.message
+      );
     }
   }
 

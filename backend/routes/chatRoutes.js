@@ -123,6 +123,7 @@ import {
 } from '../services/chatTurnEnhancementsService.js';
 import { shouldShowCommitmentFollowUpChips } from '../services/commitmentFollowUpService.js';
 import { toTccLiteClientPayload } from '../services/chatTccLiteService.js';
+import { detectsLackOfUnderstanding } from '../services/chat/paraphrasisPolicySnippet.js';
 import { normalizeTccLiteState } from '../services/tccLiteConversationStateService.js';
 import { tccLiteStepIndex, tccLiteStepOrder } from '../utils/tccLiteCopy.js';
 import { getAutomaticThoughtDistortionLabel } from '../constants/automaticThoughtDistortionPicker.js';
@@ -1872,6 +1873,34 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   }).catch(() => {})] : [])
                 ]).catch(() => {});
 
+                // Construir contexto de paráfrasis para métricas (#55)
+                const userExpressesLackOfUnderstanding = detectsLackOfUnderstanding(content);
+                const lastAssistantTurn = conversationHistory
+                  .filter((m) => m && m.role === 'assistant')
+                  .pop() || null;
+                const previousTurnWasParaphrasis =
+                  lastAssistantTurn?.metadata?.paraphrasis?.wasParaphrasis === true;
+                const userMessagesInHistory = conversationHistory.filter((m) => m && m.role === 'user') || [];
+                const isFirstTurn = userMessagesInHistory.length === 0;
+                const paraphrasisContext = {
+                  emotionalIntensity:
+                    typeof emotionalAnalysis?.intensity === 'number' && !isNaN(emotionalAnalysis.intensity)
+                      ? Math.max(0, Math.min(10, emotionalAnalysis.intensity))
+                      : 5,
+                  mainEmotion:
+                    typeof emotionalAnalysis?.mainEmotion === 'string'
+                      ? emotionalAnalysis.mainEmotion
+                      : undefined,
+                  isFirstTurn: Boolean(isFirstTurn),
+                  isCrisisActive: Boolean(isCrisis),
+                  isFactualQuery: Boolean(forceFactualMode),
+                  messageLength: String(content || '').length,
+                  hasAbruptToneChange: false, // TODO: implementar detección de cambio de tono
+                  previousTurnWasParaphrasis: Boolean(previousTurnWasParaphrasis),
+                  userExpressesLackOfUnderstanding: Boolean(userExpressesLackOfUnderstanding),
+                  language: appLanguageForChat || 'es',
+                };
+
                 await finalizeChatTurnEnhancements({
                   conversationId,
                   userId: req.user._id,
@@ -1885,6 +1914,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
                   commitmentFollowUpCommitmentId: turnEnhancements.commitmentFollowUpCommitmentId,
                   showCommitmentFollowUpChips,
+                  assistantMessageContent: response.content,
+                  paraphrasisContext,
                 }).catch(() => {});
 
                 scheduleRollingSummaryRefresh({
@@ -2248,6 +2279,34 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           }).catch(() => {})] : [])
         ]).catch(() => {}); // Ignorar errores en operaciones no críticas
 
+        // Construir contexto de paráfrasis para métricas (#55)
+        const userExpressesLackOfUnderstanding = detectsLackOfUnderstanding(content);
+        const lastAssistantTurn = conversationHistory
+          .filter((m) => m && m.role === 'assistant')
+          .pop() || null;
+        const previousTurnWasParaphrasis =
+          lastAssistantTurn?.metadata?.paraphrasis?.wasParaphrasis === true;
+        const userMessagesInHistory = conversationHistory.filter((m) => m && m.role === 'user') || [];
+        const isFirstTurn = userMessagesInHistory.length === 0;
+        const paraphrasisContext = {
+          emotionalIntensity:
+            typeof emotionalAnalysis?.intensity === 'number' && !isNaN(emotionalAnalysis.intensity)
+              ? Math.max(0, Math.min(10, emotionalAnalysis.intensity))
+              : 5,
+          mainEmotion:
+            typeof emotionalAnalysis?.mainEmotion === 'string'
+              ? emotionalAnalysis.mainEmotion
+              : undefined,
+          isFirstTurn: Boolean(isFirstTurn),
+          isCrisisActive: Boolean(isCrisis),
+          isFactualQuery: Boolean(forceFactualMode),
+          messageLength: String(content || '').length,
+          hasAbruptToneChange: false, // TODO: implementar detección de cambio de tono
+          previousTurnWasParaphrasis: Boolean(previousTurnWasParaphrasis),
+          userExpressesLackOfUnderstanding: Boolean(userExpressesLackOfUnderstanding),
+          language: appLanguageForChat || 'es',
+        };
+
         await finalizeChatTurnEnhancements({
           conversationId,
           userId: req.user._id,
@@ -2261,6 +2320,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
           commitmentFollowUpCommitmentId: turnEnhancements.commitmentFollowUpCommitmentId,
           showCommitmentFollowUpChips,
+          assistantMessageContent: response.content,
+          paraphrasisContext,
         }).catch(() => {});
 
         scheduleRollingSummaryRefresh({

@@ -3253,6 +3253,85 @@ export const USER_FACTS = {
   CATEGORY_OTHER: 'Other',
 };
 
+export const SCHEDULED_SESSIONS = {
+  SCREEN_TITLE: 'Scheduled Sessions',
+  EMPTY_TITLE: 'No scheduled sessions',
+  EMPTY_MESSAGE:
+    'Set up weekly reminders for your sessions with Anto. We will notify you on the days and times you choose.',
+  EMPTY_CTA: 'Schedule first session',
+  ADD_SESSION_CTA: 'Add session',
+  SESSION_CARD_EDIT: 'Edit',
+  SESSION_CARD_DELETE: 'Delete',
+  SESSION_CARD_TOGGLE_OFF: 'Deactivate',
+  SESSION_CARD_TOGGLE_ON: 'Activate',
+  DELETE_CONFIRM_TITLE: 'Delete session',
+  DELETE_CONFIRM_MESSAGE:
+    'This session will be permanently deleted. This action cannot be undone.',
+  DELETE_CANCEL: 'Cancel',
+  DELETE_CONFIRM: 'Delete',
+  TOAST_DELETED: 'Session deleted',
+  TOAST_ERROR: 'Could not complete. Try again.',
+  TOAST_SAVED: 'Session saved',
+  TOAST_TOGGLED_ON: 'Session activated',
+  TOAST_TOGGLED_OFF: 'Session deactivated',
+  TOAST_PAUSED: 'Sessions paused',
+  TOAST_RESUMED: 'Sessions resumed',
+  LOADING: 'Loading sessions…',
+  ERROR_LOADING: 'Could not load sessions',
+  RETRY: 'Retry',
+  PAUSE_ALL_CTA: 'Pause all',
+  RESUME_ALL_CTA: 'Resume',
+  PAUSED_BANNER_TITLE: 'Sessions paused',
+  PAUSED_BANNER_MESSAGE: 'Your sessions are paused until {{date}}',
+
+  // Create/edit modal
+  MODAL_CREATE_TITLE: 'New session',
+  MODAL_EDIT_TITLE: 'Edit session',
+  MODAL_DONE: 'Done',
+  MODAL_CANCEL: 'Cancel',
+  MODAL_SAVE: 'Save',
+  MODAL_SAVING: 'Saving…',
+  MODAL_DAY_LABEL: 'Day of week',
+  MODAL_TIME_LABEL: 'Time',
+  MODAL_TIME_PLACEHOLDER: 'Select a time',
+  MODAL_LABEL_LABEL: 'Label (optional)',
+  MODAL_LABEL_PLACEHOLDER: 'E.g., Morning session',
+  MODAL_LABEL_HINT: 'Give this session a custom name',
+  MODAL_ERROR_TITLE: 'Error',
+  MODAL_ERROR_INVALID_DAY: 'Select a day of the week',
+  MODAL_ERROR_INVALID_TIME: 'Select a valid time',
+  MODAL_ERROR_DUPLICATE: 'A session already exists for this day and time',
+  MODAL_ERROR_LIMIT_REACHED: 'You have reached the limit of 10 sessions',
+  MODAL_ERROR_ACTIVE_LIMIT: 'You have reached the limit of 7 active sessions',
+
+  // Pause modal
+  PAUSE_MODAL_TITLE: 'Pause sessions',
+  PAUSE_MODAL_MESSAGE:
+    'For how many days do you want to pause all session notifications?',
+  PAUSE_MODAL_DAYS_LABEL: 'Days',
+  PAUSE_MODAL_CONFIRM: 'Pause',
+  PAUSE_MODAL_CANCEL: 'Cancel',
+  PAUSE_MODAL_ERROR_INVALID: 'Days must be between 1 and 90',
+
+  // Days of the week
+  DAY_SUNDAY: 'Sunday',
+  DAY_MONDAY: 'Monday',
+  DAY_TUESDAY: 'Tuesday',
+  DAY_WEDNESDAY: 'Wednesday',
+  DAY_THURSDAY: 'Thursday',
+  DAY_FRIDAY: 'Friday',
+  DAY_SATURDAY: 'Saturday',
+
+  // Short days
+  DAY_SHORT_SUNDAY: 'Sun',
+  DAY_SHORT_MONDAY: 'Mon',
+  DAY_SHORT_TUESDAY: 'Tue',
+  DAY_SHORT_WEDNESDAY: 'Wed',
+  DAY_SHORT_THURSDAY: 'Thu',
+  DAY_SHORT_FRIDAY: 'Fri',
+  DAY_SHORT_SATURDAY: 'Sat',
+};
+
 export default {
   HOME,
   REGISTER,
@@ -3274,5 +3353,6 @@ export default {
   PROFILE,
   SUBSCRIPTION,
   USER_FACTS,
+  SCHEDULED_SESSIONS,
   API_ERRORS,
 };

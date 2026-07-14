@@ -17,4 +17,6 @@ export const ROUTES = {
   FOCUS_PROGRESS: 'FocusProgress',
   // User facts (#63 grounding)
   USER_FACTS: 'UserFacts',
+  // Scheduled sessions (#15)
+  SCHEDULED_SESSIONS: 'ScheduledSessions',
 }; 

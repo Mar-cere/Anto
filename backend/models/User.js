@@ -106,8 +106,127 @@ const userSchema = new mongoose.Schema({
       default: 'light'
     },
     notifications: {
-      type: Boolean,
-      default: true
+      enabled: {
+        type: Boolean,
+        default: true
+      },
+      emailEnabled: {
+        type: Boolean,
+        default: true
+      },
+      pushEnabled: {
+        type: Boolean,
+        default: true
+      },
+      scheduledSessions: {
+        enabled: {
+          type: Boolean,
+          default: false
+        },
+        sessions: {
+          type: [{
+            id: {
+              type: String,
+              required: true,
+              trim: true,
+              maxlength: [64, 'El ID de sesión no puede exceder 64 caracteres']
+            },
+            dayOfWeek: {
+              type: Number,
+              required: true,
+              min: [0, 'El día de la semana debe estar entre 0 (domingo) y 6 (sábado)'],
+              max: [6, 'El día de la semana debe estar entre 0 (domingo) y 6 (sábado)'],
+              validate: {
+                validator: function(v) {
+                  return Number.isInteger(v);
+                },
+                message: 'El día de la semana debe ser un número entero'
+              }
+            },
+            time: {
+              type: String,
+              required: true,
+              trim: true,
+              match: [/^([01]\d|2[0-3]):([0-5]\d)$/, 'El horario debe estar en formato HH:mm (24h)']
+            },
+            isActive: {
+              type: Boolean,
+              default: true
+            },
+            label: {
+              type: String,
+              default: null,
+              trim: true,
+              maxlength: [50, 'La etiqueta no puede exceder 50 caracteres'],
+              validate: {
+                validator: function(v) {
+                  if (!v) return true; // null o vacío es válido
+                  // Rechazar newlines, tabs, caracteres problemáticos
+                  return !/[\r\n\t<>{}]/.test(v);
+                },
+                message: 'La etiqueta contiene caracteres no permitidos'
+              }
+            },
+            notificationId: {
+              type: String,
+              default: null,
+              trim: true,
+              maxlength: [128, 'El ID de notificación no puede exceder 128 caracteres']
+            },
+            createdAt: {
+              type: Date,
+              default: Date.now
+            },
+            updatedAt: {
+              type: Date,
+              default: Date.now
+            }
+          }],
+          default: [],
+          validate: [
+            {
+              validator: function(v) {
+                return v.length <= 10;
+              },
+              message: 'Máximo 10 sesiones programadas permitidas'
+            },
+            {
+              validator: function(v) {
+                // Validar unicidad de IDs
+                const ids = v.map(s => s.id).filter(id => id);
+                const uniqueIds = new Set(ids);
+                return ids.length === uniqueIds.size;
+              },
+              message: 'Los IDs de sesión deben ser únicos'
+            },
+            {
+              validator: function(v) {
+                // Validar máximo de sesiones activas
+                const activeSessions = v.filter(s => s.isActive === true);
+                return activeSessions.length <= 7;
+              },
+              message: 'Máximo 7 sesiones activas simultáneas permitidas'
+            }
+          ]
+        },
+        lastNotificationAt: {
+          type: Date,
+          default: null
+        },
+        pausedUntil: {
+          type: Date,
+          default: null,
+          validate: {
+            validator: function(v) {
+              if (!v) return true;
+              const maxFuture = new Date();
+              maxFuture.setDate(maxFuture.getDate() + 90);
+              return v <= maxFuture;
+            },
+            message: 'pausedUntil no puede ser más de 90 días en el futuro'
+          }
+        }
+      }
     },
     language: {
       type: String,
