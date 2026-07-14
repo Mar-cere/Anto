@@ -1161,6 +1161,19 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     systemMessage += onboardingSnippet;
   }
 
+  // Focus accompaniment context (#2 Fase 3)
+  if (!contexto.isGuest) {
+    try {
+      const { buildFocusPromptSnippet } = await import('../focusPromptSnippetService.js');
+      const focusSnippet = await buildFocusPromptSnippet(mensaje.userId, language);
+      if (focusSnippet) {
+        systemMessage += `\n\n${focusSnippet}`;
+      }
+    } catch (error) {
+      console.warn('[buildContextualizedPrompt] Error loading focus snippet:', error.message);
+    }
+  }
+
   const retentionSnippet = buildSessionRetentionSystemSnippet(contexto.sessionRetention, {
     sessionPhase: contexto.sessionPhase || 'default',
     language

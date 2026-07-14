@@ -61,6 +61,8 @@ import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import SummaryScreen from '../screens/SummaryScreen';
 import SessionInsightScreen from '../screens/SessionInsightScreen';
 import WeeklyInsightScreen from '../screens/WeeklyInsightScreen';
+import FocusOnboardingScreen from '../screens/focus/FocusOnboardingScreen';
+import FocusProgressScreen from '../screens/focus/FocusProgressScreen';
 import { useTheme } from '../context/ThemeContext';
 import TabNavigator from './TabNavigator';
 
@@ -400,6 +402,18 @@ const StackNavigator = ({ initialRouteName = ROUTE_NAMES.HOME }) => {
       <Stack.Screen
         name={ROUTE_NAMES.CHANGE_PASSWORD}
         component={ChangePasswordScreen}
+        options={{ headerShown: false }}
+      />
+      
+      {/* Focus accompaniment screens (#2) */}
+      <Stack.Screen
+        name={ROUTES.FOCUS_ONBOARDING}
+        component={FocusOnboardingScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name={ROUTES.FOCUS_PROGRESS}
+        component={FocusProgressScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

@@ -370,6 +370,78 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
     ctaArrow: {
       marginLeft: 8,
     },
+    // Active Focus Theme Display (#2)
+    activeFocusContainer: {
+      marginBottom: 20,
+      paddingVertical: 16,
+      paddingHorizontal: 16,
+      backgroundColor: colors.chromeInput,
+      borderRadius: 16,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.accentLineSoft,
+    },
+    activeFocusHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    activeFocusIconWrap: {
+      width: 36,
+      height: 36,
+      borderRadius: 10,
+      backgroundColor: colors.accentLineSoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: 12,
+    },
+    activeFocusTitleRow: {
+      flex: 1,
+      minWidth: 0,
+    },
+    activeFocusTheme: {
+      color: colors.text,
+      fontSize: 17,
+      fontWeight: '600',
+      lineHeight: 22,
+      marginBottom: 2,
+    },
+    activeFocusWeek: {
+      color: t.FOCUS_META,
+      fontSize: 13,
+      lineHeight: 17,
+      fontWeight: '400',
+    },
+    activeFocusGoal: {
+      color: t.FOCUS_BODY_SOFT,
+      fontSize: 14,
+      lineHeight: 20,
+      marginBottom: 12,
+      fontStyle: 'italic',
+    },
+    activeFocusProgressContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    activeFocusProgressTrack: {
+      flex: 1,
+      height: 6,
+      backgroundColor: colors.border,
+      borderRadius: 3,
+      overflow: 'hidden',
+    },
+    activeFocusProgressFill: {
+      height: '100%',
+      backgroundColor: colors.primary,
+      borderRadius: 3,
+    },
+    activeFocusProgressLabel: {
+      color: t.FOCUS_META,
+      fontSize: 12,
+      fontWeight: '600',
+      minWidth: 32,
+      textAlign: 'right',
+    },
   });
 }
 

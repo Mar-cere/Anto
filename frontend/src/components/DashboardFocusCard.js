@@ -197,8 +197,10 @@ const DashboardFocusCard = ({
   onOpenNextTask,
   onOpenNextHabit,
   onCommitmentsChanged,
+  onOpenFocusProgress,
 }) => {
   const DASH = useSectionTranslations('DASH');
+  const FOCUS_PROGRESS = useSectionTranslations('FOCUS_PROGRESS');
   const { language } = useLanguage();
   const { width } = useWindowDimensions();
   const { colors, resolvedScheme } = useTheme();
@@ -218,6 +220,7 @@ const DashboardFocusCard = ({
   const reminder = data?.reminder;
   const lastSession = data?.lastSessionSummary;
   const focus = data?.focus;
+  const activeFocus = data?.activeFocus;
   const protocolNext = data?.protocolNext;
   const nextTask = useMemo(() => resolveFocusNextTask(data), [data]);
   const nextHabit = useMemo(() => resolveFocusNextHabit(data), [data]);
@@ -557,6 +560,8 @@ const DashboardFocusCard = ({
 
   const showFocusHero =
     Boolean(focus?.line) && !hasChatContinuity && !focus?.suppressForChatContinuity;
+  
+  const hasActiveFocus = Boolean(activeFocus?.themeId && activeFocus.status === 'active');
 
   if (!data) return null;
 
@@ -567,6 +572,56 @@ const DashboardFocusCard = ({
       accessibilityLabel={DASH.FOCUS_REMINDER_SECTION}
     >
       <View style={styles.card}>
+        {hasActiveFocus ? (
+          <Pressable
+            onPress={onOpenFocusProgress ? () => onOpenFocusProgress(activeFocus) : null}
+            disabled={!onOpenFocusProgress}
+            style={({ pressed }) => [
+              styles.activeFocusContainer,
+              pressed && onOpenFocusProgress && { opacity: 0.9 },
+            ]}
+            accessibilityRole={onOpenFocusProgress ? 'button' : 'text'}
+            accessibilityLabel={`${activeFocus.themeName}, ${FOCUS_PROGRESS.WEEK_LABEL.replace('{current}', activeFocus.weekNumber).replace('{total}', activeFocus.durationWeeks)}`}
+          >
+            <View style={styles.activeFocusHeader}>
+              <View style={styles.activeFocusIconWrap}>
+                <Ionicons name={activeFocus.icon || 'flag-outline'} size={20} color={colors.primary} />
+              </View>
+              <View style={styles.activeFocusTitleRow}>
+                <Text style={styles.activeFocusTheme} numberOfLines={1}>
+                  {activeFocus.themeName}
+                </Text>
+                <Text style={styles.activeFocusWeek} numberOfLines={1}>
+                  {FOCUS_PROGRESS.WEEK_LABEL
+                    .replace('{current}', String(activeFocus.weekNumber))
+                    .replace('{total}', String(activeFocus.durationWeeks))}
+                </Text>
+              </View>
+              {onOpenFocusProgress ? (
+                <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+              ) : null}
+            </View>
+            {activeFocus.customGoal ? (
+              <Text style={styles.activeFocusGoal} numberOfLines={2}>
+                {activeFocus.customGoal}
+              </Text>
+            ) : null}
+            <View style={styles.activeFocusProgressContainer}>
+              <View style={styles.activeFocusProgressTrack}>
+                <View
+                  style={[
+                    styles.activeFocusProgressFill,
+                    { width: `${activeFocus.progress || 0}%` },
+                  ]}
+                />
+              </View>
+              <Text style={styles.activeFocusProgressLabel}>
+                {activeFocus.progress || 0}%
+              </Text>
+            </View>
+          </Pressable>
+        ) : null}
+
         {showFocusHero ? (
           <Text style={styles.focusHero} accessibilityRole="text">
             {focus.line}

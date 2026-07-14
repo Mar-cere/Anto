@@ -25,6 +25,7 @@ import DashboardScroll from '../components/DashboardScroll';
 import EmergencyContactsModal from '../components/EmergencyContactsModal';
 import FloatingNavBar from '../components/FloatingNavBar';
 import websocketService from '../services/websocketService';
+import { logFocusTelemetry } from '../services/focusService';
 import {
   mergeFocusResponse,
   shouldRefreshHomeOnFocus,
@@ -306,6 +307,19 @@ const DashScreen = () => {
         focusRes.data
       ) {
         setFocusPayload(focusRes.data);
+        
+        // Telemetría: dashboard viewed con foco activo
+        if (focusRes.data?.activeFocus?.themeId) {
+          logFocusTelemetry({
+            eventType: 'focus_dashboard_viewed',
+            themeId: focusRes.data.activeFocus.themeId,
+            metadata: {
+              weekNumber: focusRes.data.activeFocus.weekNumber,
+              progress: focusRes.data.activeFocus.progress,
+              source: 'dashboard',
+            },
+          });
+        }
       } else {
         setFocusPayload(null);
       }
@@ -607,6 +621,21 @@ const DashScreen = () => {
     navigation.navigate('Tasks', buildFocusNextHabitNavParams(nextHabit));
   }, [navigation]);
 
+  const openFocusOnboarding = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    navigation.navigate('FocusOnboarding', {
+      onComplete: () => refreshHomeDataOnFocus({ force: true }),
+    });
+  }, [navigation, refreshHomeDataOnFocus]);
+
+  const openFocusProgress = useCallback((activeFocus) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    navigation.navigate('FocusProgress', {
+      focus: activeFocus,
+      onUpdate: () => refreshHomeDataOnFocus({ force: true }),
+    });
+  }, [navigation, refreshHomeDataOnFocus]);
+
   const refreshHomeDataOnFocus = useCallback(async ({ force = false } = {}) => {
     if (homeRefreshInFlightRef.current) return;
     if (!force && !shouldRefreshHomeOnFocus(lastHomeRefreshAtRef.current)) return;
@@ -825,6 +854,7 @@ const DashScreen = () => {
             onOpenNextTask={openNextTaskFromFocus}
             onOpenNextHabit={openNextHabitFromFocus}
             onCommitmentsChanged={() => refreshHomeDataOnFocus({ force: true })}
+            onOpenFocusProgress={openFocusProgress}
           />
           <DashboardStreakHero
             streakDays={dashboardStats.streakDays}

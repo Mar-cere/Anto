@@ -11,5 +11,8 @@ export const ROUTES = {
   MAIN_TABS: 'MainTabs',
   CHAT: 'Chat',
   PROFILE: 'Profile',
-  SETTINGS: 'Settings'
+  SETTINGS: 'Settings',
+  // Focus accompaniment (#2)
+  FOCUS_ONBOARDING: 'FocusOnboarding',
+  FOCUS_PROGRESS: 'FocusProgress',
 }; 

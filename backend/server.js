@@ -65,6 +65,7 @@ import behavioralActivationRoutes from './routes/behavioralActivationRoutes.js';
 import automaticThoughtRoutes from './routes/automaticThoughtRoutes.js';
 import summaryRoutes from './routes/summaryRoutes.js';
 import signalsRoutes from './routes/signalsRoutes.js';
+import focusRoutes from './routes/focusRoutes.js';
 
 // Constantes de configuración
 const APP_VERSION = '1.5.3';
@@ -356,6 +357,7 @@ app.use('/api/exposure-plans', exposurePlanRoutes);
 app.use('/api/behavioral-activation-logs', behavioralActivationRoutes);
 app.use('/api/automatic-thought-logs', automaticThoughtRoutes);
 app.use('/api/summary', summaryRoutes);
+app.use('/api/focus', focusRoutes);
 app.use('/api/signals', signalsRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
