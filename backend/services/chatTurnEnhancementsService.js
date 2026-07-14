@@ -32,6 +32,9 @@ import { sanitizeProposedCommitments } from '../utils/sanitizeProposedCommitment
 import { buildSessionCommitmentPromptSnippet } from './sessionCommitmentPromptSnippet.js';
 import { markCommitmentFollowUpShown } from './sessionCommitmentService.js';
 import metricsService from './metricsService.js';
+import { detectParaphrasisInResponse } from './chat/paraphrasDetectionService.js';
+import { recordParaphrasMetrics } from './chat/paraphrasMetricsService.js';
+import { shouldRequireParaphrasis, markTurnAsParaphrasis } from './chat/paraphrasisPolicySnippet.js';
 
 const CHAT_CONTEXT_SNIPPET_TIMEOUT_MS = 2500;
 
@@ -286,6 +289,22 @@ export function buildAssistantMetadataWithEnhancements(baseMetadata, tccLitePlan
 
 /**
  * Persistencia post-respuesta (best-effort).
+ * 
+ * @param {Object} params - Parámetros de finalización
+ * @param {string} params.conversationId - ID de la conversación
+ * @param {string} params.userId - ID del usuario
+ * @param {string} params.assistantMessageId - ID del mensaje del asistente
+ * @param {Object} params.tccLitePlan - Plan TCC lite
+ * @param {Object} params.suggestionPlan - Plan de sugerencias
+ * @param {Object} params.emotionalAnalysis - Análisis emocional
+ * @param {Object} params.contextualAnalysis - Análisis contextual
+ * @param {string} params.userContent - Contenido del mensaje del usuario
+ * @param {string} params.riskLevel - Nivel de riesgo
+ * @param {Object} [params.commitmentFollowUpPlan] - Plan de follow-up de compromiso
+ * @param {string} [params.commitmentFollowUpCommitmentId] - ID del compromiso
+ * @param {boolean} [params.showCommitmentFollowUpChips] - Si mostrar chips de follow-up
+ * @param {string} [params.assistantMessageContent] - Contenido del mensaje del asistente (para paráfrasis #55)
+ * @param {Object} [params.paraphrasisContext] - Contexto de paráfrasis (para registro de métricas #55)
  */
 export async function finalizeChatTurnEnhancements({
   conversationId,
@@ -300,6 +319,8 @@ export async function finalizeChatTurnEnhancements({
   commitmentFollowUpPlan = null,
   commitmentFollowUpCommitmentId = null,
   showCommitmentFollowUpChips = false,
+  assistantMessageContent = null,
+  paraphrasisContext = null,
 }) {
   await saveTccLiteStateToConversation(conversationId, tccLitePlan).catch(() => {});
 
@@ -380,6 +401,47 @@ export async function finalizeChatTurnEnhancements({
         },
       },
     ).catch(() => {});
+  }
+
+  // Paráfrasis detección y métricas (#55): Analizar si la respuesta del asistente
+  // contiene paráfrasis y registrar métricas para análisis de impacto.
+  if (assistantMessageId && assistantMessageContent && userContent && paraphrasisContext) {
+    try {
+      // Determinar si se requería paráfrasis según las reglas de la policy
+      const wasRequired = shouldRequireParaphrasis(paraphrasisContext);
+
+      // Detectar si la respuesta del asistente contiene paráfrasis
+      const paraphrasisDetection = detectParaphrasisInResponse(
+        assistantMessageContent,
+        userContent,
+        paraphrasisContext.language || 'es'
+      );
+
+      // Registrar métricas de paráfrasis
+      await recordParaphrasMetrics(conversationId, assistantMessageId, {
+        wasRequired,
+        wasDetected: paraphrasisDetection.hasParaphrasis,
+        confidence: paraphrasisDetection.confidence,
+        emotionalContext: emotionalAnalysis,
+      });
+
+      // Si se detectó paráfrasis, marcar en metadata para cooldown
+      if (paraphrasisDetection.hasParaphrasis && wasRequired) {
+        const markedMetadata = markTurnAsParaphrasis({});
+        await Message.updateOne(
+          { _id: assistantMessageId },
+          {
+            $set: {
+              'metadata.paraphrasis.wasParaphrasis': markedMetadata.paraphrasis.wasParaphrasis,
+              'metadata.paraphrasis.timestamp': markedMetadata.paraphrasis.timestamp,
+            },
+          },
+        ).catch(() => {});
+      }
+    } catch (error) {
+      // Best-effort: no fallar el flujo si las métricas de paráfrasis fallan
+      console.warn('[finalizeChatTurnEnhancements] Error recording paraphrasis metrics:', error);
+    }
   }
 }
 
