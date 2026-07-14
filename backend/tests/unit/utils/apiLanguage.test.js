@@ -3,6 +3,7 @@ import { normalizeApiLanguage, resolveRequestLanguage } from '../../../utils/api
 describe('apiLanguage', () => {
   it('normaliza en y default es', () => {
     expect(normalizeApiLanguage('en')).toBe('en');
+    expect(normalizeApiLanguage('en-US')).toBe('en');
     expect(normalizeApiLanguage('fr')).toBe('es');
   });
 

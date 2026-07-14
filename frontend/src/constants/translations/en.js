@@ -477,6 +477,8 @@ export const FOCUS_PROGRESS = {
   GOAL_EMPTY_CTA: 'What do you want to hold onto this week?',
   GOAL_PLACEHOLDER: 'One concrete thing you want to hold onto…',
   GOAL_SAVE: 'Save',
+  GOAL_SAVING_A11Y: 'Saving your goal',
+  GOAL_SAVE_ERROR: 'Could not save your goal. Please try again.',
   GOAL_CANCEL: 'Cancel',
   GOAL_EDIT_A11Y: 'Edit your goal',
   GOAL_EDIT_HINT: 'Tap to edit',

@@ -63,6 +63,7 @@ import {
 } from '../services/index.js';
 import { scheduleLastSessionSummary } from '../services/lastSessionSummaryService.js';
 import { getTodayDailyMoodCheckIn } from '../services/dailyMoodCheckInService.js';
+import { buildMoodBridgeWelcome } from '../utils/dailyMoodCopy.js';
 import { recordEngagementSignal } from '../services/engagementStreakService.js';
 import { buildSessionInsight } from '../services/sessionInsightService.js';
 import {
@@ -244,9 +245,19 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
             : Date.now();
           const welcomeCreatedAt = new Date(baseTime - 1000);
 
-          const welcomeContent = openaiService.generarSaludoPersonalizado({
-            language: req.appLanguage,
-          });
+          // Puente de check-in solo en hilos vacíos: en hilos con historial el welcome
+          // se retro-fecha y hablar del ánimo de hoy quedaría fuera de contexto.
+          const todayMood = earliestMessage
+            ? null
+            : await getTodayDailyMoodCheckIn(userId, {
+                language: req.appLanguage,
+              }).catch(() => null);
+          const moodBridgeWelcome = buildMoodBridgeWelcome(todayMood, req.appLanguage);
+          const welcomeContent =
+            moodBridgeWelcome ||
+            openaiService.generarSaludoPersonalizado({
+              language: req.appLanguage,
+            });
           const welcomeMessage = new Message({
             userId,
             content: welcomeContent,
@@ -255,7 +266,14 @@ router.get('/conversations/:conversationId', protect, validarConversationId, val
             metadata: {
               context: { preferences: {} },
               status: 'sent',
-              type: 'welcome'
+              type: 'welcome',
+              ...(moodBridgeWelcome
+                ? {
+                    fromMoodCheckIn: true,
+                    moodCheckInMood: todayMood.mood,
+                    moodCheckInDateKey: todayMood.dateKey || null,
+                  }
+                : {}),
             }
           });
           await welcomeMessage.save();
@@ -662,17 +680,23 @@ router.post('/conversations', protect, requireActiveSubscription(true), async (r
       });
     }
 
-    // Crear conversación
+    // Crear conversación (el check-in del día se consulta en paralelo para no sumar latencia)
     const conversation = new Conversation({
       userId,
       ...(intention ? { sessionIntention: intention } : {})
     });
-    await conversation.save();
+    const [todayMood] = await Promise.all([
+      getTodayDailyMoodCheckIn(userId, { language: req.appLanguage }).catch(() => null),
+      conversation.save(),
+    ]);
 
-    // Mensaje de bienvenida con saludo por momento del día (sin await de perfil para evitar +1 ronda DB)
-    const welcomeContent = openaiService.generarSaludoPersonalizado({
-      language: req.appLanguage,
-    });
+    // Mensaje de bienvenida: si hay check-in de ánimo hoy, usar puente (no repreguntar el ánimo).
+    const moodBridgeWelcome = buildMoodBridgeWelcome(todayMood, req.appLanguage);
+    const welcomeContent =
+      moodBridgeWelcome ||
+      openaiService.generarSaludoPersonalizado({
+        language: req.appLanguage,
+      });
     const welcomeMessage = new Message({
       userId,
       content: welcomeContent,
@@ -682,6 +706,13 @@ router.post('/conversations', protect, requireActiveSubscription(true), async (r
         context: { preferences: {} },
         status: 'sent',
         type: 'welcome',
+        ...(moodBridgeWelcome
+          ? {
+              fromMoodCheckIn: true,
+              moodCheckInMood: todayMood.mood,
+              moodCheckInDateKey: todayMood.dateKey || null,
+            }
+          : {}),
       },
     });
     await welcomeMessage.save();

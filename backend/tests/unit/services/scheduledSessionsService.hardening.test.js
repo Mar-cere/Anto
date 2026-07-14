@@ -162,7 +162,7 @@ describe('scheduledSessionsService - Hardening', () => {
         },
         markModified: jest.fn(),
         save: jest.fn().mockResolvedValue(true),
-      });
+      };
 
       mockUser.findById.mockResolvedValue(mockUserObj);
 

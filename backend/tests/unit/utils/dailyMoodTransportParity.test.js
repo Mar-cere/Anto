@@ -33,6 +33,15 @@ describe('Daily mood transport parity', () => {
     expect(promptSrc).toMatch(/buildDailyMoodPromptSnippet/);
   });
 
+  it('welcome del chat usa el puente de check-in y lo persiste en metadata', () => {
+    const chatSrc = readSource('routes/chatRoutes.js');
+    expect(chatSrc).toMatch(/buildMoodBridgeWelcome/);
+    // Ambos sitios de creación de welcome consultan el puente antes del saludo genérico.
+    const bridgeUses = chatSrc.match(/buildMoodBridgeWelcome\(todayMood/g) || [];
+    expect(bridgeUses.length).toBeGreaterThanOrEqual(2);
+    expect(chatSrc).toMatch(/fromMoodCheckIn: true,\s*moodCheckInMood: todayMood\.mood/);
+  });
+
   it('cliente usa query plana y cache offline', () => {
     expect(serviceSrc).toMatch(/encodeURIComponent\(tz\)/);
     expect(serviceSrc).not.toMatch(/api\.get\([^,]+,\s*\{\s*params/);

@@ -58,7 +58,8 @@ describe('openaiPromptBuilder — guardrails de brevedad/factual/identidad clín
       }
     );
     expect(systemMessage).toContain('133');
-    expect(systemMessage).toMatch(/600\s*360\s*7777/);
+    expect(systemMessage).toMatch(/\*4141/);
+    expect(systemMessage).toContain('131');
   });
 
   it('mantiene prioridad clínica al activar modo factual con carga emocional alta', async () => {

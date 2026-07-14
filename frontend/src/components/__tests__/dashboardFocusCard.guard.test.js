@@ -122,6 +122,16 @@ describe('dashboardFocusCard guard', () => {
     expect(src).toMatch(/editingGoal/);
   });
 
+  it('guardar objetivo muestra spinner y avisa con toast si falla', () => {
+    const src = readSrc('components/DashboardFocusCard.js');
+    expect(src).toMatch(/useToast/);
+    expect(src).toMatch(/GOAL_SAVE_ERROR/);
+    expect(src).toMatch(/type: 'error'/);
+    expect(src).toMatch(/savingGoal \? \(\s*<ActivityIndicator/);
+    expect(src).toMatch(/busy: savingGoal/);
+    expect(src).toMatch(/GOAL_SAVING_A11Y/);
+  });
+
   it('no reserva bloque "elegir foco" encima de Lo principal ahora si ya hay filas', () => {
     const src = readSrc('components/DashboardFocusCard.js');
     expect(src).toMatch(/showStartFocusCta/);

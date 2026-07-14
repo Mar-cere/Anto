@@ -36,7 +36,7 @@ export async function getScheduledSessions(userId) {
   
   // Filtrar sesiones activas si están pausadas globalmente
   const now = new Date();
-  const isPaused = pausedUntil && new Date(pausedUntil) > now;
+  const isPaused = Boolean(pausedUntil && new Date(pausedUntil) > now);
   
   return sessions.map((session) => ({
     ...session,

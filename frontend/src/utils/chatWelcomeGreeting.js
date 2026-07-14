@@ -155,9 +155,10 @@ export function localizeChatWelcomeMessages(messages, language = 'es') {
   return messages.map((message) => {
     if (!isChatWelcomeMessage(message)) return message;
     const moodKey = String(message.metadata?.moodCheckInMood || '').trim();
+    const moodDateKey = String(message.metadata?.moodCheckInDateKey || '').trim();
     const bridge =
       message.metadata?.fromMoodCheckIn === true && moodKey
-        ? pickMoodBridgeWelcomeGreeting(moodKey, language)
+        ? pickMoodBridgeWelcomeGreeting(moodKey, language, moodDateKey)
         : null;
     return {
       ...message,

@@ -45,6 +45,13 @@ function resolveTestMongoUri() {
 }
 
 /**
+ * Indica si hay conexión activa a MongoDB (tests de modelos / persistencia).
+ */
+export function isTestDatabaseConnected() {
+  return mongoose.connection.readyState === 1;
+}
+
+/**
  * Limpiar base de datos de test
  */
 export const clearDatabase = async () => {

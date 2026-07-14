@@ -130,7 +130,9 @@ export function getUpdateSessionSchema(copy) {
  */
 export function getPauseSessionsSchema(copy) {
   return Joi.object({
+    // strict(): el cliente y el servicio exigen número real; no aceptar '30' string.
     pauseDays: Joi.number()
+      .strict()
       .integer()
       .min(1)
       .max(90)

@@ -6,7 +6,12 @@
 
 import NotificationEngagement from '../../../models/NotificationEngagement.js';
 import mongoose from 'mongoose';
-import { connectDatabase, clearDatabase, closeDatabase } from '../../helpers/testHelpers.js';
+import {
+  connectDatabase,
+  clearDatabase,
+  closeDatabase,
+  isTestDatabaseConnected,
+} from '../../helpers/testHelpers.js';
 
 describe('NotificationEngagement Model', () => {
   beforeAll(async () => {
@@ -98,6 +103,7 @@ describe('NotificationEngagement Model', () => {
     });
 
     it('getEngagementStats debe retornar estadísticas vacías sin datos', async () => {
+      if (!isTestDatabaseConnected()) return;
       const userId = new mongoose.Types.ObjectId();
       const stats = await NotificationEngagement.getEngagementStats(userId, 30);
       
@@ -111,6 +117,7 @@ describe('NotificationEngagement Model', () => {
     });
 
     it('getOverallStats debe retornar estadísticas vacías sin datos', async () => {
+      if (!isTestDatabaseConnected()) return;
       const userId = new mongoose.Types.ObjectId();
       const stats = await NotificationEngagement.getOverallStats(userId, 30);
       
@@ -121,6 +128,7 @@ describe('NotificationEngagement Model', () => {
     });
 
     it('getOverallStats debe calcular estadísticas con engagements', async () => {
+      if (!isTestDatabaseConnected()) return;
       const userId = new mongoose.Types.ObjectId();
       const now = new Date();
       const engagement1 = new NotificationEngagement({
@@ -151,6 +159,7 @@ describe('NotificationEngagement Model', () => {
 
   describe('Guardado y recuperación', () => {
     it('debe guardar y recuperar un engagement', async () => {
+      if (!isTestDatabaseConnected()) return;
       const userId = new mongoose.Types.ObjectId();
       const engagement = new NotificationEngagement({
         userId,

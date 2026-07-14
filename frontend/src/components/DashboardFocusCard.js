@@ -5,8 +5,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Text, Pressable, View, useWindowDimensions, TextInput } from 'react-native';
+import { ActivityIndicator, Text, Pressable, View, useWindowDimensions, TextInput } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../context/ToastContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { createDashboardFocusStyles } from '../styles/focusCardTheme';
@@ -209,6 +210,7 @@ const DashboardFocusCard = ({
 }) => {
   const DASH = useSectionTranslations('DASH');
   const FOCUS_PROGRESS = useSectionTranslations('FOCUS_PROGRESS');
+  const { showToast } = useToast();
   const { language } = useLanguage();
   const { width } = useWindowDimensions();
   const { colors, resolvedScheme } = useTheme();
@@ -302,11 +304,12 @@ const DashboardFocusCard = ({
       setEditingGoal(false);
       setGoalDraft('');
     } catch (_) {
-      /* silencioso: se mantiene el editor abierto */
+      // El editor queda abierto con el borrador para reintentar.
+      showToast({ message: FOCUS_PROGRESS.GOAL_SAVE_ERROR, type: 'error' });
     } finally {
       setSavingGoal(false);
     }
-  }, [onSaveCustomGoal, savingGoal, goalDraft]);
+  }, [onSaveCustomGoal, savingGoal, goalDraft, showToast, FOCUS_PROGRESS.GOAL_SAVE_ERROR]);
 
   const handleCommitmentAnswer = useCallback(
     async (id, answer) => {
@@ -690,9 +693,16 @@ const DashboardFocusCard = ({
                       disabled={savingGoal}
                       style={({ pressed }) => [styles.commitmentChip, pressed && { opacity: 0.88 }]}
                       accessibilityRole="button"
-                      accessibilityLabel={FOCUS_PROGRESS.GOAL_SAVE}
+                      accessibilityLabel={
+                        savingGoal ? FOCUS_PROGRESS.GOAL_SAVING_A11Y : FOCUS_PROGRESS.GOAL_SAVE
+                      }
+                      accessibilityState={{ disabled: savingGoal, busy: savingGoal }}
                     >
-                      <Text style={styles.commitmentChipText}>{FOCUS_PROGRESS.GOAL_SAVE}</Text>
+                      {savingGoal ? (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      ) : (
+                        <Text style={styles.commitmentChipText}>{FOCUS_PROGRESS.GOAL_SAVE}</Text>
+                      )}
                     </Pressable>
                     <Pressable
                       onPress={cancelEditGoal}

@@ -2,6 +2,7 @@ import { describe, expect, it } from '@jest/globals';
 import { DAILY_MOOD_VALUES } from '../../../models/DailyMoodCheckIn.js';
 import {
   buildDailyMoodPromptSnippet,
+  buildMoodBridgeWelcome,
   getDailyMoodCopy,
   toClientDailyMoodCheckIn,
 } from '../../../utils/dailyMoodCopy.js';
@@ -78,5 +79,30 @@ describe('dailyMoodCopy', () => {
     expect(esSnippet).toMatch(/tenso/i);
     expect(enSnippet).toMatch(/Do NOT ask how they feel again/i);
     expect(enSnippet).toMatch(/tense/i);
+  });
+
+  describe('buildMoodBridgeWelcome', () => {
+    it('genera welcome puente para cada mood en es y en, sin repreguntar el ánimo', () => {
+      for (const mood of DAILY_MOOD_VALUES) {
+        const es = buildMoodBridgeWelcome({ mood, dateKey: '2026-07-14' }, 'es');
+        const en = buildMoodBridgeWelcome({ mood, dateKey: '2026-07-14' }, 'en');
+        expect(es).toBeTruthy();
+        expect(en).toBeTruthy();
+        expect(es).not.toMatch(/¿Cómo te sientes/i);
+        expect(en).not.toMatch(/How are you feeling/i);
+        expect(hasSpanishVoseo(es)).toBe(false);
+      }
+    });
+
+    it('rota estable por dateKey', () => {
+      const a = buildMoodBridgeWelcome({ mood: 'anxious', dateKey: '2026-07-14' }, 'es');
+      expect(buildMoodBridgeWelcome({ mood: 'anxious', dateKey: '2026-07-14' }, 'es')).toBe(a);
+    });
+
+    it('devuelve null sin check-in o con mood inválido', () => {
+      expect(buildMoodBridgeWelcome(null, 'es')).toBeNull();
+      expect(buildMoodBridgeWelcome({ mood: 'sad' }, 'es')).toBeNull();
+      expect(buildMoodBridgeWelcome({ mood: '' }, 'en')).toBeNull();
+    });
   });
 });

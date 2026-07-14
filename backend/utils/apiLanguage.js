@@ -4,7 +4,7 @@
 import { resolveAppLanguage } from './resolveAppLanguage.js';
 
 export function normalizeApiLanguage(language) {
-  return language === 'en' ? 'en' : 'es';
+  return String(language || '').toLowerCase().startsWith('en') ? 'en' : 'es';
 }
 
 export function resolveRequestLanguage(req) {
