@@ -102,19 +102,6 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
     actionChevron: {
       marginLeft: 6,
     },
-    lastSessionTitleRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      flexWrap: 'nowrap',
-      width: '100%',
-    },
-    lastSessionTitleBlock: {
-      width: '100%',
-    },
-    lastSessionHeadline: {
-      flex: 1,
-      minWidth: 0,
-    },
     lastSessionBadge: {
       alignSelf: 'flex-start',
       marginTop: 4,
@@ -175,18 +162,6 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
     insetLabel: {
       ...dash.SECTION_TITLE,
       marginBottom: 8,
-    },
-    insetTitle: {
-      color: colors.text,
-      fontSize: 16,
-      fontWeight: '500',
-      lineHeight: 22,
-    },
-    insetMeta: {
-      marginTop: 4,
-      fontSize: 13,
-      color: t.FOCUS_META_SOFT,
-      lineHeight: 18,
     },
     commitmentRow: {
       marginBottom: 8,
@@ -294,105 +269,6 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
     ctaSecondaryIcon: {
       marginLeft: 8,
     },
-    /** @deprecated filas sueltas con fondo — mantener por compat de imports */
-    kicker: {
-      fontSize: 11,
-      fontWeight: '600',
-      letterSpacing: 1.6,
-      textTransform: 'uppercase',
-      color: t.FOCUS_KICKER_COLOR,
-      marginBottom: 14,
-    },
-    reminderRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginBottom: 16,
-      paddingVertical: 12,
-      paddingHorizontal: 12,
-      borderRadius: 14,
-      backgroundColor: resolvedScheme === 'dark' ? 'rgba(255, 255, 255, 0.06)' : 'rgba(36, 35, 79, 0.035)',
-    },
-    reminderRowPressable: {
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: t.FOCUS_ACCENT_BORDER,
-    },
-    reminderIconWrap: {
-      ...t.FOCUS_ICON_WRAP,
-      marginRight: 12,
-    },
-    reminderCopy: {
-      flex: 1,
-      minWidth: 0,
-    },
-    reminderTitle: {
-      color: colors.text,
-      fontSize: 15,
-      fontWeight: '500',
-      lineHeight: 20,
-    },
-    reminderMeta: {
-      marginTop: 4,
-      color: t.FOCUS_META,
-      fontSize: 13,
-      lineHeight: 18,
-      fontWeight: '400',
-    },
-    reminderChevron: {
-      marginLeft: 6,
-    },
-    lastSessionRow: {
-      marginBottom: 16,
-    },
-    nextTask: {
-      marginBottom: 18,
-      paddingTop: 12,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: t.FOCUS_BORDER_SUBTLE,
-    },
-    nextTaskLabel: {
-      fontSize: 11,
-      fontWeight: '600',
-      letterSpacing: 1.2,
-      textTransform: 'uppercase',
-      color: t.FOCUS_KICKER_SOFT,
-      marginBottom: 6,
-    },
-    nextTaskTitle: {
-      color: colors.text,
-      fontSize: 15,
-      fontWeight: '400',
-    },
-    nextTaskDue: {
-      marginTop: 4,
-      fontSize: 13,
-      color: t.FOCUS_META_SOFT,
-    },
-    commitmentsBlock: {
-      marginBottom: 18,
-      paddingTop: 12,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: t.FOCUS_BORDER_SUBTLE,
-    },
-    cta: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      alignSelf: 'stretch',
-      backgroundColor: colors.primary,
-      paddingVertical: 12,
-      paddingHorizontal: 12,
-      borderRadius: 999,
-    },
-    ctaText: {
-      color: colors.textOnPrimary,
-      fontSize: 15,
-      fontWeight: '600',
-      letterSpacing: 0.2,
-    },
-    ctaArrow: {
-      marginLeft: 8,
-    },
-    // Active Focus Theme Display (#2)
     activeFocusContainer: {
       marginBottom: 20,
       paddingVertical: 16,
@@ -542,6 +418,3 @@ export const FOCUS_ACCENT_BORDER = _light.FOCUS_ACCENT_BORDER;
 export const FOCUS_PANEL = _light.FOCUS_PANEL;
 export const FOCUS_INNER_ROW = _light.FOCUS_INNER_ROW;
 export const FOCUS_ICON_WRAP = _light.FOCUS_ICON_WRAP;
-
-/** @deprecated Preferir createDashboardFocusStyles(useTheme().colors, scheme) */
-export const dashboardFocusStyles = createDashboardFocusStyles(lightColors, 'light');
