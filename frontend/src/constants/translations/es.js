@@ -8,6 +8,7 @@
  */
 
 import { ONBOARDING_FOCUS_LABELS } from '../onboardingFocusLabels.js';
+import { MOOD_BRIDGE_GREETINGS_ES } from '../../../../backend/constants/moodBridgeGreetings.data.js';
 
 export const HOME = {
   BRAND_NAME: 'Anto',
@@ -230,7 +231,10 @@ export const DASH = {
   FOCUS_BA_MORE_SUFFIX: 'actividades más esta semana',
   FOCUS_BA_OPEN_A11Y: 'Abrir plan semanal de activación conductual',
   FOCUS_EXPOSURE_TITLE: 'Exposición · Paso en curso',
+  FOCUS_EXPOSURE_STEP_LABEL: 'Paso',
   FOCUS_EXPOSURE_OPEN_A11Y: 'Abrir jerarquía de exposición',
+  FOCUS_REMINDER_DUE_PREFIX: 'Vence el ',
+  FOCUS_COMMITMENT_ACTION_ERROR: 'No se pudo guardar la respuesta. Inténtalo de nuevo.',
   TCC_TOOLS_TITLE: 'Herramientas de seguimiento',
   TCC_TOOLS_HINT: 'Protocolos guiados para practicar entre conversaciones con Anto.',
   TCC_TOOLS_BA: 'Activación conductual',
@@ -361,7 +365,7 @@ export const DASH = {
   STREAK_HERO_MOOD_GOOD_TITLE_1: '{name}, qué bueno leerte así.',
   STREAK_HERO_MOOD_GOOD_SUBTITLE_1: '¿Hay algo que quieras celebrar o sostener?',
   STREAK_HERO_MOOD_GOOD_TITLE_2: '{name}, hoy suena con buena energía.',
-  STREAK_HERO_MOOD_GOOD_SUBTITLE_2: 'Podemos aprovechar ese impulso si te apetece.',
+  STREAK_HERO_MOOD_GOOD_SUBTITLE_2: 'Podemos aprovechar ese impulso si quieres.',
   STREAK_HERO_MOOD_GOOD_TITLE_3: '{name}, me gusta cómo llegas.',
   STREAK_HERO_MOOD_GOOD_SUBTITLE_3: '¿Qué te gustaría hacer con ese ánimo hoy?',
   STREAK_HERO_CTA: 'Escríbeme en el chat',
@@ -438,6 +442,8 @@ export const DASH = {
   MOOD_COLLAPSED_HINT: 'Toca si quieres cambiarlo',
   MOOD_EXPAND_A11Y: 'Expandir check-in de ánimo',
   MOOD_COLLAPSE_A11Y: 'Compactar check-in de ánimo',
+  /** Saludos puente home→chat (rotación estable por dateKey; no repreguntar el ánimo). */
+  MOOD_BRIDGE_GREETINGS: MOOD_BRIDGE_GREETINGS_ES,
   PROTOCOL_ACTIVE: 'Protocolo Activo',
   PROTOCOL_NAME_FALLBACK: 'Protocolo Terapéutico',
   PROTOCOL_PROGRESS_TEMPLATE: 'Paso {current} de {total}',
@@ -466,6 +472,7 @@ export const FOCUS_ONBOARDING = {
   DURATION_WEEKS: '{weeks} semanas',
   ERROR_LOADING: 'No se pudieron cargar los temas de foco',
   ERROR_STARTING: 'No se pudo iniciar el foco. Intenta de nuevo',
+  GOAL_MAX_LEN_ERROR: 'El objetivo no puede exceder 200 caracteres',
   ERROR_TITLE: 'Error',
   LOADING: 'Cargando temas...',
   NO_THEMES_AVAILABLE: 'No hay temas disponibles en este momento',

@@ -19,6 +19,7 @@ import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SPACING } from '../../constants/ui';
 import { createGlobalStyles } from '../../styles/globalStyles';
 import { getFocusThemes, startFocus, logFocusTelemetry } from '../../services/focusService';
+import { normalizeCustomGoal } from '../../utils/customGoalUtils';
 
 const FocusOnboardingScreen = ({ navigation, route }) => {
   const { colors, resolvedScheme } = useTheme();
@@ -83,12 +84,9 @@ const FocusOnboardingScreen = ({ navigation, route }) => {
   const handleStart = useCallback(async () => {
     if (!selectedThemeId || starting) return;
     
-    const trimmedGoal = customGoal.trim();
+    const trimmedGoal = String(customGoal || '').trim();
     if (trimmedGoal.length > 200) {
-      Alert.alert(
-        FOCUS_ONBOARDING.ERROR_TITLE,
-        'El objetivo no puede exceder 200 caracteres'
-      );
+      Alert.alert(FOCUS_ONBOARDING.ERROR_TITLE, FOCUS_ONBOARDING.GOAL_MAX_LEN_ERROR);
       return;
     }
 
@@ -96,7 +94,7 @@ const FocusOnboardingScreen = ({ navigation, route }) => {
     try {
       await startFocus({
         themeId: selectedThemeId,
-        customGoal: trimmedGoal || null,
+        customGoal: normalizeCustomGoal(customGoal),
       });
 
       if (navigation?.goBack) {

@@ -91,7 +91,7 @@ function normalizeReminderForLanguage(reminder, language, DASH) {
     if (/^recordatorio hacia las/i.test(subtitle)) {
       subtitle = subtitle.replace(/^recordatorio hacia las/i, DASH.FOCUS_REMINDER_AROUND_PREFIX);
     } else if (/^vence el /i.test(subtitle)) {
-      subtitle = subtitle.replace(/^vence el /i, 'Due ');
+      subtitle = subtitle.replace(/^vence el /i, DASH.FOCUS_REMINDER_DUE_PREFIX);
     }
   } else if (language === 'es') {
     if (/^scheduled reminder\s*\(morning\)/i.test(title)) {
@@ -106,7 +106,7 @@ function normalizeReminderForLanguage(reminder, language, DASH) {
     if (/^reminder around /i.test(subtitle)) {
       subtitle = subtitle.replace(/^reminder around /i, `${DASH.FOCUS_REMINDER_AROUND_PREFIX} `);
     } else if (/^due /i.test(subtitle)) {
-      subtitle = subtitle.replace(/^due /i, 'Vence el ');
+      subtitle = subtitle.replace(/^due /i, DASH.FOCUS_REMINDER_DUE_PREFIX);
     }
   }
 
@@ -326,10 +326,10 @@ const DashboardFocusCard = ({
         }
         onCommitmentsChanged?.();
       } catch (_) {
-        /* silencioso */
+        showToast({ message: DASH.FOCUS_COMMITMENT_ACTION_ERROR, type: 'error' });
       }
     },
-    [onCommitmentsChanged, commitments],
+    [onCommitmentsChanged, commitments, showToast, DASH.FOCUS_COMMITMENT_ACTION_ERROR],
   );
 
   const handleCommitmentOmit = useCallback(
@@ -341,10 +341,10 @@ const DashboardFocusCard = ({
         setRenegotiateLabel('');
         onCommitmentsChanged?.();
       } catch (_) {
-        /* silencioso */
+        showToast({ message: DASH.FOCUS_COMMITMENT_ACTION_ERROR, type: 'error' });
       }
     },
-    [onCommitmentsChanged],
+    [onCommitmentsChanged, showToast, DASH.FOCUS_COMMITMENT_ACTION_ERROR],
   );
 
   const handleCommitmentRenegotiate = useCallback(
@@ -357,10 +357,10 @@ const DashboardFocusCard = ({
         setRenegotiateLabel('');
         onCommitmentsChanged?.();
       } catch (_) {
-        /* silencioso */
+        showToast({ message: DASH.FOCUS_COMMITMENT_ACTION_ERROR, type: 'error' });
       }
     },
-    [onCommitmentsChanged, renegotiateLabel],
+    [onCommitmentsChanged, renegotiateLabel, showToast, DASH.FOCUS_COMMITMENT_ACTION_ERROR],
   );
 
   const baWeekCopy = useMemo(() => {
@@ -396,14 +396,14 @@ const DashboardFocusCard = ({
       exposureNext.stepTotal > 0
         ? `${exposureNext.stepIndex}/${exposureNext.stepTotal}`
         : '';
-    const stepLabel = language === 'en' ? 'Step' : 'Paso';
+    const stepLabel = DASH.FOCUS_EXPOSURE_STEP_LABEL;
     const parts = [
       planTitle,
       stepPart ? `${stepLabel} ${stepPart}` : null,
       stepDesc,
     ].filter(Boolean);
     return { title, subtitle: parts.join(' · ') };
-  }, [exposureNext, DASH, language]);
+  }, [exposureNext, DASH]);
 
   const displayedReminder = useMemo(() => {
     const picked = pickDisplayedReminder(reminder?.candidates, isCompact);
@@ -621,6 +621,8 @@ const DashboardFocusCard = ({
   })();
   
   const hasActiveFocus = Boolean(activeFocus?.themeId && activeFocus.status === 'active');
+  const activeFocusKey = `${activeFocus?.themeId || ''}|${activeFocus?.customGoal ?? ''}`;
+  const prevFocusKeyRef = useRef(activeFocusKey);
   // No ocupar aire encima de la lista si ya hay «Lo principal ahora».
   const showStartFocusCta =
     !hasActiveFocus && Boolean(onOpenFocusOnboarding) && actionRows.length === 0;
@@ -631,6 +633,14 @@ const DashboardFocusCard = ({
       setGoalDraft('');
     }
   }, [hasActiveFocus, editingGoal]);
+
+  useEffect(() => {
+    if (editingGoal && !savingGoal && prevFocusKeyRef.current !== activeFocusKey) {
+      setEditingGoal(false);
+      setGoalDraft('');
+    }
+    prevFocusKeyRef.current = activeFocusKey;
+  }, [activeFocusKey, editingGoal, savingGoal]);
 
   if (!data) return null;
 

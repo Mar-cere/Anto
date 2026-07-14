@@ -2,6 +2,7 @@
  * Copy y metadatos del check-in diario (ES/EN).
  */
 import { DAILY_MOOD_VALUES } from '../models/DailyMoodCheckIn.js';
+import { getMoodBridgeGreetings } from '../constants/moodBridgeGreetings.js';
 
 const COPY = {
   es: {
@@ -15,7 +16,6 @@ const COPY = {
       ],
       antoSnippet: '¿Quieres contarme qué te ayuda a sentirte así de tranquilo?',
       suggestChat: false,
-      chatEmotion: 'tranquilidad',
     },
     anxious: {
       label: 'Tenso',
@@ -27,7 +27,6 @@ const COPY = {
       ],
       antoSnippet: 'Puedo acompañarte ahora con calma, sin apuro.',
       suggestChat: true,
-      chatEmotion: 'ansiedad',
     },
     tired: {
       label: 'Fatiga',
@@ -39,7 +38,6 @@ const COPY = {
       ],
       antoSnippet: 'Si quieres, vemos juntos qué te está pesando.',
       suggestChat: true,
-      chatEmotion: 'cansancio',
     },
     good: {
       label: 'Bien',
@@ -51,7 +49,6 @@ const COPY = {
       ],
       antoSnippet: '¿Quieres contarme qué está ayudando hoy?',
       suggestChat: false,
-      chatEmotion: 'bienestar',
     },
   },
   en: {
@@ -65,7 +62,6 @@ const COPY = {
       ],
       antoSnippet: 'Want to share what helps you feel this calm?',
       suggestChat: false,
-      chatEmotion: 'calm',
     },
     anxious: {
       label: 'Tense',
@@ -77,7 +73,6 @@ const COPY = {
       ],
       antoSnippet: 'I can be with you now, calmly and without rushing.',
       suggestChat: true,
-      chatEmotion: 'anxiety',
     },
     tired: {
       label: 'Tired',
@@ -89,7 +84,6 @@ const COPY = {
       ],
       antoSnippet: 'If you want, we can look at what feels heavy together.',
       suggestChat: true,
-      chatEmotion: 'fatigue',
     },
     good: {
       label: 'Good',
@@ -101,51 +95,7 @@ const COPY = {
       ],
       antoSnippet: 'Want to tell me what is helping today?',
       suggestChat: false,
-      chatEmotion: 'wellbeing',
     },
-  },
-};
-
-/**
- * Saludo de bienvenida cuando ya existe check-in del día (alineado al puente del frontend).
- * No vuelve a preguntar el ánimo.
- */
-const MOOD_BRIDGE_WELCOME = {
-  es: {
-    calm: [
-      'Vi que llegas en calma. Si quieres, cuéntame qué te está sosteniendo.',
-      'Noté tu calma en el home. ¿Quieres usar ese espacio para algo concreto?',
-    ],
-    anxious: [
-      'Vi que llegas tenso. Si quieres, cuéntame qué te está pesando, sin apuro.',
-      'Gracias por marcarlo en el home. Estoy aquí contigo; ¿por dónde empezamos?',
-    ],
-    tired: [
-      'Vi que llegas con fatiga. Podemos ir despacio: ¿qué te está quitando energía?',
-      'Noté tu cansancio en el home. Si quieres, vemos juntos qué pesa hoy.',
-    ],
-    good: [
-      'Vi que estás bien. Si quieres, cuéntame qué está ayudando hoy.',
-      'Qué bueno leerte así en el home. ¿Hay algo que quieras sostener o celebrar?',
-    ],
-  },
-  en: {
-    calm: [
-      'I saw you arrived calm. If you want, tell me what’s holding you up.',
-      'I noticed your calm on home. Want to use that space for something concrete?',
-    ],
-    anxious: [
-      'I saw you arrived tense. If you want, tell me what’s weighing on you — no rush.',
-      'Thanks for marking it on home. I’m here with you; where should we start?',
-    ],
-    tired: [
-      'I saw you’re tired. We can go slowly — what’s draining you?',
-      'I noticed your fatigue on home. If you want, we can look at what feels heavy.',
-    ],
-    good: [
-      'I saw you’re doing well. If you want, tell me what’s helping today.',
-      'Good to read that on home. Anything you’d like to hold onto or celebrate?',
-    ],
   },
 };
 
@@ -195,7 +145,6 @@ export function getDailyMoodCopy(mood, language = 'es', dateKey = null) {
     acknowledgments: base.acknowledgments,
     antoSnippet: base.antoSnippet,
     suggestChat: base.suggestChat,
-    chatEmotion: base.chatEmotion,
   };
 }
 
@@ -210,7 +159,7 @@ export function buildMoodBridgeWelcome(checkIn, language = 'es') {
   const mood = String(checkIn?.mood || '').trim();
   if (!isValidDailyMood(mood)) return null;
   const lang = normalizeDailyMoodLanguage(language);
-  const list = MOOD_BRIDGE_WELCOME[lang][mood] || [];
+  const list = getMoodBridgeGreetings(lang)[mood] || [];
   if (list.length === 0) return null;
   return list[stableIndex(`${checkIn?.dateKey || ''}|${mood}|bridge`, list.length)];
 }
@@ -256,7 +205,6 @@ export function toClientDailyMoodCheckIn(doc, language = 'es') {
     acknowledgment: meta?.acknowledgment || '',
     antoSnippet: meta?.antoSnippet || '',
     suggestChat: Boolean(meta?.suggestChat),
-    chatEmotion: meta?.chatEmotion || null,
     recordedAt: doc.updatedAt || doc.createdAt || null,
     source: doc.source || 'dashboard',
   };

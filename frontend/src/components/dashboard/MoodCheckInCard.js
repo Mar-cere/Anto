@@ -247,11 +247,10 @@ const MoodCheckInCard = memo(({
         ? {
             fromMoodCheckIn: true,
             mood,
-            chatEmotion: checkIn?.chatEmotion || null,
           }
         : null,
     );
-  }, [onOpenChat, checkIn?.mood, checkIn?.chatEmotion]);
+  }, [onOpenChat, checkIn?.mood]);
 
   const handleSecondary = useCallback(() => {
     if (!secondary || !onSecondaryAction) return;

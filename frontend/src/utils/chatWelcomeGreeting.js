@@ -1,6 +1,7 @@
 /**
  * Saludos iniciales del chat (es/en) por franja horaria — alineado a backend GREETING_VARIATIONS.
  */
+import { getTranslations } from '../constants/translations';
 import { sanitizeProposedCommitments } from './sanitizeProposedCommitments.js';
 import { isGenericCommitmentLabel } from './commitmentDisplayCopy.js';
 
@@ -72,43 +73,7 @@ export function pickChatWelcomeGreeting(language = 'es', date = new Date()) {
   return greetings[Math.floor(Math.random() * greetings.length)];
 }
 
-const MOOD_BRIDGE_GREETINGS_ES = {
-  calm: [
-    'Vi que llegas en calma. Si quieres, cuéntame qué te está sosteniendo.',
-    'Noté tu calma en el home. ¿Quieres usar ese espacio para algo concreto?',
-  ],
-  anxious: [
-    'Vi que llegas tenso. Si quieres, cuéntame qué te está pesando, sin apuro.',
-    'Gracias por marcarlo en el home. Estoy aquí contigo; ¿por dónde empezamos?',
-  ],
-  tired: [
-    'Vi que llegas con fatiga. Podemos ir despacio: ¿qué te está quitando energía?',
-    'Noté tu cansancio en el home. Si quieres, vemos juntos qué pesa hoy.',
-  ],
-  good: [
-    'Vi que estás bien. Si quieres, cuéntame qué está ayudando hoy.',
-    'Qué bueno leerte así en el home. ¿Hay algo que quieras sostener o celebrar?',
-  ],
-};
-
-const MOOD_BRIDGE_GREETINGS_EN = {
-  calm: [
-    'I saw you arrived calm. If you want, tell me what’s holding you up.',
-    'I noticed your calm on home. Want to use that space for something concrete?',
-  ],
-  anxious: [
-    'I saw you arrived tense. If you want, tell me what’s weighing on you — no rush.',
-    'Thanks for marking it on home. I’m here with you; where should we start?',
-  ],
-  tired: [
-    'I saw you’re tired. We can go slowly — what’s draining you?',
-    'I noticed your fatigue on home. If you want, we can look at what feels heavy.',
-  ],
-  good: [
-    'I saw you’re doing well. If you want, tell me what’s helping today.',
-    'Good to read that on home. Anything you’d like to hold onto or celebrate?',
-  ],
-};
+const MOOD_BRIDGE_MOODS = ['calm', 'anxious', 'tired', 'good'];
 
 /**
  * Saludo al abrir el chat desde el check-in del home (no vuelve a preguntar el ánimo).
@@ -119,16 +84,14 @@ const MOOD_BRIDGE_GREETINGS_EN = {
  */
 export function pickMoodBridgeWelcomeGreeting(mood, language = 'es', dateKey = '') {
   const key = String(mood || '').trim();
-  // Validación local para evitar dependencia circular con moodCheckInActions.
-  if (!['calm', 'anxious', 'tired', 'good'].includes(key)) return null;
+  if (!MOOD_BRIDGE_MOODS.includes(key)) return null;
   const lang = String(language || 'es').toLowerCase().startsWith('en') ? 'en' : 'es';
-  const pool = lang === 'en' ? MOOD_BRIDGE_GREETINGS_EN : MOOD_BRIDGE_GREETINGS_ES;
-  const list = pool[key] || [];
-  if (list.length === 0) return null;
+  const pool = getTranslations(lang).DASH?.MOOD_BRIDGE_GREETINGS?.[key] || [];
+  if (pool.length === 0) return null;
   let hash = 0;
   const seed = `${dateKey}|${key}|bridge`;
   for (let i = 0; i < seed.length; i += 1) hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
-  return list[hash % list.length];
+  return pool[hash % pool.length];
 }
 
 /**

@@ -35,11 +35,22 @@ describe('Daily mood transport parity', () => {
 
   it('welcome del chat usa el puente de check-in y lo persiste en metadata', () => {
     const chatSrc = readSource('routes/chatRoutes.js');
+    const copySrc = readSource('utils/dailyMoodCopy.js');
     expect(chatSrc).toMatch(/buildMoodBridgeWelcome/);
     // Ambos sitios de creación de welcome consultan el puente antes del saludo genérico.
     const bridgeUses = chatSrc.match(/buildMoodBridgeWelcome\(todayMood/g) || [];
     expect(bridgeUses.length).toBeGreaterThanOrEqual(2);
     expect(chatSrc).toMatch(/fromMoodCheckIn: true,\s*moodCheckInMood: todayMood\.mood/);
+    expect(copySrc).toMatch(/getMoodBridgeGreetings/);
+    const bridgeSrc = readSource('constants/moodBridgeGreetings.js');
+    expect(bridgeSrc).toMatch(/moodBridgeGreetings\.data/);
+  });
+
+  it('puente mood→chat no expone chatEmotion muerto', () => {
+    const copySrc = readSource('utils/dailyMoodCopy.js');
+    const cardSrc = readSource('../frontend/src/components/dashboard/MoodCheckInCard.js');
+    expect(copySrc).not.toMatch(/chatEmotion/);
+    expect(cardSrc).not.toMatch(/chatEmotion/);
   });
 
   it('cliente usa query plana y cache offline', () => {

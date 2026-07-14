@@ -5,6 +5,7 @@
  */
 
 import { ONBOARDING_FOCUS_LABELS } from '../onboardingFocusLabels.js';
+import { MOOD_BRIDGE_GREETINGS_EN } from '../../../../backend/constants/moodBridgeGreetings.data.js';
 
 export const HOME = {
   BRAND_NAME: 'Anto',
@@ -229,7 +230,10 @@ export const DASH = {
   FOCUS_BA_MORE_SUFFIX: 'more activities this week',
   FOCUS_BA_OPEN_A11Y: 'Open behavioral activation weekly plan',
   FOCUS_EXPOSURE_TITLE: 'Exposure · Step in progress',
+  FOCUS_EXPOSURE_STEP_LABEL: 'Step',
   FOCUS_EXPOSURE_OPEN_A11Y: 'Open exposure hierarchy',
+  FOCUS_REMINDER_DUE_PREFIX: 'Due ',
+  FOCUS_COMMITMENT_ACTION_ERROR: 'Could not save your response. Please try again.',
   TCC_TOOLS_TITLE: 'Follow-up tools',
   TCC_TOOLS_HINT: 'Guided protocols to practice between chats with Anto.',
   TCC_TOOLS_BA: 'Behavioral activation',
@@ -436,6 +440,8 @@ export const DASH = {
   MOOD_COLLAPSED_HINT: 'Tap if you want to change it',
   MOOD_EXPAND_A11Y: 'Expand mood check-in',
   MOOD_COLLAPSE_A11Y: 'Collapse mood check-in',
+  /** Home→chat bridge greetings (stable rotation by dateKey; do not re-ask mood). */
+  MOOD_BRIDGE_GREETINGS: MOOD_BRIDGE_GREETINGS_EN,
   PROTOCOL_ACTIVE: 'Active Protocol',
   PROTOCOL_NAME_FALLBACK: 'Therapeutic Protocol',
   PROTOCOL_PROGRESS_TEMPLATE: 'Step {current} of {total}',
@@ -464,6 +470,7 @@ export const FOCUS_ONBOARDING = {
   DURATION_WEEKS: '{weeks} weeks',
   ERROR_LOADING: 'Could not load focus themes',
   ERROR_STARTING: 'Could not start focus. Try again',
+  GOAL_MAX_LEN_ERROR: 'The goal cannot exceed 200 characters',
   ERROR_TITLE: 'Error',
   LOADING: 'Loading themes...',
   NO_THEMES_AVAILABLE: 'No themes available at this time',

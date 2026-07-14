@@ -6,7 +6,6 @@
  * @property {string} acknowledgment
  * @property {string} antoSnippet
  * @property {boolean} suggestChat
- * @property {string|null} chatEmotion
  * @property {string|null} recordedAt
  * @property {string} [source]
  */

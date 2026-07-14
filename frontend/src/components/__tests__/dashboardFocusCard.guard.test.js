@@ -132,6 +132,27 @@ describe('dashboardFocusCard guard', () => {
     expect(src).toMatch(/GOAL_SAVING_A11Y/);
   });
 
+  it('compromisos muestran toast si falla la acción', () => {
+    const src = readSrc('components/DashboardFocusCard.js');
+    expect(src).toMatch(/FOCUS_COMMITMENT_ACTION_ERROR/);
+    expect(src).toMatch(/handleCommitmentAnswer/);
+    expect(src).toMatch(/handleCommitmentOmit/);
+    expect(src).toMatch(/handleCommitmentRenegotiate/);
+  });
+
+  it('edición de objetivo se cierra si cambia el foco activo', () => {
+    const src = readSrc('components/DashboardFocusCard.js');
+    expect(src).toMatch(/activeFocusKey/);
+    expect(src).toMatch(/prevFocusKeyRef/);
+  });
+
+  it('usa claves i18n para paso de exposición y vencimiento de recordatorio', () => {
+    const src = readSrc('components/DashboardFocusCard.js');
+    expect(src).toMatch(/FOCUS_EXPOSURE_STEP_LABEL/);
+    expect(src).toMatch(/FOCUS_REMINDER_DUE_PREFIX/);
+    expect(src).not.toMatch(/language === 'en' \? 'Step' : 'Paso'/);
+  });
+
   it('no reserva bloque "elegir foco" encima de Lo principal ahora si ya hay filas', () => {
     const src = readSrc('components/DashboardFocusCard.js');
     expect(src).toMatch(/showStartFocusCta/);

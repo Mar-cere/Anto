@@ -153,6 +153,10 @@ describe('dashboard i18n', () => {
     expect(hits).toEqual([]);
   });
 
+  it('DASH es: sin regionalismos en subtítulo de ánimo bueno', () => {
+    expect(es.DASH.STREAK_HERO_MOOD_GOOD_SUBTITLE_2).not.toMatch(/apetece/i);
+  });
+
   it('TASKS es: sin voseo en claves del card de pendientes', () => {
     const hits = TASK_CARD_KEYS.filter((key) => hasSpanishVoseo(es.TASKS[key] || ''));
     expect(hits).toEqual([]);
