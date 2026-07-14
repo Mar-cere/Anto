@@ -107,4 +107,36 @@ describe('focusService edge cases', () => {
       expect(result).toBeNull();
     });
   });
+
+  describe('updateActiveFocus customGoal (#161)', () => {
+    it('guarda customGoal recortado y permite limpiarlo a null', async () => {
+      const mockUser = {
+        _id: 'user123',
+        activeFocus: {
+          themeId: 'anxiety',
+          status: FOCUS_STATUS.ACTIVE,
+          customGoal: null,
+          startedAt: new Date(),
+          durationWeeks: 4,
+          weekNumber: 1,
+        },
+        markModified: jest.fn(),
+        save: jest.fn().mockResolvedValue(true),
+      };
+
+      User.findById = jest.fn().mockResolvedValue(mockUser);
+
+      const updated = await focusService.updateActiveFocus('user123', {
+        customGoal: '  Dormir <mejor>  ',
+      });
+      expect(updated.customGoal).toBe('Dormir mejor');
+      expect(mockUser.activeFocus.customGoal).toBe('Dormir mejor');
+
+      const cleared = await focusService.updateActiveFocus('user123', {
+        customGoal: '   ',
+      });
+      expect(cleared.customGoal).toBeNull();
+      expect(mockUser.activeFocus.customGoal).toBeNull();
+    });
+  });
 });

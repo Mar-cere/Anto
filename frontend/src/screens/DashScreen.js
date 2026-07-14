@@ -25,7 +25,7 @@ import DashboardScroll from '../components/DashboardScroll';
 import EmergencyContactsModal from '../components/EmergencyContactsModal';
 import FloatingNavBar from '../components/FloatingNavBar';
 import websocketService from '../services/websocketService';
-import { logFocusTelemetry } from '../services/focusService';
+import { logFocusTelemetry, updateFocus } from '../services/focusService';
 import {
   mergeFocusResponse,
   shouldRefreshHomeOnFocus,
@@ -74,6 +74,7 @@ import {
   isValidMoodCheckInKey,
   isValidMoodSecondaryAction,
 } from '../utils/moodCheckInActions';
+import { normalizeCustomGoal } from '../utils/customGoalUtils';
 import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes de AsyncStorage
@@ -630,21 +631,6 @@ const DashScreen = () => {
     navigation.navigate('Tasks', buildFocusNextHabitNavParams(nextHabit));
   }, [navigation]);
 
-  const openFocusOnboarding = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    navigation.navigate('FocusOnboarding', {
-      onComplete: () => refreshHomeDataOnFocus({ force: true }),
-    });
-  }, [navigation, refreshHomeDataOnFocus]);
-
-  const openFocusProgress = useCallback((activeFocus) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    navigation.navigate('FocusProgress', {
-      focus: activeFocus,
-      onUpdate: () => refreshHomeDataOnFocus({ force: true }),
-    });
-  }, [navigation, refreshHomeDataOnFocus]);
-
   const refreshHomeDataOnFocus = useCallback(async ({ force = false } = {}) => {
     if (homeRefreshInFlightRef.current) return;
     if (!force && !shouldRefreshHomeOnFocus(lastHomeRefreshAtRef.current)) return;
@@ -667,6 +653,38 @@ const DashScreen = () => {
     } finally {
       homeRefreshInFlightRef.current = false;
     }
+  }, []);
+
+  const openFocusOnboarding = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    navigation.navigate('FocusOnboarding', {
+      onComplete: () => refreshHomeDataOnFocus({ force: true }),
+    });
+  }, [navigation, refreshHomeDataOnFocus]);
+
+  const openFocusProgress = useCallback((activeFocus) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    navigation.navigate('FocusProgress', {
+      focus: activeFocus,
+      onUpdate: () => refreshHomeDataOnFocus({ force: true }),
+    });
+  }, [navigation, refreshHomeDataOnFocus]);
+
+  const handleSaveCustomGoal = useCallback(async (rawGoal) => {
+    const customGoal = normalizeCustomGoal(rawGoal);
+    const updated = await updateFocus({ customGoal });
+    const nextGoal =
+      updated?.customGoal !== undefined ? updated.customGoal : customGoal;
+    setFocusPayload((prev) => {
+      if (!prev?.activeFocus) return prev;
+      return {
+        ...prev,
+        activeFocus: {
+          ...prev.activeFocus,
+          customGoal: nextGoal,
+        },
+      };
+    });
   }, []);
 
   const openConversationFromFocus = useCallback(
@@ -913,6 +931,8 @@ const DashScreen = () => {
             onOpenNextHabit={openNextHabitFromFocus}
             onCommitmentsChanged={() => refreshHomeDataOnFocus({ force: true })}
             onOpenFocusProgress={openFocusProgress}
+            onOpenFocusOnboarding={openFocusOnboarding}
+            onSaveCustomGoal={handleSaveCustomGoal}
           />
           <DashboardStreakHero
             streakDays={dashboardStats.streakDays}

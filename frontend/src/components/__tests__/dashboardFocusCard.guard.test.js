@@ -112,10 +112,28 @@ describe('dashboardFocusCard guard', () => {
     expect(src).toMatch(/chevron-forward/);
   });
 
-  it('filterDashboardCommitments solo expone compromisos accionables', () => {
-    const src = readSrc('utils/commitmentLabelUtils.js');
-    expect(src).toMatch(/isDashboardCommitmentActionable/);
-    expect(src).toMatch(/isConcreteCommitmentLabel\(commitment\.label\)/);
-    expect(src).toMatch(/MAX_DASHBOARD_FOLLOW_UP_ATTEMPTS = 2/);
+  it('DashboardFocusCard edita customGoal en home (#161)', () => {
+    const src = readSrc('components/DashboardFocusCard.js');
+    expect(src).toMatch(/onSaveCustomGoal/);
+    expect(src).toMatch(/onOpenFocusOnboarding/);
+    expect(src).toMatch(/normalizeCustomGoal/);
+    expect(src).toMatch(/GOAL_EMPTY_CTA/);
+    expect(src).toMatch(/GOAL_EDIT_HINT/);
+    expect(src).toMatch(/editingGoal/);
+  });
+
+  it('DashScreen cablea updateFocus para objetivo del foco', () => {
+    const src = readSrc('screens/DashScreen.js');
+    expect(src).toMatch(/handleSaveCustomGoal/);
+    expect(src).toMatch(/onSaveCustomGoal=\{handleSaveCustomGoal\}/);
+    expect(src).toMatch(/onOpenFocusOnboarding=\{openFocusOnboarding\}/);
+    expect(src).toMatch(/updateFocus/);
+    expect(src).toMatch(/normalizeCustomGoal/);
+  });
+
+  it('focusService usa rutas /api/focus', () => {
+    const src = readSrc('services/focusService.js');
+    expect(src).toMatch(/\/api\/focus/);
+    expect(src).not.toMatch(/apiClient\.(get|post|patch)\('\/focus\//);
   });
 });

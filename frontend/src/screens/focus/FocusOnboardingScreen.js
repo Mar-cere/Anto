@@ -51,7 +51,12 @@ const FocusOnboardingScreen = ({ navigation, route }) => {
       try {
         const response = await getFocusThemes();
         if (mounted) {
-          setThemes(response.data || []);
+          const list = Array.isArray(response)
+            ? response
+            : Array.isArray(response?.data)
+              ? response.data
+              : [];
+          setThemes(list);
         }
       } catch (error) {
         console.error('Error loading focus themes:', error);

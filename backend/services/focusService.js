@@ -5,6 +5,25 @@
 import User from '../models/User.js';
 import { FOCUS_THEMES, FOCUS_THEMES_ARRAY, FOCUS_STATUS, getFocusTheme, isValidFocusTheme } from '../constants/focusThemes.js';
 
+const CUSTOM_GOAL_MAX_LEN = 200;
+
+/**
+ * Normaliza customGoal persistido (trim, sin control chars ni <>{}, tope 200).
+ * @param {unknown} value
+ * @returns {string|null|undefined} undefined si no vino en el payload
+ */
+export function normalizePersistedCustomGoal(value) {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  const cleaned = String(value)
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
+    .replace(/[<>{}]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!cleaned) return null;
+  return cleaned.slice(0, CUSTOM_GOAL_MAX_LEN);
+}
+
 /**
  * Calcular número de semana actual basado en startedAt y duración.
  * @param {Date} startedAt - Fecha de inicio del foco
@@ -134,7 +153,7 @@ export async function startFocus(userId, payload) {
     themeId,
     startedAt: new Date(),
     durationWeeks: duration,
-    customGoal: customGoal?.trim() || null,
+    customGoal: normalizePersistedCustomGoal(customGoal) ?? null,
     weekNumber: 1,
     status: FOCUS_STATUS.ACTIVE,
     completedAt: null,
@@ -176,7 +195,7 @@ export async function updateActiveFocus(userId, payload) {
   }
 
   if (customGoal !== undefined) {
-    user.activeFocus.customGoal = customGoal?.trim() || null;
+    user.activeFocus.customGoal = normalizePersistedCustomGoal(customGoal);
   }
 
   if (status !== undefined) {
