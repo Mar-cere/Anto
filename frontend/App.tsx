@@ -27,6 +27,7 @@ import DeviceRegionSync from './src/components/DeviceRegionSync';
 import DeviceTimezoneSync from './src/components/DeviceTimezoneSync';
 import AppConfigPreload from './src/components/AppConfigPreload';
 import DigitalHealthForegroundSync from './src/components/DigitalHealthForegroundSync';
+import NotificationHandler from './src/components/NotificationHandler';
 
 // Fallback cuando initialWindowMetrics es null (web, SSR, o módulo nativo no listo)
 const DEFAULT_SAFE_AREA_METRICS = {
@@ -48,6 +49,7 @@ function AppContent() {
       />
       <AppConfigPreload />
       <DigitalHealthForegroundSync />
+      <NotificationHandler />
       <AppNavigator />
       <Toast />
     </View>

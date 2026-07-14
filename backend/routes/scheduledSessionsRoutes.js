@@ -37,6 +37,7 @@ import {
   pauseAllSessions,
   resumeAllSessions,
 } from '../services/scheduledSessionsService.js';
+import ScheduledSessionEvent from '../models/ScheduledSessionEvent.js';
 
 const router = express.Router();
 router.use(attachApiCopy(scheduledSessionsApiCopy));
@@ -275,6 +276,96 @@ router.post('/resume', crudLimiter, async (req, res) => {
     }
     
     return res.status(500).json({ message: copy.resumeError });
+  }
+});
+
+/**
+ * POST /api/scheduled-sessions/events
+ * Registrar evento de telemetría para sesiones programadas.
+ * Eventos: notification_sent, session_started, session_skipped
+ */
+const telemetryLimiter = createRateLimiter({
+  windowMs: 1 * 60 * 1000, // 1 minuto
+  max: 20, // Más permisivo para telemetría legítima
+  message: (req) => scheduledSessionsApiCopy(resolveRequestLanguage(req)).rateLimitExceeded,
+});
+
+router.post('/events', telemetryLimiter, async (req, res) => {
+  const copy = req.apiCopy;
+  try {
+    const { sessionId, eventType, metadata } = req.body;
+
+    // Validar campos requeridos
+    if (!sessionId || typeof sessionId !== 'string' || sessionId.trim().length === 0) {
+      return res.status(400).json({ message: copy.eventSessionIdRequired || 'sessionId es requerido' });
+    }
+
+    if (!eventType || typeof eventType !== 'string') {
+      return res.status(400).json({ message: copy.eventTypeRequired || 'eventType es requerido' });
+    }
+
+    const validEventTypes = ['notification_sent', 'session_started', 'session_skipped'];
+    if (!validEventTypes.includes(eventType)) {
+      return res.status(400).json({
+        message: copy.eventTypeInvalid || 'eventType debe ser notification_sent, session_started o session_skipped',
+      });
+    }
+
+    // Validar metadata si presente
+    let sanitizedMetadata = {};
+    if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
+      // responseLatency
+      if (metadata.responseLatency !== undefined && metadata.responseLatency !== null) {
+        const latency = Number(metadata.responseLatency);
+        if (!isNaN(latency) && isFinite(latency) && latency >= 0) {
+          sanitizedMetadata.responseLatency = latency;
+        }
+      }
+
+      // originatedFromNotification
+      if (metadata.originatedFromNotification !== undefined) {
+        sanitizedMetadata.originatedFromNotification = Boolean(metadata.originatedFromNotification);
+      }
+
+      // conversationId
+      if (metadata.conversationId && typeof metadata.conversationId === 'string') {
+        sanitizedMetadata.conversationId = metadata.conversationId;
+      }
+
+      // platform
+      if (metadata.platform && typeof metadata.platform === 'string') {
+        const validPlatforms = ['ios', 'android', 'web', 'unknown'];
+        if (validPlatforms.includes(metadata.platform.toLowerCase())) {
+          sanitizedMetadata.platform = metadata.platform.toLowerCase();
+        }
+      }
+
+      // appVersion
+      if (metadata.appVersion && typeof metadata.appVersion === 'string') {
+        sanitizedMetadata.appVersion = metadata.appVersion.trim().slice(0, 50);
+      }
+    }
+
+    // Crear evento
+    const event = await ScheduledSessionEvent.recordEvent({
+      userId: req.user._id,
+      sessionId: sessionId.trim(),
+      eventType,
+      metadata: sanitizedMetadata,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: copy.eventRecorded || 'Evento registrado',
+      data: {
+        eventId: event._id,
+        eventType: event.eventType,
+        timestamp: event.timestamp,
+      },
+    });
+  } catch (err) {
+    console.error('[scheduledSessionsRoutes] Error recording event:', err);
+    return res.status(500).json({ message: copy.internalError || 'Error interno' });
   }
 });
 

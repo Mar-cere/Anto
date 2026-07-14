@@ -23,6 +23,11 @@ import {
   deleteScheduledSession,
   updateScheduledSession,
 } from '../../services/scheduledSessionsService';
+import {
+  scheduleSessionNotification,
+  cancelSessionNotification,
+  rescheduleAllSessions,
+} from '../../services/notificationScheduler';
 
 /**
  * Pantalla principal de sesiones programadas.
@@ -32,7 +37,7 @@ export default function ScheduledSessionsScreen({ navigation }) {
   const { colors, typography, spacing } = useTheme();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
-  const { t } = useTranslation();
+  const { t, language } = useTranslation();
 
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -43,6 +48,26 @@ export default function ScheduledSessionsScreen({ navigation }) {
   useEffect(() => {
     loadSessions();
   }, []);
+
+  // Re-programar notificaciones cuando las sesiones cambien
+  useEffect(() => {
+    if (sessions.length > 0 && !loading && !error) {
+      rescheduleNotifications();
+    }
+  }, [sessions, loading, error]);
+
+  const rescheduleNotifications = async () => {
+    try {
+      const results = await rescheduleAllSessions(sessions, language);
+      const failedCount = results.filter((r) => !r.success && !r.skipped).length;
+      
+      if (failedCount > 0) {
+        console.warn('[ScheduledSessionsScreen] Some notifications failed to schedule:', failedCount);
+      }
+    } catch (error) {
+      console.error('[ScheduledSessionsScreen] Error rescheduling notifications:', error);
+    }
+  };
 
   const loadSessions = async () => {
     try {
@@ -95,7 +120,25 @@ export default function ScheduledSessionsScreen({ navigation }) {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       
       const newIsActive = !session.isActive;
-      await updateScheduledSession(session.id, { isActive: newIsActive });
+      
+      // Si se está activando, programar notificación
+      if (newIsActive) {
+        const notificationId = await scheduleSessionNotification(session, language);
+        if (notificationId) {
+          // Actualizar con notificationId
+          await updateScheduledSession(session.id, { isActive: newIsActive, notificationId });
+        } else {
+          // Fallo al programar, pero activar de todos modos
+          console.warn('[handleToggleSession] Failed to schedule notification, activating anyway');
+          await updateScheduledSession(session.id, { isActive: newIsActive });
+        }
+      } else {
+        // Si se está desactivando, cancelar notificación
+        if (session.notificationId) {
+          await cancelSessionNotification(session.notificationId);
+        }
+        await updateScheduledSession(session.id, { isActive: newIsActive });
+      }
       
       // Actualizar estado local
       setSessions((prev) =>
@@ -129,6 +172,12 @@ export default function ScheduledSessionsScreen({ navigation }) {
         onPress: async () => {
           try {
             await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            
+            // Cancelar notificación si existe
+            if (session.notificationId) {
+              await cancelSessionNotification(session.notificationId);
+            }
+            
             await deleteScheduledSession(session.id, true); // Hard delete
             
             // Actualizar estado local
