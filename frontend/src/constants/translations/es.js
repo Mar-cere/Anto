@@ -8,7 +8,7 @@
  */
 
 import { ONBOARDING_FOCUS_LABELS } from '../onboardingFocusLabels.js';
-import { MOOD_BRIDGE_GREETINGS_ES } from '../../../../backend/constants/moodBridgeGreetings.data.js';
+import { MOOD_BRIDGE_GREETINGS_ES } from '../moodBridgeGreetings.data.js';
 
 export const HOME = {
   BRAND_NAME: 'Anto',

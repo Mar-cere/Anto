@@ -43,7 +43,7 @@ describe('Daily mood transport parity', () => {
     expect(chatSrc).toMatch(/fromMoodCheckIn: true,\s*moodCheckInMood: todayMood\.mood/);
     expect(copySrc).toMatch(/getMoodBridgeGreetings/);
     const bridgeSrc = readSource('constants/moodBridgeGreetings.js');
-    expect(bridgeSrc).toMatch(/moodBridgeGreetings\.data/);
+    expect(bridgeSrc).toMatch(/moodBridgeGreetings\.data\.json/);
   });
 
   it('puente mood→chat no expone chatEmotion muerto', () => {

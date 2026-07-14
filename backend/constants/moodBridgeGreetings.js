@@ -1,10 +1,16 @@
 /**
- * Copy canónico del puente mood→chat (fuente: moodBridgeGreetings.data.js).
+ * Copy canónico del puente mood→chat (fuente: frontend moodBridgeGreetings.data.json).
  */
-import {
-  MOOD_BRIDGE_GREETINGS_EN,
-  MOOD_BRIDGE_GREETINGS_ES,
-} from './moodBridgeGreetings.data.js';
+import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
+import path from 'path';
+
+const require = createRequire(import.meta.url);
+const dataPath = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../frontend/src/constants/moodBridgeGreetings.data.json',
+);
+const moodBridgeData = require(dataPath);
 
 /**
  * @param {'es'|'en'} language
@@ -12,5 +18,5 @@ import {
  */
 export function getMoodBridgeGreetings(language = 'es') {
   const lang = language === 'en' ? 'en' : 'es';
-  return lang === 'en' ? MOOD_BRIDGE_GREETINGS_EN : MOOD_BRIDGE_GREETINGS_ES;
+  return moodBridgeData[lang];
 }

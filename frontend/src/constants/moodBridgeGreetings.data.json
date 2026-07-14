@@ -1,0 +1,38 @@
+{
+  "es": {
+    "calm": [
+      "Vi que llegas en calma. Si quieres, cuéntame qué te está sosteniendo.",
+      "Noté tu calma en el home. ¿Quieres usar ese espacio para algo concreto?"
+    ],
+    "anxious": [
+      "Vi que llegas tenso. Si quieres, cuéntame qué te está pesando, sin apuro.",
+      "Gracias por marcarlo en el home. Estoy aquí contigo; ¿por dónde empezamos?"
+    ],
+    "tired": [
+      "Vi que llegas con fatiga. Podemos ir despacio: ¿qué te está quitando energía?",
+      "Noté tu cansancio en el home. Si quieres, vemos juntos qué pesa hoy."
+    ],
+    "good": [
+      "Vi que estás bien. Si quieres, cuéntame qué está ayudando hoy.",
+      "Qué bueno leerte así en el home. ¿Hay algo que quieras sostener o celebrar?"
+    ]
+  },
+  "en": {
+    "calm": [
+      "I saw you arrived calm. If you want, tell me what's holding you up.",
+      "I noticed your calm on home. Want to use that space for something concrete?"
+    ],
+    "anxious": [
+      "I saw you arrived tense. If you want, tell me what's weighing on you — no rush.",
+      "Thanks for marking it on home. I'm here with you; where should we start?"
+    ],
+    "tired": [
+      "I saw you're tired. We can go slowly — what's draining you?",
+      "I noticed your fatigue on home. If you want, we can look at what feels heavy."
+    ],
+    "good": [
+      "I saw you're doing well. If you want, tell me what's helping today.",
+      "Good to read that on home. Anything you'd like to hold onto or celebrate?"
+    ]
+  }
+}
