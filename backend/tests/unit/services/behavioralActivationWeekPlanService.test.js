@@ -1,14 +1,32 @@
 /**
  * Tests — plan semanal BA (#88)
  */
-import {
+import { jest } from '@jest/globals';
+
+const findOne = jest.fn();
+const create = jest.fn();
+
+await jest.unstable_mockModule('../../../models/BehavioralActivationWeekPlan.js', () => ({
+  default: {
+    findOne,
+    create,
+  },
+}));
+
+const {
   buildDefaultWeekPlanSlots,
   formatWeekStartKey,
+  getOrCreateWeekPlan,
   normalizeWeekPlanSlots,
   normalizeWeekStart,
-} from '../../../services/behavioralActivationWeekPlanService.js';
+} = await import('../../../services/behavioralActivationWeekPlanService.js');
 
 describe('behavioralActivationWeekPlanService', () => {
+  beforeEach(() => {
+    findOne.mockReset();
+    create.mockReset();
+  });
+
   it('normalizeWeekStart alinea al lunes UTC', () => {
     const monday = normalizeWeekStart('2026-06-01');
     expect(formatWeekStartKey(monday)).toBe('2026-06-01');
@@ -73,5 +91,25 @@ describe('behavioralActivationWeekPlanService', () => {
     ]);
     expect(out[0].linkedTaskId).toBe('507f1f77bcf86cd799439011');
     expect(out[0].linkedHabitId).toBeNull();
+  });
+
+  it('getOrCreateWeekPlan recupera tras carrera E11000', async () => {
+    const userId = '507f1f77bcf86cd799439011';
+    const existing = {
+      _id: '507f1f77bcf86cd799439099',
+      userId,
+      weekStart: new Date('2026-06-01T00:00:00.000Z'),
+      slots: [{ slotId: 's1', dayOffset: 0, activityDescription: 'Paseo', status: 'planned' }],
+    };
+    findOne
+      .mockReturnValueOnce({ lean: async () => null })
+      .mockReturnValueOnce({ lean: async () => existing });
+    create.mockRejectedValue(Object.assign(new Error('dup'), { code: 11000 }));
+
+    const result = await getOrCreateWeekPlan(userId, '2026-06-03', 'es');
+    expect(result.plan).toEqual(existing);
+    expect(result.weekStart).toBe('2026-06-01');
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(findOne).toHaveBeenCalledTimes(2);
   });
 });

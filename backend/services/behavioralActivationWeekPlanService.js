@@ -147,7 +147,15 @@ export function getWeekDayLabels(language = 'es') {
 
 function toObjectId(userId) {
   if (userId instanceof mongoose.Types.ObjectId) return userId;
-  return new mongoose.Types.ObjectId(String(userId));
+  const s = String(userId || '').trim();
+  if (!mongoose.Types.ObjectId.isValid(s)) {
+    throw new Error('userId inválido');
+  }
+  return new mongoose.Types.ObjectId(s);
+}
+
+function isDuplicateKeyError(error) {
+  return error?.code === 11000 || error?.code === 'E11000';
 }
 
 export async function getOrCreateWeekPlan(userId, weekStartInput, language = 'es') {
@@ -159,12 +167,19 @@ export async function getOrCreateWeekPlan(userId, weekStartInput, language = 'es
 
   let plan = await BehavioralActivationWeekPlan.findOne({ userId: uid, weekStart }).lean();
   if (!plan) {
-    const created = await BehavioralActivationWeekPlan.create({
-      userId: uid,
-      weekStart,
-      slots: buildDefaultWeekPlanSlots(language),
-    });
-    plan = created.toObject();
+    try {
+      const created = await BehavioralActivationWeekPlan.create({
+        userId: uid,
+        weekStart,
+        slots: buildDefaultWeekPlanSlots(language),
+      });
+      plan = created.toObject();
+    } catch (error) {
+      // Carrera típica: Strict Mode / dobles fetches concurrentes al abrir la pantalla.
+      if (!isDuplicateKeyError(error)) throw error;
+      plan = await BehavioralActivationWeekPlan.findOne({ userId: uid, weekStart }).lean();
+      if (!plan) throw error;
+    }
   }
 
   return {
