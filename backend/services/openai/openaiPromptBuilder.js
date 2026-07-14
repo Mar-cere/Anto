@@ -4,6 +4,8 @@
  */
 import { buildDailyMoodPromptSnippet } from '../../utils/dailyMoodCopy.js';
 import Message from '../../models/Message.js';
+import { buildGroundingPolicySnippet } from '../chat/groundingPolicySnippet.js';
+import { buildCombinedFactsSnippet } from '../userFactsGroundingService.js';
 import {
   generateCrisisMessage,
   generateCrisisSystemPrompt,
@@ -1034,6 +1036,10 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   // Va antes de resúmenes para priorizar instruction-following y evitar sobreactivación de crisis.
   systemMessage = `${buildResponseLanguageDirective(language)}\n\n---\n\n${BASE_ASSISTANT_PROMPT}\n\n---\n\n${systemMessage}`;
   systemMessage += buildClinicalIdentitySnippet(language);
+  
+  // Grounding policy (#63): No inventar hechos biográficos del usuario
+  systemMessage += buildGroundingPolicySnippet(language);
+  
   if (forceShortMode && !hasCrisisRisk) {
     systemMessage +=
       language === 'en'
@@ -1159,6 +1165,18 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   );
   if (onboardingSnippet) {
     systemMessage += onboardingSnippet;
+  }
+
+  // Known facts grounding (#63): Hechos biográficos manuales + extraídos del usuario
+  if (!contexto.isGuest && mensaje.userId) {
+    try {
+      const factsSnippet = await buildCombinedFactsSnippet(mensaje.userId, contexto.conversationId, language, 15);
+      if (factsSnippet) {
+        systemMessage += factsSnippet;
+      }
+    } catch (error) {
+      console.warn('[buildContextualizedPrompt] Error loading user facts:', error.message);
+    }
   }
 
   // Focus accompaniment context (#2 Fase 3)

@@ -3222,6 +3222,53 @@ export const API_ERRORS = {
   GENERIC: 'Algo ha fallado. Inténtalo de nuevo.',
 };
 
+export const USER_FACTS = {
+  SCREEN_TITLE: 'Hechos sobre mí',
+  EMPTY_TITLE: 'Aún no hay hechos guardados',
+  EMPTY_MESSAGE:
+    'Aquí podrás guardar información sobre ti que quieras que el asistente recuerde siempre.',
+  EMPTY_CTA: 'Agregar primer hecho',
+  ADD_FACT_CTA: 'Agregar hecho',
+  FACT_CARD_EDIT: 'Editar',
+  FACT_CARD_DELETE: 'Eliminar',
+  DELETE_CONFIRM_TITLE: 'Eliminar hecho',
+  DELETE_CONFIRM_MESSAGE:
+    'Este hecho se eliminará permanentemente. Esta acción no se puede deshacer.',
+  DELETE_CANCEL: 'Cancelar',
+  DELETE_CONFIRM: 'Eliminar',
+  TOAST_DELETED: 'Hecho eliminado',
+  TOAST_ERROR: 'No se pudo completar. Intenta de nuevo.',
+  TOAST_SAVED: 'Hecho guardado',
+  LOADING: 'Cargando hechos…',
+  ERROR_LOADING: 'No se pudieron cargar los hechos',
+  RETRY: 'Reintentar',
+
+  // Modal
+  MODAL_CREATE_TITLE: 'Nuevo hecho sobre mí',
+  MODAL_EDIT_TITLE: 'Editar hecho',
+  MODAL_DONE: 'Listo',
+  MODAL_CANCEL: 'Cancelar',
+  MODAL_SAVE: 'Guardar',
+  MODAL_SAVING: 'Guardando…',
+  MODAL_FACT_LABEL: '¿Qué quieres que recuerde?',
+  MODAL_FACT_PLACEHOLDER: 'Ejemplo: Trabajo como diseñador gráfico',
+  MODAL_FACT_HINT: 'Escribe un hecho concreto sobre ti (trabajo, familia, estudios, salud…)',
+  MODAL_CATEGORY_LABEL: 'Categoría',
+  MODAL_ERROR_TITLE: 'Error',
+  MODAL_ERROR_TOO_SHORT: 'El hecho debe tener al menos 5 caracteres',
+  MODAL_ERROR_TOO_LONG: 'El hecho no puede exceder 150 caracteres',
+  MODAL_ERROR_EMPTY: 'Por favor ingresa un hecho',
+
+  // Categorías
+  CATEGORY_WORK: 'Trabajo',
+  CATEGORY_FAMILY: 'Familia',
+  CATEGORY_STUDY: 'Estudios',
+  CATEGORY_HEALTH: 'Salud',
+  CATEGORY_RELATIONSHIPS: 'Relaciones',
+  CATEGORY_COMMITMENT: 'Compromisos',
+  CATEGORY_OTHER: 'Otro',
+};
+
 // Exportar todas las traducciones agrupadas
 export default {
   HOME,
@@ -3243,6 +3290,7 @@ export default {
   TECHNIQUES,
   PROFILE,
   SUBSCRIPTION,
+  USER_FACTS,
   API_ERRORS,
 };
 
