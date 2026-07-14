@@ -4,7 +4,7 @@
  */
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.js';
-import { attachApiCopy } from '../middleware/apiCopy.js';
+import { attachApiCopy } from '../middleware/apiLanguageMiddleware.js';
 import {
   getParaphrasStats,
   getUserParaphrasMetrics,
