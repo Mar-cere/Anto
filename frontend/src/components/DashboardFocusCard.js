@@ -74,7 +74,7 @@ function normalizeReminderForLanguage(reminder, language, DASH) {
   let subtitle = reminder.subtitle != null ? String(reminder.subtitle).trim() : '';
 
   if (isEnglish) {
-    if (/recordatorio programado\s*\(mañana\)/i.test(title)) {
+    if (/recordatorio programado\s*\((?:por\s+la\s+)?mañana\)/i.test(title)) {
       title = DASH.FOCUS_PUSH_SCHEDULED_MORNING;
     } else if (/recordatorio programado\s*\(tarde/i.test(title)) {
       title = DASH.FOCUS_PUSH_SCHEDULED_EVENING;
@@ -164,8 +164,8 @@ const FocusActionRow = memo(({ icon, title, subtitle, badge, onPress, a11yLabel,
     </View>
     <View style={styles.actionCopy}>
       {badge ? (
-        <View style={styles.lastSessionTitleRow}>
-          <Text style={[styles.actionTitle, styles.lastSessionHeadline]} numberOfLines={1}>
+        <View style={styles.lastSessionTitleBlock}>
+          <Text style={[styles.actionTitle, styles.lastSessionHeadline]} numberOfLines={2}>
             {title}
           </Text>
           <Text style={styles.lastSessionBadge}>{badge}</Text>

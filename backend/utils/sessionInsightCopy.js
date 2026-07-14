@@ -82,6 +82,10 @@ const DISTORTION_EN = {
     name: 'Personalization',
     description: 'Taking excessive responsibility for events outside your control',
   },
+  what_if: {
+    name: 'What-if thinking',
+    description: 'Worrying about negative possibilities that have not happened',
+  },
 };
 
 const TOPIC_ES = {
@@ -92,6 +96,11 @@ const TOPIC_ES = {
   pérdida: 'Pérdida',
   familia: 'Familia',
   estudios: 'Estudios',
+  futuro: 'Futuro',
+  autoimagen: 'Autoimagen',
+  pasado: 'Pasado',
+  soledad: 'Soledad',
+  dinero: 'Dinero',
 };
 
 const TOPIC_EN = {
@@ -102,6 +111,11 @@ const TOPIC_EN = {
   pérdida: 'Loss',
   familia: 'Family',
   estudios: 'Studies',
+  futuro: 'Future',
+  autoimagen: 'Self-image',
+  pasado: 'Past',
+  soledad: 'Loneliness',
+  dinero: 'Money',
 };
 
 const INTENTION_ES = {
@@ -160,7 +174,9 @@ function shortenIntervention(text, language) {
 export function localizeTopic(topic, language = 'es') {
   const key = String(topic || 'general').toLowerCase();
   const map = normalizeInsightLanguage(language) === 'en' ? TOPIC_EN : TOPIC_ES;
-  return map[key] || key;
+  if (map[key]) return map[key];
+  if (!key) return map.general;
+  return key.charAt(0).toUpperCase() + key.slice(1);
 }
 
 export function localizeSessionIntention(intention, language = 'es') {
@@ -200,7 +216,7 @@ export function buildInsightCopy({
       ? 'A thinking pattern showed up in this conversation'
       : `Your session centered on ${emotionMeta.label.toLowerCase()}`;
     const reflection = themes.length
-      ? `You touched on ${themes.slice(0, 2).join(' and ')} with moderate emotional intensity (${intensityRounded}/10).`
+      ? `You touched on ${themes.slice(0, 3).join(', ').replace(/, ([^,]*)$/, ' and $1')} with moderate emotional intensity (${intensityRounded}/10).`
       : `Emotional intensity stayed around ${intensityRounded}/10 across what you shared.`;
     const intentionLine = sessionIntention
       ? `You started wanting to ${String(sessionIntention).toLowerCase()}.`
@@ -212,7 +228,7 @@ export function buildInsightCopy({
     ? 'Detectamos un patrón de pensamiento en esta conversación'
     : `Tu sesión giró en torno a ${emotionMeta.label.toLowerCase()}`;
   const reflection = themes.length
-    ? `Tocaste temas de ${themes.slice(0, 2).join(' y ')} con una intensidad emocional de ${intensityRounded}/10.`
+    ? `Tocaste temas de ${themes.slice(0, 3).join(', ').replace(/, ([^,]*)$/, ' y $1')} con una intensidad emocional de ${intensityRounded}/10.`
     : `La intensidad emocional se mantuvo alrededor de ${intensityRounded}/10 en lo que compartiste.`;
   const intentionLine = sessionIntention
     ? `Empezaste buscando ${String(sessionIntention).toLowerCase()}.`

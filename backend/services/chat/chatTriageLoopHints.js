@@ -7,14 +7,19 @@ function isQuestion(text) {
   return trimmed.includes('?') || trimmed.includes('¿');
 }
 
+/** Exactos ES: incluye "ambos" (antes solo "ambas" vía ambas?). */
 const TOTALIZING_EXACT_ES =
-  /^(?:todo(?:\s+eso|\s+lo\s+anterior|\s+junto|\s+a\s+la\s+vez)?|todas?|ambas?|los?\s+tres|las?\s+tres|un\s+poco\s+de\s+todo|un\s+poco\s+todo|las?\s+dos|los?\s+dos|todo\s+lo\s+que\s+dijiste)[.!?,…]*$/i;
+  /^(?:todo(?:\s+eso|\s+lo\s+anterior|\s+junto|\s+a\s+la\s+vez)?|todas?|amb[oa]s(?:\s+cosas)?|los?\s+tres|las?\s+tres|un\s+poco\s+de\s+todo|un\s+poco\s+todo|las?\s+dos|los?\s+dos|todo\s+lo\s+que\s+dijiste|(?:el\s+)?cuerpo\s+y\s+(?:la\s+)?mente|(?:la\s+)?mente\s+y\s+(?:el\s+)?cuerpo)[.!?,…]*$/i;
 
 const TOTALIZING_EXACT_EN =
-  /^(?:everything|all\s+of\s+(?:it|them|that)|both|all\s+three|all\s+of\s+the\s+above)[.!?,…]*$/i;
+  /^(?:everything|all\s+of\s+(?:it|them|that)|both(?:\s+of\s+them)?|all\s+three|all\s+of\s+the\s+above|(?:the\s+)?body\s+and\s+(?:the\s+)?mind|(?:the\s+)?mind\s+and\s+(?:the\s+)?body)[.!?,…]*$/i;
 
 const TOTALIZING_INLINE =
-  /(?:^|\s)(?:todo|todas?|ambas?|everything|all\s+of\s+it)(?:\s|$|[.!?,])/i;
+  /(?:^|\s)(?:todo|todas?|amb[oa]s|everything|all\s+of\s+it|both)(?:\s|$|[.!?,])/i;
+
+/** Polos cuerpo/mente (o equivalentes) para disyuntivas binarias de triage. */
+const SOMA_COG_POLE =
+  /\b(?:cuerpo|mente|cabeza|f[ií]sico|mental|body|mind|head|physical)\b/gi;
 
 /**
  * @param {string} content
@@ -32,7 +37,27 @@ export function isTotalizingReply(content) {
 }
 
 /**
+ * @param {string} text
+ * @returns {boolean}
+ */
+function hasDistinctSomaCogPoles(text) {
+  const matches = text.match(SOMA_COG_POLE) || [];
+  const unique = new Set(matches.map((m) => m.toLowerCase().normalize('NFD').replace(/\p{M}/gu, '')));
+  // Unificar sinónimos suaves: físico≈cuerpo, mental≈mente, head≈cabeza
+  const collapsed = new Set(
+    [...unique].map((w) => {
+      if (w === 'fisico' || w === 'physical' || w === 'body') return 'cuerpo';
+      if (w === 'mental' || w === 'mind') return 'mente';
+      if (w === 'head' || w === 'cabeza') return 'cabeza';
+      return w;
+    }),
+  );
+  return collapsed.size >= 2;
+}
+
+/**
  * Pregunta del asistente con varias opciones cerradas (triage).
+ * Incluye listas A/B/C y disyuntivas binarias cuerpo/mente (o "… o ambos").
  * @param {string} content
  * @returns {boolean}
  */
@@ -43,9 +68,16 @@ export function isMultiOptionTriageQuestion(content) {
   const oSeparators = (text.match(/\s+o\s+/gi) || []).length;
   const orSeparators = (text.match(/\s+or\s+/gi) || []).length;
   const commas = (text.match(/,/g) || []).length;
+  const hasOr = oSeparators >= 1 || orSeparators >= 1;
 
   if (oSeparators >= 2 || orSeparators >= 2) return true;
-  if ((oSeparators >= 1 || orSeparators >= 1) && commas >= 1) return true;
+  if (hasOr && commas >= 1) return true;
+
+  // "… cuerpo, cabeza, o ambos" / "… or both" aunque el conteo de comas falle
+  if (/\bo\s+(?:en\s+)?ambos\b/i.test(text) || /\bor\s+both\b/i.test(text)) return true;
+
+  // Binaria somatocognitiva: "¿cuerpo o mente?", "¿más en el cuerpo o en la cabeza?"
+  if (hasOr && hasDistinctSomaCogPoles(text)) return true;
 
   return false;
 }
@@ -97,15 +129,15 @@ export function buildAntiRepeatTriageSnippet(contexto, language = 'es') {
   const en = language === 'en';
   return en
     ? `\n\n### Avoid repeated triage (this turn, high priority)
-- The user just gave a totalizing reply ("everything", "all three", etc.) to your choose-between-options question.
-- Do NOT ask another "which weighs more: A, B or C?" style question or rename the same options.
-- Validate in one specific sentence that when everything piles up the weight feels huge.
+- The user just gave a totalizing reply ("everything", "both", "all three", "body and mind", etc.) to your choose-between-options question.
+- Do NOT ask another "which weighs more: A, B or C?" style question, and do NOT rename the same split (e.g. body vs mind after they already said both).
+- Validate in one specific sentence that when everything piles up together the weight feels huge.
 - Offer support: reflect the whole or briefly name 2–3 threads they already mentioned (not as a closed menu).
-- If you need to move forward, ONE open question without A/B/C options.`
+- If you need to move forward, ONE open question without A/B/C options (impact, what would help a little now, how it shows up together)—never "which pole is heavier".`
     : `\n\n### Evitar triage repetido (este turno, prioridad alta)
-- El usuario acaba de responder de forma totalizadora ("todo", "las tres", etc.) a tu pregunta de elegir entre opciones.
-- **No** repitas otra pregunta tipo "¿qué te aprieta más: A, B o C?" ni variantes con la misma lista renombrada.
+- El usuario acaba de responder de forma totalizadora ("todo", "ambos", "las tres", "cuerpo y mente", etc.) a tu pregunta de elegir entre opciones.
+- **No** repitas otra pregunta tipo "¿qué te aprieta más: A, B o C?" ni **renombres** la misma división (p. ej. cuerpo vs mente después de que ya dijo ambos).
 - Valida en **1 frase concreta** que cuando todo se junta el peso se siente enorme.
 - Sostén: refleja el conjunto o nombra brevemente 2–3 hilos que ya mencionó (**sin** listarlos como menú cerrado).
-- Si necesitas avanzar, **una sola pregunta abierta** sin opciones A/B/C.`;
+- Si necesitas avanzar, **una sola pregunta abierta** sin opciones A/B/C (cómo se nota junto, qué ayudaría un poco ahora)—**nunca** "¿qué polo pesa más?".`;
 }

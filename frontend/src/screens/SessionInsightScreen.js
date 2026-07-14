@@ -727,7 +727,7 @@ export default function SessionInsightScreen() {
 
         {tccLiteResume?.eligible ? (
           <View style={styles.card}>
-            <Text style={styles.cardKicker}>{TEXTS.PATTERN_TITLE}</Text>
+            <Text style={styles.cardKicker}>{TEXTS.PATTERN_RESUME_TITLE}</Text>
             <Text style={[styles.patternBody, { marginBottom: 10 }]}>
               {TEXTS.CTA_TCC_LITE_CHAT_HINT}
             </Text>

@@ -17,9 +17,11 @@
 export const PARAPHRASIS_LIMITS = {
   MAX_USER_MESSAGE_LENGTH: 500, // No parafrasear mensajes muy largos (resumir en cambio)
   MIN_USER_MESSAGE_LENGTH: 10, // No parafrasear mensajes muy cortos
-  MAX_CONSECUTIVE_PARAPHRASIS: 3, // Máximo 3 paráfrasis consecutivas en conversación
-  COOLDOWN_TURNS: 2, // Turnos de espera después de paráfrasis
+  MAX_CONSECUTIVE_PARAPHRASIS: 2, // Evita rachas de eco + confirmación
+  COOLDOWN_TURNS: 3, // Turnos de espera después de paráfrasis
   MIN_EMOTIONAL_INTENSITY: 7, // Umbral de intensidad para paráfrasis obligatoria
+  /** Emoción vulnerable solo exige paráfrasis si la intensidad llega a este piso */
+  MIN_VULNERABLE_EMOTION_INTENSITY: 5,
 };
 
 /**
@@ -74,52 +76,54 @@ export function buildParaphrasisPolicySnippet(language, context = {}) {
   if (language === 'en') {
     return `
 
-## Paraphrasing before intervening
+## Reflect before intervening (no parrot)
 
-Before offering guidance or suggestions, **first paraphrase** what the user expressed:
-- Reflect their emotion and core need in your own words
-- Validate their experience without adding interpretation
-- Ask for confirmation: "Did I understand correctly?" or "Is that right?"
+When emotional load is high, show you got the **feeling/need** — then move the talk forward in the **same** turn.
 
-Only after the user confirms or clarifies, offer your therapeutic response.
+**How (required):**
+- Name the emotion or weight in **fresh words** (1 short sentence). Do **not** restating their wording.
+- Do **not** open with "I understand that…", "It sounds like you said…" plus a near-copy of their sentence.
+- Do **not** copy more than ~3 consecutive words from the user.
+- Prefer **one open follow-up** in the same message. Use a check ("Is that right?") **only** if you are genuinely unsure — not every turn.
 
-**Example:**
+**Good example:**
 User: "I'm so stressed at work, I can't take it anymore."
-You: "I understand that work is generating a lot of stress for you and you feel like you've reached your limit. Is that right?"
-[Wait for confirmation]
-You: "I hear you. When you feel like you can't take it anymore..."
+You: "That pressure at work is pushing you past your limit. What feels heaviest about it today?"
 
-**Important:**
-- Keep the paraphrase brief and focused on core emotion
-- Don't add advice or interpretation in the paraphrase
-- If the user says "yes" or confirms, move forward
-- If they clarify, adjust your understanding first
+**Avoid:**
+User: "I'm so stressed at work, I can't take it anymore."
+You: "I understand that you're very stressed at work and you can't take it anymore. Is that right?"
+
+**Also:**
+- Keep the reflection brief and on the core emotion
+- If they already confirmed, advance — no new restatement loop
 `;
   }
 
   // Español (default)
   return `
 
-## Paráfrasis antes de intervenir
+## Paráfrasis antes de intervenir (sin eco)
 
-Antes de ofrecer orientación o sugerencias, **primero parafrasea** lo que expresó el usuario:
-- Refleja su emoción y necesidad central con tus propias palabras
-- Valida su experiencia sin agregar interpretación
-- Pide confirmación: "¿Te entendí bien?" o "¿Es así?"
+Cuando la carga emocional es alta, muestra que captaste la **emoción/necesidad** — y avanza el diálogo en el **mismo** turno.
 
-Solo después de que el usuario confirme o aclare, ofrece tu respuesta terapéutica.
+**Cómo (obligatorio):**
+- Nombra la emoción o el peso con **palabras nuevas** (1 frase corta). **No** repitas su formulación.
+- **No** abras con "Entiendo que…", "Lo que dices es…" + casi las mismas palabras del usuario.
+- **No** copies más de ~3 palabras consecutivas del usuario.
+- Prefiere **una pregunta abierta** en el mismo mensaje. Usa check ("¿Es así?" / "¿Te entendí bien?") **solo** si hay duda real — no en cada turno.
 
-**Ejemplo:**
+**Buen ejemplo:**
 Usuario: "Estoy muy estresada en el trabajo, ya no puedo más."
-Tú: "Entiendo que el trabajo te está generando mucho estrés y sientes que llegaste a un límite. ¿Es así?"
-[Espera confirmación]
-Tú: "Te escucho. Cuando sientas que no puedes más..."
+Tú: "Esa presión en el trabajo te está dejando sin margen. ¿Qué parte te está pesando más hoy?"
 
-**Importante:**
-- Mantén la paráfrasis breve y enfocada en la emoción central
-- No agregues consejos ni interpretaciones en la paráfrasis
-- Si el usuario dice "sí" o confirma, continúa adelante
-- Si aclara o corrige, ajusta primero tu comprensión
+**Evitar:**
+Usuario: "Estoy muy estresada en el trabajo, ya no puedo más."
+Tú: "Entiendo que estás muy estresada en el trabajo y ya no puedes más. ¿Es así?"
+
+**También:**
+- Mantén el reflejo breve y en la emoción central
+- Si ya confirmó, avanza — sin otro bucle de reformulación
 `;
 }
 
@@ -189,10 +193,13 @@ export function shouldRequireParaphrasis(context = {}) {
   if (hasAbruptToneChange === true) return true; // Cambio de tono
   if (userExpressesLackOfUnderstanding === true) return true; // Usuario se siente incomprendido
 
-  // Emociones vulnerables siempre requieren paráfrasis
+  // Emoción vulnerable + intensidad mínima (evita eco en turnos “suaves”)
   if (normalizedMainEmotion) {
     const emotionLower = normalizedMainEmotion.toLowerCase();
-    if (VULNERABLE_EMOTIONS.some((vulnEmo) => emotionLower.includes(vulnEmo))) {
+    if (
+      VULNERABLE_EMOTIONS.some((vulnEmo) => emotionLower.includes(vulnEmo)) &&
+      normalizedIntensity >= PARAPHRASIS_LIMITS.MIN_VULNERABLE_EMOTION_INTENSITY
+    ) {
       return true;
     }
   }

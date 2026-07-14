@@ -143,8 +143,9 @@ function resolveEmotionalForMessage(msgs, index) {
 function aggregateDominantEmotion(msgs) {
   const userMsgs = msgs.filter((m) => m.role === 'user');
   const scores = { ...EMOTION_WEIGHTS };
-  let totalIntensity = 0;
-  let intensityCount = 0;
+  let weightedIntensity = 0;
+  let weightSum = 0;
+  let peakIntensity = 0;
 
   msgs.forEach((msg, index) => {
     if (msg.role !== 'user') return;
@@ -155,14 +156,18 @@ function aggregateDominantEmotion(msgs) {
     const recencyBoost = userIndex >= userMsgs.length - 3 ? 1.8 : 1;
     const weight = (1 + userIndex * 0.2) * recencyBoost;
     scores[emotion] = (scores[emotion] || 0) + weight;
-    totalIntensity += intensity;
-    intensityCount += 1;
+    weightedIntensity += intensity * weight;
+    weightSum += weight;
+    peakIntensity = Math.max(peakIntensity, intensity);
   });
 
   const dominantEmotion =
     Object.entries(scores).sort((a, b) => b[1] - a[1])[0]?.[0] || 'neutral';
+  const weightedAvg =
+    weightSum > 0 ? weightedIntensity / weightSum : 5;
+  // No diluir picos (p. ej. crisis de pánico) con turnos posteriores más calmados
   const avgIntensity =
-    intensityCount > 0 ? Math.round((totalIntensity / intensityCount) * 10) / 10 : 5;
+    Math.round(Math.max(weightedAvg, peakIntensity * 0.7 + weightedAvg * 0.3) * 10) / 10;
 
   return { dominantEmotion, avgIntensity };
 }
@@ -248,6 +253,8 @@ function aggregateThoughtPattern(userMsgs, assistantMsgs, language) {
   const best = [...typeScores.values()].sort(
     (a, b) => (b.confidence || 0) - (a.confidence || 0),
   )[0];
+  // Evita mostrar distorsiones de baja confianza (falsos positivos tipo «qué si»)
+  if ((best.confidence || 0) < 0.45) return null;
   return localizeDistortion(best, language);
 }
 

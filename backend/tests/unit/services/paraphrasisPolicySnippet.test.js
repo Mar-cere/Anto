@@ -159,19 +159,21 @@ describe('paraphrasisPolicySnippet', () => {
       const snippet = buildParaphrasisPolicySnippet('es', context);
 
       expect(snippet).toContain('Paráfrasis antes de intervenir');
-      expect(snippet).toContain('parafrasea');
-      expect(snippet).toContain('Ejemplo:');
-      expect(snippet).toContain('¿Te entendí bien?');
+      expect(snippet).toContain('sin eco');
+      expect(snippet).toContain('Buen ejemplo:');
+      expect(snippet).toContain('Evitar:');
+      expect(snippet).not.toMatch(/Entiendo que el trabajo te está generando/);
     });
 
     test('debe devolver snippet en inglés cuando requiere paráfrasis', () => {
       const context = { emotionalIntensity: 8, messageLength: 50 };
       const snippet = buildParaphrasisPolicySnippet('en', context);
 
-      expect(snippet).toContain('Paraphrasing before intervening');
-      expect(snippet).toContain('paraphrase');
-      expect(snippet).toContain('Example:');
-      expect(snippet).toContain('Did I understand correctly?');
+      expect(snippet).toContain('Reflect before intervening');
+      expect(snippet).toContain('no parrot');
+      expect(snippet).toContain('Good example:');
+      expect(snippet).toContain('Avoid:');
+      expect(snippet).not.toMatch(/I understand that work is generating/);
     });
 
     test('debe devolver string vacío si no requiere paráfrasis', () => {
@@ -196,8 +198,8 @@ describe('paraphrasisPolicySnippet', () => {
       const context = { emotionalIntensity: 8, messageLength: 50 };
       const snippet = buildParaphrasisPolicySnippet('es', context);
 
-      expect(snippet).toContain('breve');
-      expect(snippet).toContain('emoción central');
+      expect(snippet).toContain('frase corta');
+      expect(snippet).toContain('emoción');
     });
 
     test('debe incluir ejemplo práctico en español', () => {
@@ -206,7 +208,7 @@ describe('paraphrasisPolicySnippet', () => {
 
       expect(snippet).toContain('Usuario:');
       expect(snippet).toContain('Tú:');
-      expect(snippet).toContain('Espera confirmación');
+      expect(snippet).toContain('palabras nuevas');
     });
 
     test('debe incluir ejemplo práctico en inglés', () => {
@@ -215,7 +217,7 @@ describe('paraphrasisPolicySnippet', () => {
 
       expect(snippet).toContain('User:');
       expect(snippet).toContain('You:');
-      expect(snippet).toContain('Wait for confirmation');
+      expect(snippet).toContain('fresh words');
     });
 
     test('debe manejar contexto vacío sin errores', () => {
@@ -228,6 +230,16 @@ describe('paraphrasisPolicySnippet', () => {
       const snippet = buildParaphrasisPolicySnippet('fr', context);
 
       expect(snippet).toContain('Paráfrasis antes de intervenir');
+    });
+
+    test('NO debe exigir paráfrasis por emoción vulnerable con intensidad baja', () => {
+      expect(
+        shouldRequireParaphrasis({
+          mainEmotion: 'tristeza',
+          emotionalIntensity: 3,
+          messageLength: 50,
+        }),
+      ).toBe(false);
     });
   });
 
@@ -337,7 +349,21 @@ describe('paraphrasisPolicySnippet', () => {
       expect(result.valid).toBe(true);
     });
 
-    test('debe validar con algunas paráfrasis pero no máximo', () => {
+    test('debe validar con una paráfrasis reciente por debajo del máximo', () => {
+      const context = { messageLength: 50 };
+      const history = [
+        {
+          role: 'assistant',
+          metadata: { paraphrasis: { wasParaphrasis: true } },
+        },
+      ];
+
+      const result = validateParaphrasisConstraints(context, history);
+
+      expect(result.valid).toBe(true);
+    });
+
+    test('debe rechazar al alcanzar el máximo de paráfrasis consecutivas (2)', () => {
       const context = { messageLength: 50 };
       const history = [
         {
@@ -352,7 +378,8 @@ describe('paraphrasisPolicySnippet', () => {
 
       const result = validateParaphrasisConstraints(context, history);
 
-      expect(result.valid).toBe(true);
+      expect(result.valid).toBe(false);
+      expect(result.reason).toBe('max_consecutive_reached');
     });
   });
 
@@ -502,9 +529,10 @@ describe('paraphrasisPolicySnippet', () => {
     test('debe exportar límites válidos', () => {
       expect(PARAPHRASIS_LIMITS.MAX_USER_MESSAGE_LENGTH).toBe(500);
       expect(PARAPHRASIS_LIMITS.MIN_USER_MESSAGE_LENGTH).toBe(10);
-      expect(PARAPHRASIS_LIMITS.MAX_CONSECUTIVE_PARAPHRASIS).toBe(3);
-      expect(PARAPHRASIS_LIMITS.COOLDOWN_TURNS).toBe(2);
+      expect(PARAPHRASIS_LIMITS.MAX_CONSECUTIVE_PARAPHRASIS).toBe(2);
+      expect(PARAPHRASIS_LIMITS.COOLDOWN_TURNS).toBe(3);
       expect(PARAPHRASIS_LIMITS.MIN_EMOTIONAL_INTENSITY).toBe(7);
+      expect(PARAPHRASIS_LIMITS.MIN_VULNERABLE_EMOTION_INTENSITY).toBe(5);
     });
   });
 });

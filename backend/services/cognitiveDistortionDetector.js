@@ -169,12 +169,13 @@ class CognitiveDistortionDetector {
         intervention: 'Enfocarse en el presente. Preguntar: "¿Qué puedes hacer ahora? ¿Qué aprendiste de esa experiencia?"'
       },
       what_if: {
-        name: 'Pensamiento "Qué Si"',
-        description: 'Preocuparse constantemente por posibilidades negativas',
+        name: 'Pensamiento «qué si»',
+        description: 'Preocuparse por posibilidades negativas que aún no ocurren',
         examples: ['qué si pasa', 'qué si fallo', 'qué si sale mal'],
         patterns: [
-          /(?:qué.*si.*pasa|qué.*si.*fallo|qué.*si.*sale.*mal|y.*si)/i,
-          /(?:qué.*pasaría.*si|imagínate.*si)/i
+          /qu[eé]\s+si\s+(pasa|fallo|fallas|sale|me\s+|no\s+|todo|algo)/i,
+          /imagin[ae]\s+si\b/i,
+          /y\s+si\s+(pasa|fallo|sale|me\s+queda|no\s+puedo|todo)/i,
         ],
         intervention: 'Enfocarse en el presente. Preguntar: "¿Qué está pasando ahora? ¿Qué puedes hacer con lo que tienes?"'
       }

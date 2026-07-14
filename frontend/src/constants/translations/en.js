@@ -3143,6 +3143,7 @@ export const SESSION_INSIGHT = {
   LOADING: 'Preparing summary…',
   EMOTION_TITLE: 'What we noticed',
   PATTERN_TITLE: 'Thinking pattern',
+  PATTERN_RESUME_TITLE: 'Continue in chat',
   THEMES_TITLE: 'Conversation themes',
   STEP_TITLE: 'Your next step',
   CTA_DONE: 'Continue',

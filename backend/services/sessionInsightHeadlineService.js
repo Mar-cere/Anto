@@ -88,12 +88,12 @@ export async function generateSessionInsightHeadline({
 
   const model = process.env.SESSION_INSIGHT_HEADLINE_MODEL || 'gpt-4o-mini';
   const system = en
-    ? 'You write ONE warm headline (max 90 chars) for a post-chat emotional insight screen in a wellbeing app. Not clinical. No diagnosis. No quotes. JSON only: {"headline":"..."}'
-    : 'Escribes UN titular cálido (máx. 90 caracteres) para una pantalla de insight post-chat en una app de bienestar. No clínico. Sin diagnóstico. Sin comillas. Solo JSON: {"headline":"..."}';
+    ? 'You write ONE warm headline (max 90 chars) for a post-chat emotional insight screen in a wellbeing app. Ground it in the WHOLE arc of the user messages (not only the last one). Prefer the main emotional load (e.g. panic, exhaustion, fear) over a side theme. Not clinical. No diagnosis. No quotes. No generic wellness slogans. JSON only: {"headline":"..."}'
+    : 'Escribes UN titular cálido (máx. 90 caracteres) para una pantalla de insight post-chat en una app de bienestar. Ancla el titular en el arco COMPLETO de los mensajes (no solo el último). Prioriza la carga emocional principal (p. ej. pánico, agotamiento, susto) sobre un tema lateral. No clínico. Sin diagnóstico. Sin comillas. Sin eslóganes genéricos de bienestar. Solo JSON: {"headline":"..."}';
 
   const userPrompt = en
-    ? `Dominant emotion: ${emotionMeta.label}.\n${patternHint}\nFallback headline: ${fallbackHeadline}\n\nUser messages:\n${transcript}\n\nReturn JSON with a single headline that feels personal and validating, not generic.`
-    : `Emoción dominante: ${emotionMeta.label}.\n${patternHint}\nTitular de respaldo: ${fallbackHeadline}\n\nMensajes del usuario:\n${transcript}\n\nDevuelve JSON con un titular personal y validante, no genérico.`;
+    ? `Dominant emotion: ${emotionMeta.label}.\n${patternHint}\nFallback headline: ${fallbackHeadline}\n\nUser messages (chronological):\n${transcript}\n\nReturn JSON with a single headline that feels personal and validating. Cover the main thread of the session, not a late side detail alone.`
+    : `Emoción dominante: ${emotionMeta.label}.\n${patternHint}\nTitular de respaldo: ${fallbackHeadline}\n\nMensajes del usuario (cronológicos):\n${transcript}\n\nDevuelve JSON con un titular personal y validante. Cubre el hilo principal de la sesión, no solo un detalle tardío.`;
 
   try {
     const completion = await openaiService.createChatCompletionResilient({

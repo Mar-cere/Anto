@@ -36,6 +36,9 @@ const PARAPHRASIS_PHRASES_ES = [
   /percibo\s+que/i,
   /me\s+(dices|comentas|cuentas|compartes)\s+que/i,
   /capt[oé]\s+que/i,
+  /suena\s+a\s+(que\s+)?/i,
+  /esa\s+(presión|carga|sensación|dureza|pesadumbre)/i,
+  /te\s+est[aá]\s+(dejando|pesando|agotando)/i,
 ];
 
 /**
@@ -49,6 +52,8 @@ const PARAPHRASIS_PHRASES_EN = [
   /what\s+you'?re\s+(saying|telling|sharing)\s+is/i,
   /it\s+seems\s+(like|that)/i,
   /i\s+get\s+that/i,
+  /that\s+(pressure|weight|load|stress)\s+(at|is)/i,
+  /sounds\s+like\s+/i,
 ];
 
 /**

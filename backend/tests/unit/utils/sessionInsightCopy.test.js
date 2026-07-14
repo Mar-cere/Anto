@@ -49,5 +49,15 @@ describe('sessionInsightCopy', () => {
       expect(localizeTopic('salud', 'es')).toBe('Salud');
       expect(localizeTopic('salud', 'en')).toBe('Health');
     });
+
+    it('traduce futuro y autoimagen', () => {
+      expect(localizeTopic('futuro', 'es')).toBe('Futuro');
+      expect(localizeTopic('futuro', 'en')).toBe('Future');
+      expect(localizeTopic('autoimagen', 'es')).toBe('Autoimagen');
+    });
+
+    it('capitaliza temas sin mapa', () => {
+      expect(localizeTopic('customtopic', 'es')).toBe('Customtopic');
+    });
   });
 });

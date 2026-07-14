@@ -33,7 +33,7 @@ const COPY = {
     habit: (title) => `Hábito: ${title}`,
     reminderAround: (time) => `Recordatorio hacia las ${time}`,
     scheduledReminder: 'Recordatorio programado',
-    scheduledReminderMorning: 'Recordatorio programado (mañana)',
+    scheduledReminderMorning: 'Recordatorio programado (por la mañana)',
     scheduledReminderEvening: 'Recordatorio programado (tarde-noche)',
     activeFollowUp: (tool) => `Seguimiento activo: ${tool}`,
     focusProtocol: (line) =>
