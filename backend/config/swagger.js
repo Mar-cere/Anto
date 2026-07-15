@@ -14,7 +14,7 @@ const options = {
     openapi: '3.0.0',
     info: {
       title: 'Anto App API',
-      version: '1.5.3',
+      version: '1.5.4',
       description: 'API REST para Anto App - Aplicación de asistente AI terapéutico',
       contact: {
         name: 'AntoApp Team',

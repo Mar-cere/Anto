@@ -403,7 +403,7 @@ Anto/
 ### Estado General: **Listo para Producción** ✅
 
 **Última actualización del README:** 2026-06-23  
-**Versión publicada (app):** 1.5.3 (ver `frontend/app.json`, iOS build 43, Android versionCode 29)
+**Versión publicada (app):** 1.5.4 (ver `frontend/app.json`, iOS build 44, Android versionCode 30)
 
 ### Completado ✅
 
