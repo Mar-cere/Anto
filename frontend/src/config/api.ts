@@ -22,6 +22,7 @@ import {
   notifySessionInvalidated,
   refreshAccessToken,
 } from '../utils/authTokenRefresh';
+import { isSubscriptionRequiredError } from '../utils/subscriptionAccess';
 
 const getApiUrl = (): string => {
   if (process.env.EXPO_PUBLIC_API_URL) {
@@ -224,17 +225,39 @@ async function withAuthRetry<T>(
   }
 }
 
+function isExpectedClientApiError(error: ApiError | { message?: string }): boolean {
+  return isTokenExpiredError(error) || isSubscriptionRequiredError(error);
+}
+
 function logApiError(endpoint: string, errorMessage: string, error?: ApiError): void {
   if (typeof console === 'undefined') {
     return;
   }
-  if (isTokenExpiredError(error ?? { message: errorMessage })) {
+  const errLike = error ?? { message: errorMessage };
+  if (isTokenExpiredError(errLike)) {
     if (typeof __DEV__ !== 'undefined' && __DEV__) {
       console.log(`[API] ${endpoint} - Token expirado, renovando sesión...`);
     }
     return;
   }
+  if (isSubscriptionRequiredError(errLike)) {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.log(`[API] ${endpoint} - Suscripción requerida`);
+    }
+    return;
+  }
   console.error(`[API] ${endpoint} - Error:`, errorMessage);
+}
+
+/** Evita LogBox por estados de negocio esperados (token / suscripción). */
+function logApiMethodCatch(method: string, endpoint: string, error: ApiError): void {
+  if (typeof console === 'undefined') {
+    return;
+  }
+  if (isExpectedClientApiError(error)) {
+    return;
+  }
+  console.error(`[API] ${method} ${endpoint} - Error:`, error?.message);
 }
 
 const getAuthHeaders = async (): Promise<Record<string, string>> => {
@@ -352,10 +375,7 @@ export const api = {
         }
         return responseData;
       } catch (error) {
-        const apiError = error as ApiError;
-        if (!isTokenExpiredError(apiError)) {
-          console.error(`[API] POST ${endpoint} - Error:`, (error as Error).message);
-        }
+        logApiMethodCatch('POST', endpoint, error as ApiError);
         throw error;
       }
     }),
@@ -384,9 +404,7 @@ export const api = {
         if (err?.name === 'AbortError') {
           throw err;
         }
-        if (!isTokenExpiredError(err)) {
-          console.error(`[API] GET ${endpoint} - Error:`, err.message);
-        }
+        logApiMethodCatch('GET', endpoint, err);
         throw error;
       }
     }),
@@ -402,10 +420,7 @@ export const api = {
         });
         return parseJsonResponse<T>(response, endpoint);
       } catch (error) {
-        const apiError = error as ApiError;
-        if (!isTokenExpiredError(apiError)) {
-          console.error(`[API] PUT ${endpoint} - Error:`, (error as Error).message);
-        }
+        logApiMethodCatch('PUT', endpoint, error as ApiError);
         throw error;
       }
     }),
@@ -420,10 +435,7 @@ export const api = {
         });
         return parseJsonResponse<T>(response, endpoint);
       } catch (error) {
-        const apiError = error as ApiError;
-        if (!isTokenExpiredError(apiError)) {
-          console.error(`[API] DELETE ${endpoint} - Error:`, (error as Error).message);
-        }
+        logApiMethodCatch('DELETE', endpoint, error as ApiError);
         throw error;
       }
     }),
@@ -439,10 +451,7 @@ export const api = {
         });
         return parseJsonResponse<T>(response, endpoint);
       } catch (error) {
-        const apiError = error as ApiError;
-        if (!isTokenExpiredError(apiError)) {
-          console.error(`[API] PATCH ${endpoint} - Error:`, (error as Error).message);
-        }
+        logApiMethodCatch('PATCH', endpoint, error as ApiError);
         throw error;
       }
     }),

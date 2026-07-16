@@ -249,14 +249,14 @@ export const requireActiveSubscription = (allowTrial = true) => {
 
       return res.status(403).json({
         success: false,
-        error: 'Se requiere suscripción activa o trial válido para usar el chat',
+        error: 'Se requiere suscripción activa o trial válido',
         requiresSubscription: true,
         currentStatus: apiStatus?.status ?? userSub.status,
         trialEndDate: apiStatus?.trialEndDate ?? userSub.trialEndDate,
         message:
           trialEndedMsg
-            ? 'Tu período de prueba ha expirado. Por favor, suscríbete para continuar usando el chat.'
-            : 'Necesitas una suscripción activa para usar el chat.',
+            ? 'Tu período de prueba ha expirado. Suscríbete para continuar.'
+            : 'Necesitas una suscripción activa o trial válido para continuar.',
       });
     } catch (error) {
       console.error('Error verificando suscripción:', error);

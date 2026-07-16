@@ -11,7 +11,6 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -23,12 +22,14 @@ import WeeklyInsightConductCard from '../components/weeklyInsight/WeeklyInsightC
 import WeeklyInsightHero from '../components/weeklyInsight/WeeklyInsightHero';
 import WeeklyInsightSettingsSection from '../components/weeklyInsight/WeeklyInsightSettingsSection';
 import WeeklyInsightSourceStrip from '../components/weeklyInsight/WeeklyInsightSourceStrip';
+import WeeklyInsightStatusPanel from '../components/weeklyInsight/WeeklyInsightStatusPanel';
 import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import signalsService from '../services/signalsService';
 import { resolveMonthlyInsightKey } from '../utils/monthKeys';
+import { isSubscriptionRequiredError } from '../utils/subscriptionAccess';
 import {
   buildInsightRowNavigation,
   buildInsightSourceChips,
@@ -56,7 +57,8 @@ export default function WeeklyInsightScreen({ navigation }) {
   const TEXTS = useSectionTranslations('TECHNIQUES');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
+  /** @type {[null|'subscription'|'error', function]} */
+  const [statusKind, setStatusKind] = useState(null);
   const [insight, setInsight] = useState(null);
   const [correlations, setCorrelations] = useState([]);
   const [periodKey, setPeriodKey] = useState(null);
@@ -87,6 +89,15 @@ export default function WeeklyInsightScreen({ navigation }) {
         (en
           ? 'Correlations, not causes. Not a substitute for professional care.'
           : 'Correlaciones, no causas. No sustituye orientación profesional.'),
+      emptyTitle:
+        (isMonth ? TEXTS.MONTHLY_INSIGHT_EMPTY_TITLE : TEXTS.WEEKLY_INSIGHT_EMPTY_TITLE) ||
+        (en
+          ? isMonth
+            ? 'No monthly report yet'
+            : 'No report yet'
+          : isMonth
+            ? 'Aún no hay un informe mensual'
+            : 'Aún no hay un informe'),
       empty:
         (isMonth ? TEXTS.MONTHLY_INSIGHT_EMPTY : TEXTS.WEEKLY_INSIGHT_EMPTY) ||
         TEXTS.WEEKLY_INSIGHT_EMPTY ||
@@ -98,6 +109,9 @@ export default function WeeklyInsightScreen({ navigation }) {
             ? 'Aún no hay suficientes señales para un informe mensual. Activa las opciones de abajo y sigue usando la app.'
             : 'Aún no hay suficientes señales para un informe. Activa las opciones de abajo y sigue usando la app.'),
       retry: TEXTS.WEEKLY_INSIGHT_RETRY || (en ? 'Retry' : 'Reintentar'),
+      errorTitle:
+        (isMonth ? TEXTS.MONTHLY_INSIGHT_ERROR_TITLE : TEXTS.WEEKLY_INSIGHT_ERROR_TITLE) ||
+        (en ? 'Could not load' : 'No se pudo cargar'),
       error:
         (isMonth ? TEXTS.MONTHLY_INSIGHT_ERROR : TEXTS.WEEKLY_INSIGHT_ERROR) ||
         TEXTS.WEEKLY_INSIGHT_ERROR ||
@@ -108,6 +122,16 @@ export default function WeeklyInsightScreen({ navigation }) {
           : isMonth
             ? 'No se pudo cargar el informe mensual.'
             : 'No se pudo cargar el informe semanal.'),
+      subscriptionTitle:
+        TEXTS.WEEKLY_INSIGHT_SUBSCRIPTION_TITLE ||
+        (en ? 'Report with subscription' : 'Informe con suscripción'),
+      subscriptionBody:
+        TEXTS.WEEKLY_INSIGHT_SUBSCRIPTION_BODY ||
+        (en
+          ? 'The observational report is included with an active subscription or trial period.'
+          : 'El informe observacional forma parte del plan con suscripción activa o período de prueba.'),
+      subscriptionCta:
+        TEXTS.WEEKLY_INSIGHT_SUBSCRIPTION_CTA || (en ? 'View plans' : 'Ver planes'),
       conductTitle:
         TEXTS.WEEKLY_INSIGHT_CONDUCT_TITLE || (en ? 'Small step to try' : 'Pequeño paso a probar'),
       conductCta:
@@ -139,12 +163,12 @@ export default function WeeklyInsightScreen({ navigation }) {
   const load = useCallback(async () => {
     try {
       if (mountedRef.current) {
-        setError(null);
+        setStatusKind(null);
         setLoading(true);
       }
       if (period === 'month' && !monthKeyParam) {
         if (!mountedRef.current) return;
-        setError(copy.error);
+        setStatusKind('error');
         setInsight(null);
         setCorrelations([]);
         setPeriodKey(null);
@@ -167,18 +191,19 @@ export default function WeeklyInsightScreen({ navigation }) {
       const payload = res?.insight && typeof res.insight === 'object' ? res.insight : null;
       setInsight(payload);
       setCorrelations(Array.isArray(payload?.correlations) ? payload.correlations : []);
-    } catch {
+      setStatusKind(null);
+    } catch (err) {
       if (!mountedRef.current) return;
-      setError(copy.error);
       setInsight(null);
       setCorrelations([]);
       setPeriodKey(null);
+      setStatusKind(isSubscriptionRequiredError(err) ? 'subscription' : 'error');
     } finally {
       if (!mountedRef.current) return;
       setLoading(false);
       setRefreshing(false);
     }
-  }, [copy.error, period, weekKeyParam, monthKeyParam]);
+  }, [period, weekKeyParam, monthKeyParam]);
 
   useEffect(() => {
     load();
@@ -196,6 +221,7 @@ export default function WeeklyInsightScreen({ navigation }) {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
           paddingTop: 4,
           paddingBottom: insets.bottom + 32,
+          flexGrow: 1,
         },
         disclaimer: {
           fontSize: 12,
@@ -204,16 +230,6 @@ export default function WeeklyInsightScreen({ navigation }) {
           marginTop: 4,
           marginBottom: 16,
         },
-        error: { color: colors.error, marginBottom: 12 },
-        retry: {
-          alignSelf: 'flex-start',
-          paddingHorizontal: 16,
-          paddingVertical: 10,
-          borderRadius: 10,
-          backgroundColor: colors.primary,
-          marginBottom: 16,
-        },
-        retryText: { color: colors.white, fontWeight: '600' },
         center: { paddingVertical: 48, alignItems: 'center' },
       }),
     [colors, insets.top, insets.bottom],
@@ -253,6 +269,7 @@ export default function WeeklyInsightScreen({ navigation }) {
   );
 
   const hasInsightContent = rows.length > 0 || abcPatterns.length > 0 || Boolean(conductSuggestion);
+  const showEmpty = !loading && !statusKind && !hasInsightContent;
 
   const openRowTarget = useCallback(
     (row) => {
@@ -297,59 +314,80 @@ export default function WeeklyInsightScreen({ navigation }) {
           </View>
         ) : null}
 
-        {error ? (
-          <>
-            <Text style={styles.error}>{error}</Text>
-            <TouchableOpacity style={styles.retry} onPress={load}>
-              <Text style={styles.retryText}>{copy.retry}</Text>
-            </TouchableOpacity>
-          </>
+        {!loading && statusKind === 'subscription' ? (
+          <WeeklyInsightStatusPanel
+            icon="lock-outline"
+            title={copy.subscriptionTitle}
+            body={copy.subscriptionBody}
+            ctaLabel={copy.subscriptionCta}
+            onPressCta={() => navigation?.navigate?.('Subscription')}
+          />
         ) : null}
 
-        {!loading && !error ? (
+        {!loading && statusKind === 'error' ? (
+          <WeeklyInsightStatusPanel
+            icon="cloud-off-outline"
+            title={copy.errorTitle}
+            body={copy.error}
+            ctaLabel={copy.retry}
+            onPressCta={load}
+          />
+        ) : null}
+
+        {!loading && !statusKind ? (
           <>
-            <WeeklyInsightHero
-              periodLabel={periodLabel}
-              headline={insight?.headline || copy.empty}
-              body={showBody ? insight.body : null}
-            />
-
-            {hasInsightContent ? (
+            {showEmpty ? (
+              <WeeklyInsightStatusPanel
+                icon="chart-timeline-variant"
+                title={copy.emptyTitle}
+                body={copy.empty}
+              />
+            ) : (
               <>
-                <WeeklyInsightSourceStrip chips={sourceChips} />
+                <WeeklyInsightHero
+                  periodLabel={periodLabel}
+                  headline={insight?.headline || copy.emptyTitle}
+                  body={showBody ? insight.body : null}
+                />
 
-                {conductSuggestion ? (
-                  <WeeklyInsightConductCard
-                    title={copy.conductTitle}
-                    body={conductSuggestion}
-                    ctaLabel={copy.conductCta}
-                    onPress={() => navigation?.navigate?.('MainTabs', { screen: 'Chat' })}
-                  />
+                {hasInsightContent ? (
+                  <>
+                    <WeeklyInsightSourceStrip chips={sourceChips} />
+
+                    {conductSuggestion ? (
+                      <WeeklyInsightConductCard
+                        title={copy.conductTitle}
+                        body={conductSuggestion}
+                        ctaLabel={copy.conductCta}
+                        onPress={() => navigation?.navigate?.('MainTabs', { screen: 'Chat' })}
+                      />
+                    ) : null}
+
+                    {rows.map((row, index) => {
+                      const ctaLabel = rowCtaLabel(row);
+                      return (
+                        <WeeklyInsightCard
+                          key={`${row.type}-${index}`}
+                          row={row}
+                          ctaLabel={ctaLabel}
+                          onPressCta={
+                            row.targetId && ctaLabel ? () => openRowTarget(row) : null
+                          }
+                        />
+                      );
+                    })}
+
+                    {abcPatterns.length > 0 ? (
+                      <AbcMacroPatternsCard patterns={abcPatterns} compact showCta />
+                    ) : null}
+
+                    <Text style={styles.disclaimer}>
+                      {[copy.disclaimer, ...extraDisclaimers].filter(Boolean).join(' ')}
+                    </Text>
+                  </>
                 ) : null}
-
-                {rows.map((row, index) => {
-                  const ctaLabel = rowCtaLabel(row);
-                  return (
-                    <WeeklyInsightCard
-                      key={`${row.type}-${index}`}
-                      row={row}
-                      ctaLabel={ctaLabel}
-                      onPressCta={
-                        row.targetId && ctaLabel ? () => openRowTarget(row) : null
-                      }
-                    />
-                  );
-                })}
-
-                {abcPatterns.length > 0 ? (
-                  <AbcMacroPatternsCard patterns={abcPatterns} compact showCta />
-                ) : null}
-
-                <Text style={styles.disclaimer}>
-                  {[copy.disclaimer, ...extraDisclaimers].filter(Boolean).join(' ')}
-                </Text>
               </>
-            ) : null}
+            )}
 
             <WeeklyInsightSettingsSection
               title={copy.settingsTitle}

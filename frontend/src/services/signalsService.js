@@ -65,9 +65,10 @@ export async function syncDigitalPhenotypeBatch(snapshots = []) {
 }
 
 export async function fetchWeeklyInsight({ weekKey = null } = {}) {
-  const res = await api.get(ENDPOINTS.SIGNALS_WEEKLY_INSIGHT, {
-    params: weekKey ? { weekKey } : undefined,
-  });
+  const res = await api.get(
+    ENDPOINTS.SIGNALS_WEEKLY_INSIGHT,
+    weekKey ? { weekKey: String(weekKey) } : {},
+  );
   return res?.data ?? res;
 }
 
@@ -81,9 +82,7 @@ export async function fetchMonthlyInsight({ monthKey = null } = {}) {
   if (!key) {
     throw new Error('monthKey_required');
   }
-  const res = await api.get(ENDPOINTS.SIGNALS_MONTHLY_INSIGHT, {
-    params: { monthKey: key },
-  });
+  const res = await api.get(ENDPOINTS.SIGNALS_MONTHLY_INSIGHT, { monthKey: key });
   return res?.data ?? res;
 }
 

@@ -20,6 +20,7 @@ const REQUIRED_FILES = [
   'components/weeklyInsight/WeeklyInsightConductCard.js',
   'components/weeklyInsight/WeeklyInsightSourceStrip.js',
   'components/weeklyInsight/WeeklyInsightSettingsSection.js',
+  'components/weeklyInsight/WeeklyInsightStatusPanel.js',
 ];
 
 function readSrc(relativePath) {
@@ -39,6 +40,8 @@ describe('insightsExperience guard', () => {
     expect(src).toMatch(/enrichInsightRows/);
     expect(src).toMatch(/buildInsightRowNavigation/);
     expect(src).toMatch(/WeeklyInsightConductCard/);
+    expect(src).toMatch(/WeeklyInsightStatusPanel/);
+    expect(src).toMatch(/isSubscriptionRequiredError/);
   });
 
   it('SummaryScreen no bloquea métricas tras hero', () => {

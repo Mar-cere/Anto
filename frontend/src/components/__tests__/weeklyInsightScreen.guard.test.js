@@ -21,6 +21,15 @@ describe('weeklyInsightScreen guard', () => {
     expect(src).not.toMatch(/ParticleBackground/);
   });
 
+  it('WeeklyInsightScreen diferencia suscripción, error y vacío con panel calmado', () => {
+    const src = readSrc('screens/WeeklyInsightScreen.js');
+    expect(src).toMatch(/WeeklyInsightStatusPanel/);
+    expect(src).toMatch(/isSubscriptionRequiredError/);
+    expect(src).toMatch(/statusKind === 'subscription'/);
+    expect(src).toMatch(/statusKind === 'error'/);
+    expect(src).toMatch(/navigate\?\.\('Subscription'\)/);
+  });
+
   it('WeeklyInsightSettingsSection colapsa ajustes cuando hay contenido', () => {
     const src = readSrc('screens/WeeklyInsightScreen.js');
     expect(src).toMatch(/WeeklyInsightSettingsSection/);
@@ -32,6 +41,9 @@ describe('weeklyInsightScreen guard', () => {
     const en = readSrc('constants/translations/en.js');
     expect(es).toMatch(/WEEKLY_INSIGHT_SETTINGS_TITLE:/);
     expect(es).toMatch(/WEEKLY_INSIGHT_ROW_CTA_PSYCHO:/);
+    expect(es).toMatch(/WEEKLY_INSIGHT_SUBSCRIPTION_TITLE:/);
+    expect(es).toMatch(/WEEKLY_INSIGHT_EMPTY_TITLE:/);
     expect(en).toMatch(/WEEKLY_INSIGHT_SOURCE_CHAT_DAYS:/);
+    expect(en).toMatch(/WEEKLY_INSIGHT_SUBSCRIPTION_CTA:/);
   });
 });

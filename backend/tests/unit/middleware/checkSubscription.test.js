@@ -180,9 +180,12 @@ describe('CheckSubscription Middleware', () => {
       expect(res.status).toHaveBeenCalledWith(403);
       expect(res.body).toEqual(
         expect.objectContaining({
-          requiresSubscription: true
+          requiresSubscription: true,
+          error: 'Se requiere suscripción activa o trial válido',
         })
       );
+      expect(String(res.body.error || '')).not.toMatch(/chat/i);
+      expect(String(res.body.message || '')).not.toMatch(/chat/i);
     });
 
     it('debe permitir acceso cuando getSubscriptionStatus indica premium vigente (sin depender del doc Subscription)', async () => {
