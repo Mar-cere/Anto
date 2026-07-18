@@ -67,6 +67,12 @@ Ver también `backend/config/features.js`.
 | `ENABLE_WEEKLY_SUMMARY_EMAIL` | off | Correo aviso resumen semanal |
 | `ENABLE_SWAGGER` | off en prod | Documentación `/api-docs` |
 | `PERSONAL_PATTERN_RAG_ENABLED` | off | RAG patrones personales cross-sesión (#203); requiere embeddings |
+| `EXPERIENTIAL_PATTERNS_ENABLED` | activo | API + persistencia memoria del proceso (#203/#211); `false` desactiva |
+| `EXPERIENTIAL_FOLLOWUP_ENABLED` | activo | Follow-up evolutivo en chat; `false` desactiva |
+| `EXPERIENTIAL_EXTRACT_ENABLED` | activo | Worker extracción al cierre de sesión; `false` desactiva |
+| `EXPERIENTIAL_FOLLOWUP_DAYS` | `14` | Días hasta el primer follow-up tras observar un patrón |
+| `EXPERIENTIAL_EXTRACT_TICK_MS` | `120000` | Intervalo del worker de extracción |
+| `EXPERIENTIAL_EXTRACT_MAX_ATTEMPTS` | `2` | Reintentos LLM de extracción |
 | `ENABLE_CRISIS_HARD_STOP` | activo | Hard-stop sin LLM en HIGH + léxico explícito (#205) |
 | `ENABLE_CRISIS_ROUTING_SLO_MONITOR` | activo | Monitor SLO camino A/B crisis (agrega Mongo + alerta Sentry) |
 

@@ -269,6 +269,8 @@ export const DASH = {
   FOCUS_CHAT_CONTINUITY_HEADLINE: 'Resume chat',
   FOCUS_CHAT_CONTINUITY_BADGE: 'Quick glance',
   FOCUS_CHAT_CONTINUITY_RECENT_BADGE: 'Recent activity',
+  FOCUS_EXPERIENTIAL_FOLLOW_UP_HEADLINE: 'Something from your process is ready to revisit',
+  FOCUS_EXPERIENTIAL_FOLLOW_UP_OPEN_A11Y: 'Open chat to revisit something from your process',
   FOCUS_PRELOADED_LAST_CHAT_TITLE_EN: 'Resume your last conversation',
   FOCUS_PRELOADED_LAST_CHAT_SUBTITLE_EN:
     'Last chat activity: {days} days ago.',
@@ -3249,6 +3251,38 @@ export const API_ERRORS = {
   GENERIC: 'Something went wrong. Try again.',
 };
 
+export const EXPERIENTIAL_PATTERNS = {
+  SCREEN_TITLE: 'Process memory',
+  SCREEN_INTRO:
+    'Observations Anto may gently revisit weeks later. You decide what is kept and what is archived.',
+  CONSENT_TITLE: 'Remember patterns from my process',
+  CONSENT_SUBTITLE:
+    'Allows Anto to extract and revisit observations (for example, “mornings were the hardest”) with your permission.',
+  CONSENT_ON: 'On',
+  CONSENT_OFF: 'Off',
+  EMPTY_TITLE: 'No patterns saved yet',
+  EMPTY_MESSAGE:
+    'When you talk with Anto about themes that return, they may appear here to revisit later.',
+  LOADING: 'Loading process memory…',
+  ERROR_LOADING: 'Could not load process memory',
+  RETRY: 'Retry',
+  ARCHIVE: 'Archive',
+  ARCHIVE_CONFIRM_TITLE: 'Archive pattern',
+  ARCHIVE_CONFIRM_MESSAGE: 'Anto will stop revisiting this memory. You can keep chatting as usual.',
+  ARCHIVE_CANCEL: 'Cancel',
+  ARCHIVE_CONFIRM: 'Archive',
+  TOAST_ARCHIVED: 'Pattern archived',
+  TOAST_ERROR: 'Could not complete. Try again.',
+  TOAST_CONSENT_UPDATED: 'Preference updated',
+  BACK_A11Y: 'Back',
+  FOLLOW_UP_PROMPT: 'Do you feel that has changed a bit?',
+  CHIP_CHANGED: 'Yes, a bit',
+  CHIP_UNCHANGED: 'About the same',
+  CHIP_SKIP: 'Skip',
+  OPEN_FROM_PRIVACY: 'View process memory',
+  DASHBOARD_CTA: 'Something from your process is ready to revisit',
+};
+
 export const USER_FACTS = {
   SCREEN_TITLE: 'Facts About Me',
   EMPTY_TITLE: 'No facts saved yet',
@@ -3396,6 +3430,7 @@ export default {
   PROFILE,
   SUBSCRIPTION,
   USER_FACTS,
+  EXPERIENTIAL_PATTERNS,
   SCHEDULED_SESSIONS,
   API_ERRORS,
 };

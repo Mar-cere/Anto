@@ -174,6 +174,7 @@ export function useChatScreen() {
   // Señal #202: al abrir desde "retomar conversación", forzar el follow-up de
   // compromiso en el primer mensaje aunque el hilo ya tenga historial.
   const pendingResumeCommitmentFollowUpRef = useRef(false);
+  const pendingResumeExperientialFollowUpRef = useRef(false);
   /** Invalida respuestas en vuelo de loadTccContinuity (p. ej. tras borrar el chat). */
   const tccContinuityRequestIdRef = useRef(0);
   /** Descarta inits de conversación solapados (anti race / anti loop). */
@@ -505,8 +506,20 @@ export function useChatScreen() {
           if (route.params?.resumeCommitmentFollowUp === true) {
             pendingResumeCommitmentFollowUpRef.current = true;
           }
+          if (route.params?.resumeExperientialFollowUp === true) {
+            pendingResumeExperientialFollowUpRef.current = true;
+          }
           try {
-            navigation.setParams({ openConversationId: undefined, resumeCommitmentFollowUp: undefined });
+            navigation.setParams({
+              openConversationId: undefined,
+              resumeCommitmentFollowUp: undefined,
+              resumeExperientialFollowUp: undefined,
+            });
+          } catch (_) {}
+        } else if (route.params?.resumeExperientialFollowUp === true) {
+          pendingResumeExperientialFollowUpRef.current = true;
+          try {
+            navigation.setParams({ resumeExperientialFollowUp: undefined });
           } catch (_) {}
         }
         let conversationId = await AsyncStorage.getItem(STORAGE_KEYS.CONVERSATION_ID);
@@ -627,6 +640,7 @@ export function useChatScreen() {
     navigation,
     route.params?.openConversationId,
     route.params?.resumeCommitmentFollowUp,
+    route.params?.resumeExperientialFollowUp,
     route.params?.fromMoodCheckIn,
     route.params?.moodCheckInMood,
     userId,
@@ -877,6 +891,25 @@ export function useChatScreen() {
       }
     } catch (e) {
       console.warn('[useChatScreen] commitment follow-up answer:', e?.message || e);
+    }
+  }, []);
+
+  const handleExperientialFollowUpAnswer = useCallback(async (patternId, answer, followUpMessage) => {
+    if (!patternId) return;
+    setMessages((prev) =>
+      prev.filter((m) => {
+        if (m.type !== 'experiential_follow_up') return true;
+        const id = m.id || m._id;
+        const targetId = followUpMessage?.id || followUpMessage?._id;
+        if (targetId) return String(id) !== String(targetId);
+        return m.experientialFollowUp?.id !== patternId;
+      }),
+    );
+    try {
+      const { updateExperientialPattern } = await import('../services/experientialPatternsService');
+      await updateExperientialPattern(patternId, { followUpStatus: answer });
+    } catch (e) {
+      console.warn('[useChatScreen] experiential follow-up answer:', e?.message || e);
     }
   }, []);
 
@@ -1199,10 +1232,13 @@ export function useChatScreen() {
 
       const resumeCommitmentFollowUp = pendingResumeCommitmentFollowUpRef.current === true;
       pendingResumeCommitmentFollowUpRef.current = false;
+      const resumeExperientialFollowUp = pendingResumeExperientialFollowUpRef.current === true;
+      pendingResumeExperientialFollowUpRef.current = false;
 
       await chatService.sendMessageStream(messageText, {
         resumeTccLite: resumePayload,
         resumeCommitmentFollowUp,
+        resumeExperientialFollowUp,
         signal: streamController.signal,
         registerAbort: (fn) => {
           activeStreamAbortRef.current = fn;
@@ -1316,6 +1352,15 @@ export function useChatScreen() {
                 role: 'suggestions',
                 type: 'commitment_follow_up',
                 commitmentFollowUp: payload.commitmentFollowUp,
+                metadata: { timestamp: new Date().toISOString() },
+              });
+            }
+            if (payload.experientialFollowUp?.id) {
+              next.push({
+                id: `experiential-follow-up-${Date.now()}`,
+                role: 'suggestions',
+                type: 'experiential_follow_up',
+                experientialFollowUp: payload.experientialFollowUp,
                 metadata: { timestamp: new Date().toISOString() },
               });
             }
@@ -2181,6 +2226,7 @@ export function useChatScreen() {
     handleProductProposalPress,
     handleProductProposalReject,
     handleCommitmentFollowUpAnswer,
+    handleExperientialFollowUpAnswer,
     handleCommitmentProposalPress,
     handleCommitmentProposalReject,
     showSessionIntentionPrompt,

@@ -149,6 +149,10 @@ export const ENDPOINTS = {
   /** Hechos biográficos del usuario (#63 grounding) */
   USER_FACTS: '/api/user-facts',
   USER_FACT_BY_ID: (id: string) => `/api/user-facts/${id}`,
+  /** Memoria del proceso / patrones experienciales (#203 / #211) */
+  EXPERIENTIAL_PATTERNS: '/api/experiential-patterns',
+  EXPERIENTIAL_PATTERNS_CONSENT: '/api/experiential-patterns/consent',
+  EXPERIENTIAL_PATTERN_BY_ID: (id: string) => `/api/experiential-patterns/${id}`,
   /** Sesiones programadas (#15) */
   SCHEDULED_SESSIONS: '/api/scheduled-sessions',
   SCHEDULED_SESSION_BY_ID: (id: string) => `/api/scheduled-sessions/${id}`,

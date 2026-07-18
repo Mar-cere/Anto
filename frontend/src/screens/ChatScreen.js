@@ -318,6 +318,7 @@ const ChatScreen = () => {
     handleProductProposalPress,
     handleProductProposalReject,
     handleCommitmentFollowUpAnswer,
+    handleExperientialFollowUpAnswer,
     handleCommitmentProposalPress,
     handleCommitmentProposalReject,
     showSessionIntentionPrompt,
@@ -506,6 +507,7 @@ const ChatScreen = () => {
         onProductProposalPress={handleProductProposalPress}
         onProductProposalReject={handleProductProposalReject}
         onCommitmentFollowUpAnswer={handleCommitmentFollowUpAnswer}
+        onExperientialFollowUpAnswer={handleExperientialFollowUpAnswer}
         onCommitmentProposalPress={handleCommitmentProposalPress}
         onCommitmentProposalReject={handleCommitmentProposalReject}
         onEmergencyContactAlertConfirm={handleEmergencyContactAlertConfirm}
@@ -520,6 +522,7 @@ const ChatScreen = () => {
       handleProductProposalPress,
       handleProductProposalReject,
       handleCommitmentFollowUpAnswer,
+    handleExperientialFollowUpAnswer,
       handleCommitmentProposalPress,
       handleCommitmentProposalReject,
       handleEmergencyContactAlertConfirm,

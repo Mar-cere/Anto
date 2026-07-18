@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import Conversation from '../models/Conversation.js';
 import ChatInterventionEvent from '../models/ChatInterventionEvent.js';
 import SessionSummaryJob from '../models/SessionSummaryJob.js';
+import ExperientialPatternJob from '../models/ExperientialPatternJob.js';
 import User from '../models/User.js';
 
 /**
@@ -47,6 +48,14 @@ export async function resetConversationSessionState(conversationId, { full = tru
   if (userId && mongoose.Types.ObjectId.isValid(String(userId))) {
     const uid = new mongoose.Types.ObjectId(String(userId));
     await SessionSummaryJob.updateMany(
+      {
+        userId: uid,
+        conversationId: convOid,
+        status: { $in: ['pending', 'processing'] },
+      },
+      { $set: { status: 'cancelled' } },
+    );
+    await ExperientialPatternJob.updateMany(
       {
         userId: uid,
         conversationId: convOid,

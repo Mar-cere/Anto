@@ -9,6 +9,9 @@
 | Documento | Descripción |
 |-----------|-------------|
 | [PRODUCT_NARRATIVE.md](./PRODUCT_NARRATIVE.md) | Narrativa de producto v1: promesa, categoría, voz de marca y límites. |
+| [CONTRATO_PATRONES_EXPERIENCIALES_V1.md](./CONTRATO_PATRONES_EXPERIENCIALES_V1.md) | Contrato memoria del proceso / follow-up evolutivo (#203 / #211). |
+| [SMOKE_EXPERIENTIAL_PATTERNS.md](./SMOKE_EXPERIENTIAL_PATTERNS.md) | Checklist smoke memoria del proceso. |
+| [PROPUESTAS_ACOMPANAMIENTO_IA_MATRIZ.md](./PROPUESTAS_ACOMPANAMIENTO_IA_MATRIZ.md) | Backlog priorizado (~180 propuestas): urgencia, impacto, estado de implementación. |
 | [FLUJOS.md](./FLUJOS.md) | Flujos principales: autenticación, chat, pagos, crisis. Resumen y enlaces a detalle. |
 | [CONTRATOS_API.md](./CONTRATOS_API.md) | Alineación frontend–backend: endpoints, rutas y contratos request/response. |
 | [REVISION_STOREKIT_COMPRAS.md](./REVISION_STOREKIT_COMPRAS.md) | Revisión del flujo de compras con StoreKit (iOS) y validación de recibos. |

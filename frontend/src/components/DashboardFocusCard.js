@@ -60,8 +60,8 @@ const DashboardFocusCard = ({
   );
 
   const handleConv = useCallback(
-    (id) => {
-      if (onOpenConversation) onOpenConversation(id);
+    (id, options) => {
+      if (onOpenConversation) onOpenConversation(id, options);
     },
     [onOpenConversation],
   );
@@ -215,6 +215,21 @@ const DashboardFocusCard = ({
     }
   }, [lastSessionConvId, handleConv, onOpenConversation, onOpenChat]);
 
+  const experientialFollowUpDue = data?.experientialFollowUpDue?.id
+    ? data.experientialFollowUpDue
+    : null;
+
+  const onExperientialFollowUpPress = useCallback(() => {
+    if (!experientialFollowUpDue || !onOpenConversation) return;
+    const cid = experientialFollowUpDue.conversationId
+      ? String(experientialFollowUpDue.conversationId)
+      : lastSessionConvId;
+    onOpenConversation(cid || null, {
+      resumeCommitmentFollowUp: false,
+      resumeExperientialFollowUp: true,
+    });
+  }, [experientialFollowUpDue, onOpenConversation, lastSessionConvId]);
+
   const onBaWeekPress = useCallback(() => {
     if (!onOpenBehavioralActivation) return;
     onOpenBehavioralActivation(baWeekNext?.slotId ? String(baWeekNext.slotId) : null);
@@ -283,6 +298,8 @@ const DashboardFocusCard = ({
         lastSessionText,
         lastSessionFullText,
         onLastSessionPress,
+        experientialFollowUpDue,
+        onExperientialFollowUpPress,
       }),
     [
       DASH,
@@ -305,6 +322,8 @@ const DashboardFocusCard = ({
       lastSessionText,
       lastSessionFullText,
       onLastSessionPress,
+      experientialFollowUpDue,
+      onExperientialFollowUpPress,
     ],
   );
 

@@ -287,6 +287,11 @@ const userSchema = new mongoose.Schema({
       enabled: { type: Boolean, default: true },
       enabledAt: { type: Date, default: null },
     },
+    /** Memoria del proceso / patrones experienciales (#203 / #211). Opt-in. */
+    experientialPatterns: {
+      enabled: { type: Boolean, default: false },
+      enabledAt: { type: Date, default: null },
+    },
   },
   lastDigitalPhenotypeSyncAt: {
     type: Date,

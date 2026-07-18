@@ -30,6 +30,8 @@ export function buildFocusActionRows({
   lastSessionText,
   lastSessionFullText,
   onLastSessionPress,
+  experientialFollowUpDue = null,
+  onExperientialFollowUpPress = null,
 }) {
   const rows = [];
   if (nextTaskCopy && onOpenNextTask) {
@@ -91,6 +93,21 @@ export function buildFocusActionRows({
       onPress: onExposurePress,
       showChevron: true,
       a11yLabel: `${exposureCopy.title}. ${exposureCopy.subtitle}. ${DASH.FOCUS_EXPOSURE_OPEN_A11Y}`,
+    });
+  }
+  if (experientialFollowUpDue?.id && onExperientialFollowUpPress) {
+    const title =
+      DASH.FOCUS_EXPERIENTIAL_FOLLOW_UP_HEADLINE || 'Hay algo de tu proceso para retomar';
+    const subtitle = String(experientialFollowUpDue.statementPreview || '').trim() || null;
+    rows.push({
+      key: 'experiential-follow-up',
+      icon: 'time-outline',
+      title,
+      subtitle,
+      onPress: onExperientialFollowUpPress,
+      showChevron: true,
+      subtitleLines: 2,
+      a11yLabel: `${title}. ${subtitle || ''}. ${DASH.FOCUS_EXPERIENTIAL_FOLLOW_UP_OPEN_A11Y || ''}`,
     });
   }
   if (showLastSessionRow) {

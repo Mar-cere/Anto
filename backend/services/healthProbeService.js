@@ -57,6 +57,8 @@ function buildChatFeaturesSnapshot() {
     personalPatternRag: isPersonalPatternRagEnabled(),
     crisisHardStop: features.crisisHardStop === true,
     crisisRouting: metricsService.getCrisisRoutingSnapshot(),
+    experientialPatterns: features.experientialPatterns === true,
+    experientialFollowUp: features.experientialFollowUp === true,
   };
 }
 
@@ -68,6 +70,7 @@ function buildWorkersSnapshot() {
     weeklyPatternInsight: features.weeklyPatternInsightWorker,
     weeklyInsightLlm: features.weeklyInsightLlm,
     lastSessionSummary: features.lastSessionSummaryWorker,
+    experientialExtract: features.experientialExtract === true,
     chatLatencySloMonitor: features.chatLatencySloMonitor,
     crisisRoutingSloMonitor: features.crisisRoutingSloMonitor,
   };

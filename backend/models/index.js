@@ -23,6 +23,8 @@ import IntenseChatCheckIn from './IntenseChatCheckIn.js';
 import GuestSession from './GuestSession.js';
 import OpenAITokenUsageDay from './OpenAITokenUsageDay.js';
 import SessionSummaryJob from './SessionSummaryJob.js';
+import ExperientialPattern from './ExperientialPattern.js';
+import ExperientialPatternJob from './ExperientialPatternJob.js';
 
 // Validar que todos los modelos estén correctamente exportados
 const models = {
@@ -51,6 +53,8 @@ const models = {
   GuestSession,
   OpenAITokenUsageDay,
   SessionSummaryJob,
+  ExperientialPattern,
+  ExperientialPatternJob,
 };
 
 // Verificar que cada modelo sea válido
@@ -86,6 +90,8 @@ export {
   GuestSession,
   OpenAITokenUsageDay,
   SessionSummaryJob,
+  ExperientialPattern,
+  ExperientialPatternJob,
 };
 
 export default models; 

@@ -681,17 +681,26 @@ const DashScreen = () => {
 
   const openConversationFromFocus = useCallback(
     async (conversationId, options = {}) => {
-      if (!conversationId) return;
-      const cid = String(conversationId);
-      try {
-        await AsyncStorage.setItem(CHAT_STORAGE_KEYS.CONVERSATION_ID, cid);
-      } catch (_) {
-        /* noop */
+      const resumeExperientialFollowUp = options?.resumeExperientialFollowUp === true;
+      const resumeCommitmentFollowUp =
+        !resumeExperientialFollowUp && options?.resumeCommitmentFollowUp !== false;
+      const cid =
+        conversationId && String(conversationId).trim()
+          ? String(conversationId).trim()
+          : null;
+      if (cid) {
+        try {
+          await AsyncStorage.setItem(CHAT_STORAGE_KEYS.CONVERSATION_ID, cid);
+        } catch (_) {
+          /* noop */
+        }
+      } else if (!resumeExperientialFollowUp) {
+        return;
       }
-      const resumeCommitmentFollowUp = options?.resumeCommitmentFollowUp !== false;
       const chatParams = {
-        openConversationId: cid,
+        ...(cid ? { openConversationId: cid } : {}),
         ...(resumeCommitmentFollowUp ? { resumeCommitmentFollowUp: true } : {}),
+        ...(resumeExperientialFollowUp ? { resumeExperientialFollowUp: true } : {}),
       };
       const state = navigation.getState?.();
       if (state?.type === 'tab') {

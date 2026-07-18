@@ -8,6 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import { SPACING } from '../constants/ui';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { useAiLimitsLibrary } from '../hooks/useAiLimitTopic';
+import { ROUTES } from '../constants/routes';
 
 const PRIVACY_URL = 'https://www.antoapps.com/privacidad';
 
@@ -42,10 +43,12 @@ const ICON_SIZE = 24;
 
 export default function AIPrivacyScreen() {
   const INFO = useSectionTranslations('INFO');
+  const EP = useSectionTranslations('EXPERIENTIAL_PATTERNS');
   const TEXTS = useMemo(
     () => ({ ...DEFAULT_TEXTS, ...(INFO?.AI_PRIVACY || {}) }),
     [INFO],
   );
+  const processMemoryLabel = EP?.OPEN_FROM_PRIVACY || 'Ver memoria del proceso';
   const { sectionTitle, sectionIntro, topics } = useAiLimitsLibrary();
   const navigation = useNavigation();
   const route = useRoute();
@@ -185,6 +188,14 @@ export default function AIPrivacyScreen() {
           <Text style={styles.answer}>{TEXTS.PROVIDERS_TEXT}</Text>
           <TouchableOpacity style={styles.policyButton} onPress={handleOpenPolicy}>
             <Text style={styles.policyButtonText}>{TEXTS.POLICY_BUTTON}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.policyButton, { marginTop: 10 }]}
+            onPress={() => navigation.navigate(ROUTES.EXPERIENTIAL_PATTERNS)}
+            accessibilityRole="button"
+            accessibilityLabel={processMemoryLabel}
+          >
+            <Text style={styles.policyButtonText}>{processMemoryLabel}</Text>
           </TouchableOpacity>
         </View>
 

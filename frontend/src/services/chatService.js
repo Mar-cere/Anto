@@ -92,7 +92,7 @@ async function ensureChatSocketTransport() {
   return connected && websocketService.getConnected();
 }
 
-async function sendMessageViaSocket(text, { onChunk, onDone, resumeTccLite, resumeCommitmentFollowUp, signal, registerAbort } = {}) {
+async function sendMessageViaSocket(text, { onChunk, onDone, resumeTccLite, resumeCommitmentFollowUp, resumeExperientialFollowUp, signal, registerAbort } = {}) {
   const trimmed = String(text || '').trim();
   if (!trimmed) {
     const err = new Error('El mensaje no puede estar vacío');
@@ -121,6 +121,7 @@ async function sendMessageViaSocket(text, { onChunk, onDone, resumeTccLite, resu
     language: appLanguage,
     resumeTccLite,
     resumeCommitmentFollowUp: resumeCommitmentFollowUp === true,
+    resumeExperientialFollowUp: resumeExperientialFollowUp === true,
     signal,
     onChunk,
   });
@@ -360,7 +361,7 @@ async function postGuestMessage(text, conversationId, token, language) {
   return data;
 }
 
-export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite, resumeCommitmentFollowUp, signal, registerAbort } = {}) => {
+export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite, resumeCommitmentFollowUp, resumeExperientialFollowUp, signal, registerAbort } = {}) => {
   if (await isGuestChatMode()) {
     const guestLang = await getAppLanguage();
     const conversationId = await AsyncStorage.getItem(GUEST_KEYS.GUEST_CONVERSATION_ID);
@@ -400,7 +401,15 @@ export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite, 
   }
 
   try {
-    await sendMessageViaSocket(text, { onChunk, onDone, resumeTccLite, resumeCommitmentFollowUp, signal, registerAbort });
+    await sendMessageViaSocket(text, {
+      onChunk,
+      onDone,
+      resumeTccLite,
+      resumeCommitmentFollowUp,
+      resumeExperientialFollowUp,
+      signal,
+      registerAbort,
+    });
     return;
   } catch (socketErr) {
     if (!shouldFallbackChatTransportToSse(socketErr)) {
@@ -426,6 +435,7 @@ export const sendMessageStream = async (text, { onChunk, onDone, resumeTccLite, 
     role: 'user',
     conversationId,
     ...(resumeCommitmentFollowUp === true ? { resumeCommitmentFollowUp: true } : {}),
+    ...(resumeExperientialFollowUp === true ? { resumeExperientialFollowUp: true } : {}),
     ...(resumeTccLite?.distortionType
       ? {
           resumeTccLite: {

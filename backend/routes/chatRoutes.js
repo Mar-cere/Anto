@@ -62,6 +62,7 @@ import {
     writingStyleDetector
 } from '../services/index.js';
 import { scheduleLastSessionSummary } from '../services/lastSessionSummaryService.js';
+import { scheduleExperientialPatternExtract } from '../services/experientialPatternExtractService.js';
 import { getTodayDailyMoodCheckIn } from '../services/dailyMoodCheckInService.js';
 import { buildMoodBridgeWelcome } from '../utils/dailyMoodCopy.js';
 import { recordEngagementSignal } from '../services/engagementStreakService.js';
@@ -123,6 +124,7 @@ import {
   buildClientTurnPayload,
 } from '../services/chatTurnEnhancementsService.js';
 import { shouldShowCommitmentFollowUpChips } from '../services/commitmentFollowUpService.js';
+import { shouldShowExperientialFollowUpChips } from '../services/experientialFollowUpService.js';
 import { toTccLiteClientPayload } from '../services/chatTccLiteService.js';
 import { detectsLackOfUnderstanding } from '../services/chat/paraphrasisPolicySnippet.js';
 import { normalizeTccLiteState } from '../services/tccLiteConversationStateService.js';
@@ -779,7 +781,24 @@ router.post(
       const data = await scheduleLastSessionSummary(req.user._id, req.params.conversationId, {
         delayMinutes
       });
-      return res.status(202).json({ success: true, data });
+      // Best-effort: extracción de patrones experienciales (#203) en el mismo disparo.
+      let experientialExtract = null;
+      try {
+        experientialExtract = await scheduleExperientialPatternExtract(
+          req.user._id,
+          req.params.conversationId,
+          { delayMinutes },
+        );
+      } catch (extractErr) {
+        console.warn(
+          '[chatRoutes] experiential extract schedule skipped:',
+          extractErr?.message || extractErr,
+        );
+      }
+      return res.status(202).json({
+        success: true,
+        data: { ...data, experientialExtract },
+      });
     } catch (error) {
       if (error?.code === 'INVALID_IDS') {
         return res.status(400).json({ success: false, message: req.apiCopy.invalidIds });
@@ -921,7 +940,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
   let assistantMessage = null;
   
   try {
-    const { conversationId, content, resumeTccLite = null, resumeCommitmentFollowUp = false } = req.body;
+    const {
+      conversationId,
+      content,
+      resumeTccLite = null,
+      resumeCommitmentFollowUp = false,
+      resumeExperientialFollowUp = false,
+    } = req.body;
 
     if (req.body?.role != null && req.body.role !== 'user') {
       metricsService.bumpChatFriction('message_invalid_role', {
@@ -1648,12 +1673,17 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           resumeTccLite:
             resumeTccLite && typeof resumeTccLite === 'object' ? resumeTccLite : null,
           resumeCommitmentFollowUp: resumeCommitmentFollowUp === true,
+          resumeExperientialFollowUp: resumeExperientialFollowUp === true,
           isCrisis,
         });
         const { suggestionPlan, tccLitePlan } = turnEnhancements;
         const showCommitmentFollowUpChips = shouldShowCommitmentFollowUpChips({
           conversationHistory,
           forceFollowUp: resumeCommitmentFollowUp === true,
+        });
+        const showExperientialFollowUpChips = shouldShowExperientialFollowUpChips({
+          conversationHistory,
+          forceFollowUp: resumeExperientialFollowUp === true,
         });
         const blockCrisisExtras = isLlmCrisisTherapeuticExtrasBlocked({
           riskLevel,
@@ -1712,6 +1742,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
           commitmentFollowUpPromptSnippet: promptSnippets.commitmentFollowUpPromptSnippet,
           sessionCommitmentPromptSnippet: promptSnippets.sessionCommitmentPromptSnippet,
+          experientialFollowUpPromptSnippet: promptSnippets.experientialFollowUpPromptSnippet,
           crisisMetricTransport: req.query.stream === 'true' ? 'sse' : 'http',
         };
 
@@ -1945,6 +1976,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
                   commitmentFollowUpCommitmentId: turnEnhancements.commitmentFollowUpCommitmentId,
                   showCommitmentFollowUpChips,
+                  experientialFollowUpPlan: turnEnhancements.experientialFollowUpPlan,
+                  showExperientialFollowUpChips,
                   assistantMessageContent: response.content,
                   paraphrasisContext,
                 }).catch(() => {});
@@ -1979,6 +2012,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   userMessage: content.trim(),
                   commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
                   showCommitmentFollowUpChips,
+                  experientialFollowUpPlan: turnEnhancements.experientialFollowUpPlan,
+                  showExperientialFollowUpChips,
                 });
                 if (suggestionPlan.actionIds?.length > 0) {
                   suggestionPlan.actionIds.forEach((suggestionType) => {
@@ -2105,6 +2140,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                   cognitiveDistortions: cognitiveDistortions?.length > 0 ? { detected: cognitiveDistortions, primary: primaryDistortion, intervention: distortionIntervention } : null,
                   tccLite: clientTurn.tccLite,
                   commitmentFollowUp: clientTurn.commitmentFollowUp,
+                  experientialFollowUp: clientTurn.experientialFollowUp,
                   processingTime: responseTime
                 })) + '\n\n');
 
@@ -2352,6 +2388,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
           commitmentFollowUpCommitmentId: turnEnhancements.commitmentFollowUpCommitmentId,
           showCommitmentFollowUpChips,
+          experientialFollowUpPlan: turnEnhancements.experientialFollowUpPlan,
+          showExperientialFollowUpChips,
           assistantMessageContent: response.content,
           paraphrasisContext,
         }).catch(() => {});
@@ -2498,6 +2536,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           userMessage: content.trim(),
           commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
           showCommitmentFollowUpChips,
+          experientialFollowUpPlan: turnEnhancements.experientialFollowUpPlan,
+          showExperientialFollowUpChips,
         });
         if (suggestionPlan.actionIds?.length > 0) {
           suggestionPlan.actionIds.forEach((suggestionType) => {
@@ -2643,6 +2683,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           } : null,
           tccLite: clientTurn.tccLite,
           commitmentFollowUp: clientTurn.commitmentFollowUp,
+          experientialFollowUp: clientTurn.experientialFollowUp,
           processingTime: responseTime
         }));
 

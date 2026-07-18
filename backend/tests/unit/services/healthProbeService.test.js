@@ -126,7 +126,10 @@ describe('healthProbeService', () => {
         sanitizedByTransport: { http: 1 },
         sanitizedByRiskLevel: { MEDIUM: 1 },
       },
+      experientialPatterns: true,
+      experientialFollowUp: true,
     });
+    expect(snap.workers.experientialExtract).toBeDefined();
     expect(snap.memory).toHaveProperty('used');
   });
 

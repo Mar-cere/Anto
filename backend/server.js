@@ -63,6 +63,7 @@ import dailyMoodRoutes from './routes/dailyMoodRoutes.js';
 import exposurePlanRoutes from './routes/exposurePlanRoutes.js';
 import behavioralActivationRoutes from './routes/behavioralActivationRoutes.js';
 import userFactsRoutes from './routes/userFactsRoutes.js';
+import experientialPatternsRoutes from './routes/experientialPatternsRoutes.js';
 import paraphrasMetricsRoutes from './routes/paraphrasMetricsRoutes.js';
 import scheduledSessionsRoutes from './routes/scheduledSessionsRoutes.js';
 import automaticThoughtRoutes from './routes/automaticThoughtRoutes.js';
@@ -357,6 +358,7 @@ app.use('/api/abc-records', abcRecordRoutes);
 app.use('/api/session-commitments', sessionCommitmentRoutes);
 app.use('/api/daily-mood', dailyMoodRoutes);
 app.use('/api/user-facts', userFactsRoutes);
+app.use('/api/experiential-patterns', experientialPatternsRoutes);
 app.use('/api/scheduled-sessions', scheduledSessionsRoutes);
 app.use('/api/internal/paraphrasis', paraphrasMetricsRoutes);
 app.use('/api/exposure-plans', exposurePlanRoutes);
@@ -635,6 +637,22 @@ if (process.env.NODE_ENV !== 'test') {
         logger.error('❌ Error iniciando worker continuidad del chat', { error: error.message });
       }
     }, 60000);
+  }
+
+  if (features.experientialExtract && process.env.NODE_ENV !== 'test') {
+    setTimeout(async () => {
+      try {
+        const { startExperientialPatternExtractWorker } = await import(
+          './services/experientialPatternExtractService.js'
+        );
+        startExperientialPatternExtractWorker();
+        logger.info('🧠 Worker extracción patrones experienciales (#203) iniciado');
+      } catch (error) {
+        logger.error('❌ Error iniciando worker patrones experienciales', {
+          error: error.message,
+        });
+      }
+    }, 75000);
   }
 
   if (features.weeklyPatternInsightWorker && process.env.NODE_ENV !== 'test') {

@@ -22,6 +22,8 @@ const DASH = {
   FOCUS_CHAT_CONTINUITY_HEADLINE: 'Retomar el chat',
   FOCUS_CHAT_CONTINUITY_BADGE: 'Vista rápida',
   FOCUS_CHAT_CONTINUITY_RECENT_BADGE: 'Actividad reciente',
+  FOCUS_EXPERIENTIAL_FOLLOW_UP_HEADLINE: 'Hay algo de tu proceso para retomar',
+  FOCUS_EXPERIENTIAL_FOLLOW_UP_OPEN_A11Y: 'Abrir chat para retomar',
 };
 
 describe('focusActionRows', () => {
@@ -98,6 +100,39 @@ describe('focusActionRows', () => {
     expect(rows[0].showChevron).toBe(true);
     expect(rows[1].badge).toBeNull();
     expect(rows[1].subtitleLines).toBe(2);
+  });
+
+  it('buildFocusActionRows prioriza follow-up experiencial sobre continuidad', () => {
+    const onExperientialFollowUpPress = jest.fn();
+    const rows = buildFocusActionRows({
+      DASH,
+      nextTaskCopy: null,
+      onOpenNextTask: null,
+      onNextTaskPress: jest.fn(),
+      nextHabitCopy: null,
+      onOpenNextHabit: null,
+      onNextHabitPress: jest.fn(),
+      showChatReminder: false,
+      displayedReminder: null,
+      reminderIsPressable: false,
+      onReminderPress: jest.fn(),
+      baWeekCopy: null,
+      onBaWeekPress: jest.fn(),
+      exposureCopy: null,
+      onExposurePress: jest.fn(),
+      showLastSessionRow: true,
+      lastSession: { headline: 'Seguir hablando' },
+      lastSessionText: 'Resumen corto',
+      lastSessionFullText: 'Resumen completo',
+      onLastSessionPress: jest.fn(),
+      experientialFollowUpDue: {
+        id: 'pat-1',
+        statementPreview: 'las mañanas eran difíciles',
+      },
+      onExperientialFollowUpPress,
+    });
+    expect(rows.map((r) => r.key)).toEqual(['experiential-follow-up', 'last-session']);
+    expect(rows[0].subtitle).toMatch(/mañanas/);
   });
 
   it('buildFocusActionRows incluye recordatorio de chat cuando aplica', () => {

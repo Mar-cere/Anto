@@ -43,6 +43,7 @@ import {
   buildClientTurnPayload,
 } from '../services/chatTurnEnhancementsService.js';
 import { shouldShowCommitmentFollowUpChips } from '../services/commitmentFollowUpService.js';
+import { shouldShowExperientialFollowUpChips } from '../services/experientialFollowUpService.js';
 import {
   shouldHardStopCrisisLlm,
 } from '../services/crisisHardStopService.js';
@@ -539,6 +540,7 @@ export const setupSocketIO = (server) => {
               ? data.resumeTccLite
               : null,
           resumeCommitmentFollowUp: data?.resumeCommitmentFollowUp === true,
+          resumeExperientialFollowUp: data?.resumeExperientialFollowUp === true,
           isCrisis,
         });
         const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements, {
@@ -550,6 +552,10 @@ export const setupSocketIO = (server) => {
         const showCommitmentFollowUpChips = shouldShowCommitmentFollowUpChips({
           conversationHistory,
           forceFollowUp: data?.resumeCommitmentFollowUp === true,
+        });
+        const showExperientialFollowUpChips = shouldShowExperientialFollowUpChips({
+          conversationHistory,
+          forceFollowUp: data?.resumeExperientialFollowUp === true,
         });
 
         if (
@@ -603,6 +609,7 @@ export const setupSocketIO = (server) => {
           personalPatternRagPromptSnippet: promptSnippets.personalPatternRagPromptSnippet,
           commitmentFollowUpPromptSnippet: promptSnippets.commitmentFollowUpPromptSnippet,
           sessionCommitmentPromptSnippet: promptSnippets.sessionCommitmentPromptSnippet,
+          experientialFollowUpPromptSnippet: promptSnippets.experientialFollowUpPromptSnippet,
           crisis: buildOpenaiCrisisContext({
             riskLevel,
             isCrisis,
@@ -758,6 +765,8 @@ export const setupSocketIO = (server) => {
           commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
           commitmentFollowUpCommitmentId: turnEnhancements.commitmentFollowUpCommitmentId,
           showCommitmentFollowUpChips,
+          experientialFollowUpPlan: turnEnhancements.experientialFollowUpPlan,
+          showExperientialFollowUpChips,
         }).catch(() => {});
         
         // 8. Actualizar última conversación
@@ -871,6 +880,8 @@ export const setupSocketIO = (server) => {
           userMessage: messageText,
           commitmentFollowUpPlan: turnEnhancements.commitmentFollowUpPlan,
           showCommitmentFollowUpChips,
+          experientialFollowUpPlan: turnEnhancements.experientialFollowUpPlan,
+          showExperientialFollowUpChips,
         });
         // 9. Emitir respuesta al cliente
         metricsService
@@ -906,6 +917,7 @@ export const setupSocketIO = (server) => {
           suggestionsPersonalized: clientTurn.suggestionsPersonalized,
           tccLite: clientTurn.tccLite,
           commitmentFollowUp: clientTurn.commitmentFollowUp,
+          experientialFollowUp: clientTurn.experientialFollowUp,
           ...buildSocketCrisisPayload(),
         });
         

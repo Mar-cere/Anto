@@ -930,6 +930,7 @@ export const ENHANCEMENT_PROMPT_SNIPPET_KEYS = [
   'recentAbcPromptSnippet',
   'personalPatternRagPromptSnippet',
   'commitmentFollowUpPromptSnippet',
+  'experientialFollowUpPromptSnippet',
 ];
 
 /**
@@ -1315,6 +1316,14 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   const sessionCommitmentSnippet = String(contexto.sessionCommitmentPromptSnippet || '').trim();
   if (sessionCommitmentSnippet) {
     systemMessage += sessionCommitmentSnippet;
+  }
+
+  // Solo si no hubo follow-up de compromiso (#202 gana prioridad)
+  const experientialFollowUpSnippet = String(
+    contexto.experientialFollowUpPromptSnippet || '',
+  ).trim();
+  if (experientialFollowUpSnippet && !commitmentFollowUpSnippet && !sessionCommitmentSnippet) {
+    systemMessage += experientialFollowUpSnippet;
   }
 
   if (contexto.crisis?.riskLevel && shouldAttachCrisisContextToPrompt(contexto.crisis.riskLevel)) {

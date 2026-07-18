@@ -609,7 +609,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
     language
   });
 
-  const [focusLine, homeInsight, phenotypeAlert] = await Promise.all([
+  const [focusLine, homeInsight, phenotypeAlert, dueExperiential] = await Promise.all([
     maybeLlmFocusLine(
       userId,
       {
@@ -630,6 +630,9 @@ export async function buildDashboardFocus(userId, opts = {}) {
       timezone: userTimezone,
     }).catch(() => null),
     buildDigitalPhenotypeFocusAlert({ userId }).catch(() => null),
+    import('./experientialPatternService.js')
+      .then(({ getDueExperientialPattern }) => getDueExperientialPattern(userId))
+      .catch(() => null),
   ]);
 
   let focusLineText = String(focusLine?.text || '').trim();
@@ -655,6 +658,16 @@ export async function buildDashboardFocus(userId, opts = {}) {
     homeInsight,
     phenotypeAlert: phenotypeAlert
       ? { kind: phenotypeAlert.kind, daysWithData: phenotypeAlert.daysWithData }
+      : null,
+    experientialFollowUpDue: dueExperiential
+      ? {
+          id: dueExperiential.id,
+          statementPreview: String(dueExperiential.statement || '').slice(0, 80),
+          conversationId: dueExperiential.conversationId
+            ? String(dueExperiential.conversationId)
+            : null,
+          resumeExperientialFollowUp: true,
+        }
       : null,
     focus: {
       line: focusLineText,

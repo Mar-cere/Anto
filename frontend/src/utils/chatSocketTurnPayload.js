@@ -20,6 +20,7 @@ export function normalizeChatSocketTurnPayload(raw) {
     productActionStatus: raw.productActionStatus || null,
     tccLite: raw.tccLite ?? null,
     commitmentFollowUp: raw.commitmentFollowUp ?? null,
+    experientialFollowUp: raw.experientialFollowUp ?? null,
     crisisResources: raw.crisisResources ?? null,
     softCrisisCheckIn: raw.softCrisisCheckIn ?? null,
     proposedEmergencyContactAlert: raw.proposedEmergencyContactAlert ?? null,

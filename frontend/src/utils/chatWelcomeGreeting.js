@@ -208,6 +208,43 @@ export function reconstructPersistedCommitmentFollowUp(messages) {
 }
 
 /**
+ * Reconstruye chips de follow-up experiencial (#211) desde metadata.
+ * @param {object[]} messages
+ * @returns {object[]}
+ */
+export function reconstructPersistedExperientialFollowUp(messages) {
+  if (!Array.isArray(messages) || messages.length === 0) return messages;
+  if (messages.some((m) => m?.type === 'experiential_follow_up')) return messages;
+
+  let lastIdx = -1;
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const ef = messages[i]?.metadata?.experientialFollowUp;
+    if (ef?.id) {
+      lastIdx = i;
+      break;
+    }
+  }
+  if (lastIdx === -1) return messages;
+
+  const source = messages[lastIdx];
+  const ef = source.metadata?.experientialFollowUp;
+  if (!ef?.id) return messages;
+
+  const block = {
+    id: `experiential-follow-up-loaded-${source._id || source.id || lastIdx}`,
+    role: 'suggestions',
+    type: 'experiential_follow_up',
+    experientialFollowUp: ef,
+    metadata: {
+      timestamp: source.metadata?.timestamp || new Date().toISOString(),
+    },
+  };
+  const next = [...messages];
+  next.splice(lastIdx + 1, 0, block);
+  return next;
+}
+
+/**
  * Reconstruye la tarjeta de compromisos del último turno (metadata.proposedCommitments).
  * @param {object[]} messages
  * @returns {object[]}
@@ -255,6 +292,7 @@ export function finalizeLoadedChatMessages(messages, language = 'es') {
   const localized = localizeChatWelcomeMessages(filtered, language);
   const withSuggestions = reconstructPersistedSuggestions(localized);
   const withFollowUp = reconstructPersistedCommitmentFollowUp(withSuggestions);
-  return reconstructPersistedCommitmentProposals(withFollowUp);
+  const withExperiential = reconstructPersistedExperientialFollowUp(withFollowUp);
+  return reconstructPersistedCommitmentProposals(withExperiential);
 }
 

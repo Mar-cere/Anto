@@ -17,6 +17,8 @@ export const ROUTES = {
   FOCUS_PROGRESS: 'FocusProgress',
   // User facts (#63 grounding)
   USER_FACTS: 'UserFacts',
+  /** Memoria del proceso (#203 / #211) */
+  EXPERIENTIAL_PATTERNS: 'ExperientialPatterns',
   // Scheduled sessions (#15)
   SCHEDULED_SESSIONS: 'ScheduledSessions',
 }; 

@@ -23,6 +23,12 @@ import {
   shouldShowCommitmentFollowUpChips,
 } from './commitmentFollowUpService.js';
 import {
+  buildExperientialFollowUpPlan,
+  detectExperientialFollowUpAnswer,
+  markExperientialPatternFollowUpAsked,
+  shouldShowExperientialFollowUpChips,
+} from './experientialFollowUpService.js';
+import {
   isChatObservationalContextBlocked,
   isLlmCrisisTherapeuticExtrasBlocked,
 } from '../utils/chatObservationalContext.js';
@@ -67,6 +73,7 @@ export async function planChatTurnEnhancements({
   language = 'es',
   resumeTccLite = null,
   resumeCommitmentFollowUp = false,
+  resumeExperientialFollowUp = false,
   isCrisis = false,
 }) {
   const lang = normalizeApiLanguage(language);
@@ -192,10 +199,14 @@ export async function planChatTurnEnhancements({
     }
   }
 
-  // Respaldo de inferencia (#202): si el usuario respondió por texto a un
-  // follow-up reciente, cerrar el lazo. Best-effort, no bloquea el turno.
+  // Respaldo de inferencia (#202 / #211): respuesta por texto a follow-up reciente.
   try {
     await detectCommitmentFollowUpAnswer({ userId, userContent: String(userContent || '') });
+  } catch {
+    // best-effort
+  }
+  try {
+    await detectExperientialFollowUpAnswer({ userId, userContent: String(userContent || '') });
   } catch {
     // best-effort
   }
@@ -245,6 +256,27 @@ export async function planChatTurnEnhancements({
     }
   }
 
+  // Follow-up experiencial (#211): solo si no hay compromiso due (#202 gana).
+  let experientialFollowUpPlan = null;
+  const commitmentDue =
+    Boolean(sessionCommitmentPromptSnippet) ||
+    Boolean(commitmentFollowUpPlan?.promptSnippet) ||
+    Boolean(commitmentFollowUpCommitmentId);
+  if (!blockCrisisExtras && !commitmentDue) {
+    try {
+      experientialFollowUpPlan = await buildExperientialFollowUpPlan({
+        userId,
+        conversationHistory,
+        riskLevel,
+        language: lang,
+        forceFollowUp: resumeExperientialFollowUp === true,
+        skipBecauseCommitmentDue: false,
+      });
+    } catch {
+      experientialFollowUpPlan = null;
+    }
+  }
+
   return {
     suggestionPlan,
     tccLitePlan,
@@ -256,6 +288,7 @@ export async function planChatTurnEnhancements({
     commitmentFollowUpPlan,
     sessionCommitmentPromptSnippet,
     commitmentFollowUpCommitmentId,
+    experientialFollowUpPlan,
   };
 }
 
@@ -280,6 +313,9 @@ export function buildOpenaiEnhancementSnippets(enhancements, options = {}) {
     sessionCommitmentPromptSnippet: blockTherapeutic
       ? null
       : enhancements.sessionCommitmentPromptSnippet || null,
+    experientialFollowUpPromptSnippet: blockTherapeutic
+      ? null
+      : enhancements.experientialFollowUpPlan?.promptSnippet || null,
   };
 }
 
@@ -319,6 +355,8 @@ export async function finalizeChatTurnEnhancements({
   commitmentFollowUpPlan = null,
   commitmentFollowUpCommitmentId = null,
   showCommitmentFollowUpChips = false,
+  experientialFollowUpPlan = null,
+  showExperientialFollowUpChips = false,
   assistantMessageContent = null,
   paraphrasisContext = null,
 }) {
@@ -336,6 +374,32 @@ export async function finalizeChatTurnEnhancements({
             'metadata.commitmentFollowUp': {
               id: commitmentFollowUpPlan.commitmentId,
               label: commitmentFollowUpPlan.label,
+            },
+          },
+        },
+      ).catch(() => {});
+    }
+  }
+
+  // Follow-up experiencial (#211): markAsked solo con chips (paridad #202).
+  if (showExperientialFollowUpChips && experientialFollowUpPlan?.patternId) {
+    await markExperientialPatternFollowUpAsked(experientialFollowUpPlan.patternId).catch(() => {});
+    metricsService
+      .recordMetric(
+        'experiential_follow_up_shown',
+        { surface: 'chat' },
+        String(userId || ''),
+        conversationId ? { conversationId: String(conversationId) } : undefined,
+      )
+      .catch(() => {});
+    if (assistantMessageId) {
+      await Message.updateOne(
+        { _id: assistantMessageId },
+        {
+          $set: {
+            'metadata.experientialFollowUp': {
+              id: experientialFollowUpPlan.patternId,
+              statementPreview: experientialFollowUpPlan.statementPreview,
             },
           },
         },
@@ -509,6 +573,8 @@ export function buildClientTurnPayload({
   userMessage = '',
   commitmentFollowUpPlan = null,
   showCommitmentFollowUpChips = false,
+  experientialFollowUpPlan = null,
+  showExperientialFollowUpChips = false,
 }) {
   const lang = normalizeApiLanguage(language);
   if (isLlmCrisisTherapeuticExtrasBlocked({ riskLevel, userMessage })) {
@@ -517,6 +583,7 @@ export function buildClientTurnPayload({
       suggestionsPersonalized: false,
       tccLite: toTccLiteClientPayload({ active: false }, lang),
       commitmentFollowUp: null,
+      experientialFollowUp: null,
     };
   }
   const formatted = suggestionPlan?.shouldShow ? suggestionPlan.formatted || [] : [];
@@ -527,6 +594,13 @@ export function buildClientTurnPayload({
     commitmentFollowUp:
       showCommitmentFollowUpChips && commitmentFollowUpPlan
         ? { id: commitmentFollowUpPlan.commitmentId, label: commitmentFollowUpPlan.label }
+        : null,
+    experientialFollowUp:
+      showExperientialFollowUpChips && experientialFollowUpPlan?.patternId
+        ? {
+            id: experientialFollowUpPlan.patternId,
+            statementPreview: experientialFollowUpPlan.statementPreview,
+          }
         : null,
   };
 }

@@ -199,7 +199,7 @@ class WebSocketService {
   /**
    * Envía mensaje de chat y espera message:received (un turno).
    */
-  sendChatMessage({ text, conversationId, resumeTccLite, resumeCommitmentFollowUp, language, signal, onChunk } = {}) {
+  sendChatMessage({ text, conversationId, resumeTccLite, resumeCommitmentFollowUp, resumeExperientialFollowUp, language, signal, onChunk } = {}) {
     return new Promise((resolve, reject) => {
       if (!this.socket?.connected) {
         const err = new Error('Socket no conectado');
@@ -341,6 +341,7 @@ class WebSocketService {
         language: language || undefined,
         ...(resumePayload ? { resumeTccLite: resumePayload } : {}),
         ...(resumeCommitmentFollowUp === true ? { resumeCommitmentFollowUp: true } : {}),
+        ...(resumeExperientialFollowUp === true ? { resumeExperientialFollowUp: true } : {}),
       });
     });
   }

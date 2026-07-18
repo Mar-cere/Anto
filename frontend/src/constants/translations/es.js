@@ -271,6 +271,8 @@ export const DASH = {
   FOCUS_CHAT_CONTINUITY_HEADLINE: 'Retomar el chat',
   FOCUS_CHAT_CONTINUITY_BADGE: 'Vista rápida',
   FOCUS_CHAT_CONTINUITY_RECENT_BADGE: 'Actividad reciente',
+  FOCUS_EXPERIENTIAL_FOLLOW_UP_HEADLINE: 'Hay algo de tu proceso para retomar',
+  FOCUS_EXPERIENTIAL_FOLLOW_UP_OPEN_A11Y: 'Abrir chat para retomar un recuerdo del proceso',
   FOCUS_PRELOADED_LAST_CHAT_TITLE_EN: 'Retoma tu última conversación',
   FOCUS_PRELOADED_LAST_CHAT_SUBTITLE_EN:
     'Última actividad en el chat: hace {days} días.',
@@ -3265,6 +3267,38 @@ export const API_ERRORS = {
   GENERIC: 'Algo ha fallado. Inténtalo de nuevo.',
 };
 
+export const EXPERIENTIAL_PATTERNS = {
+  SCREEN_TITLE: 'Memoria del proceso',
+  SCREEN_INTRO:
+    'Observaciones que Anto puede retomar con suavidad semanas después. Tú decides qué se guarda y qué se archiva.',
+  CONSENT_TITLE: 'Recordar patrones de mi proceso',
+  CONSENT_SUBTITLE:
+    'Permite que Anto extraiga y retome observaciones (por ejemplo, «las mañanas eran difíciles») con tu permiso.',
+  CONSENT_ON: 'Activado',
+  CONSENT_OFF: 'Desactivado',
+  EMPTY_TITLE: 'Aún no hay patrones guardados',
+  EMPTY_MESSAGE:
+    'Cuando converses con Anto sobre temas que se repiten, podrán aparecer aquí para retomarlos más adelante.',
+  LOADING: 'Cargando memoria del proceso…',
+  ERROR_LOADING: 'No se pudo cargar la memoria del proceso',
+  RETRY: 'Reintentar',
+  ARCHIVE: 'Archivar',
+  ARCHIVE_CONFIRM_TITLE: 'Archivar patrón',
+  ARCHIVE_CONFIRM_MESSAGE: 'Anto dejará de retomar este recuerdo. Puedes seguir conversando con normalidad.',
+  ARCHIVE_CANCEL: 'Cancelar',
+  ARCHIVE_CONFIRM: 'Archivar',
+  TOAST_ARCHIVED: 'Patrón archivado',
+  TOAST_ERROR: 'No se pudo completar. Intenta de nuevo.',
+  TOAST_CONSENT_UPDATED: 'Preferencia actualizada',
+  BACK_A11Y: 'Volver',
+  FOLLOW_UP_PROMPT: '¿Sientes que eso ha cambiado un poco?',
+  CHIP_CHANGED: 'Sí, un poco',
+  CHIP_UNCHANGED: 'Más o menos igual',
+  CHIP_SKIP: 'Omitir',
+  OPEN_FROM_PRIVACY: 'Ver memoria del proceso',
+  DASHBOARD_CTA: 'Hay algo de tu proceso para retomar',
+};
+
 export const USER_FACTS = {
   SCREEN_TITLE: 'Hechos sobre mí',
   EMPTY_TITLE: 'Aún no hay hechos guardados',
@@ -3413,6 +3447,7 @@ export default {
   PROFILE,
   SUBSCRIPTION,
   USER_FACTS,
+  EXPERIENTIAL_PATTERNS,
   SCHEDULED_SESSIONS,
   API_ERRORS,
 };

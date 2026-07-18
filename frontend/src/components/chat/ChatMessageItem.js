@@ -392,6 +392,7 @@ function ChatMessageItem({
   onProductProposalPress,
   onProductProposalReject,
   onCommitmentFollowUpAnswer,
+  onExperientialFollowUpAnswer,
   onCommitmentProposalPress,
   onCommitmentProposalReject,
   onEmergencyContactAlertConfirm,
@@ -402,6 +403,7 @@ function ChatMessageItem({
   const { language } = useLanguage();
   const TEXTS = useChatTexts();
   const DASH = useSectionTranslations('DASH');
+  const EP = useSectionTranslations('EXPERIENTIAL_PATTERNS');
   const { colors } = useTheme();
   const chatColors = useChatColors();
   const styles = useMemo(() => createStyles(colors, chatColors), [colors, chatColors]);
@@ -773,6 +775,55 @@ function ChatMessageItem({
             ))}
           </View>
         </View>
+        </View>
+      </View>
+    );
+  }
+
+  if (message.type === 'experiential_follow_up' && message.experientialFollowUp?.id) {
+    const ef = message.experientialFollowUp;
+    const prompt =
+      EP?.FOLLOW_UP_PROMPT ||
+      (language === 'en'
+        ? 'Do you feel that has changed a bit?'
+        : '¿Sientes que eso ha cambiado un poco?');
+    const title = ef.statementPreview || '';
+    const options = [
+      ['changed', EP?.CHIP_CHANGED || (language === 'en' ? 'Yes, a bit' : 'Sí, un poco')],
+      [
+        'unchanged',
+        EP?.CHIP_UNCHANGED || (language === 'en' ? 'About the same' : 'Más o menos igual'),
+      ],
+      ['skipped', EP?.CHIP_SKIP || (language === 'en' ? 'Skip' : 'Omitir')],
+    ];
+    return (
+      <View style={styles.suggestionsContainer}>
+        <View
+          style={styles.commitmentFollowUpShell}
+          accessibilityRole="summary"
+          accessibilityLabel={`${title}. ${prompt}`}
+        >
+          <View style={styles.commitmentFollowUpCard}>
+            {title ? (
+              <Text style={styles.commitmentFollowUpLabel} numberOfLines={3}>
+                {title}
+              </Text>
+            ) : null}
+            <Text style={styles.commitmentFollowUpPrompt}>{prompt}</Text>
+            <View style={styles.commitmentFollowUpChips}>
+              {options.map(([answer, label]) => (
+                <TouchableOpacity
+                  key={answer}
+                  style={styles.commitmentFollowUpChip}
+                  onPress={() => onExperientialFollowUpAnswer?.(ef.id, answer, message)}
+                  accessibilityRole="button"
+                  accessibilityLabel={label}
+                >
+                  <Text style={styles.commitmentFollowUpChipText}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         </View>
       </View>
     );
