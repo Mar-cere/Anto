@@ -62,11 +62,13 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('expo-notifications', () => ({
   setNotificationHandler: jest.fn().mockResolvedValue(undefined),
 }));
+const mockRemovePushToken = jest.fn().mockResolvedValue(undefined);
 jest.mock('../../services/pushNotificationService', () => ({
   areNotificationsEnabled: jest.fn().mockResolvedValue(false),
   getStoredPushToken: jest.fn().mockResolvedValue(null),
   requestNotificationPermissions: jest.fn().mockResolvedValue(false),
   registerForPushNotifications: jest.fn().mockResolvedValue(null),
+  removePushToken: (...args) => mockRemovePushToken(...args),
 }));
 jest.mock('../../utils/apiErrorHandler', () => ({
   getApiErrorMessage: (e) => e?.message || 'Error',
@@ -219,6 +221,39 @@ describe('useSettingsScreen', () => {
         expect.objectContaining({
           preferences: expect.objectContaining({
             notifications: expect.objectContaining({ enabled: false }),
+          }),
+          notificationPreferences: expect.objectContaining({ enabled: false }),
+        }),
+      );
+    });
+
+    it('toggle push off envía notifications como objeto, no boolean', async () => {
+      mockAuth.user = {
+        id: '1',
+        preferences: {
+          notifications: { enabled: true, pushEnabled: true },
+          timezone: 'Etc/UTC',
+        },
+        notificationPreferences: { enabled: true },
+      };
+
+      const { result } = renderHook(() =>
+        useSettingsScreen({ navigation: mockNavigation }),
+      );
+
+      await act(async () => {
+        await result.current.handleTogglePushNotifications(false);
+      });
+
+      expect(mockRemovePushToken).toHaveBeenCalled();
+      expect(api.put).toHaveBeenCalledWith(
+        '/api/users/me',
+        expect.objectContaining({
+          preferences: expect.objectContaining({
+            notifications: {
+              enabled: false,
+              pushEnabled: true,
+            },
           }),
           notificationPreferences: expect.objectContaining({ enabled: false }),
         }),

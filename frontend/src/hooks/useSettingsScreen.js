@@ -95,18 +95,30 @@ export function useSettingsScreen({ navigation }) {
     [applyLocalUser],
   );
 
+  const buildPreferencesNotifications = useCallback((enabled) => {
+    const current = user?.preferences?.notifications;
+    const base =
+      typeof current === 'object' && current != null
+        ? current
+        : { enabled: current !== false };
+    return { ...base, enabled: !!enabled };
+  }, [user]);
+
   const persistNotificationPreferences = useCallback(
     async (enabled) => {
       const currentPreferences = user?.preferences || {};
       const currentNotificationPreferences =
         user?.notificationPreferences || {};
       const result = await api.put(ENDPOINTS.UPDATE_PROFILE, {
-        preferences: { ...currentPreferences, notifications: enabled },
+        preferences: {
+          ...currentPreferences,
+          notifications: buildPreferencesNotifications(enabled),
+        },
         notificationPreferences: { ...currentNotificationPreferences, enabled },
       });
       return persistUserFromMeResponse(result);
     },
-    [user, persistUserFromMeResponse],
+    [user, persistUserFromMeResponse, buildPreferencesNotifications],
   );
 
   const getMergedNotificationPreferences = useCallback(
@@ -147,21 +159,13 @@ export function useSettingsScreen({ navigation }) {
       const nextNotificationPreferences =
         getMergedNotificationPreferences(patch);
       try {
-        const currentNotifications =
-          typeof currentPreferences?.notifications === 'object' &&
-          currentPreferences?.notifications != null
-            ? currentPreferences.notifications
-            : {
-                enabled: currentPreferences?.notifications !== false,
-              };
         const result = await api.put(ENDPOINTS.UPDATE_PROFILE, {
           preferences: {
             ...currentPreferences,
             // Mantener consistencia con el schema (objeto, no boolean).
-            notifications: {
-              ...currentNotifications,
-              enabled: nextNotificationPreferences?.enabled !== false,
-            },
+            notifications: buildPreferencesNotifications(
+              nextNotificationPreferences?.enabled !== false,
+            ),
           },
           notificationPreferences: nextNotificationPreferences,
         });
@@ -185,6 +189,7 @@ export function useSettingsScreen({ navigation }) {
       }
     },
     [
+      buildPreferencesNotifications,
       getMergedNotificationPreferences,
       persistUserFromMeResponse,
       showToast,

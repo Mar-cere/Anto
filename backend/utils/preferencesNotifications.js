@@ -5,6 +5,10 @@
  */
 
 function asPlainObject(value) {
+  // Boolean legacy: conservar enabled para no perder opt-out en merges parciales.
+  if (typeof value === 'boolean') {
+    return { enabled: value };
+  }
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return {};
   }
@@ -16,7 +20,7 @@ function asPlainObject(value) {
 
 /**
  * @param {unknown} value
- * @param {object} [previous]
+ * @param {unknown} [previous]
  * @returns {object|undefined}
  */
 export function normalizePreferencesNotifications(value, previous = {}) {
@@ -40,6 +44,7 @@ export function normalizePreferencesNotifications(value, previous = {}) {
     };
   }
 
+  // null / tipos inválidos: conservar estado previo normalizado
   return prev;
 }
 
