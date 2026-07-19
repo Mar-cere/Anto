@@ -10,7 +10,7 @@ import { SPACING } from '../constants/ui';
 export function createChatStripWrapStyle() {
   return {
     marginHorizontal: SPACING.SCREEN_EDGE_INSET,
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.md,
   };
 }
 
@@ -67,7 +67,8 @@ export function estimateChatStripReserveHeight({
   if (tccContinuityCount > 0) total += PANEL_BASE + tccContinuityCount * ROW;
   if (softCrisisActive) total += PANEL_BASE + ROW * 2;
   if (crisisResources) total += PANEL_BASE + ROW;
-  return total > 0 ? total + 12 : 0;
+  // Respiro inferior del wrap (`createChatStripWrapStyle` → marginBottom md).
+  return total > 0 ? total + SPACING.md : 0;
 }
 
 export function createChatStripIconWrapStyle(colors, accentKey = 'primary') {

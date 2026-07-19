@@ -356,25 +356,42 @@ const ChatScreen = () => {
     !immersiveMode && Boolean(softCrisisCheckInPanel) && !crisisResourcesPanel;
   const showCrisisStrip = !immersiveMode && Boolean(crisisResourcesPanel);
 
-  const messagesListStyle = useMemo(() => {
-    const stripReserve = estimateChatStripReserveHeight({
-      tccContinuityCount: !immersiveMode ? visibleTccContinuityItems.length : 0,
-      softCrisisActive: showSoftCrisisStrip,
-      tccLiteHandoff: !immersiveMode && showTccLiteHandoff,
-      crisisResources: showCrisisStrip,
-    });
-    return [
+  const stripReserve = useMemo(
+    () =>
+      estimateChatStripReserveHeight({
+        tccContinuityCount: !immersiveMode ? visibleTccContinuityItems.length : 0,
+        softCrisisActive: showSoftCrisisStrip,
+        tccLiteHandoff: !immersiveMode && showTccLiteHandoff,
+        crisisResources: showCrisisStrip,
+      }),
+    [
+      immersiveMode,
+      visibleTccContinuityItems.length,
+      showSoftCrisisStrip,
+      showTccLiteHandoff,
+      showCrisisStrip,
+    ],
+  );
+
+  const messagesListStyle = useMemo(
+    () => [
       styles.messagesList,
-      stripReserve > 0 ? { paddingBottom: LAYOUT.MESSAGES_LIST_PADDING_BOTTOM + stripReserve } : null,
-    ];
-  }, [
-    styles.messagesList,
-    immersiveMode,
-    visibleTccContinuityItems.length,
-    showSoftCrisisStrip,
-    showTccLiteHandoff,
-    showCrisisStrip,
-  ]);
+      stripReserve > 0
+        ? { paddingBottom: LAYOUT.MESSAGES_LIST_PADDING_BOTTOM + stripReserve }
+        : null,
+    ],
+    [styles.messagesList, stripReserve],
+  );
+
+  const scrollToBottomButtonStyle = useMemo(
+    () => [
+      styles.scrollToBottomButton,
+      stripReserve > 0
+        ? { bottom: LAYOUT.SCROLL_BUTTON_BOTTOM + stripReserve + SPACING.sm }
+        : null,
+    ],
+    [styles.scrollToBottomButton, stripReserve],
+  );
   const [showAIDisclosure, setShowAIDisclosure] = React.useState(false);
   const [showChatOptions, setShowChatOptions] = React.useState(false);
 
@@ -760,7 +777,7 @@ const ChatScreen = () => {
 
       {showScrollButton && (
         <TouchableOpacity
-          style={styles.scrollToBottomButton}
+          style={scrollToBottomButtonStyle}
           onPress={() => scrollToBottom(true, { force: true })}
           accessibilityRole="button"
           accessibilityLabel={TEXTS.SCROLL_TO_BOTTOM_LABEL}
