@@ -26,8 +26,8 @@ export default function SubscriptionErrorView({ error, onRetry }) {
         },
         retryButton: {
           backgroundColor: colors.primary,
-          paddingHorizontal: 24,
-          paddingVertical: 12,
+          paddingHorizontal: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.CHIP_INSET,
           borderRadius: 12,
         },
         retryButtonText: {

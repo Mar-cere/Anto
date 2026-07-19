@@ -2,6 +2,7 @@
  * Grafo bipartito tema → intervención (#218) con nodos legibles y conexiones curvas.
  */
 import React, { useMemo } from 'react';
+import { SPACING } from '../../constants/ui';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Path, Rect, Text as SvgText, TSpan } from 'react-native-svg';
 import { useTheme } from '../../context/ThemeContext';
@@ -176,7 +177,7 @@ export default function InterventionGraphVisual({
         headerRow: {
           flexDirection: 'row',
           justifyContent: 'space-between',
-          paddingHorizontal: 4,
+          paddingHorizontal: SPACING.xs,
           marginBottom: 8,
         },
         colLabel: {

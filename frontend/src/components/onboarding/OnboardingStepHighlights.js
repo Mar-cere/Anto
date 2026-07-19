@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import { resolveOnboardingBrandAccent } from '../../utils/onboardingBrand';
 
@@ -16,7 +17,7 @@ export default function OnboardingStepHighlights({ items = [], heading }) {
         wrap: {
           width: '100%',
           marginTop: 16,
-          gap: 8,
+          gap: SPACING.sm,
         },
         heading: {
           fontSize: 12,
@@ -29,9 +30,9 @@ export default function OnboardingStepHighlights({ items = [], heading }) {
         row: {
           flexDirection: 'row',
           alignItems: 'flex-start',
-          gap: 10,
-          paddingVertical: 11,
-          paddingHorizontal: 12,
+          gap: SPACING.CARD_INNER_INSET,
+          paddingVertical: SPACING.CARD_INNER_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           borderRadius: 14,
           backgroundColor: colors.glassFillStrong ?? colors.glassFill,
           borderWidth: StyleSheet.hairlineWidth,

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { TouchableOpacity, Text, Animated, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 
 const hexToRgba = (hex, alpha) => {
   const h = hex.replace('#', '');
@@ -28,8 +29,8 @@ const AnimatedButton = ({
       StyleSheet.create({
         mainButton: {
           backgroundColor: hexToRgba(colors.primary, 0.85),
-          paddingVertical: 15,
-          paddingHorizontal: 40,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
+          paddingHorizontal: SPACING.HERO_INSET,
           borderRadius: 30,
           marginBottom: 20,
           width: '80%',
@@ -47,8 +48,8 @@ const AnimatedButton = ({
         },
         secondaryButton: {
           backgroundColor: colors.glassFill,
-          paddingVertical: 15,
-          paddingHorizontal: 40,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
+          paddingHorizontal: SPACING.HERO_INSET,
           borderRadius: 30,
           width: '80%',
           alignItems: 'center',

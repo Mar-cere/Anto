@@ -143,7 +143,7 @@ const OnboardingTutorial = ({
         },
         skipButton: {
           paddingVertical: 6,
-          paddingHorizontal: 4,
+          paddingHorizontal: SPACING.xs,
         },
         skipText: {
           color: colors.textSecondary,
@@ -224,7 +224,7 @@ const OnboardingTutorial = ({
         },
         footer: {
           flexDirection: 'row',
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
           alignItems: 'stretch',
         },
         backButton: {

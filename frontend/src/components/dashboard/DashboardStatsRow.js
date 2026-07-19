@@ -7,6 +7,7 @@ import { createDashboardStyles } from '../../styles/dashboardTheme';
 import { buildStreakCardSeed, pickStreakTierBadge } from '../../utils/dashboardStreakCardUtils';
 import { getStreakVisual } from '../../utils/streakVisualUtils';
 
+import { SPACING } from '../../constants/ui';
 const DashboardStatsRow = memo(({
   streakDays,
   habitsThisWeek,
@@ -96,7 +97,7 @@ const DashboardStatsRow = memo(({
             },
           ]}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: SPACING.sm }}>
             <Animated.View style={{ transform: [{ scale: pulse }] }}>
               <View
                 style={{

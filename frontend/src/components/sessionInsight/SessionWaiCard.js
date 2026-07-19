@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { SPACING } from '../../constants/ui';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
@@ -23,7 +24,7 @@ function SessionWaiCard({ onSubmit, onSkip, submitting = false }) {
       card: {
         backgroundColor: resolvedScheme === 'dark' ? 'rgba(255,255,255,0.04)' : 'rgba(36,35,79,0.03)',
         borderRadius: 16,
-        padding: 16,
+        padding: SPACING.HERO_INSET_COMPACT,
         marginBottom: 14,
         borderWidth: 1,
         borderColor: colors.border,
@@ -46,7 +47,7 @@ function SessionWaiCard({ onSubmit, onSkip, submitting = false }) {
         opacity: active ? 1 : done ? 0.55 : 0.35,
       }),
       skipTop: {
-        paddingVertical: 4,
+        paddingVertical: SPACING.xs,
         paddingHorizontal: 2,
       },
       skipTopText: {
@@ -76,7 +77,7 @@ function SessionWaiCard({ onSubmit, onSkip, submitting = false }) {
       scaleRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        gap: 8,
+        gap: SPACING.sm,
       },
       scaleBtn: (selected) => ({
         flex: 1,
@@ -110,7 +111,7 @@ function SessionWaiCard({ onSubmit, onSkip, submitting = false }) {
       primary: {
         backgroundColor: colors.primary,
         borderRadius: 12,
-        paddingVertical: 12,
+        paddingVertical: SPACING.CHIP_INSET_COMPACT,
         alignItems: 'center',
         opacity: submitting ? 0.7 : 1,
       },

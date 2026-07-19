@@ -53,12 +53,16 @@ const TabNavigator = () => {
         const iconName = TAB_ICONS[route.name] || 'help-outline';
         return <Ionicons name={iconName} size={size} color={color} />;
       },
+      // La nav real es FloatingNavBar; el tab bar nativo no debe reservar safe area
+      // (si no, Chat y otras pantallas suman el inset dos veces y queda un hueco enorme abajo).
       tabBarStyle: {
+        display: 'none',
         height: 0,
         opacity: 0,
         elevation: 0,
         backgroundColor: colors.navigationHeader,
       },
+      tabBarSafeAreaInsets: { top: 0, bottom: 0, left: 0, right: 0 },
       tabBarActiveTintColor: colors.white,
       tabBarInactiveTintColor: colors.tabBarInactive,
     }),

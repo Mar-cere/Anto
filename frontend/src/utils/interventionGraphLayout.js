@@ -1,6 +1,7 @@
 /**
  * Layout bipartito tema → intervención para el grafo visual (#218 / #127).
  */
+import { SPACING } from '../constants/ui';
 import { resolveTopicFreeDisplayLabel } from './graphSourceLabel.js';
 import { filterPublicGraphInterventionEdges } from './graphInterventionLabel.js';
 
@@ -8,7 +9,7 @@ const DEFAULT_MAX_TOPICS = 7;
 const DEFAULT_MAX_INTERVENTIONS = 10;
 const DEFAULT_MAX_TOPIC_FREE = 8;
 const ROW_GAP = 14;
-const PADDING_X = 14;
+const PADDING_X = SPACING.SCREEN_EDGE_INSET;
 const PADDING_Y = 44;
 const NODE_MIN_HEIGHT = 40;
 const LINE_HEIGHT = 15;

@@ -160,13 +160,13 @@ export default function PomodoroScreen() {
         },
         summaryMetricsRow: {
           flexDirection: 'row',
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
           marginBottom: 12,
         },
         metricCard: {
           flex: 1,
           borderRadius: 14,
-          paddingVertical: 12,
+          paddingVertical: SPACING.CHIP_INSET,
           paddingHorizontal: POMODORO_INNER_INSET,
           backgroundColor: colors.glassFill,
           borderWidth: StyleSheet.hairlineWidth,
@@ -189,15 +189,15 @@ export default function PomodoroScreen() {
           backgroundColor: colors.glassFill,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
-          paddingVertical: 10,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           paddingHorizontal: POMODORO_INNER_INSET,
           marginBottom: 6,
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
         },
         streakInnerRow: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
+          gap: SPACING.sm,
         },
         summaryLoggedLine: {
           flex: 1,
@@ -205,7 +205,7 @@ export default function PomodoroScreen() {
           lineHeight: 17,
         },
         summaryLinkedActions: {
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
           marginTop: 8,
         },
         summaryDismissHint: {
@@ -219,17 +219,17 @@ export default function PomodoroScreen() {
           marginTop: 6,
           backgroundColor: colors.primary,
           borderRadius: 14,
-          paddingVertical: 12,
+          paddingVertical: SPACING.CHIP_INSET,
           alignItems: 'center',
         },
         summaryButtonSecondary: {
           borderRadius: 14,
-          paddingVertical: 12,
-          paddingHorizontal: POMODORO_INNER_INSET,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.CHIP_INSET,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 8,
+          gap: SPACING.sm,
           backgroundColor: colors.glassFill,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
@@ -241,12 +241,12 @@ export default function PomodoroScreen() {
         },
         summaryButtonSuccess: {
           borderRadius: 14,
-          paddingVertical: 12,
-          paddingHorizontal: POMODORO_INNER_INSET,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.CHIP_INSET,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 8,
+          gap: SPACING.sm,
           backgroundColor: PC.SUCCESS,
           minHeight: 52,
         },
@@ -445,7 +445,7 @@ export default function PomodoroScreen() {
       <View style={styles.container}>
         <ScrollView
           style={styles.content}
-          contentContainerStyle={{ paddingBottom: insets.bottom + SPACING.SCREEN_EDGE_INSET + 24 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + SPACING.SCREEN_EDGE_INSET + SPACING.lg }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl

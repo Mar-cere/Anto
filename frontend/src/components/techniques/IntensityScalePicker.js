@@ -82,7 +82,7 @@ export default function IntensityScalePicker({
         valuePill: {
           flexShrink: 0,
           minWidth: 44,
-          paddingHorizontal: 12,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           paddingVertical: 6,
           borderRadius: 10,
           backgroundColor:

@@ -235,7 +235,7 @@ function createStyles(colors) {
     },
     scrollContent: {
       paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-      paddingVertical: SPACING.lg,
+      paddingVertical: SPACING.HERO_INSET,
     },
     header: {
       alignItems: 'center',
@@ -330,8 +330,8 @@ function createStyles(colors) {
       fontWeight: '600',
     },
     pauseButton: {
-      paddingVertical: SPACING.md,
-      paddingHorizontal: SPACING.lg,
+      paddingVertical: SPACING.HERO_INSET_COMPACT,
+      paddingHorizontal: SPACING.HERO_INSET,
       borderRadius: 999,
       borderWidth: 2,
       borderColor: colors.border,

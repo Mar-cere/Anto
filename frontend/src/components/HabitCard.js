@@ -303,18 +303,18 @@ HabitCard.displayName = 'HabitCard';
 
 const createStyles = (colors, commonStyles) => ({
   habitsContainer: {
-    gap: 12,
+    gap: SPACING.CHIP_INSET,
   },
   habitItem: {
-    padding: 12,
+    padding: SPACING.CARD_INNER_INSET,
   },
   habitContent: {
-    gap: 12,
+    gap: SPACING.CHIP_INSET,
   },
   habitHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: SPACING.CHIP_INSET,
   },
   habitIcon: {
     width: 40,
@@ -348,7 +348,7 @@ const createStyles = (colors, commonStyles) => ({
     marginLeft: 4,
   },
   progressSection: {
-    gap: 8,
+    gap: SPACING.sm,
   },
   statusContainer: {
     flexDirection: 'row',
@@ -389,8 +389,8 @@ const createStyles = (colors, commonStyles) => ({
   },
   errorContainer: {
     alignItems: 'center',
-    padding: 12,
-    gap: 12,
+    padding: SPACING.CARD_INNER_INSET,
+    gap: SPACING.CHIP_INSET,
   },
   errorText: {
     color: colors.error,
@@ -399,8 +399,8 @@ const createStyles = (colors, commonStyles) => ({
   },
   retryButton: {
     backgroundColor: colors.primary,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-    paddingVertical: 8,
+    paddingHorizontal: SPACING.CHIP_INSET,
+    paddingVertical: SPACING.sm,
     borderRadius: 8,
   },
   retryText: {

@@ -47,11 +47,11 @@ function buildStyles(c, resolvedScheme) {
     },
     scrollContent: {
       paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-      paddingTop: 12,
+      paddingTop: SPACING.CHIP_INSET,
       paddingBottom: SCROLL_PADDING_BOTTOM,
     },
     sectionBlock: {
-      padding: SPACING.SCREEN_EDGE_INSET,
+      padding: SPACING.CARD_INNER_INSET,
       marginBottom: 18,
       borderRadius: 18,
       borderWidth: StyleSheet.hairlineWidth,
@@ -98,7 +98,7 @@ function buildStyles(c, resolvedScheme) {
     },
     profileSection: {
       alignItems: 'center',
-      paddingVertical: 4,
+      paddingVertical: SPACING.xs,
     },
     userName: {
       fontSize: TYPOGRAPHY.TITLE,
@@ -112,14 +112,14 @@ function buildStyles(c, resolvedScheme) {
       marginBottom: USER_EMAIL_MARGIN_BOTTOM,
     },
     subscriptionContainer: {
-      gap: 10,
+      gap: SPACING.CARD_INNER_INSET,
     },
     subscriptionFollowingProfile: {
       marginTop: 18,
       width: '100%',
     },
     statsContainer: {
-      gap: 8,
+      gap: SPACING.sm,
     },
     sectionTitle: {
       fontSize: TYPOGRAPHY.SUBTITLE,
@@ -181,7 +181,7 @@ function buildStyles(c, resolvedScheme) {
     progressLinkRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 12,
+      paddingVertical: SPACING.CHIP_INSET,
       paddingHorizontal: OPTION_BUTTON_PADDING,
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: c.CARD_BORDER,
@@ -255,7 +255,7 @@ function buildStyles(c, resolvedScheme) {
     contactItem: {
       backgroundColor: c.CARD_BACKGROUND,
       borderRadius: 12,
-      padding: 14,
+      padding: SPACING.CARD_INNER_INSET,
       marginBottom: 10,
       borderWidth: 1,
       borderColor: c.CARD_BORDER,
@@ -296,7 +296,7 @@ function buildStyles(c, resolvedScheme) {
     contactDetailRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: SPACING.sm,
     },
     contactDetailText: {
       fontSize: TYPOGRAPHY.CAPTION,
@@ -322,7 +322,7 @@ function buildStyles(c, resolvedScheme) {
       fontSize: TYPOGRAPHY.CAPTION,
       color: c.TEXT_MUTED,
       textAlign: 'center',
-      paddingVertical: SPACING.SCREEN_EDGE_INSET,
+      paddingVertical: SPACING.CHIP_INSET,
       fontStyle: 'italic',
     },
   });

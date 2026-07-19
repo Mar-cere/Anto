@@ -2,6 +2,7 @@
  * Tarjeta nativa de psicoeducación en chat (#78 / #85).
  */
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { SPACING } from '../constants/ui';
 import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -56,7 +57,7 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
         container: { marginBottom: 10 },
         card: {
           borderRadius: isCompact ? 16 : 22,
-          padding: isCompact ? 10 : 14,
+          padding: isCompact ? SPACING.CARD_INNER_INSET : SPACING.INPUT_INSET,
           backgroundColor: colors.cardBackground ?? colors.card,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
@@ -97,7 +98,7 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           flexDirection: 'row',
           alignItems: 'center',
           paddingVertical: 6,
-          paddingHorizontal: 10,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 999,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
@@ -121,9 +122,9 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
         stepRow: {
           flexDirection: 'row',
           alignItems: 'flex-start',
-          gap: 8,
+          gap: SPACING.sm,
           paddingVertical: 6,
-          paddingHorizontal: 4,
+          paddingHorizontal: SPACING.xs,
           borderRadius: 10,
         },
         stepRowDone: { opacity: 0.82 },
@@ -134,8 +135,8 @@ const PsychoeducationSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           flexDirection: 'row',
           alignItems: 'center',
           backgroundColor: colors.primary,
-          paddingHorizontal: 14,
-          paddingVertical: 8,
+          paddingHorizontal: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.sm,
           borderRadius: 999,
         },
         ctaText: { color: colors.textOnPrimary, fontSize: 13, fontWeight: '600', marginRight: 4 },

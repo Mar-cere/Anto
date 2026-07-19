@@ -2,6 +2,7 @@
  * Grafo tema–intervención (#127 / visual #218).
  */
 import { useFocusEffect } from '@react-navigation/native';
+import { SPACING } from '../constants/ui';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   RefreshControl,
@@ -19,7 +20,6 @@ import Header from '../components/Header';
 import InterventionGraphStatePanel from '../components/intervention/InterventionGraphStatePanel';
 import InterventionGraphVisual from '../components/intervention/InterventionGraphVisual';
 import DashboardBrandBackdrop from '../components/dashboard/DashboardBrandBackdrop';
-import { SPACING } from '../constants/ui';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import chatService from '../services/chatService';
@@ -112,16 +112,16 @@ const InterventionGraphScreen = ({ navigation }) => {
     () =>
       StyleSheet.create({
         container: { flex: 1, backgroundColor: colors.background },
-        content: { padding: SPACING.SCREEN_EDGE_INSET, paddingBottom: 48 },
+        content: { padding: SPACING.SCREEN_EDGE_INSET, paddingBottom: SPACING.xxl },
         meta: { fontSize: 13, color: colors.textSecondary, marginBottom: 12, lineHeight: 18 },
         toggleRow: {
           flexDirection: 'row',
-          gap: 8,
+          gap: SPACING.sm,
           marginBottom: 16,
         },
         toggleBtn: {
           flex: 1,
-          paddingVertical: 10,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 10,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
@@ -143,7 +143,7 @@ const InterventionGraphScreen = ({ navigation }) => {
           borderColor: colors.border,
           borderWidth: StyleSheet.hairlineWidth,
           borderRadius: 12,
-          padding: 12,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 10,
           backgroundColor: colors.cardBackground || colors.surface || colors.background,
         },
@@ -162,7 +162,7 @@ const InterventionGraphScreen = ({ navigation }) => {
         },
         detail: {
           borderRadius: 12,
-          padding: 12,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 16,
           backgroundColor: colors.accentLineSoft,
           borderWidth: StyleSheet.hairlineWidth,
@@ -170,7 +170,7 @@ const InterventionGraphScreen = ({ navigation }) => {
         },
         insight: {
           borderRadius: 12,
-          padding: 12,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 12,
           backgroundColor: colors.cardBackground || colors.surface || colors.background,
           borderWidth: StyleSheet.hairlineWidth,
@@ -182,8 +182,8 @@ const InterventionGraphScreen = ({ navigation }) => {
         detailCta: {
           marginTop: 12,
           alignSelf: 'flex-start',
-          paddingVertical: 9,
-          paddingHorizontal: 16,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
+          paddingHorizontal: SPACING.HERO_INSET_COMPACT,
           borderRadius: 999,
           backgroundColor: colors.primary,
         },

@@ -198,7 +198,7 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
         container: {
           backgroundColor: colors.cardBackground,
           borderRadius: 16,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 16,
           borderWidth: 1,
           borderColor: colors.border,
@@ -224,7 +224,7 @@ const SubscriptionStatus = ({ status, plan, daysRemaining, trialEndDate, subscri
         },
         datesContainer: {
           marginTop: 12,
-          paddingTop: 12,
+          paddingTop: SPACING.CHIP_INSET,
           borderTopWidth: 1,
           borderTopColor: colors.border,
         },

@@ -12,6 +12,7 @@ import {
   UIManager,
   View,
 } from 'react-native';
+import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
 import { resolveClinicalReviewSeal } from '../utils/psychoeducationClinicalReview';
 
@@ -36,8 +37,8 @@ const PsychoeducationClinicalReviewSeal = ({
         moduleWrap: {
           marginBottom: 16,
           borderRadius: 14,
-          paddingHorizontal: 12,
-          paddingVertical: 10,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
+          paddingVertical: SPACING.CARD_INNER_INSET,
           backgroundColor: colors.cardBackground ?? colors.card,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border ?? 'rgba(128,128,128,0.2)',
@@ -59,7 +60,7 @@ const PsychoeducationClinicalReviewSeal = ({
         libraryPill: {
           flexDirection: 'row',
           alignItems: 'center',
-          paddingHorizontal: 8,
+          paddingHorizontal: SPACING.sm,
           paddingVertical: 3,
           borderRadius: 999,
           backgroundColor: colors.accentLineSoft ?? 'rgba(128,128,128,0.12)',

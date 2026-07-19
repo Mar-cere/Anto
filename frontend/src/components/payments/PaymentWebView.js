@@ -48,13 +48,13 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingVertical: 12,
+          paddingVertical: SPACING.CHIP_INSET,
           backgroundColor: colors.cardBackground,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,
         },
         closeButton: {
-          padding: 8,
+          padding: SPACING.sm,
         },
         headerTitle: {
           fontSize: 18,
@@ -95,7 +95,7 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
           justifyContent: 'center',
           alignItems: 'center',
           backgroundColor: colors.background,
-          padding: 32,
+          padding: SPACING.SCREEN_EDGE_INSET,
           zIndex: 2,
         },
         errorText: {
@@ -107,13 +107,13 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
         },
         errorButtonsContainer: {
           flexDirection: 'row',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
           marginTop: 8,
         },
         retryButton: {
           backgroundColor: colors.primary,
-          paddingHorizontal: 24,
-          paddingVertical: 12,
+          paddingHorizontal: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.CHIP_INSET,
           borderRadius: 12,
         },
         errorButton: {
@@ -151,8 +151,8 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: colors.cardBackground,
-          paddingVertical: 8,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.CHIP_INSET,
           zIndex: 1,
         },
         processingText: {
@@ -163,8 +163,8 @@ const PaymentWebView = ({ url, onClose, onSuccess, onCancel, onError }) => {
         },
         browserFallbackButton: {
           marginTop: 14,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingVertical: 10,
+          paddingHorizontal: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 10,
           borderWidth: 1,
           borderColor: colors.primary,

@@ -9,6 +9,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { useToast } from '../../context/ToastContext';
 import { getDigitalHealthAvailability } from '../../services/digitalHealthBridge';
 import { SYNC_REASON, syncDigitalHealthWithNative } from '../../services/digitalHealthSync';
+import { SPACING } from '../../constants/ui';
 import signalsService from '../../services/signalsService';
 
 const COPY = {
@@ -115,23 +116,23 @@ export default function DigitalHealthStatusCard({
           borderRadius: 12,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
-          padding: compact ? 12 : 14,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 14,
           backgroundColor: colors.cardBackground || colors.surface || colors.background,
         },
-        row: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
+        row: { flexDirection: 'row', alignItems: 'flex-start', gap: SPACING.CHIP_INSET },
         title: { fontSize: 14, fontWeight: '700', color: colors.text, marginBottom: 4 },
         body: { fontSize: 12, lineHeight: 17, color: colors.textSecondary, flex: 1 },
         cta: {
           marginTop: 10,
           alignSelf: 'flex-start',
-          paddingVertical: 8,
-          paddingHorizontal: 12,
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 8,
           backgroundColor: colors.primary,
         },
         ctaText: { color: colors.onPrimary || '#fff', fontSize: 13, fontWeight: '600' },
-        loading: { paddingVertical: 8, alignItems: 'center' },
+        loading: { paddingVertical: SPACING.sm, alignItems: 'center' },
       }),
     [colors, compact],
   );

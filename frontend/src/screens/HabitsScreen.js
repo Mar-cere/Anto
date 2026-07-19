@@ -373,7 +373,7 @@ function createHabitsScreenStyles(colors, t, HC) {
     listContainer: {
       flexGrow: 1,
       paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-      paddingTop: 4,
+      paddingTop: SPACING.xs,
       paddingBottom: LIST_PADDING_BOTTOM,
     },
     listHeaderWrap: {
@@ -381,8 +381,8 @@ function createHabitsScreenStyles(colors, t, HC) {
     },
     countRow: {
       marginBottom: 10,
-      paddingVertical: 8,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.CHIP_INSET,
       alignSelf: 'flex-start',
       borderRadius: 12,
       backgroundColor: pillBg,
@@ -396,7 +396,7 @@ function createHabitsScreenStyles(colors, t, HC) {
     },
     summaryRow: {
       flexDirection: 'row',
-      gap: 8,
+      gap: SPACING.sm,
     },
     summaryPill: {
       flex: 1,
@@ -404,8 +404,8 @@ function createHabitsScreenStyles(colors, t, HC) {
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.border,
       borderRadius: 12,
-      paddingVertical: 8,
-      paddingHorizontal: 10,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
     },
     summaryPillLabel: {
       color: colors.textSecondary,
@@ -420,8 +420,8 @@ function createHabitsScreenStyles(colors, t, HC) {
     },
     sectionHeader: {
       backgroundColor: colors.glassFillStrong,
-      paddingVertical: 8,
-      paddingHorizontal: 10,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
       marginBottom: 6,
       marginTop: 4,
       borderRadius: 10,
@@ -441,7 +441,7 @@ function createHabitsScreenStyles(colors, t, HC) {
       minWidth: 24,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 8,
+      paddingHorizontal: SPACING.sm,
       paddingVertical: 3,
       borderRadius: 999,
       backgroundColor: colors.accentLineSoft,
@@ -454,8 +454,8 @@ function createHabitsScreenStyles(colors, t, HC) {
     searchEmpty: {
       alignItems: 'center',
       justifyContent: 'center',
-      paddingTop: 30,
-      gap: 8,
+      paddingTop: SPACING.HERO_INSET + SPACING.CHIP_INSET,
+      gap: SPACING.sm,
     },
     searchEmptyTitle: {
       color: colors.text,

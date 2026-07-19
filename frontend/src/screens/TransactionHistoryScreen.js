@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { SPACING } from '../constants/ui';
 import {
   View,
   Text,
@@ -31,7 +32,6 @@ import api, { ENDPOINTS } from '../config/api';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useMappedSectionTexts } from '../hooks/useTranslations';
-import { SPACING } from '../constants/ui';
 
 // Constantes
 const DEFAULT_TEXTS = {
@@ -184,7 +184,7 @@ const TransactionHistoryScreen = () => {
         },
         /** Mismo criterio que Configuración / Suscripción (`settingsSectionSurface`). */
         sectionShell: {
-          padding: 14,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 18,
           borderRadius: 18,
           borderWidth: StyleSheet.hairlineWidth,
@@ -198,11 +198,10 @@ const TransactionHistoryScreen = () => {
         },
         stateShell: {
           alignItems: 'center',
-          paddingVertical: 20,
+          paddingVertical: SPACING.HERO_INSET,
         },
         centerContainer: {
           alignItems: 'center',
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
         },
         loadingText: {
           marginTop: 16,
@@ -218,8 +217,8 @@ const TransactionHistoryScreen = () => {
         },
         retryButton: {
           backgroundColor: colors.primary,
-          paddingHorizontal: 24,
-          paddingVertical: 12,
+          paddingHorizontal: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 12,
         },
         retryButtonText: {
@@ -241,7 +240,7 @@ const TransactionHistoryScreen = () => {
           textAlign: 'center',
         },
         skeletonInner: {
-          paddingTop: 4,
+          paddingTop: SPACING.xs,
         },
         skeletonCard: {
           marginBottom: 12,
@@ -249,8 +248,8 @@ const TransactionHistoryScreen = () => {
         emptyCtaButton: {
           marginTop: 24,
           backgroundColor: colors.primary,
-          paddingHorizontal: 24,
-          paddingVertical: 14,
+          paddingHorizontal: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.CHIP_INSET,
           borderRadius: 12,
         },
         emptyCtaButtonText: {
@@ -259,7 +258,7 @@ const TransactionHistoryScreen = () => {
           fontWeight: '600',
         },
         listContent: {
-          paddingTop: 4,
+          paddingTop: SPACING.xs,
         },
         listFlex: {
           flex: 1,
@@ -267,7 +266,7 @@ const TransactionHistoryScreen = () => {
         transactionCard: {
           backgroundColor: colors.chromeCard,
           borderRadius: 12,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 12,
           borderWidth: 1,
           borderColor: colors.border,
@@ -289,8 +288,8 @@ const TransactionHistoryScreen = () => {
         planBadge: {
           alignSelf: 'flex-start',
           backgroundColor: `${colors.primary}20`,
-          paddingHorizontal: 8,
-          paddingVertical: 4,
+          paddingHorizontal: SPACING.sm,
+          paddingVertical: SPACING.xs,
           borderRadius: 6,
           marginTop: 4,
         },
@@ -302,8 +301,8 @@ const TransactionHistoryScreen = () => {
         statusBadge: {
           flexDirection: 'row',
           alignItems: 'center',
-          paddingHorizontal: 8,
-          paddingVertical: 4,
+          paddingHorizontal: SPACING.sm,
+          paddingVertical: SPACING.xs,
           borderRadius: 6,
         },
         statusText: {
@@ -320,7 +319,7 @@ const TransactionHistoryScreen = () => {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          paddingTop: 12,
+          paddingTop: SPACING.CHIP_INSET,
           borderTopWidth: 1,
           borderTopColor: colors.border,
         },
@@ -335,7 +334,7 @@ const TransactionHistoryScreen = () => {
         },
         searchContainer: {
           flexDirection: 'row',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         searchBar: {
           flex: 1,
@@ -343,11 +342,11 @@ const TransactionHistoryScreen = () => {
           alignItems: 'center',
           backgroundColor: colors.chromeCard,
           borderRadius: 12,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingVertical: 8,
+          paddingHorizontal: SPACING.INPUT_INSET,
+          paddingVertical: SPACING.sm,
           borderWidth: 1,
           borderColor: colors.border,
-          gap: 8,
+          gap: SPACING.sm,
         },
         searchInput: {
           flex: 1,
@@ -383,7 +382,7 @@ const TransactionHistoryScreen = () => {
           justifyContent: 'space-between',
           alignItems: 'center',
           marginTop: 12,
-          paddingTop: 12,
+          paddingTop: SPACING.CHIP_INSET,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.border,
         },
@@ -411,7 +410,7 @@ const TransactionHistoryScreen = () => {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,
         },
@@ -421,7 +420,7 @@ const TransactionHistoryScreen = () => {
           color: colors.text,
         },
         modalBody: {
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
         },
         filterSection: {
           marginBottom: 24,
@@ -436,7 +435,7 @@ const TransactionHistoryScreen = () => {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           backgroundColor: colors.background,
           borderRadius: 12,
           marginBottom: 8,
@@ -457,14 +456,14 @@ const TransactionHistoryScreen = () => {
         },
         modalFooter: {
           flexDirection: 'row',
-          padding: SPACING.SCREEN_EDGE_INSET,
-          gap: 12,
+          padding: SPACING.CARD_INNER_INSET,
+          gap: SPACING.CHIP_INSET,
           borderTopWidth: 1,
           borderTopColor: colors.border,
         },
         modalButton: {
           flex: 1,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CHIP_INSET,
           borderRadius: 12,
           backgroundColor: colors.background,
           borderWidth: 1,

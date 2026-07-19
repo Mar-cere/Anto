@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SPACING } from '../../constants/ui';
 import * as Haptics from 'expo-haptics';
 import React, { useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -38,8 +39,8 @@ export default function InterventionGraphStatePanel({
           backgroundColor: dark ? colors.chromeCard : colors.surface,
         },
         inner: {
-          paddingVertical: 28,
-          paddingHorizontal: 22,
+          paddingVertical: SPACING.HERO_INSET,
+          paddingHorizontal: SPACING.HERO_INSET,
           alignItems: 'center',
         },
         iconWrap: {
@@ -68,7 +69,7 @@ export default function InterventionGraphStatePanel({
         primaryBtn: {
           width: '100%',
           maxWidth: 280,
-          paddingVertical: 14,
+          paddingVertical: SPACING.CHIP_INSET,
           borderRadius: 999,
           backgroundColor: colors.primary,
           alignItems: 'center',
@@ -82,7 +83,7 @@ export default function InterventionGraphStatePanel({
         secondaryBtn: {
           width: '100%',
           maxWidth: 280,
-          paddingVertical: 12,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 999,
           borderWidth: 1,
           borderColor: colors.border,

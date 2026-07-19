@@ -2,6 +2,7 @@
  * Insight de sesión post-chat: emoción, patrón cognitivo y paso sugerido.
  */
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { SPACING } from '../constants/ui';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -25,7 +26,6 @@ import {
   dispatchRootReset,
   getResetToMainTabsWithInicioState,
 } from '../navigation/navigationHelpers';
-import { SPACING } from '../constants/ui';
 import { recordInterventionClicked } from '../utils/recordInterventionCompleted';
 import { setPendingTccLiteResume } from '../utils/chatTccLiteResume';
 import chatService from '../services/chatService';
@@ -119,12 +119,12 @@ export default function SessionInsightScreen() {
         },
         scroll: {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingBottom: insets.bottom + 24,
+          paddingBottom: insets.bottom + SPACING.lg,
         },
         hero: {
           alignItems: 'center',
-          paddingTop: 12,
-          paddingBottom: 20,
+          paddingTop: SPACING.CHIP_INSET,
+          paddingBottom: SPACING.HERO_INSET,
         },
         heroIconOrb: {
           width: 56,
@@ -158,12 +158,12 @@ export default function SessionInsightScreen() {
           lineHeight: 22,
           color: colors.textSecondary,
           textAlign: 'center',
-          paddingHorizontal: 8,
+          paddingHorizontal: SPACING.sm,
         },
         metaRow: {
           flexDirection: 'row',
           justifyContent: 'center',
-          gap: 16,
+          gap: SPACING.md,
           marginTop: 14,
         },
         metaChip: {
@@ -171,7 +171,7 @@ export default function SessionInsightScreen() {
           alignItems: 'center',
           backgroundColor: colors.glassFill,
           borderRadius: 20,
-          paddingHorizontal: 12,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           paddingVertical: 6,
           borderWidth: 1,
           borderColor: colors.chromeCardBorder,
@@ -184,7 +184,7 @@ export default function SessionInsightScreen() {
         card: {
           backgroundColor: colors.chromeCard,
           borderRadius: 16,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           borderWidth: 1,
           borderColor: colors.chromeCardBorder,
           marginBottom: 14,
@@ -238,7 +238,7 @@ export default function SessionInsightScreen() {
         tipBox: {
           backgroundColor: colors.glassFill,
           borderRadius: 12,
-          padding: 12,
+          padding: SPACING.CARD_INNER_INSET,
           borderLeftWidth: 3,
           borderLeftColor: colors.primary,
         },
@@ -251,12 +251,12 @@ export default function SessionInsightScreen() {
         themesRow: {
           flexDirection: 'row',
           flexWrap: 'wrap',
-          gap: 8,
+          gap: SPACING.sm,
         },
         themeChip: {
           backgroundColor: colors.glassFill,
           borderRadius: 20,
-          paddingHorizontal: 12,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           paddingVertical: 6,
           borderWidth: 1,
           borderColor: colors.chromeCardBorder,
@@ -271,7 +271,7 @@ export default function SessionInsightScreen() {
           alignItems: 'center',
           backgroundColor: colors.glassFill,
           borderRadius: 14,
-          padding: 14,
+          padding: SPACING.CARD_INNER_INSET,
           borderWidth: 1,
           borderColor: colors.chromeCardBorder,
         },
@@ -305,8 +305,8 @@ export default function SessionInsightScreen() {
           borderWidth: 1,
           borderColor: colors.chromeCardBorder,
           borderRadius: 12,
-          paddingHorizontal: 14,
-          paddingVertical: 12,
+          paddingHorizontal: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           fontSize: 15,
           color: colors.text,
           backgroundColor: colors.chromeInput,
@@ -316,7 +316,7 @@ export default function SessionInsightScreen() {
           marginTop: 8,
           backgroundColor: colors.primary,
           borderRadius: 14,
-          paddingVertical: 16,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
           alignItems: 'center',
         },
         ctaPrimaryText: {
@@ -326,7 +326,7 @@ export default function SessionInsightScreen() {
         },
         ctaSecondary: {
           marginTop: 12,
-          paddingVertical: 12,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           alignItems: 'center',
         },
         ctaSecondaryText: {
@@ -345,7 +345,7 @@ export default function SessionInsightScreen() {
         reminderCard: {
           backgroundColor: colors.card,
           borderRadius: 14,
-          padding: 14,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 14,
           borderWidth: 1,
           borderColor: colors.primary,

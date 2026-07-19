@@ -36,7 +36,7 @@ export default function SettingsConfirmModal({
         modalContent: {
           backgroundColor: COLORS.MODAL_BACKGROUND,
           borderRadius: 12,
-          padding: 24,
+          padding: SPACING.HERO_INSET,
           width: MODAL_WIDTH,
           borderWidth: 1,
           borderColor: COLORS.ITEM_BORDER,
@@ -57,8 +57,8 @@ export default function SettingsConfirmModal({
           justifyContent: 'flex-end',
         },
         modalButton: {
-          paddingVertical: 8,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.CHIP_INSET,
           borderRadius: 8,
           marginLeft: 12,
         },

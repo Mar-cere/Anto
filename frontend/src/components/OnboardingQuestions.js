@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { api, ENDPOINTS } from '../config/api';
 import { useToast } from '../context/ToastContext';
+import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { buildOnboardingBenefits } from '../utils/onboardingSteps';
@@ -140,7 +141,7 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
           marginBottom: 10,
         },
         optionList: {
-          gap: 8,
+          gap: SPACING.sm,
         },
         optionRow: {
           flexDirection: 'row',
@@ -149,8 +150,8 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
           backgroundColor: colors.glassFill,
-          paddingVertical: 13,
-          paddingHorizontal: 14,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
         },
         optionRowSelected: {
           borderColor: colors.primary,
@@ -193,17 +194,17 @@ const OnboardingQuestions = ({ visible, onDismiss, onCompleted, onExploreApp }) 
           lineHeight: 18,
         },
         footer: {
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         footerLinks: {
           flexDirection: 'row',
           justifyContent: 'center',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: 8,
+          gap: SPACING.sm,
         },
         footerLink: {
-          paddingVertical: 4,
+          paddingVertical: SPACING.xs,
           paddingHorizontal: 6,
         },
         footerLinkText: {

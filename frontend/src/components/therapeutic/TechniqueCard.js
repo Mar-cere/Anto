@@ -11,12 +11,13 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 
 // Constantes de estilos
-const CARD_PADDING = 16;
+const CARD_PADDING = SPACING.HERO_INSET_COMPACT;
 const CARD_BORDER_RADIUS = 22;
 const CARD_MARGIN_BOTTOM = 12;
 const ICON_SIZE = 24;
@@ -102,8 +103,8 @@ const TechniqueCard = ({ technique, onPress, variant = 'default' }) => {
         },
         cardCompact: {
           borderLeftWidth: 3,
-          paddingVertical: 12,
-          paddingHorizontal: 14,
+          paddingVertical: SPACING.CARD_INNER_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           marginBottom: 10,
           shadowOpacity: 0.06,
           shadowRadius: 6,
@@ -138,8 +139,8 @@ const TechniqueCard = ({ technique, onPress, variant = 'default' }) => {
           flexDirection: 'row',
         },
         typeBadge: {
-          paddingHorizontal: 8,
-          paddingVertical: 4,
+          paddingHorizontal: SPACING.sm,
+          paddingVertical: SPACING.xs,
           borderRadius: 12,
         },
         typeText: {

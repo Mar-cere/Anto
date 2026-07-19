@@ -4,6 +4,7 @@
  */
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SPACING } from '../../constants/ui';
 import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
@@ -244,14 +245,14 @@ function createPendingTasksStyles(colors, t, PC) {
       flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
-      gap: 10,
+      gap: SPACING.CARD_INNER_INSET,
       marginBottom: 14,
     },
     headerIconTitle: {
       flex: 1,
       flexDirection: 'row',
       alignItems: 'flex-start',
-      gap: 10,
+      gap: SPACING.CARD_INNER_INSET,
       minWidth: 0,
     },
     headerIconWrap: {
@@ -268,7 +269,7 @@ function createPendingTasksStyles(colors, t, PC) {
       flexDirection: 'row',
       alignItems: 'center',
       flexWrap: 'wrap',
-      gap: 8,
+      gap: SPACING.sm,
       marginBottom: 4,
     },
     title: {
@@ -279,7 +280,7 @@ function createPendingTasksStyles(colors, t, PC) {
       flexShrink: 1,
     },
     countPill: {
-      paddingHorizontal: 8,
+      paddingHorizontal: SPACING.sm,
       paddingVertical: 3,
       borderRadius: 8,
       backgroundColor: t.FOCUS_INNER_ROW.backgroundColor,
@@ -310,8 +311,8 @@ function createPendingTasksStyles(colors, t, PC) {
       marginVertical: 16,
     },
     errorBox: {
-      paddingVertical: 10,
-      gap: 8,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
+      gap: SPACING.sm,
       alignItems: 'flex-start',
     },
     errorText: {
@@ -321,7 +322,7 @@ function createPendingTasksStyles(colors, t, PC) {
     },
     retryBtn: {
       alignSelf: 'flex-start',
-      paddingVertical: 8,
+      paddingVertical: SPACING.sm,
       paddingHorizontal: POMODORO_INNER_INSET,
       borderRadius: 10,
       backgroundColor: t.FOCUS_INNER_ROW.backgroundColor,
@@ -335,8 +336,8 @@ function createPendingTasksStyles(colors, t, PC) {
     },
     empty: {
       alignItems: 'center',
-      paddingVertical: 18,
-      paddingHorizontal: 8,
+      paddingVertical: SPACING.HERO_INSET,
+      paddingHorizontal: SPACING.sm,
     },
     emptyIconWrap: {
       width: 56,
@@ -363,7 +364,7 @@ function createPendingTasksStyles(colors, t, PC) {
       maxWidth: 280,
     },
     list: {
-      gap: 10,
+      gap: SPACING.CARD_INNER_INSET,
     },
     row: {
       flexDirection: 'row',
@@ -384,14 +385,14 @@ function createPendingTasksStyles(colors, t, PC) {
     rowMain: {
       flex: 1,
       minWidth: 0,
-      paddingVertical: 12,
+      paddingVertical: SPACING.CHIP_INSET,
       paddingHorizontal: POMODORO_INNER_INSET,
     },
     titleRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
       justifyContent: 'space-between',
-      gap: 8,
+      gap: SPACING.sm,
     },
     pillRow: {
       flexDirection: 'row',
@@ -409,8 +410,8 @@ function createPendingTasksStyles(colors, t, PC) {
       lineHeight: 20,
     },
     statusPill: {
-      paddingHorizontal: 8,
-      paddingVertical: 4,
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: SPACING.xs,
       borderRadius: 8,
       backgroundColor: colors.successSoft,
       borderWidth: StyleSheet.hairlineWidth,
@@ -468,8 +469,8 @@ function createPendingTasksStyles(colors, t, PC) {
     },
     focusBtn: {
       width: 88,
-      paddingVertical: 10,
-      paddingHorizontal: 8,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
+      paddingHorizontal: SPACING.sm,
       backgroundColor: PC.PRIMARY,
       alignItems: 'center',
       justifyContent: 'center',

@@ -106,8 +106,8 @@ export default function SettingsCountryModal({
           backgroundColor: COLORS.MODAL_BACKGROUND,
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
-          paddingHorizontal: SPACING.lg,
-          paddingTop: SPACING.lg,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingTop: SPACING.HERO_INSET,
           maxHeight: '82%',
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: COLORS.ITEM_BORDER,
@@ -131,7 +131,7 @@ export default function SettingsCountryModal({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingVertical: SPACING.md,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
           borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: COLORS.ITEM_BORDER,
         },
@@ -148,7 +148,7 @@ export default function SettingsCountryModal({
         },
         close: {
           alignItems: 'center',
-          paddingVertical: SPACING.lg,
+          paddingVertical: SPACING.CHIP_INSET,
           marginTop: SPACING.sm,
         },
         closeText: {
@@ -158,8 +158,8 @@ export default function SettingsCountryModal({
         },
         loading: {
           position: 'absolute',
-          right: SPACING.lg,
-          top: SPACING.lg,
+          right: SPACING.SCREEN_EDGE_INSET,
+          top: SPACING.HERO_INSET,
         },
       }),
     [COLORS, palette],
@@ -182,7 +182,7 @@ export default function SettingsCountryModal({
           accessibilityRole='button'
           accessibilityLabel={TEXTS.CLOSE}
         />
-        <View style={[styles.sheet, { paddingBottom: 20 + insets.bottom }]}>
+        <View style={[styles.sheet, { paddingBottom: SPACING.HERO_INSET + insets.bottom }]}>
           {submitting ? (
             <ActivityIndicator
               style={styles.loading}

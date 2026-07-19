@@ -5,6 +5,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 import { useCrisisDashboardStyles } from './crisisDashboardStyles';
 import { useCrisisDashboardTexts } from './crisisDashboardConstants';
 
@@ -27,7 +28,7 @@ export function CrisisDashboardHistory({ history, formatDate, getRiskLevelColor,
         </TouchableOpacity>
       </View>
       {!hasItems && (
-        <Text style={[styles.sectionEmptyText, { paddingVertical: 16 }]}>{TEXTS.EMPTY_HISTORY_RECENT}</Text>
+        <Text style={[styles.sectionEmptyText, { paddingVertical: SPACING.HERO_INSET_COMPACT }]}>{TEXTS.EMPTY_HISTORY_RECENT}</Text>
       )}
       {hasItems && items.map((crisis, index) => (
         <View key={crisis._id || index} style={styles.historyItem}>

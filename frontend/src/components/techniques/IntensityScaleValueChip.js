@@ -4,6 +4,7 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 import { scaleFillPercent } from '../../utils/intensityScaleDisplay';
 
 export default function IntensityScaleValueChip({
@@ -31,7 +32,7 @@ export default function IntensityScaleValueChip({
         },
         pill: {
           minWidth: compact ? 32 : 36,
-          paddingHorizontal: compact ? 8 : 10,
+          paddingHorizontal: compact ? SPACING.sm : SPACING.CHIP_INSET_COMPACT,
           paddingVertical: compact ? 3 : 4,
           borderRadius: 8,
           backgroundColor:

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 
 const DEFAULT_LABEL = 'Anto';
@@ -16,7 +17,7 @@ export default function AntoSourceChip({ compact = false }) {
           flexDirection: 'row',
           alignItems: 'center',
           gap: 4,
-          paddingHorizontal: compact ? 7 : 8,
+          paddingHorizontal: compact ? 7 : SPACING.sm,
           paddingVertical: compact ? 2 : 3,
           borderRadius: 999,
           backgroundColor: colors.accentLineSoft,

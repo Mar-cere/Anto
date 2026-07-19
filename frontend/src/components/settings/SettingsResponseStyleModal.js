@@ -107,8 +107,7 @@ export default function SettingsResponseStyleModal({
           borderTopRightRadius: 20,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: COLORS.ITEM_BORDER,
-          paddingTop: 18,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingTop: SPACING.HERO_INSET,
         },
         sheetHeader: {
           marginBottom: 14,
@@ -130,8 +129,8 @@ export default function SettingsResponseStyleModal({
         optionRow: {
           flexDirection: 'row',
           alignItems: 'flex-start',
-          paddingVertical: 12,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           marginBottom: 8,
           borderRadius: 14,
           borderWidth: StyleSheet.hairlineWidth,
@@ -186,7 +185,7 @@ export default function SettingsResponseStyleModal({
         closeBtn: {
           marginTop: 12,
           marginBottom: 4,
-          paddingVertical: 14,
+          paddingVertical: SPACING.CHIP_INSET,
           borderRadius: 12,
           backgroundColor: COLORS.MODAL_BUTTON_CANCEL,
           alignItems: 'center',
@@ -220,7 +219,7 @@ export default function SettingsResponseStyleModal({
         <View
           style={[
             styles.sheetWrap,
-            { paddingBottom: Math.max(insets.bottom, 16) },
+            { paddingBottom: Math.max(insets.bottom, SPACING.HERO_INSET) },
           ]}
           pointerEvents='box-none'
         >

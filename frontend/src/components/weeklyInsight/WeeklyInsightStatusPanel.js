@@ -37,8 +37,8 @@ export default function WeeklyInsightStatusPanel({
         wrap: {
           alignItems: 'center',
           justifyContent: 'center',
-          paddingVertical: 40,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.xxl,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           minHeight: 280,
         },
         iconWrap: {
@@ -70,8 +70,8 @@ export default function WeeklyInsightStatusPanel({
         },
         cta: {
           alignSelf: 'center',
-          paddingHorizontal: 22,
-          paddingVertical: 12,
+          paddingHorizontal: SPACING.HERO_INSET,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 12,
           backgroundColor: colors.primary,
           marginBottom: 10,
@@ -83,8 +83,8 @@ export default function WeeklyInsightStatusPanel({
         },
         secondaryCta: {
           alignSelf: 'center',
-          paddingHorizontal: 16,
-          paddingVertical: 10,
+          paddingHorizontal: SPACING.HERO_INSET_COMPACT,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
         },
         secondaryCtaText: {
           color: colors.primary,

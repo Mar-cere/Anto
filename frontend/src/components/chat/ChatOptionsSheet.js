@@ -62,8 +62,7 @@ export default function ChatOptionsSheet({
         sheet: {
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
-          paddingTop: 14,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingTop: SPACING.HERO_INSET,
           backgroundColor: chatColors.MODAL_BACKGROUND,
           borderWidth: StyleSheet.hairlineWidth,
           borderBottomWidth: 0,
@@ -79,9 +78,9 @@ export default function ChatOptionsSheet({
         row: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
-          paddingVertical: 14,
-          paddingHorizontal: 4,
+          gap: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.xs,
           borderRadius: 14,
         },
         rowIcon: {
@@ -109,7 +108,7 @@ export default function ChatOptionsSheet({
         },
         cancelBtn: {
           marginTop: 8,
-          paddingVertical: 14,
+          paddingVertical: SPACING.CHIP_INSET,
           alignItems: 'center',
           borderRadius: 14,
           backgroundColor: colors.accentLineSoft,
@@ -141,7 +140,7 @@ export default function ChatOptionsSheet({
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel={TEXTS.CHAT_OPTIONS_CANCEL} />
         <View style={styles.sheetWrap} pointerEvents="box-none">
           <View
-            style={[styles.sheet, { paddingBottom: 12 + insets.bottom }]}
+            style={[styles.sheet, { paddingBottom: SPACING.HERO_INSET + insets.bottom }]}
             accessibilityViewIsModal
           >
             <Text style={styles.title}>{TEXTS.CHAT_OPTIONS_TITLE}</Text>

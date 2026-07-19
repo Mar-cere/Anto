@@ -126,8 +126,10 @@ describe('chatScreenConstants', () => {
       expect(LAYOUT.HEADER_AVATAR_SIZE).toBe(30);
       expect(LAYOUT.MESSAGE_BUBBLE_PADDING).toBe(12);
       expect(LAYOUT.INPUT_MAX_HEIGHT).toBe(100);
-      expect(LAYOUT.INPUT_DOCK_PADDING_BOTTOM_EXTRA).toBe(4);
-      expect(LAYOUT.INPUT_DOCK_PADDING_BOTTOM_KEYBOARD).toBe(8);
+      expect(LAYOUT.INPUT_DOCK_PADDING_BOTTOM_EXTRA).toBe(2);
+      expect(LAYOUT.INPUT_DOCK_PADDING_BOTTOM_KEYBOARD).toBe(4);
+      expect(LAYOUT.HEADER_PADDING_BELOW_SAFE).toBe(4);
+      expect(LAYOUT.CHAT_TOP_CHROME_BASE).toBe(52);
       expect(LAYOUT.MAX_MESSAGE_LENGTH).toBe(12000);
       expect(LAYOUT.FLATLIST_INITIAL_NUM_TO_RENDER).toBe(15);
     });
@@ -152,7 +154,11 @@ describe('chatScreenConstants', () => {
       expect(CHAT_COLORS.INPUT_PLACEHOLDER).toBeDefined();
       expect(CHAT_COLORS.INPUT_DOCK_TINT_LIGHT).toBeDefined();
       expect(CHAT_COLORS.INPUT_DOCK_TINT_DARK).toBeDefined();
+      expect(CHAT_COLORS.HEADER_TINT_LIGHT).toBeDefined();
+      expect(CHAT_COLORS.HEADER_TINT_DARK).toBeDefined();
       expect(CHAT_COLORS.ERROR).toBe(lightColors.error);
+      expect(CHAT_COLORS.SEND_BUTTON_BACKGROUND).toBe(lightColors.primary);
+      expect(CHAT_COLORS.SEND_BUTTON_ICON).toBeDefined();
       expect(CHAT_COLORS.SEND_BUTTON_DISABLED_BACKGROUND).toBe(lightColors.chromeInputDisabled);
     });
   });

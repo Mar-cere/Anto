@@ -169,11 +169,11 @@ const UserFactModal = ({ visible, onClose, onSaved, editingFact = null }) => {
         headerActions: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
+          gap: SPACING.sm,
         },
         keyboardDismissBtn: {
-          paddingVertical: 8,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.CHIP_INSET,
           borderRadius: 12,
           backgroundColor: colors.accentLineSoft,
           borderWidth: StyleSheet.hairlineWidth,
@@ -185,7 +185,7 @@ const UserFactModal = ({ visible, onClose, onSaved, editingFact = null }) => {
           fontWeight: '600',
         },
         closeButton: {
-          padding: 8,
+          padding: SPACING.sm,
           borderRadius: 12,
           backgroundColor: colors.glassFill,
           justifyContent: 'center',
@@ -206,7 +206,7 @@ const UserFactModal = ({ visible, onClose, onSaved, editingFact = null }) => {
         input: {
           backgroundColor: colors.chromeInput,
           borderRadius: 14,
-          padding: 14,
+          padding: SPACING.INPUT_INSET,
           color: colors.text,
           fontSize: 16,
           marginBottom: 8,
@@ -254,7 +254,7 @@ const UserFactModal = ({ visible, onClose, onSaved, editingFact = null }) => {
         },
         saveButton: {
           backgroundColor: colors.primary,
-          paddingVertical: SPACING.md,
+          paddingVertical: SPACING.CHIP_INSET,
           borderRadius: 999,
           alignItems: 'center',
           marginTop: SPACING.md,

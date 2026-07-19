@@ -82,9 +82,9 @@ const Toast = () => {
           alignItems: 'center',
           minHeight: 48,
           maxWidth: '100%',
-          paddingVertical: 12,
-          paddingLeft: SPACING.SCREEN_EDGE_INSET,
-          paddingRight: 12,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingLeft: SPACING.CHIP_INSET,
+          paddingRight: SPACING.CHIP_INSET,
           borderRadius: 12,
           shadowColor: colors.glassShadow ?? colors.shadowAmbient,
           shadowOffset: { width: 0, height: 2 },
@@ -102,7 +102,7 @@ const Toast = () => {
         actionButton: {
           marginLeft: 12,
           paddingVertical: 6,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingHorizontal: SPACING.CHIP_INSET,
           borderRadius: 8,
         },
         actionText: {
@@ -154,7 +154,7 @@ const Toast = () => {
     <Animated.View
       style={[
         styles.wrapper,
-        { paddingBottom: Math.max(insets.bottom, 12) + 8 },
+        { paddingBottom: Math.max(insets.bottom, SPACING.SCREEN_EDGE_INSET) + SPACING.sm },
       ]}
       pointerEvents="box-none"
     >

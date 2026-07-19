@@ -24,6 +24,7 @@ import { useSectionTranslations } from '../../hooks/useTranslations';
 import { recordInterventionCompleted } from '../../utils/recordInterventionCompleted';
 import { useTechniqueScreenStyles } from './techniqueScreenStyles';
 
+import { SPACING } from '../../constants/ui';
 const DEFAULT_TEXTS = {
   TITLE: 'Tecnica de Tiempo Fuera',
   INTRO_KICKER: 'Autorregulacion',
@@ -141,7 +142,7 @@ const TimeoutTechniqueScreen = () => {
         },
         activeBlock: {
           marginTop: 4,
-          gap: 14,
+          gap: SPACING.HERO_INSET_COMPACT,
         },
       }),
     [colors],

@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import React, { memo, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import {
   PLAN_DURATION_LABEL_KEYS,
@@ -34,8 +35,8 @@ function PaywallCompactPlanCard({
           flex: 1,
           minWidth: 0,
           borderRadius: 16,
-          paddingVertical: 14,
-          paddingHorizontal: 10,
+          paddingVertical: SPACING.CARD_INNER_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           borderWidth: isSelected ? 2 : StyleSheet.hairlineWidth,
           borderColor: isSelected ? colors.primary : colors.border,
           backgroundColor:

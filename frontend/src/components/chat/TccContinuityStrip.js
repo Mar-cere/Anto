@@ -83,7 +83,7 @@ export default function TccContinuityStrip({ items, onOpen, onDismiss, style }) 
         },
         openBtn: {
           paddingVertical: 6,
-          paddingHorizontal: 10,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 10,
           backgroundColor: colors.accentLineSoft,
         },

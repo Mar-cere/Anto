@@ -88,7 +88,7 @@ export default function CrisisResourcesStrip({
           ...t.FOCUS_PANEL,
           borderColor: colors.warningBorder || colors.warning || t.FOCUS_BORDER_SUBTLE,
           borderWidth: 1,
-          padding: SPACING.md,
+          padding: SPACING.HERO_INSET,
           gap: SPACING.sm,
         },
         headerRow: {
@@ -117,7 +117,7 @@ export default function CrisisResourcesStrip({
           marginTop: 2,
         },
         dismissBtn: {
-          padding: 4,
+          padding: SPACING.xs,
         },
         item: {
           ...t.FOCUS_INNER_ROW,
@@ -144,8 +144,8 @@ export default function CrisisResourcesStrip({
           flexDirection: 'row',
           alignItems: 'center',
           gap: 4,
-          paddingHorizontal: 10,
-          paddingVertical: 8,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
+          paddingVertical: SPACING.sm,
           borderRadius: 10,
           backgroundColor: colors.warningSoft || colors.accentLineSoft,
         },

@@ -1,4 +1,5 @@
 import React, { useId, useMemo } from 'react';
+import { SPACING } from '../../constants/ui';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { useTheme } from '../../context/ThemeContext';
@@ -68,8 +69,8 @@ export default function OnboardingGradientButton({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          paddingVertical: isCommit ? 16 : 14,
-          paddingHorizontal: 16,
+          paddingVertical: isCommit ? SPACING.HERO_INSET_COMPACT : SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.HERO_INSET_COMPACT,
           gap: 6,
         },
         label: {

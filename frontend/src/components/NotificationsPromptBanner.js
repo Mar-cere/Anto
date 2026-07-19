@@ -50,8 +50,8 @@ const NotificationsPromptBanner = ({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingVertical: 14,
-          paddingHorizontal: 14,
+          paddingVertical: SPACING.CARD_INNER_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           marginTop: 4,
           marginBottom: 12,
           borderRadius: 18,
@@ -86,7 +86,7 @@ const NotificationsPromptBanner = ({
           marginLeft: 8,
         },
         enableButton: {
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingHorizontal: SPACING.CHIP_INSET,
           paddingVertical: 6,
           borderRadius: 8,
           marginRight: 8,
@@ -101,7 +101,7 @@ const NotificationsPromptBanner = ({
           fontWeight: '600',
         },
         dismissButton: {
-          padding: 4,
+          padding: SPACING.xs,
         },
       }),
     [colors],

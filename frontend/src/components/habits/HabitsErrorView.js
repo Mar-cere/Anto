@@ -28,14 +28,14 @@ export default function HabitsErrorView({ errorMessage, onRetry }) {
     () =>
       StyleSheet.create({
         errorContainer: {
-          marginBottom: 12,
+          marginBottom: SPACING.CHIP_INSET,
           marginHorizontal: SPACING.SCREEN_EDGE_INSET,
-          padding: ERROR_CONTAINER_PADDING / 1.4,
+          padding: ERROR_CONTAINER_PADDING,
           borderRadius: 14,
           backgroundColor: colors.accentLineSoft,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.warning,
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
           alignItems: 'center',
         },
         errorText: {

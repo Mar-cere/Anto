@@ -1,10 +1,12 @@
 /**
- * Cabecera del chat: botón atrás, título, menú (opciones).
+ * Cabecera del chat: glass overlay + atrás / menú planos (sin pastillas).
  */
 
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import React, { useMemo } from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/ThemeContext';
 import {
   ICON_SIZES,
@@ -13,75 +15,99 @@ import {
   useChatTexts,
 } from '../../screens/chat/chatScreenConstants';
 
+const HEADER_BLUR = Platform.OS === 'ios' ? 48 : 28;
+
 export default function ChatHeader({ onBack, onOpenMenu }) {
   const TEXTS = useChatTexts();
-  const { colors } = useTheme();
+  const { resolvedScheme } = useTheme();
   const chatColors = useChatColors();
+  const insets = useSafeAreaInsets();
+  const dark = resolvedScheme === 'dark';
+  const topPad = Math.max(0, Number(insets?.top) || 0) + LAYOUT.HEADER_PADDING_BELOW_SAFE;
 
   const styles = useMemo(
     () =>
       StyleSheet.create({
         header: {
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderBottomColor: chatColors.HEADER_BORDER,
+          overflow: 'hidden',
+        },
+        headerBackground: {
+          ...StyleSheet.absoluteFillObject,
+        },
+        headerBlur: {
+          ...StyleSheet.absoluteFillObject,
+        },
+        headerTint: {
+          ...StyleSheet.absoluteFillObject,
+          backgroundColor:
+            Platform.OS === 'ios'
+              ? dark
+                ? chatColors.HEADER_TINT_DARK
+                : chatColors.HEADER_TINT_LIGHT
+              : dark
+                ? chatColors.HEADER_TINT_DARK_FALLBACK
+                : chatColors.HEADER_TINT_LIGHT_FALLBACK,
+        },
+        row: {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingTop:
-            Platform.OS === 'ios' ? LAYOUT.HEADER_PADDING_TOP_IOS : LAYOUT.HEADER_PADDING_TOP_ANDROID,
+          paddingTop: topPad,
           paddingBottom: LAYOUT.HEADER_PADDING_BOTTOM,
           paddingHorizontal: LAYOUT.HEADER_PADDING_HORIZONTAL,
-          backgroundColor: chatColors.HEADER_BACKGROUND,
-          borderBottomWidth: StyleSheet.hairlineWidth,
-          borderBottomColor: chatColors.HEADER_BORDER,
+          zIndex: 1,
         },
-        backButton: {
-          padding: 8,
-          borderRadius: 12,
-          backgroundColor: colors.chromeHeaderBack,
-        },
-        headerTitleContainer: {
-          flex: 1,
+        iconHit: {
+          minWidth: 44,
+          minHeight: 44,
           alignItems: 'center',
           justifyContent: 'center',
-        },
-        headerTitle: {
-          color: chatColors.BOT_TEXT,
-          fontSize: 18,
-          fontWeight: '600',
-          letterSpacing: 0.2,
-        },
-        menuButton: {
-          padding: 10,
           borderRadius: 12,
-          backgroundColor: colors.chromeHeaderProfile,
+        },
+        iconPressed: {
+          backgroundColor: dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(30, 131, 211, 0.08)',
         },
       }),
-    [chatColors, colors.chromeHeaderBack, colors.chromeHeaderProfile],
+    [chatColors, dark, topPad],
   );
 
   return (
-    <View style={styles.header}>
-      <TouchableOpacity
-        testID="chat-header-back"
-        accessibilityRole="button"
-        accessibilityLabel={TEXTS.HEADER_BACK_LABEL}
-        accessibilityHint={TEXTS.HEADER_BACK_HINT}
-        style={styles.backButton}
-        onPress={onBack}
-      >
-        <Ionicons name="arrow-back" size={ICON_SIZES.BACK} color={chatColors.PRIMARY} />
-      </TouchableOpacity>
-      <View style={styles.headerTitleContainer}>
-        <Text style={styles.headerTitle}>{TEXTS.TITLE}</Text>
+    <View style={styles.header} accessibilityRole="header">
+      <View style={styles.headerBackground} pointerEvents="none">
+        {Platform.OS === 'ios' ? (
+          <BlurView
+            intensity={HEADER_BLUR}
+            tint={dark ? 'dark' : 'light'}
+            style={styles.headerBlur}
+          />
+        ) : null}
+        <View style={styles.headerTint} />
       </View>
-      <TouchableOpacity
-        style={styles.menuButton}
-        onPress={onOpenMenu}
-        accessibilityRole="button"
-        accessibilityLabel={TEXTS.CHAT_MENU_A11Y_LABEL}
-        accessibilityHint={TEXTS.CHAT_MENU_A11Y_HINT}
-      >
-        <Ionicons name="ellipsis-vertical" size={ICON_SIZES.MENU} color={chatColors.ACCENT} />
-      </TouchableOpacity>
+      <View style={styles.row}>
+        <Pressable
+          testID="chat-header-back"
+          accessibilityRole="button"
+          accessibilityLabel={TEXTS.HEADER_BACK_LABEL}
+          accessibilityHint={TEXTS.HEADER_BACK_HINT}
+          onPress={onBack}
+          style={({ pressed }) => [styles.iconHit, pressed && styles.iconPressed]}
+          hitSlop={4}
+        >
+          <Ionicons name="chevron-back" size={ICON_SIZES.BACK + 2} color={chatColors.PRIMARY} />
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.iconHit, pressed && styles.iconPressed]}
+          onPress={onOpenMenu}
+          accessibilityRole="button"
+          accessibilityLabel={TEXTS.CHAT_MENU_A11Y_LABEL}
+          accessibilityHint={TEXTS.CHAT_MENU_A11Y_HINT}
+          hitSlop={4}
+        >
+          <Ionicons name="ellipsis-horizontal" size={ICON_SIZES.MENU} color={chatColors.ACCENT} />
+        </Pressable>
+      </View>
     </View>
   );
 }

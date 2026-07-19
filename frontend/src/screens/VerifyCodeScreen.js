@@ -25,6 +25,7 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import ParticleBackground from '../components/ParticleBackground';
 import { ROUTES } from '../constants/routes';
+import { SPACING } from '../constants/ui';
 import { isCompleteVerificationCode } from '../utils/verificationCode';
 import { userService } from '../services/userService';
 import { useTheme } from '../context/ThemeContext';
@@ -74,8 +75,8 @@ const LOADING_INDICATOR_SCALE = 1.5;
 
 // Constantes de estilos
 const BACKGROUND_OPACITY = 0.1;
-const CONTENT_PADDING_HORIZONTAL = 20;
-const CONTENT_PADDING_VERTICAL = 40;
+const CONTENT_PADDING_HORIZONTAL = SPACING.SCREEN_EDGE_INSET;
+const CONTENT_PADDING_VERTICAL = SPACING.xxl;
 const BACK_BUTTON_TOP = 40;
 const BACK_BUTTON_LEFT = 20;
 const BACK_BUTTON_Z_INDEX = 10;
@@ -91,11 +92,11 @@ const CODE_INPUT_MARGIN_HORIZONTAL = 5;
 const CODE_INPUT_BORDER_RADIUS = 10;
 const CODE_INPUT_BORDER_WIDTH = 1;
 const ERROR_TEXT_MARGIN_TOP = 8;
-const BUTTON_PADDING_VERTICAL = 18;
+const BUTTON_PADDING_VERTICAL = SPACING.HERO_INSET;
 const BUTTON_BORDER_RADIUS = 25;
 const BUTTON_MARGIN_TOP = 5;
 const BUTTON_MARGIN_BOTTOM = 16;
-const BUTTON_PADDING_HORIZONTAL = 50;
+const BUTTON_PADDING_HORIZONTAL = SPACING.HERO_INSET;
 const BUTTON_SHADOW_OFFSET_Y = 4;
 const BUTTON_SHADOW_OPACITY = 0.3;
 const BUTTON_SHADOW_RADIUS = 5;

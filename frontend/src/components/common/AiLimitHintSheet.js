@@ -46,9 +46,8 @@ export default function AiLimitHintSheet({
           backgroundColor: colors.chromeCard || colors.background,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
-          paddingTop: 12,
+          paddingTop: SPACING.HERO_INSET,
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingBottom: Math.max(insets.bottom, 12),
         },
         handle: {
           alignSelf: 'center',
@@ -80,7 +79,7 @@ export default function AiLimitHintSheet({
         bulletRow: {
           flexDirection: 'row',
           marginBottom: 6,
-          paddingRight: 4,
+          paddingRight: SPACING.xs,
         },
         bulletDot: {
           color: colors.primary,
@@ -96,14 +95,14 @@ export default function AiLimitHintSheet({
         },
         actions: {
           marginTop: 14,
-          gap: 8,
+          gap: SPACING.sm,
         },
         primaryBtn: {
           borderRadius: 10,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.accentLine || colors.border,
           backgroundColor: colors.accentLineSoft,
-          paddingVertical: 11,
+          paddingVertical: SPACING.CHIP_INSET,
           alignItems: 'center',
         },
         primaryBtnText: {
@@ -113,7 +112,7 @@ export default function AiLimitHintSheet({
         },
         ghostBtn: {
           borderRadius: 10,
-          paddingVertical: 10,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           alignItems: 'center',
         },
         ghostBtnText: {
@@ -122,7 +121,7 @@ export default function AiLimitHintSheet({
           fontWeight: '600',
         },
       }),
-    [colors, insets.bottom],
+    [colors],
   );
 
   if (!topic.hasContent) return null;
@@ -138,7 +137,7 @@ export default function AiLimitHintSheet({
       <View style={styles.root}>
         <Pressable style={styles.backdrop} onPress={onClose} accessibilityRole="button" />
         <View style={styles.sheetWrap}>
-          <View style={styles.sheet}>
+          <View style={[styles.sheet, { paddingBottom: SPACING.HERO_INSET + insets.bottom }]}>
             <View style={styles.handle} />
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.titleRow}>

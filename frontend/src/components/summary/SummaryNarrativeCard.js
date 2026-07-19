@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { SPACING } from '../../constants/ui';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -9,7 +10,7 @@ export default function SummaryNarrativeCard({ narrative, texts }) {
       StyleSheet.create({
         card: {
           marginBottom: 14,
-          padding: 16,
+          padding: SPACING.HERO_INSET_COMPACT,
           borderRadius: 18,
           borderWidth: 1,
           borderColor: colors.border,

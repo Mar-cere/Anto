@@ -4,6 +4,7 @@
  */
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SPACING } from '../constants/ui';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -26,7 +27,6 @@ import { api, ENDPOINTS } from '../config/api';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { getFocusTheme } from '../styles/focusCardTheme';
-import { SPACING } from '../constants/ui';
 import { resolveInteractiveExerciseType } from './therapeuticTechniques/therapeuticTechniquesUtils';
 import {
   recordInterventionCompleted,
@@ -113,7 +113,7 @@ const TechniqueDetailScreen = () => {
         },
         typeBadge: {
           alignSelf: 'flex-start',
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingHorizontal: SPACING.CHIP_INSET,
           paddingVertical: 6,
           borderRadius: 14,
           marginBottom: 12,
@@ -138,7 +138,7 @@ const TechniqueDetailScreen = () => {
         sectionTitleRow: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
+          gap: SPACING.sm,
           marginBottom: 12,
         },
         sectionTitle: {
@@ -158,7 +158,7 @@ const TechniqueDetailScreen = () => {
         stepItem: {
           flexDirection: 'row',
           marginBottom: 18,
-          gap: 14,
+          gap: SPACING.HERO_INSET_COMPACT,
           alignItems: 'flex-start',
         },
         stepNumber: {
@@ -186,7 +186,7 @@ const TechniqueDetailScreen = () => {
         },
         subTechnique: {
           marginBottom: 16,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           backgroundColor: colors.glassFill,
           borderRadius: 14,
           borderWidth: StyleSheet.hairlineWidth,
@@ -203,10 +203,10 @@ const TechniqueDetailScreen = () => {
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: colors.accentLineSoft,
-          paddingVertical: 16,
-          paddingHorizontal: 24,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
+          paddingHorizontal: SPACING.HERO_INSET,
           borderRadius: 16,
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
           marginTop: 8,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_ACCENT_BORDER,
@@ -222,7 +222,7 @@ const TechniqueDetailScreen = () => {
         },
         completedContainer: {
           alignItems: 'center',
-          padding: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.HERO_INSET,
           marginTop: 20,
         },
         completedText: {
@@ -233,8 +233,8 @@ const TechniqueDetailScreen = () => {
           marginBottom: 20,
         },
         retryButton: {
-          paddingHorizontal: 24,
-          paddingVertical: 12,
+          paddingHorizontal: SPACING.HERO_INSET,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 14,
           backgroundColor: colors.accentLineSoft,
           borderWidth: StyleSheet.hairlineWidth,
@@ -250,7 +250,7 @@ const TechniqueDetailScreen = () => {
           justifyContent: 'center',
           alignItems: 'center',
           padding: SPACING.SCREEN_EDGE_INSET,
-          gap: 16,
+          gap: SPACING.md,
         },
         errorText: {
           fontSize: 18,

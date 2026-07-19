@@ -4,22 +4,24 @@ import { getFocusTheme } from '../../styles/focusCardTheme';
 
 export function createPsychoeducationLibraryStyles(colors, resolvedScheme) {
   const t = getFocusTheme(colors, resolvedScheme);
+  /** Ancho del icono del footer (MaterialCommunityIcons size={17}). */
+  const FOOTER_ICON_SIZE = 17;
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
     scrollContent: {
       paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-      paddingTop: 8,
-      paddingBottom: 48,
+      paddingTop: SPACING.sm,
+      paddingBottom: SPACING.xxl,
     },
     hero: {
       ...t.FOCUS_PANEL,
       marginBottom: 20,
-      paddingVertical: 20,
+      paddingVertical: SPACING.HERO_INSET,
     },
     heroRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      gap: 12,
+      gap: SPACING.CHIP_INSET,
     },
     heroIconWrap: {
       width: 44,
@@ -47,7 +49,7 @@ export function createPsychoeducationLibraryStyles(colors, resolvedScheme) {
     countPill: {
       alignSelf: 'flex-start',
       marginTop: 14,
-      paddingHorizontal: 10,
+      paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
       paddingVertical: 5,
       borderRadius: 999,
       backgroundColor: darkTint(colors, 0.06),
@@ -60,8 +62,8 @@ export function createPsychoeducationLibraryStyles(colors, resolvedScheme) {
     moduleCard: {
       backgroundColor: colors.cardBackground ?? colors.card,
       borderRadius: 22,
-      paddingVertical: 14,
-      paddingHorizontal: 14,
+      paddingVertical: SPACING.CARD_INNER_INSET,
+      paddingHorizontal: SPACING.CARD_INNER_INSET,
       marginBottom: 12,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
@@ -84,7 +86,7 @@ export function createPsychoeducationLibraryStyles(colors, resolvedScheme) {
       justifyContent: 'center',
       marginRight: 12,
     },
-    moduleText: { flex: 1, paddingRight: 4 },
+    moduleText: { flex: 1, paddingRight: SPACING.xs },
     moduleTitle: {
       fontSize: 16,
       fontWeight: '600',
@@ -100,14 +102,14 @@ export function createPsychoeducationLibraryStyles(colors, resolvedScheme) {
       flexDirection: 'row',
       alignItems: 'center',
       marginTop: 10,
-      gap: 8,
+      gap: SPACING.sm,
     },
     readPill: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
+      paddingHorizontal: SPACING.sm,
+      paddingVertical: SPACING.xs,
       borderRadius: 999,
       backgroundColor: darkTint(colors, 0.05),
     },
@@ -117,13 +119,13 @@ export function createPsychoeducationLibraryStyles(colors, resolvedScheme) {
       color: t.FOCUS_META,
     },
     centerBox: {
-      paddingVertical: 32,
+      paddingVertical: SPACING.xl,
       alignItems: 'center',
     },
     errorText: { color: colors.error, fontSize: 14, marginBottom: 12, textAlign: 'center' },
     retryBtn: {
-      paddingHorizontal: 18,
-      paddingVertical: 10,
+      paddingHorizontal: SPACING.HERO_INSET,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
       borderRadius: 999,
       backgroundColor: colors.primary,
     },
@@ -133,7 +135,7 @@ export function createPsychoeducationLibraryStyles(colors, resolvedScheme) {
       lineHeight: 20,
       color: colors.textSecondary,
       textAlign: 'center',
-      paddingVertical: 24,
+      paddingVertical: SPACING.HERO_INSET,
     },
   });
 }
@@ -148,13 +150,13 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
     container: { flex: 1, backgroundColor: colors.background },
     content: {
       paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-      paddingBottom: 60,
+      paddingBottom: SPACING.xxl + SPACING.CHIP_INSET,
     },
     hero: {
       ...t.FOCUS_PANEL,
       marginBottom: 18,
       alignItems: 'center',
-      paddingVertical: 24,
+      paddingVertical: SPACING.HERO_INSET,
     },
     heroIcon: {
       width: 56,
@@ -179,14 +181,14 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
     },
     heroLead: {
       marginTop: 14,
-      paddingHorizontal: 4,
+      paddingHorizontal: SPACING.xs,
       fontSize: 15,
       lineHeight: 23,
       color: t.FOCUS_BODY_SOFT,
       textAlign: 'center',
     },
     sectionsStack: {
-      gap: 10,
+      gap: SPACING.CARD_INNER_INSET,
       marginTop: 4,
     },
     accordionWrap: {
@@ -198,13 +200,13 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
     },
     accordionHighlight: {
       borderLeftWidth: 3,
-      paddingLeft: 12,
+      paddingLeft: SPACING.CHIP_INSET,
     },
     accordionHeader: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 14,
-      paddingHorizontal: 14,
+      paddingVertical: SPACING.CHIP_INSET,
+      paddingHorizontal: SPACING.CARD_INNER_INSET,
     },
     accordionIcon: {
       width: 36,
@@ -217,7 +219,7 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
     accordionHeaderText: {
       flex: 1,
       minWidth: 0,
-      paddingRight: 8,
+      paddingRight: SPACING.sm,
     },
     accordionTitle: {
       fontSize: 15,
@@ -231,8 +233,8 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
       color: t.FOCUS_META,
     },
     accordionContent: {
-      paddingHorizontal: 14,
-      paddingBottom: 14,
+      paddingHorizontal: SPACING.CARD_INNER_INSET,
+      paddingBottom: SPACING.CARD_INNER_INSET,
       paddingTop: 0,
     },
     accordionBody: {
@@ -241,7 +243,7 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
       color: colors.textSecondary,
     },
     bulletList: {
-      gap: 10,
+      gap: SPACING.CARD_INNER_INSET,
     },
     bulletRow: {
       flexDirection: 'row',
@@ -262,7 +264,7 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
     },
     highlightCard: {
       borderRadius: 18,
-      padding: 14,
+      padding: SPACING.CARD_INNER_INSET,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
       backgroundColor: darkTint(colors, 0.06),
@@ -305,8 +307,8 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
     footerPanel: {
       marginTop: 20,
       borderRadius: 16,
-      paddingVertical: 4,
-      paddingHorizontal: 12,
+      paddingVertical: SPACING.xs,
+      paddingHorizontal: SPACING.CARD_INNER_INSET,
       backgroundColor: darkTint(colors, 0.04),
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
@@ -314,8 +316,8 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
     footerRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 12,
-      gap: 10,
+      paddingVertical: SPACING.CHIP_INSET,
+      gap: SPACING.CARD_INNER_INSET,
     },
     footerRowText: {
       flex: 1,
@@ -332,21 +334,22 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
       color: t.FOCUS_META,
     },
     footerBody: {
-      paddingBottom: 12,
-      paddingLeft: 27,
+      paddingBottom: SPACING.CHIP_INSET,
+      // icono 17 + gap del footerRow
+      paddingLeft: FOOTER_ICON_SIZE + SPACING.CARD_INNER_INSET,
       fontSize: 13,
       lineHeight: 20,
       color: colors.textSecondary,
     },
     footerLinks: {
-      paddingBottom: 8,
-      paddingLeft: 27,
+      paddingBottom: SPACING.sm,
+      paddingLeft: FOOTER_ICON_SIZE + SPACING.CARD_INNER_INSET,
       gap: 6,
     },
     footerLinkRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: SPACING.sm,
       paddingVertical: 6,
     },
     footerLinkText: {
@@ -363,7 +366,7 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
     },
     callout: {
       borderRadius: 18,
-      padding: 14,
+      padding: SPACING.CARD_INNER_INSET,
       marginBottom: 12,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
@@ -390,7 +393,7 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
     },
     sectionBlock: {
       marginBottom: 14,
-      paddingVertical: 4,
+      paddingVertical: SPACING.xs,
     },
     sectionTitle: {
       fontSize: 15,
@@ -404,19 +407,19 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
       lineHeight: 21,
       color: colors.textSecondary,
       marginBottom: 8,
-      paddingLeft: 4,
+      paddingLeft: SPACING.xs,
     },
     sourcesPanel: {
       ...t.FOCUS_INNER_ROW,
       flexDirection: 'column',
       alignItems: 'stretch',
-      paddingVertical: 14,
+      paddingVertical: SPACING.CHIP_INSET,
       marginTop: 8,
     },
     sourceRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 10,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: t.FOCUS_BORDER_SUBTLE,
     },
@@ -437,6 +440,6 @@ export function createPsychoeducationModuleStyles(colors, resolvedScheme) {
       fontStyle: 'italic',
     },
     error: { color: colors.error, fontSize: 14, lineHeight: 20, textAlign: 'center' },
-    loadingWrap: { paddingVertical: 40, alignItems: 'center' },
+    loadingWrap: { paddingVertical: SPACING.xxl, alignItems: 'center' },
   });
 }

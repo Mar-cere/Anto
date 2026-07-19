@@ -8,6 +8,7 @@
  */
 
 import { Ionicons } from '@expo/vector-icons';
+import { SPACING } from '../constants/ui';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -34,7 +35,6 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { clearPersistedChatSession } from '../utils/chatSessionStorage';
 import { useToast } from '../context/ToastContext';
-import { SPACING } from '../constants/ui';
 import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes
@@ -146,7 +146,7 @@ const VerifyEmailScreen = () => {
           top: 50,
           left: 20,
           zIndex: 10,
-          padding: 8,
+          padding: SPACING.sm,
         },
         header: {
           alignItems: 'center',
@@ -203,7 +203,7 @@ const VerifyEmailScreen = () => {
         },
         verifyButton: {
           backgroundColor: colors.primary,
-          paddingVertical: 16,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
           borderRadius: 12,
           alignItems: 'center',
           marginBottom: 16,
@@ -217,7 +217,7 @@ const VerifyEmailScreen = () => {
           fontWeight: 'bold',
         },
         resendButton: {
-          paddingVertical: 12,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           alignItems: 'center',
         },
         resendButtonText: {

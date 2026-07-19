@@ -196,7 +196,7 @@ const AbcRecordScreen = () => {
         stepRow: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
+          gap: SPACING.sm,
           marginBottom: 16,
         },
         stepDot: {
@@ -222,7 +222,7 @@ const AbcRecordScreen = () => {
           justifyContent: 'space-between',
           alignItems: 'center',
           marginTop: 8,
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         validationText: {
           fontSize: 13,

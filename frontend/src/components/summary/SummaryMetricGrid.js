@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 import { SUMMARY_METRIC_DEFS } from '../../utils/summaryScreenUtils';
 
 function resolveMetricTint(colors, tintKey) {
@@ -28,8 +29,8 @@ function SummaryMetricTile({ icon, value, label, tint, colors }) {
         tile: {
           width: '48%',
           borderRadius: 16,
-          paddingVertical: 14,
-          paddingHorizontal: 12,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           marginBottom: 10,
           backgroundColor: tint.bg,
           borderWidth: StyleSheet.hairlineWidth,
@@ -38,7 +39,7 @@ function SummaryMetricTile({ icon, value, label, tint, colors }) {
         row: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
         },
         iconWrap: {
           width: 36,
@@ -97,7 +98,7 @@ export default function SummaryMetricGrid({ payload, texts, sectionTitle }) {
           letterSpacing: 0.6,
           color: colors.textMuted ?? colors.textSecondary,
           marginBottom: 10,
-          paddingHorizontal: 4,
+          paddingHorizontal: SPACING.xs,
         },
         grid: {
           flexDirection: 'row',

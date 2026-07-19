@@ -1,3 +1,4 @@
+import { SPACING } from '../../constants/ui';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -11,7 +12,7 @@ export default function WeeklyInsightSourceStrip({ chips }) {
         row: {
           flexDirection: 'row',
           flexWrap: 'wrap',
-          gap: 8,
+          gap: SPACING.sm,
           marginBottom: 14,
         },
         chip: {
@@ -19,7 +20,7 @@ export default function WeeklyInsightSourceStrip({ chips }) {
           alignItems: 'center',
           gap: 6,
           paddingVertical: 7,
-          paddingHorizontal: 11,
+          paddingHorizontal: SPACING.CHIP_INSET,
           borderRadius: 999,
           backgroundColor: colors.accentLineSoft,
           borderWidth: StyleSheet.hairlineWidth,

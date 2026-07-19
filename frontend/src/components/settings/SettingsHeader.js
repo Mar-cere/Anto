@@ -15,9 +15,9 @@ export default function SettingsHeader({ onBack }) {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: 24,
+          marginBottom: SPACING.lg,
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingVertical: 12,
+          paddingVertical: SPACING.CHIP_INSET,
         },
         headerButton: {
           width: 40,

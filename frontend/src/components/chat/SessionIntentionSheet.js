@@ -83,8 +83,8 @@ export default function SessionIntentionSheet({
           borderRadius: 22,
           borderWidth: 1,
           borderColor: colors.border,
-          paddingVertical: 22,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.HERO_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           shadowColor: colors.glassShadow ?? colors.shadowAmbient,
           shadowOffset: { width: 0, height: 10 },
           shadowOpacity: 0.28,
@@ -117,13 +117,13 @@ export default function SessionIntentionSheet({
           lineHeight: 20,
           textAlign: 'center',
           marginBottom: 18,
-          paddingHorizontal: 4,
+          paddingHorizontal: SPACING.xs,
         },
         option: {
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: 13,
-          paddingHorizontal: 12,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           borderRadius: 16,
           marginBottom: 8,
           borderWidth: StyleSheet.hairlineWidth,
@@ -167,8 +167,8 @@ export default function SessionIntentionSheet({
         skip: {
           alignSelf: 'center',
           marginTop: 6,
-          paddingVertical: 10,
-          paddingHorizontal: 18,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
+          paddingHorizontal: SPACING.HERO_INSET,
           borderRadius: 999,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
@@ -189,7 +189,7 @@ export default function SessionIntentionSheet({
         <Animated.View style={[styles.card, { transform: [{ scale: cardScale }] }]}>
           <ScrollView
             style={styles.scroll}
-            contentContainerStyle={{ paddingBottom: 4 }}
+            contentContainerStyle={{ paddingBottom: SPACING.xs }}
             showsVerticalScrollIndicator={false}
             bounces={false}
           >

@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import TaskItem from './TaskItem';
 import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 
 const SWIPE_THRESHOLD = -14;
@@ -57,8 +58,8 @@ export default function SwipeableTaskItem({ item, onPress, onToggleComplete, onD
           flexDirection: 'row',
           alignItems: 'stretch',
           justifyContent: 'flex-end',
-          paddingRight: 8,
-          gap: 8,
+          paddingRight: SPACING.sm,
+          gap: SPACING.sm,
           zIndex: 0,
         },
         actionSlot: {
@@ -70,8 +71,8 @@ export default function SwipeableTaskItem({ item, onPress, onToggleComplete, onD
           borderRadius: 14,
           justifyContent: 'center',
           alignItems: 'center',
-          paddingVertical: 10,
-          paddingHorizontal: 10,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           minHeight: 96,
         },
         completeBg: {

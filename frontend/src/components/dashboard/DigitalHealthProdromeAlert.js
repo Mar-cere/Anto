@@ -111,12 +111,11 @@ export default function DigitalHealthProdromeAlert({ alert, style }) {
     () =>
       StyleSheet.create({
         wrap: {
-          marginHorizontal: SPACING.SCREEN_EDGE_INSET,
           marginBottom: SPACING.sm,
         },
         panel: {
           ...t.FOCUS_PANEL,
-          padding: SPACING.md,
+          padding: SPACING.HERO_INSET,
           gap: SPACING.xs,
         },
         headerRow: {

@@ -41,7 +41,31 @@ export const SPACING = {
   /**
    * Inset horizontal del borde de pantalla al contenido (header con saludo, scroll del dashboard, etc.).
    */
-  SCREEN_EDGE_INSET: 14,
+  SCREEN_EDGE_INSET: 12,
+  /**
+   * Padding interno estándar de cards y paneles de contenido.
+   */
+  CARD_INNER_INSET: 10,
+  /**
+   * Padding interno de inputs / campos de texto.
+   */
+  INPUT_INSET: 12,
+  /**
+   * Padding horizontal de chips / pills / CTAs compactos (antes 12).
+   */
+  CHIP_INSET_COMPACT: 10,
+  /**
+   * Padding horizontal de chips / pills / CTAs estándar (antes 14).
+   */
+  CHIP_INSET: 12,
+  /**
+   * Padding de heroes y superficies generosas compactas (antes 16).
+   */
+  HERO_INSET_COMPACT: 14,
+  /**
+   * Padding de heroes y superficies generosas (antes 18).
+   */
+  HERO_INSET: 16,
   /**
    * Resta aplicada al inset inferior efectivo para acercar la barra al borde (menos “hueco” sobre el home indicator).
    */
@@ -67,11 +91,14 @@ export const SPACING = {
   FLOATING_NAV_SCROLL_BOTTOM_EXTRA: 132,
   /** @deprecated Preferir FLOATING_NAV_SCROLL_BOTTOM_EXTRA; mismo valor para compatibilidad. */
   CONTENT_PADDING_BOTTOM: 132,
-  ERROR_PADDING: 15,
+  /** Misma escala que HERO_INSET_COMPACT (superficie de error). */
+  ERROR_PADDING: 14,
   ERROR_MARGIN_BOTTOM: 20,
   ERROR_TEXT_MARGIN_BOTTOM: 10,
   LOADING_TEXT_MARGIN_TOP: 10,
-  ERROR_BUTTON_PADDING_HORIZONTAL: 15,
+  /** Misma escala que CHIP_INSET (CTA de error). */
+  ERROR_BUTTON_PADDING_HORIZONTAL: 12,
+  /** Misma escala que sm. */
   ERROR_BUTTON_PADDING_VERTICAL: 8,
   ERROR_BUTTON_MARGIN_LEFT: 10,
 };

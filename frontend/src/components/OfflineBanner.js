@@ -39,7 +39,7 @@ const OfflineBanner = () => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: 'rgba(255, 107, 107, 0.14)',
-    paddingVertical: 12,
+    paddingVertical: SPACING.CHIP_INSET,
     paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     alignItems: 'center',
     justifyContent: 'center',

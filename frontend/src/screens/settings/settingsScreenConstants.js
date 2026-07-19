@@ -3,8 +3,9 @@
  * @author AntoApp Team
  */
 import { useMemo } from 'react';
-import { useSectionTranslations } from '../../hooks/useTranslations';
 import { ROUTES } from '../../constants/routes';
+import { SPACING } from '../../constants/ui';
+import { useSectionTranslations } from '../../hooks/useTranslations';
 
 export const TEXTS = {
   TITLE: 'Configuración',
@@ -206,7 +207,7 @@ export const NAVIGATION_ROUTES = {
   AI_PRIVACY: 'AIPrivacy',
 };
 
-export const SCROLL_PADDING_BOTTOM = 32;
+export const SCROLL_PADDING_BOTTOM = SPACING.xl;
 export const ICON_SIZE = 24;
 export const MODAL_WIDTH = '80%';
 

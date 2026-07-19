@@ -4,6 +4,7 @@
 import { useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 import {
   IMAGE_OPACITY,
   HORIZONTAL_PADDING,
@@ -151,7 +152,7 @@ export function createRegisterScreenStyles(colors) {
     modalContent: {
       backgroundColor: colors.background,
       borderRadius: 20,
-      padding: 24,
+      padding: SPACING.HERO_INSET,
       width: '90%',
       maxWidth: 400,
       maxHeight: '80%',
@@ -170,14 +171,14 @@ export function createRegisterScreenStyles(colors) {
     },
     modalLinksContainer: {
       marginTop: 20,
-      gap: 12,
+      gap: SPACING.CHIP_INSET,
     },
     modalLinkButton: {
       backgroundColor: modalPrimaryTintAlpha(colors.primary),
       borderWidth: 1,
       borderColor: colors.primary,
       borderRadius: 12,
-      padding: 14,
+      padding: SPACING.CHIP_INSET,
       alignItems: 'center',
     },
     modalLinkText: {
@@ -198,7 +199,7 @@ export function createRegisterScreenStyles(colors) {
       flex: 1,
     },
     modalCloseButton: {
-      padding: 4,
+      padding: SPACING.xs,
     },
     modalMessage: {
       fontSize: 16,
@@ -211,13 +212,13 @@ export function createRegisterScreenStyles(colors) {
       flexDirection: 'row',
       justifyContent: 'space-between',
       marginTop: 20,
-      gap: 12,
+      gap: SPACING.CHIP_INSET,
     },
     modalButton: {
       backgroundColor: colors.primary,
       borderRadius: 12,
-      paddingVertical: 14,
-      paddingHorizontal: 24,
+      paddingVertical: SPACING.CHIP_INSET,
+      paddingHorizontal: SPACING.CHIP_INSET,
       alignItems: 'center',
       justifyContent: 'center',
       flex: 1,

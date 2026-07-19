@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import DigitalHealthStatusCard from '../signals/DigitalHealthStatusCard';
 import SignalConsentPanel from '../signals/SignalConsentPanel';
@@ -24,8 +25,8 @@ export default function WeeklyInsightSettingsSection({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingVertical: 12,
-          paddingHorizontal: 14,
+          paddingVertical: SPACING.CARD_INNER_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           borderRadius: 16,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
@@ -33,7 +34,7 @@ export default function WeeklyInsightSettingsSection({
         },
         toggleCopy: {
           flex: 1,
-          paddingRight: 12,
+          paddingRight: SPACING.CHIP_INSET,
         },
         toggleTitle: {
           fontSize: 15,
@@ -48,7 +49,7 @@ export default function WeeklyInsightSettingsSection({
         },
         panel: {
           marginTop: 10,
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
         },
       }),
     [colors],

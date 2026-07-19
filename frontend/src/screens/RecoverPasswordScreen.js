@@ -24,6 +24,7 @@ import {
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import ParticleBackground from '../components/ParticleBackground';
 import { ROUTES } from '../constants/routes';
+import { SPACING } from '../constants/ui';
 import { userService } from '../services/userService';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
@@ -66,8 +67,8 @@ const LOADING_INDICATOR_SCALE = 1.5;
 
 // Constantes de estilos
 const BACKGROUND_OPACITY = 0.1;
-const CONTENT_PADDING_HORIZONTAL = 20;
-const CONTENT_PADDING_VERTICAL = 40;
+const CONTENT_PADDING_HORIZONTAL = SPACING.SCREEN_EDGE_INSET;
+const CONTENT_PADDING_VERTICAL = SPACING.xxl;
 const BACK_BUTTON_TOP = 40;
 const BACK_BUTTON_LEFT = 20;
 const BACK_BUTTON_Z_INDEX = 10;

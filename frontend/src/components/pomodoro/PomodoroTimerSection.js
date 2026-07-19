@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useMemo, useRef } from 'react';
+import { SPACING } from '../../constants/ui';
 import { Animated, StyleSheet, View } from 'react-native';
 import MeditationView from '../MeditationView';
 import { useTheme } from '../../context/ThemeContext';
@@ -52,7 +53,7 @@ export default function PomodoroTimerSection({
           borderWidth: StyleSheet.hairlineWidth,
           borderRadius: 999,
           paddingHorizontal: POMODORO_INNER_INSET,
-          paddingVertical: 8,
+          paddingVertical: SPACING.sm,
           minHeight: 42,
           alignItems: 'center',
           justifyContent: 'center',

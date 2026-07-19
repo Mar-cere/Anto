@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import HabitsTodayProgressRing from './HabitsTodayProgressRing';
@@ -45,8 +46,8 @@ export default function HabitsProgressSummaryCard({
         card: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 14,
-          padding: 14,
+          gap: SPACING.HERO_INSET_COMPACT,
+          padding: SPACING.CARD_INNER_INSET,
           borderRadius: 18,
           backgroundColor: colors.chromeCard,
           borderWidth: StyleSheet.hairlineWidth,

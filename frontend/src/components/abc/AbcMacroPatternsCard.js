@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 import { useLanguage } from '../../context/LanguageContext';
 import abcRecordsService from '../../services/abcRecordsService';
 import { resolveAbcApiErrorMessage } from '../../utils/abcApiErrors';
@@ -97,7 +98,7 @@ export default function AbcMacroPatternsCard({
           borderRadius: compact ? 12 : 16,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
-          padding: compact ? 12 : 16,
+          padding: compact ? SPACING.CHIP_INSET : SPACING.HERO_INSET,
           marginBottom: compact ? 12 : 16,
           backgroundColor: colors.cardBackground || colors.surface || colors.background,
         },
@@ -108,7 +109,7 @@ export default function AbcMacroPatternsCard({
           marginBottom: 8,
         },
         row: {
-          paddingVertical: 8,
+          paddingVertical: SPACING.sm,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.border,
         },
@@ -146,7 +147,7 @@ export default function AbcMacroPatternsCard({
           fontWeight: '600',
           color: colors.primary,
         },
-        loading: { paddingVertical: 12, alignItems: 'center' },
+        loading: { paddingVertical: SPACING.CHIP_INSET, alignItems: 'center' },
         errorText: {
           fontSize: 12,
           lineHeight: 17,

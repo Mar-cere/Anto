@@ -8,6 +8,7 @@
  */
 
 import { Ionicons } from '@expo/vector-icons';
+import { SPACING } from '../constants/ui';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -117,7 +118,7 @@ const DEFAULT_TEXTS = {
 
 // Constantes de estilos
 const IMAGE_OPACITY = 0.1;
-const HORIZONTAL_PADDING = 20;
+const HORIZONTAL_PADDING = SPACING.SCREEN_EDGE_INSET;
 const TEXT_MARGIN_BOTTOM = 40;
 const LOADING_SCALE = 1.5;
 const MAX_FORM_WIDTH = 400;
@@ -288,8 +289,8 @@ const SignInScreen = () => {
         },
         mainButton: {
           backgroundColor: colors.primary,
-          paddingVertical: 18,
-          paddingHorizontal: 60,
+          paddingVertical: SPACING.HERO_INSET,
+          paddingHorizontal: SPACING.HERO_INSET,
           borderRadius: 25,
           alignItems: 'center',
           justifyContent: 'center',
@@ -309,8 +310,8 @@ const SignInScreen = () => {
         secondaryButton: {
           borderColor: colors.primary,
           borderWidth: 2,
-          paddingVertical: 18,
-          paddingHorizontal: 50,
+          paddingVertical: SPACING.HERO_INSET,
+          paddingHorizontal: SPACING.HERO_INSET,
           borderRadius: 25,
           alignItems: 'center',
           justifyContent: 'center',

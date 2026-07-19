@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { SPACING } from '../../constants/ui';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../context/ThemeContext';
@@ -19,12 +20,12 @@ export default function HabitsFrequencyFilters({ value = 'daily', onChange }) {
       StyleSheet.create({
         row: {
           flexDirection: 'row',
-          gap: 8,
+          gap: SPACING.sm,
           marginBottom: 12,
         },
         pill: {
-          paddingVertical: 9,
-          paddingHorizontal: 14,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
+          paddingHorizontal: SPACING.CHIP_INSET,
           borderRadius: 999,
           backgroundColor: colors.glassFill,
           borderWidth: StyleSheet.hairlineWidth,

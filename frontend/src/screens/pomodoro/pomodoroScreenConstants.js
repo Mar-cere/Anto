@@ -184,10 +184,10 @@ export const MODAL_MAX_WIDTH = 400;
 export const MODAL_WIDTH_PERCENT = '90%';
 export const MEDITATION_BUTTON_WIDTH_PERCENT = '80%';
 export const CONTAINER_PADDING_BOTTOM = SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA;
-/** Inset horizontal del contenido respecto al borde de pantalla (14, alineado con la app). */
+/** Inset horizontal del contenido respecto al borde de pantalla (alineado con la app). */
 export const POMODORO_SCREEN_INSET = SPACING.SCREEN_EDGE_INSET;
-/** Padding interno unificado en tarjetas, modal del timer y bloques internos Pomodoro (12). */
-export const POMODORO_INNER_INSET = 12;
+/** Padding interno unificado en tarjetas, modal del timer y bloques internos Pomodoro. */
+export const POMODORO_INNER_INSET = SPACING.CARD_INNER_INSET;
 
 export const HEADER_PADDING = POMODORO_SCREEN_INSET;
 export const CONTENT_PADDING = POMODORO_SCREEN_INSET;
@@ -203,14 +203,14 @@ export const TITLE_MARGIN_BOTTOM = 16;
 export const INPUT_CONTAINER_MARGIN_BOTTOM = 16;
 export const INPUT_HEIGHT = 48;
 export const INPUT_BORDER_RADIUS = 12;
-export const INPUT_PADDING_HORIZONTAL = POMODORO_INNER_INSET;
+export const INPUT_PADDING_HORIZONTAL = SPACING.INPUT_INSET;
 export const TASK_LIST_GAP = 8;
-export const TASK_ITEM_PADDING = 12;
+export const TASK_ITEM_PADDING = SPACING.CHIP_INSET;
 export const TASK_ITEM_BORDER_RADIUS = 12;
 export const CHECKBOX_MARGIN_RIGHT = 12;
 export const DELETE_BUTTON_MARGIN_LEFT = 12;
 export const TASK_HEADER_MARGIN_BOTTOM = 16;
-export const CLEAR_BUTTON_PADDING = 8;
+export const CLEAR_BUTTON_PADDING = SPACING.sm;
 export const CLEAR_BUTTON_BORDER_RADIUS = 8;
 export const CLEAR_BUTTON_MARGIN_TOP = 8;
 export const EMPTY_STATE_PADDING = POMODORO_INNER_INSET;
@@ -222,20 +222,21 @@ export const INPUT_GROUP_MARGIN_BOTTOM = POMODORO_INNER_INSET;
 export const INPUT_LABEL_MARGIN_BOTTOM = 8;
 export const TIME_INPUT_CONTAINER_GAP = 8;
 export const TIME_INPUT_WIDTH = 100;
-export const TIME_INPUT_PADDING = POMODORO_INNER_INSET;
+export const TIME_INPUT_PADDING = SPACING.INPUT_INSET;
 export const TIME_INPUT_BORDER_RADIUS = 12;
 export const PREP_TIME_CONTAINER_MARGIN_BOTTOM = POMODORO_INNER_INSET;
 export const PREP_TIME_HEADER_MARGIN_BOTTOM = 16;
 export const MODAL_BUTTONS_GAP = POMODORO_INNER_INSET;
-export const MODAL_BUTTON_PADDING = POMODORO_INNER_INSET;
+export const MODAL_BUTTON_PADDING = SPACING.CHIP_INSET;
 export const MODAL_BUTTON_BORDER_RADIUS = 12;
-export const MEDITATION_BUTTON_CONTAINER_PADDING_HORIZONTAL = POMODORO_INNER_INSET;
-export const MEDITATION_BUTTON_PADDING_VERTICAL = 12;
-export const MEDITATION_BUTTON_PADDING_HORIZONTAL = POMODORO_INNER_INSET;
-export const MEDITATION_BUTTON_GAP = 8;
+/** 0: el content de Pomodoro ya aplica SCREEN_EDGE. */
+export const MEDITATION_BUTTON_CONTAINER_PADDING_HORIZONTAL = 0;
+export const MEDITATION_BUTTON_PADDING_VERTICAL = SPACING.CHIP_INSET;
+export const MEDITATION_BUTTON_PADDING_HORIZONTAL = SPACING.CHIP_INSET;
+export const MEDITATION_BUTTON_GAP = SPACING.sm;
 export const MEDITATION_BUTTON_BORDER_RADIUS = 24;
 export const MEDITATION_BUTTON_BORDER_WIDTH = 1;
-export const HEADER_GAP = 12;
+export const HEADER_GAP = SPACING.CHIP_INSET;
 export const HEADER_BORDER_WIDTH = 1;
 
 export function getModes(texts = TEXTS) {

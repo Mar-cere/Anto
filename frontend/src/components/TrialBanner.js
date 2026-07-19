@@ -1,13 +1,9 @@
 /**
- * Componente Banner de Trial
- *
- * Muestra un banner informativo cuando el usuario está en trial,
- * indicando los días restantes y ofreciendo suscribirse.
- *
- * @author AntoApp Team
+ * Banner de trial: franja fina (default / chat) o chip compacto (dashboard).
  */
 
 import React, { useMemo } from 'react';
+import { SPACING } from '../constants/ui';
 import {
   View,
   Text,
@@ -20,7 +16,6 @@ import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
-import { SPACING } from '../constants/ui';
 
 const DEFAULT_TEXTS = {
   TRIAL_ACTIVE: 'Trial activo',
@@ -67,11 +62,13 @@ const TrialBanner = ({
     [translated],
   );
   const navigation = useNavigation();
-  const { colors } = useTheme();
+  const { colors, resolvedScheme } = useTheme();
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const dark = resolvedScheme === 'dark';
 
   const hexToRgba = (hex, alpha) => {
-    const h = hex.replace('#', '');
+    const h = String(hex || '').replace('#', '');
+    if (h.length < 6) return colors.glassFill;
     const r = parseInt(h.slice(0, 2), 16);
     const g = parseInt(h.slice(2, 4), 16);
     const b = parseInt(h.slice(4, 6), 16);
@@ -81,77 +78,60 @@ const TrialBanner = ({
   const styles = useMemo(
     () =>
       StyleSheet.create({
-        container: {
+        /** Franja fina bajo el header del chat (no card beige). */
+        strip: {
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'space-between',
-          paddingVertical: 14,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          marginTop: 4,
-          marginBottom: 12,
-          borderRadius: 22,
+          marginHorizontal: SPACING.SCREEN_EDGE_INSET,
+          marginTop: SPACING.xs,
+          marginBottom: SPACING.sm,
+          paddingVertical: SPACING.sm,
+          paddingLeft: SPACING.CARD_INNER_INSET,
+          paddingRight: SPACING.xs,
+          borderRadius: 14,
           borderWidth: StyleSheet.hairlineWidth,
+          gap: SPACING.sm,
         },
-        content: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          flex: 1,
-          minWidth: 0,
-        },
-        iconWrap: {
-          width: 40,
-          height: 40,
-          borderRadius: 12,
-          borderWidth: StyleSheet.hairlineWidth,
-          backgroundColor: colors.glassFill,
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        textContainer: {
-          marginLeft: 12,
-          flex: 1,
-          minWidth: 0,
-        },
-        title: {
-          fontSize: 14,
-          fontWeight: '600',
-          marginBottom: 2,
-          lineHeight: 19,
-        },
-        subtitle: {
-          fontSize: 12,
-          color: colors.textSecondary,
-          lineHeight: 17,
-        },
-        actions: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          marginLeft: 8,
+        stripIcon: {
           flexShrink: 0,
         },
-        subscribeButton: {
-          paddingHorizontal: 14,
-          paddingVertical: 8,
-          borderRadius: 14,
-          marginRight: 6,
-          backgroundColor: colors.glassFill,
-          borderWidth: StyleSheet.hairlineWidth,
+        stripCopy: {
+          flex: 1,
+          minWidth: 0,
+          gap: 1,
         },
-        subscribeButtonText: {
+        stripTitle: {
           fontSize: 13,
           fontWeight: '600',
+          lineHeight: 17,
+          color: colors.text,
         },
-        dismissButton: {
-          padding: 8,
-          borderRadius: 12,
-          backgroundColor: colors.glassFill,
+        stripSubtitle: {
+          fontSize: 12,
+          fontWeight: '400',
+          lineHeight: 16,
+          color: colors.textSecondary,
+        },
+        stripCta: {
+          flexShrink: 0,
+          paddingVertical: SPACING.xs,
+          paddingHorizontal: SPACING.xs,
+        },
+        stripCtaText: {
+          fontSize: 13,
+          fontWeight: '600',
+          color: colors.primary,
+        },
+        stripDismiss: {
+          flexShrink: 0,
+          padding: SPACING.sm,
         },
         compactContainer: {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingVertical: 11,
-          paddingHorizontal: 14,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           marginBottom: 12,
           borderRadius: 999,
           borderWidth: StyleSheet.hairlineWidth,
@@ -163,7 +143,7 @@ const TrialBanner = ({
           alignItems: 'center',
           flex: 1,
           minWidth: 0,
-          gap: 8,
+          gap: SPACING.sm,
         },
         compactDot: {
           width: 7,
@@ -221,11 +201,23 @@ const TrialBanner = ({
     typeof hoursRemaining === 'number' &&
     hoursRemaining > 0 &&
     hoursRemaining < 24;
-  const accentColor = isExpiringSoon ? colors.warning : colors.primary;
-  const surfaceBg = isExpiringSoon ? hexToRgba(colors.warning, 0.12) : hexToRgba(colors.primary, 0.1);
-  const borderColor = isExpiringSoon ? hexToRgba(colors.warning, 0.4) : colors.accentLine;
   const daysLabel =
     daysRemaining === 1 ? TEXTS.TRIAL_DAY_REMAINING : TEXTS.TRIAL_DAYS_REMAINING;
+  const remainingLabel = showHours
+    ? `${hoursRemaining} ${
+        hoursRemaining === 1 ? TEXTS.TRIAL_HOUR_REMAINING : TEXTS.TRIAL_HOURS_REMAINING
+      }`
+    : `${daysRemaining} ${daysLabel}`;
+  const headline = isExpiringSoon ? TEXTS.TRIAL_EXPIRING_SOON : TEXTS.TRIAL_ACTIVE;
+  const accentColor = isExpiringSoon ? colors.warning : colors.primary;
+  const stripBg = isExpiringSoon
+    ? hexToRgba(colors.warning, dark ? 0.14 : 0.1)
+    : dark
+      ? colors.glassFill
+      : hexToRgba(colors.primary, 0.08);
+  const stripBorder = isExpiringSoon
+    ? hexToRgba(colors.warning, dark ? 0.35 : 0.28)
+    : colors.glassOutline ?? colors.border;
 
   if (variant === 'compact') {
     const endsCopy =
@@ -259,54 +251,50 @@ const TrialBanner = ({
   return (
     <Animated.View
       style={[
-        styles.container,
+        styles.strip,
         {
           opacity: fadeAnim,
-          backgroundColor: surfaceBg,
-          borderColor,
+          backgroundColor: stripBg,
+          borderColor: stripBorder,
         },
       ]}
       accessibilityRole="summary"
+      accessibilityLabel={`${headline}. ${remainingLabel}. ${TEXTS.SUBSCRIBE}`}
     >
-      <View style={styles.content}>
-        <View style={[styles.iconWrap, { borderColor: accentColor + '55' }]}>
-          <MaterialCommunityIcons
-            name={isExpiringSoon ? 'alert-circle-outline' : 'clock-outline'}
-            size={22}
-            color={accentColor}
-          />
-        </View>
-        <View style={styles.textContainer}>
-          <Text style={[styles.title, { color: accentColor }]}>
-            {isExpiringSoon ? TEXTS.TRIAL_EXPIRING_SOON : TEXTS.TRIAL_ACTIVE}
-          </Text>
-          <Text style={styles.subtitle}>
-            {showHours
-              ? `${hoursRemaining} ${
-                  hoursRemaining === 1 ? TEXTS.TRIAL_HOUR_REMAINING : TEXTS.TRIAL_HOURS_REMAINING
-                }`
-              : `${daysRemaining} ${daysLabel}`}
-          </Text>
-        </View>
+      <MaterialCommunityIcons
+        name={isExpiringSoon ? 'alert-circle-outline' : 'clock-outline'}
+        size={18}
+        color={accentColor}
+        style={styles.stripIcon}
+      />
+      <View style={styles.stripCopy}>
+        <Text style={[styles.stripTitle, { color: accentColor }]} numberOfLines={2}>
+          {headline}
+        </Text>
+        <Text style={styles.stripSubtitle} numberOfLines={1}>
+          {remainingLabel}
+        </Text>
       </View>
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={[styles.subscribeButton, { borderColor: accentColor }]}
-          onPress={handleSubscribe}
-          accessibilityRole="button"
-          accessibilityLabel={TEXTS.SUBSCRIBE}
-        >
-          <Text style={[styles.subscribeButtonText, { color: accentColor }]}>{TEXTS.SUBSCRIBE}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.dismissButton}
-          onPress={handleDismiss}
-          accessibilityRole="button"
-          accessibilityLabel={TEXTS.CLOSE_A11Y}
-        >
-          <MaterialCommunityIcons name="close" size={20} color={colors.textSecondary} />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        style={styles.stripCta}
+        onPress={handleSubscribe}
+        accessibilityRole="button"
+        accessibilityLabel={TEXTS.SUBSCRIBE}
+        hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+      >
+        <Text style={[styles.stripCtaText, isExpiringSoon && { color: accentColor }]}>
+          {TEXTS.SUBSCRIBE}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={styles.stripDismiss}
+        onPress={handleDismiss}
+        accessibilityRole="button"
+        accessibilityLabel={TEXTS.CLOSE_A11Y}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <MaterialCommunityIcons name="close" size={18} color={colors.textMuted ?? colors.textSecondary} />
+      </TouchableOpacity>
     </Animated.View>
   );
 };

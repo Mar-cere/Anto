@@ -421,12 +421,12 @@ export default function SettingsContent({
         },
         scrollContent: {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingTop: 12,
+          paddingTop: SPACING.CHIP_INSET,
           paddingBottom: SCROLL_PADDING_BOTTOM,
         },
         settingsBlock: {
-          padding: SPACING.SCREEN_EDGE_INSET,
-          marginBottom: 18,
+          padding: SPACING.CARD_INNER_INSET,
+          marginBottom: SPACING.HERO_INSET,
           borderRadius: 18,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: COLORS.ITEM_BORDER,
@@ -501,8 +501,8 @@ export default function SettingsContent({
           alignItems: 'center',
           backgroundColor: COLORS.ITEM_BACKGROUND,
           borderRadius: 12,
-          paddingVertical: 12,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.CARD_INNER_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           marginBottom: 10,
           borderWidth: 1,
           borderColor: COLORS.ITEM_BORDER,
@@ -548,8 +548,8 @@ export default function SettingsContent({
         settingsLinkRow: {
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: 12,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.CARD_INNER_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: COLORS.ITEM_BORDER,
         },
@@ -569,7 +569,7 @@ export default function SettingsContent({
               ? 'rgba(255, 255, 255, 0.06)'
               : 'rgba(36, 35, 79, 0.06)',
           borderRadius: 12,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           marginTop: 8,
           marginBottom: 16,
           marginLeft: 56,
@@ -583,7 +583,7 @@ export default function SettingsContent({
         testButton: {
           backgroundColor: COLORS.PRIMARY,
           borderRadius: 8,
-          padding: 12,
+          padding: SPACING.CHIP_INSET_COMPACT,
           marginBottom: 8,
           alignItems: 'center',
         },
@@ -623,7 +623,7 @@ export default function SettingsContent({
           marginTop: -4,
           marginBottom: 12,
           marginLeft: 56,
-          padding: 12,
+          padding: SPACING.CARD_INNER_INSET,
           borderRadius: 12,
           borderWidth: 1,
           borderColor: COLORS.ITEM_BORDER,
@@ -633,8 +633,8 @@ export default function SettingsContent({
         chatTonePanel: {
           marginTop: 4,
           marginBottom: 8,
-          paddingVertical: 12,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.CARD_INNER_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           borderRadius: 12,
           borderWidth: 1,
           borderColor: COLORS.ITEM_BORDER,
@@ -648,9 +648,9 @@ export default function SettingsContent({
         expandedDisclaimerWrap: {
           marginTop: 4,
           marginBottom: 12,
-          paddingVertical: 10,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingRight: 10,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
+          paddingRight: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 10,
           borderLeftWidth: 3,
           borderLeftColor: themePalette.accentLine,
@@ -670,19 +670,19 @@ export default function SettingsContent({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingVertical: 10,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
         },
         subSectionToggleRow: {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingVertical: 10,
-          gap: 10,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
+          gap: SPACING.CARD_INNER_INSET,
         },
         subSectionToggleLeft: {
           flex: 1,
           minWidth: 0,
-          paddingRight: 10,
+          paddingRight: SPACING.CHIP_INSET_COMPACT,
         },
         subSectionToggleTitle: {
           color: themePalette.text,
@@ -698,9 +698,9 @@ export default function SettingsContent({
         subItemLeft: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
           flex: 1,
-          paddingRight: 10,
+          paddingRight: SPACING.CHIP_INSET_COMPACT,
         },
         subItemText: {
           color: themePalette.text,
@@ -714,7 +714,7 @@ export default function SettingsContent({
         },
         timePill: {
           paddingVertical: 6,
-          paddingHorizontal: 10,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 999,
           backgroundColor:
             resolvedScheme === 'dark'
@@ -736,8 +736,8 @@ export default function SettingsContent({
           marginTop: 10,
           alignSelf: 'flex-end',
           backgroundColor: COLORS.PRIMARY,
-          paddingHorizontal: 14,
-          paddingVertical: 8,
+          paddingHorizontal: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.sm,
           borderRadius: 10,
         },
         timeDoneText: { color: COLORS.WHITE, fontWeight: '700' },
@@ -749,7 +749,7 @@ export default function SettingsContent({
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingTop: 16,
+          paddingTop: SPACING.HERO_INSET_COMPACT,
           backgroundColor: themePalette.modalSurface,
           borderWidth: StyleSheet.hairlineWidth,
           borderBottomWidth: 0,
@@ -770,7 +770,7 @@ export default function SettingsContent({
         themeModalOption: {
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: 14,
+          paddingVertical: SPACING.CHIP_INSET,
           borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: COLORS.ITEM_BORDER,
         },
@@ -783,8 +783,8 @@ export default function SettingsContent({
         themeModalClose: {
           marginTop: 16,
           alignSelf: 'center',
-          paddingVertical: 12,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
+          paddingHorizontal: SPACING.CHIP_INSET,
         },
         themeModalCloseText: {
           fontSize: 16,
@@ -1757,7 +1757,7 @@ export default function SettingsContent({
           <View
             style={[
               styles.themeModalSheet,
-              { paddingBottom: 20 + insets.bottom },
+              { paddingBottom: SPACING.HERO_INSET + insets.bottom },
             ]}
           >
             <Text style={styles.themeModalTitle}>{TEXTS.THEME_MODAL_TITLE}</Text>
@@ -1815,7 +1815,7 @@ export default function SettingsContent({
           <View
             style={[
               styles.themeModalSheet,
-              { paddingBottom: 20 + insets.bottom },
+              { paddingBottom: SPACING.HERO_INSET + insets.bottom },
             ]}
           >
             <Text style={styles.themeModalTitle}>{TEXTS.LANGUAGE_MODAL_TITLE}</Text>

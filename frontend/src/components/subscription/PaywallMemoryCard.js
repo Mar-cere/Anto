@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SPACING } from '../../constants/ui';
 import React, { memo, useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
@@ -19,13 +20,13 @@ function PaywallMemoryCard({ stats, loading, texts }) {
             resolvedScheme === 'dark'
               ? 'rgba(255,255,255,0.04)'
               : colors.settingsSectionSurface,
-          padding: 16,
+          padding: SPACING.HERO_INSET_COMPACT,
           marginBottom: 24,
         },
         row: {
           flexDirection: 'row',
           alignItems: 'flex-start',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         iconWrap: {
           width: 28,

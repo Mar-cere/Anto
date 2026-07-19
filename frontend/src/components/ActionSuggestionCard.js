@@ -4,6 +4,7 @@
  * Incluye animaciones, gestos de deslizar y preview
  */
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { SPACING } from '../constants/ui';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -19,7 +20,6 @@ import { resolveInterventionVisual, resolveVisualAccent } from '../constants/int
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { getFocusTheme } from '../styles/focusCardTheme';
-import { SPACING } from '../constants/ui';
 
 const CARD_MARGIN_BOTTOM = 8;
 const DEFAULT_TEXTS = {
@@ -63,8 +63,8 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           alignItems: 'flex-start',
           justifyContent: 'space-between',
           borderRadius: 16,
-          paddingVertical: 12,
-          paddingHorizontal: 14,
+          paddingVertical: SPACING.CARD_INNER_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           backgroundColor: colors.cardBackground ?? colors.modalSurface ?? colors.surface,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
@@ -128,8 +128,8 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           backgroundColor: colors.modalSurface ?? colors.surface,
           borderRadius: 20,
           marginBottom: 0,
-          paddingVertical: 24,
-          paddingHorizontal: 22,
+          paddingVertical: SPACING.HERO_INSET,
+          paddingHorizontal: SPACING.HERO_INSET,
           alignItems: 'center',
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
@@ -169,8 +169,8 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
         },
         previewButton: {
           backgroundColor: colors.primary,
-          paddingHorizontal: 28,
-          paddingVertical: 14,
+          paddingHorizontal: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.CHIP_INSET,
           borderRadius: 999,
           marginBottom: 12,
         },
@@ -184,7 +184,7 @@ const ActionSuggestionCard = ({ suggestion, onPress, onDismiss }) => {
           position: 'absolute',
           top: 12,
           right: 12,
-          padding: 8,
+          padding: SPACING.sm,
         },
       }),
     [colors, t, visual.accent, visual.iconBg],

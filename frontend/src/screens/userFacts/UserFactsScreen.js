@@ -116,7 +116,7 @@ const UserFactsScreen = () => {
         },
         contentContainer: {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingTop: SPACING.md,
+          paddingTop: SPACING.HERO_INSET,
           paddingBottom: insets.bottom + SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA,
         },
         loadingContainer: {
@@ -133,7 +133,7 @@ const UserFactsScreen = () => {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          paddingHorizontal: SPACING.xl,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
         },
         errorText: {
           fontSize: 15,
@@ -143,7 +143,7 @@ const UserFactsScreen = () => {
         },
         retryButton: {
           paddingVertical: SPACING.sm,
-          paddingHorizontal: SPACING.lg,
+          paddingHorizontal: SPACING.CHIP_INSET,
           backgroundColor: colors.primary,
           borderRadius: 999,
         },
@@ -156,7 +156,6 @@ const UserFactsScreen = () => {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          paddingHorizontal: SPACING.xl,
           paddingTop: SPACING.xxl,
         },
         emptyIcon: {
@@ -177,8 +176,8 @@ const UserFactsScreen = () => {
           marginBottom: SPACING.xl,
         },
         emptyButton: {
-          paddingVertical: SPACING.md,
-          paddingHorizontal: SPACING.xl,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.HERO_INSET,
           backgroundColor: colors.primary,
           borderRadius: 999,
         },
@@ -189,7 +188,7 @@ const UserFactsScreen = () => {
         },
         addButton: {
           paddingVertical: SPACING.sm,
-          paddingHorizontal: SPACING.lg,
+          paddingHorizontal: SPACING.CHIP_INSET,
           backgroundColor: colors.primary,
           borderRadius: 999,
           marginBottom: SPACING.md,
@@ -204,7 +203,7 @@ const UserFactsScreen = () => {
           borderRadius: 20,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.chromeCardBorder,
-          padding: SPACING.md,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: SPACING.md,
           shadowColor: colors.glassShadow,
           shadowOpacity: resolvedScheme === 'dark' ? 0.35 : 0.14,

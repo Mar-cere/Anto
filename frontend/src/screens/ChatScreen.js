@@ -8,6 +8,7 @@
  */
 
 import { Ionicons } from '@expo/vector-icons';
+import { SPACING } from '../constants/ui';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useMemo } from 'react';
 import {
@@ -16,7 +17,6 @@ import {
   Image,
   Linking,
   Modal,
-  Platform,
   Pressable,
   ScrollView,
   StatusBar,
@@ -25,6 +25,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ChatHeader from '../components/chat/ChatHeader';
 import ChatInput from '../components/chat/ChatInput';
 import ChatMessageItem from '../components/chat/ChatMessageItem';
@@ -49,8 +50,6 @@ import {
   recordInterventionDismissed,
 } from '../utils/recordInterventionCompleted';
 import { topicFromInterventionId } from '../utils/psychoeducationTopic';
-import { SPACING } from '../constants/ui';
-import { estimateChatStripReserveHeight } from '../utils/chatStripStyles';
 import {
   formatGuestQuotaBanner,
   ICON_SIZES,
@@ -69,7 +68,6 @@ function createChatScreenStyles(c, themeColors) {
   container: {
     flex: 1,
     backgroundColor: c.BACKGROUND,
-    paddingTop: Platform.OS === 'ios' ? LAYOUT.CONTAINER_PADDING_TOP_IOS : 0,
   },
   backgroundImage: {
     position: 'absolute',
@@ -77,13 +75,26 @@ function createChatScreenStyles(c, themeColors) {
     height: '100%',
     opacity: LAYOUT.BACKGROUND_OPACITY,
   },
+  /** Listado a pantalla completa; el chrome glass va en overlay encima. */
   chatContainer: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
+  },
+  topChrome: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 8,
+  },
+  bottomChrome: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 10,
   },
   messagesList: {
     paddingHorizontal: LAYOUT.MESSAGES_LIST_PADDING_HORIZONTAL,
-    paddingTop: LAYOUT.MESSAGES_LIST_PADDING_TOP,
-    paddingBottom: LAYOUT.MESSAGES_LIST_PADDING_BOTTOM,
   },
   emptyContainer: {
     flex: 1,
@@ -123,8 +134,8 @@ function createChatScreenStyles(c, themeColors) {
   skeletonContainer: {
     flex: 1,
     paddingHorizontal: LAYOUT.MESSAGES_LIST_PADDING_HORIZONTAL,
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingTop: SPACING.HERO_INSET_COMPACT,
+    paddingBottom: SPACING.HERO_INSET_COMPACT,
   },
   skeletonRow: {
     width: '100%',
@@ -138,8 +149,8 @@ function createChatScreenStyles(c, themeColors) {
   },
   skeletonBubble: {
     width: '86%',
-    paddingVertical: 12,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    paddingVertical: SPACING.CHIP_INSET_COMPACT,
+    paddingHorizontal: SPACING.CARD_INNER_INSET,
     borderRadius: 16,
     backgroundColor: themeColors.glassFillStrong,
     borderWidth: 1,
@@ -184,7 +195,7 @@ function createChatScreenStyles(c, themeColors) {
     borderRadius: 22,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.MODAL_BORDER,
-    padding: 22,
+    padding: SPACING.HERO_INSET,
   },
   aiModalTitle: {
     color: c.BOT_TEXT,
@@ -199,13 +210,13 @@ function createChatScreenStyles(c, themeColors) {
     marginBottom: 18,
   },
   aiModalActions: {
-    gap: 10,
+    gap: SPACING.CARD_INNER_INSET,
   },
   aiPolicyButton: {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: themeColors.accentLine,
     borderRadius: 14,
-    paddingVertical: 12,
+    paddingVertical: SPACING.CHIP_INSET_COMPACT,
     alignItems: 'center',
   },
   aiPolicyButtonText: {
@@ -218,7 +229,7 @@ function createChatScreenStyles(c, themeColors) {
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.SEND_BUTTON_BORDER,
     borderRadius: 14,
-    paddingVertical: 13,
+    paddingVertical: SPACING.HERO_INSET_COMPACT,
     alignItems: 'center',
   },
   aiContinueButtonText: {
@@ -257,8 +268,8 @@ function createChatScreenStyles(c, themeColors) {
   loadOlderButton: {
     alignSelf: 'center',
     marginVertical: 10,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.CHIP_INSET,
     borderRadius: 20,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.SCROLL_BUTTON_BORDER,
@@ -276,9 +287,18 @@ const ChatScreen = () => {
   const TEXTS = useChatTexts();
   const { colors: themeColors, statusBarStyle } = useTheme();
   const chatColors = useChatColors();
+  const insets = useSafeAreaInsets();
   const styles = useMemo(
     () => createChatScreenStyles(chatColors, themeColors),
     [chatColors, themeColors],
+  );
+  const safeTop = Math.max(0, Number(insets?.top) || 0);
+  const safeBottom = Math.max(0, Number(insets?.bottom) || 0);
+  const [topChromeH, setTopChromeH] = React.useState(
+    () => safeTop + LAYOUT.CHAT_TOP_CHROME_BASE,
+  );
+  const [bottomChromeH, setBottomChromeH] = React.useState(
+    () => LAYOUT.CHAT_DOCK_BASE + safeBottom,
   );
 
   const {
@@ -352,45 +372,38 @@ const ChatScreen = () => {
   const showTccLiteHandoff = Boolean(tccLiteAtHandoff?.screen) && !hasTccContinuity;
   const showSessionIntentionSheet =
     showSessionIntentionPrompt && guestQuota === null && !isLoading;
+  // Inmersivo oculta distracciones (trial, partículas, continuidad TCC), no seguridad clínica.
   const showSoftCrisisStrip =
-    !immersiveMode && Boolean(softCrisisCheckInPanel) && !crisisResourcesPanel;
-  const showCrisisStrip = !immersiveMode && Boolean(crisisResourcesPanel);
+    Boolean(softCrisisCheckInPanel) && !crisisResourcesPanel;
+  const showCrisisStrip = Boolean(crisisResourcesPanel);
 
-  const stripReserve = useMemo(
-    () =>
-      estimateChatStripReserveHeight({
-        tccContinuityCount: !immersiveMode ? visibleTccContinuityItems.length : 0,
-        softCrisisActive: showSoftCrisisStrip,
-        tccLiteHandoff: !immersiveMode && showTccLiteHandoff,
-        crisisResources: showCrisisStrip,
-      }),
-    [
-      immersiveMode,
-      visibleTccContinuityItems.length,
-      showSoftCrisisStrip,
-      showTccLiteHandoff,
-      showCrisisStrip,
-    ],
-  );
+  const onTopChromeLayout = useCallback((e) => {
+    const h = Math.round(e?.nativeEvent?.layout?.height || 0);
+    if (h > 0) setTopChromeH(h);
+  }, []);
+
+  const onBottomChromeLayout = useCallback((e) => {
+    const h = Math.round(e?.nativeEvent?.layout?.height || 0);
+    if (h > 0) setBottomChromeH(h);
+  }, []);
 
   const messagesListStyle = useMemo(
     () => [
       styles.messagesList,
-      stripReserve > 0
-        ? { paddingBottom: LAYOUT.MESSAGES_LIST_PADDING_BOTTOM + stripReserve }
-        : null,
+      {
+        paddingTop: topChromeH + LAYOUT.MESSAGES_LIST_PADDING_TOP,
+        paddingBottom: bottomChromeH + LAYOUT.MESSAGES_LIST_PADDING_BOTTOM,
+      },
     ],
-    [styles.messagesList, stripReserve],
+    [styles.messagesList, topChromeH, bottomChromeH],
   );
 
   const scrollToBottomButtonStyle = useMemo(
     () => [
       styles.scrollToBottomButton,
-      stripReserve > 0
-        ? { bottom: LAYOUT.SCROLL_BUTTON_BOTTOM + stripReserve + SPACING.sm }
-        : null,
+      { bottom: bottomChromeH + SPACING.sm },
     ],
-    [styles.scrollToBottomButton, stripReserve],
+    [styles.scrollToBottomButton, bottomChromeH],
   );
   const [showAIDisclosure, setShowAIDisclosure] = React.useState(false);
   const [showChatOptions, setShowChatOptions] = React.useState(false);
@@ -618,52 +631,9 @@ const ChatScreen = () => {
       {immersiveMode ? null : <ParticleBackground />}
       <StatusBar translucent backgroundColor="transparent" barStyle={statusBarStyle} />
 
-      <ChatHeader onBack={handleBack} onOpenMenu={() => setShowChatOptions(true)} />
-
-      <ChatOptionsSheet
-        visible={showChatOptions}
-        onClose={() => setShowChatOptions(false)}
-        onScrollToBottom={() => scrollToBottom(true, { force: true })}
-        onOpenCustomization={handleOpenChatCustomization}
-        onOpenPrivacy={handleOpenAIDetails}
-        onOpenAiLimits={handleOpenAiLimitsLibrary}
-        onOpenAiInfo={() => setShowAIDisclosure(true)}
-        onOpenCrisisResources={openCrisisResourcesPanel}
-        onRequestClearConversation={() => setShowClearModal(true)}
-        immersiveMode={immersiveMode}
-        onToggleImmersiveMode={toggleImmersiveMode}
-      />
-
-      <OfflineBanner />
-
-      <PendingOfflineMessageBanner
-        visible={!!offlinePendingMessage}
-        isOffline={isOffline}
-        onRetry={retryOfflinePending}
-        hintText={TEXTS.OFFLINE_PENDING_ONE}
-        retryLabel={TEXTS.OFFLINE_PENDING_RETRY}
-      />
-
-      {trialInfo?.isInTrial && !trialBannerDismissed && !immersiveMode && (
-        <TrialBanner
-          daysRemaining={trialInfo.daysRemaining}
-          hoursRemaining={trialInfo.hoursRemaining}
-          onDismiss={handleTrialBannerDismiss}
-          dismissed={trialBannerDismissed}
-        />
-      )}
-
-      {guestQuota !== null && (
-        <View style={styles.guestBanner} accessibilityRole="text">
-          <Text style={styles.guestBannerText}>
-            {formatGuestQuotaBanner(guestQuota.remaining, guestQuota.max, TEXTS)}
-          </Text>
-        </View>
-      )}
-
       <Animated.View style={[styles.chatContainer, { opacity: fadeAnim }]}>
         {isLoading ? (
-          <View style={styles.skeletonContainer}>
+          <View style={[styles.skeletonContainer, { paddingTop: topChromeH + SPACING.md }]}>
             {Array.from({ length: 6 }, (_, i) => {
               const isUser = i % 2 === 1;
               return (
@@ -722,57 +692,104 @@ const ChatScreen = () => {
         )}
       </Animated.View>
 
+      <View style={styles.topChrome} onLayout={onTopChromeLayout} pointerEvents="box-none">
+        <ChatHeader onBack={handleBack} onOpenMenu={() => setShowChatOptions(true)} />
+
+        <OfflineBanner />
+
+        <PendingOfflineMessageBanner
+          visible={!!offlinePendingMessage}
+          isOffline={isOffline}
+          onRetry={retryOfflinePending}
+          hintText={TEXTS.OFFLINE_PENDING_ONE}
+          retryLabel={TEXTS.OFFLINE_PENDING_RETRY}
+        />
+
+        {trialInfo?.isInTrial && !trialBannerDismissed && !immersiveMode && (
+          <TrialBanner
+            daysRemaining={trialInfo.daysRemaining}
+            hoursRemaining={trialInfo.hoursRemaining}
+            onDismiss={handleTrialBannerDismiss}
+            dismissed={trialBannerDismissed}
+          />
+        )}
+
+        {guestQuota !== null && (
+          <View style={styles.guestBanner} accessibilityRole="text">
+            <Text style={styles.guestBannerText}>
+              {formatGuestQuotaBanner(guestQuota.remaining, guestQuota.max, TEXTS)}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      <View style={styles.bottomChrome} onLayout={onBottomChromeLayout} pointerEvents="box-none">
+        {!immersiveMode ? (
+          <TccLiteAtHandoffStrip
+            atHandoff={showTccLiteHandoff ? tccLiteAtHandoff : null}
+            onOpen={handleOpenTccLiteAtHandoff}
+            onDismiss={handleDismissTccLiteAtHandoff}
+          />
+        ) : null}
+
+        {!immersiveMode ? (
+          <TccContinuityStrip
+            items={visibleTccContinuityItems}
+            onOpen={handleOpenTccContinuityItem}
+            onDismiss={handleDismissTccContinuityItem}
+          />
+        ) : null}
+
+        {showSoftCrisisStrip ? (
+          <SoftCrisisCheckInStrip
+            checkIn={softCrisisCheckInPanel}
+            onOpenTechnique={handleOpenSoftCrisisTechnique}
+            onDismiss={dismissSoftCrisisCheckInPanel}
+          />
+        ) : null}
+
+        {showCrisisStrip ? (
+          <CrisisResourcesStrip
+            resources={crisisResourcesPanel}
+            contactAlertNotice={crisisContactAlertNotice}
+            onDismiss={dismissCrisisResourcesPanel}
+            onOpenEmergencyContacts={
+              guestQuota === null ? openEmergencyContactsFromChat : null
+            }
+            onOpenAiLimitsLibrary={handleOpenAiLimitsLibrary}
+          />
+        ) : null}
+
+        <ChatInput
+          value={inputText}
+          onChangeText={handleInputChange}
+          onSend={handleSend}
+          inputRef={inputRef}
+          sendDisabled={
+            (guestQuota !== null && guestQuota.remaining <= 0) || isTyping
+          }
+        />
+      </View>
+
+      <ChatOptionsSheet
+        visible={showChatOptions}
+        onClose={() => setShowChatOptions(false)}
+        onScrollToBottom={() => scrollToBottom(true, { force: true })}
+        onOpenCustomization={handleOpenChatCustomization}
+        onOpenPrivacy={handleOpenAIDetails}
+        onOpenAiLimits={handleOpenAiLimitsLibrary}
+        onOpenAiInfo={() => setShowAIDisclosure(true)}
+        onOpenCrisisResources={openCrisisResourcesPanel}
+        onRequestClearConversation={() => setShowClearModal(true)}
+        immersiveMode={immersiveMode}
+        onToggleImmersiveMode={toggleImmersiveMode}
+      />
+
       <SessionIntentionSheet
         visible={showSessionIntentionSheet}
         submitting={sessionIntentionSubmitting}
         onSelect={selectSessionIntention}
         onSkip={skipSessionIntention}
-      />
-
-      {!immersiveMode ? (
-        <TccLiteAtHandoffStrip
-          atHandoff={showTccLiteHandoff ? tccLiteAtHandoff : null}
-          onOpen={handleOpenTccLiteAtHandoff}
-          onDismiss={handleDismissTccLiteAtHandoff}
-        />
-      ) : null}
-
-      {!immersiveMode ? (
-        <TccContinuityStrip
-          items={visibleTccContinuityItems}
-          onOpen={handleOpenTccContinuityItem}
-          onDismiss={handleDismissTccContinuityItem}
-        />
-      ) : null}
-
-      {!immersiveMode && softCrisisCheckInPanel && !crisisResourcesPanel ? (
-        <SoftCrisisCheckInStrip
-          checkIn={softCrisisCheckInPanel}
-          onOpenTechnique={handleOpenSoftCrisisTechnique}
-          onDismiss={dismissSoftCrisisCheckInPanel}
-        />
-      ) : null}
-
-      {!immersiveMode && crisisResourcesPanel ? (
-        <CrisisResourcesStrip
-          resources={crisisResourcesPanel}
-          contactAlertNotice={crisisContactAlertNotice}
-          onDismiss={dismissCrisisResourcesPanel}
-          onOpenEmergencyContacts={
-            guestQuota === null ? openEmergencyContactsFromChat : null
-          }
-          onOpenAiLimitsLibrary={handleOpenAiLimitsLibrary}
-        />
-      ) : null}
-
-      <ChatInput
-        value={inputText}
-        onChangeText={handleInputChange}
-        onSend={handleSend}
-        inputRef={inputRef}
-        sendDisabled={
-          (guestQuota !== null && guestQuota.remaining <= 0) || isTyping
-        }
       />
 
       {showScrollButton && (

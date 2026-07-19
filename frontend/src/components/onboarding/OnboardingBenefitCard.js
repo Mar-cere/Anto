@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import { resolveOnboardingBrandAccent } from '../../utils/onboardingBrand';
 
@@ -20,9 +21,9 @@ export default function OnboardingBenefitCard({ text }) {
           marginTop: 18,
           flexDirection: 'row',
           alignItems: 'flex-start',
-          gap: 12,
-          paddingVertical: 14,
-          paddingHorizontal: 14,
+          gap: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.CARD_INNER_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           borderRadius: 16,
           backgroundColor: dark
             ? 'rgba(255, 255, 255, 0.06)'

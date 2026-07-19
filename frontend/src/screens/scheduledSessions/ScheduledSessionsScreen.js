@@ -203,11 +203,11 @@ export default function ScheduledSessionsScreen({ navigation }) {
           color: colors.textSecondary,
         },
         listContent: {
-          padding: SPACING.md,
+          padding: SPACING.SCREEN_EDGE_INSET,
         },
         sessionCard: {
           borderRadius: 12,
-          padding: 16,
+          padding: SPACING.HERO_INSET_COMPACT,
           marginBottom: 12,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
@@ -246,7 +246,7 @@ export default function ScheduledSessionsScreen({ navigation }) {
         },
         sessionActions: {
           flexDirection: 'row',
-          gap: 8,
+          gap: SPACING.sm,
         },
         actionButton: {
           width: 36,
@@ -262,7 +262,6 @@ export default function ScheduledSessionsScreen({ navigation }) {
         emptyContainer: {
           flex: 1,
           alignItems: 'center',
-          padding: 24,
           paddingTop: SPACING.xl,
         },
         emptyTitle: {
@@ -287,8 +286,8 @@ export default function ScheduledSessionsScreen({ navigation }) {
           color: colors.error,
         },
         retryButton: {
-          paddingHorizontal: 24,
-          paddingVertical: 12,
+          paddingHorizontal: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 8,
           backgroundColor: colors.primary,
         },

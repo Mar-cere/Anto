@@ -28,8 +28,8 @@ export default function OnboardingBrandShell({ children, footer }) {
         },
         safe: {
           flex: 1,
-          paddingTop: Math.max(insets.top, 12),
-          paddingBottom: Math.max(insets.bottom, 12),
+          paddingTop: Math.max(insets.top, SPACING.SCREEN_EDGE_INSET),
+          paddingBottom: Math.max(insets.bottom, SPACING.SCREEN_EDGE_INSET),
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
         },
         card: {
@@ -42,9 +42,9 @@ export default function OnboardingBrandShell({ children, footer }) {
         },
         inner: {
           flex: 1,
-          paddingHorizontal: 20,
-          paddingTop: 16,
-          paddingBottom: 18,
+          paddingHorizontal: SPACING.HERO_INSET,
+          paddingTop: SPACING.HERO_INSET_COMPACT,
+          paddingBottom: SPACING.HERO_INSET,
         },
         body: {
           flex: 1,

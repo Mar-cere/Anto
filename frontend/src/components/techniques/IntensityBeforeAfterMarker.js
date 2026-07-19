@@ -21,7 +21,7 @@ function ScaleDot({ value, min, max, colors, resolvedScheme, compact }) {
       <View
         style={{
           minWidth: compact ? 30 : 34,
-          paddingHorizontal: 8,
+          paddingHorizontal: SPACING.sm,
           paddingVertical: compact ? 2 : 3,
           borderRadius: 8,
           backgroundColor:
@@ -98,7 +98,7 @@ export default function IntensityBeforeAfterMarker({
           gap: compact ? 4 : 6,
         },
         deltaChip: {
-          paddingHorizontal: compact ? 8 : 10,
+          paddingHorizontal: compact ? SPACING.sm : SPACING.CHIP_INSET_COMPACT,
           paddingVertical: compact ? 3 : 4,
           borderRadius: 8,
           borderWidth: StyleSheet.hairlineWidth,

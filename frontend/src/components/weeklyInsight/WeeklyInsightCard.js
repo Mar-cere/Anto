@@ -1,4 +1,5 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SPACING } from '../../constants/ui';
 import * as Haptics from 'expo-haptics';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -29,7 +30,7 @@ export default function WeeklyInsightCard({ row, ctaLabel, onPressCta }) {
       StyleSheet.create({
         card: {
           borderRadius: 18,
-          padding: 16,
+          padding: SPACING.HERO_INSET_COMPACT,
           marginBottom: 12,
           backgroundColor: colors.chromeCard ?? colors.cardBackground,
           borderWidth: StyleSheet.hairlineWidth,
@@ -38,7 +39,7 @@ export default function WeeklyInsightCard({ row, ctaLabel, onPressCta }) {
         topRow: {
           flexDirection: 'row',
           alignItems: 'flex-start',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         iconWrap: {
           width: 40,
@@ -55,7 +56,7 @@ export default function WeeklyInsightCard({ row, ctaLabel, onPressCta }) {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 8,
+          gap: SPACING.sm,
           marginBottom: 4,
         },
         label: {
@@ -69,7 +70,7 @@ export default function WeeklyInsightCard({ row, ctaLabel, onPressCta }) {
           fontWeight: '700',
           color: colors.textSecondary,
           backgroundColor: colors.glassFill,
-          paddingHorizontal: 8,
+          paddingHorizontal: SPACING.sm,
           paddingVertical: 3,
           borderRadius: 999,
           overflow: 'hidden',
@@ -91,8 +92,8 @@ export default function WeeklyInsightCard({ row, ctaLabel, onPressCta }) {
           flexDirection: 'row',
           alignItems: 'center',
           gap: 6,
-          paddingVertical: 8,
-          paddingHorizontal: 12,
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 999,
           backgroundColor: colors.accentLineSoft,
           borderWidth: StyleSheet.hairlineWidth,

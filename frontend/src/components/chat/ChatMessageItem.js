@@ -87,7 +87,7 @@ function StreamingDots({ isBot, styles }) {
   );
 }
 
-const createStyles = (themeColors, c) =>
+const createStyles = (themeColors, c, dark) =>
   StyleSheet.create({
   messageContainer: {
     flexDirection: 'row',
@@ -111,6 +111,16 @@ const createStyles = (themeColors, c) =>
     backgroundColor: c.USER_BUBBLE,
     borderBottomRightRadius: LAYOUT.MESSAGE_BUBBLE_CORNER_RADIUS,
     marginLeft: 'auto',
+    // Light: sombra mínima; dark: sin sombra (el primary ya contrasta).
+    ...(dark
+      ? { shadowOpacity: 0, elevation: 0 }
+      : {
+          shadowColor: themeColors.glassShadow ?? themeColors.shadowAmbient ?? '#000',
+          shadowOpacity: 0.08,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 1,
+        }),
   },
   botBubble: {
     backgroundColor: c.BOT_BUBBLE,
@@ -118,6 +128,15 @@ const createStyles = (themeColors, c) =>
     marginRight: 'auto',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.BOT_BUBBLE_BORDER,
+    ...(dark
+      ? { shadowOpacity: 0, elevation: 0 }
+      : {
+          shadowColor: themeColors.glassShadow ?? themeColors.shadowAmbient ?? '#000',
+          shadowOpacity: 0.06,
+          shadowRadius: 5,
+          shadowOffset: { width: 0, height: 1 },
+          elevation: 1,
+        }),
   },
   errorBubble: {
     backgroundColor: c.ERROR_BUBBLE_BACKGROUND,
@@ -150,7 +169,7 @@ const createStyles = (themeColors, c) =>
   },
   suggestionsContainer: {
     marginBottom: 16,
-    paddingHorizontal: 14,
+    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
   },
   commitmentFollowUpShell: {
     alignSelf: 'flex-start',
@@ -176,8 +195,8 @@ const createStyles = (themeColors, c) =>
   },
   productProposalCard: {
     marginBottom: 12,
-    paddingVertical: 13,
-    paddingHorizontal: 14,
+    paddingVertical: SPACING.CARD_INNER_INSET,
+    paddingHorizontal: SPACING.CARD_INNER_INSET,
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: themeColors.border,
@@ -199,8 +218,8 @@ const createStyles = (themeColors, c) =>
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: themeColors.accentLine ?? themeColors.border,
     backgroundColor: themeColors.accentLineSoft,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
+    paddingVertical: SPACING.xs,
   },
   productProposalChipText: {
     color: themeColors.primary,
@@ -238,7 +257,7 @@ const createStyles = (themeColors, c) =>
     marginBottom: 8,
     borderLeftWidth: 2,
     borderLeftColor: themeColors.accentLine ?? themeColors.border,
-    paddingLeft: 8,
+    paddingLeft: SPACING.sm,
     lineHeight: 16,
   },
   proposalDivider: {
@@ -250,8 +269,8 @@ const createStyles = (themeColors, c) =>
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: themeColors.border,
     borderRadius: 10,
-    paddingHorizontal: 11,
-    paddingVertical: 8,
+    paddingHorizontal: SPACING.CHIP_INSET,
+    paddingVertical: SPACING.sm,
     color: themeColors.text,
     fontSize: 13,
     marginTop: 7,
@@ -265,7 +284,7 @@ const createStyles = (themeColors, c) =>
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 10,
-    gap: 8,
+    gap: SPACING.sm,
   },
   proposalPrimaryBtn: {
     flex: 1,
@@ -273,7 +292,7 @@ const createStyles = (themeColors, c) =>
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: themeColors.accentLine ?? themeColors.border,
     backgroundColor: themeColors.accentLineSoft,
-    paddingVertical: 9,
+    paddingVertical: SPACING.CHIP_INSET_COMPACT,
     alignItems: 'center',
   },
   proposalPrimaryBtnText: {
@@ -286,8 +305,8 @@ const createStyles = (themeColors, c) =>
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: themeColors.border,
     backgroundColor: themeColors.chromeListRow ?? themeColors.chromeInputDisabled,
-    paddingVertical: 9,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    paddingVertical: SPACING.CHIP_INSET_COMPACT,
+    paddingHorizontal: SPACING.CHIP_INSET,
     alignItems: 'center',
   },
   proposalGhostBtnText: {
@@ -297,8 +316,8 @@ const createStyles = (themeColors, c) =>
   },
   statusCard: {
     marginBottom: 10,
-    paddingVertical: 10,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    paddingVertical: SPACING.CHIP_INSET_COMPACT,
+    paddingHorizontal: SPACING.CARD_INNER_INSET,
     borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: themeColors.border,
@@ -345,7 +364,7 @@ const createStyles = (themeColors, c) =>
     alignItems: 'center',
   },
   feedbackButton: {
-    paddingVertical: 4,
+    paddingVertical: SPACING.xs,
     paddingHorizontal: 6,
   },
   commitmentFollowUpCard: {
@@ -357,8 +376,8 @@ const createStyles = (themeColors, c) =>
       themeColors.cardBackground ||
       themeColors.surface ||
       themeColors.background,
-    paddingVertical: 14,
-    paddingHorizontal: 14,
+    paddingVertical: SPACING.CARD_INNER_INSET,
+    paddingHorizontal: SPACING.CARD_INNER_INSET,
     width: '100%',
     shadowColor: themeColors.glassShadow || themeColors.shadowAmbient || '#000',
     shadowOpacity: 0.12,
@@ -382,11 +401,11 @@ const createStyles = (themeColors, c) =>
   commitmentFollowUpChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: SPACING.sm,
   },
   commitmentFollowUpChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.CHIP_INSET,
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: themeColors.primary,
@@ -423,9 +442,13 @@ function ChatMessageItem({
   const TEXTS = useChatTexts();
   const DASH = useSectionTranslations('DASH');
   const EP = useSectionTranslations('EXPERIENTIAL_PATTERNS');
-  const { colors } = useTheme();
+  const { colors, resolvedScheme } = useTheme();
   const chatColors = useChatColors();
-  const styles = useMemo(() => createStyles(colors, chatColors), [colors, chatColors]);
+  const dark = resolvedScheme === 'dark';
+  const styles = useMemo(
+    () => createStyles(colors, chatColors, dark),
+    [colors, chatColors, dark],
+  );
 
   const [proposalDraftEdits, setProposalDraftEdits] = useState({});
   const [commitmentSavingId, setCommitmentSavingId] = useState(null);

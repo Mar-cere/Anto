@@ -164,8 +164,8 @@ const EMPTY_ICON_SIZE = 64;
 const EMPTY_TEXT_MARGIN_TOP = 12;
 const EMPTY_TEXT_MARGIN_BOTTOM = 24;
 const ADD_FIRST_BUTTON_GAP = 8;
-const ADD_FIRST_BUTTON_PADDING_VERTICAL = 12;
-const ADD_FIRST_BUTTON_PADDING_HORIZONTAL = 16;
+const ADD_FIRST_BUTTON_PADDING_VERTICAL = SPACING.CHIP_INSET;
+const ADD_FIRST_BUTTON_PADDING_HORIZONTAL = SPACING.HERO_INSET_COMPACT;
 const ADD_FIRST_ICON_SIZE = 20;
 const FAB_ICON_SIZE = 24;
 const FLATLIST_MAX_TO_RENDER = 10;
@@ -255,14 +255,14 @@ const TaskScreen = ({
         },
         listContainer: {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingTop: 4,
+          paddingTop: SPACING.xs,
           paddingBottom: SPACING.SCREEN_EDGE_INSET,
           flexGrow: 1,
         },
         countRow: {
           marginBottom: 10,
-          paddingVertical: 8,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           alignSelf: 'flex-start',
           borderRadius: 12,
           backgroundColor: colors.glassFill,
@@ -277,7 +277,7 @@ const TaskScreen = ({
         },
         sectionHeader: {
           backgroundColor: colors.chromeHeader,
-          paddingVertical: 8,
+          paddingVertical: SPACING.sm,
           paddingBottom: 6,
           marginTop: 4,
           marginBottom: 4,
@@ -285,7 +285,7 @@ const TaskScreen = ({
           alignItems: 'center',
           justifyContent: 'space-between',
           borderRadius: 10,
-          paddingHorizontal: 10,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.chromeHeaderBorder,
         },
@@ -306,7 +306,7 @@ const TaskScreen = ({
           minWidth: 24,
           alignItems: 'center',
           justifyContent: 'center',
-          paddingHorizontal: 8,
+          paddingHorizontal: SPACING.sm,
           paddingVertical: 3,
           borderRadius: 999,
           backgroundColor: colors.glassFillStrong,
@@ -337,7 +337,6 @@ const TaskScreen = ({
           marginTop: EMPTY_CONTAINER_MARGIN_TOP,
           flex: 1,
           justifyContent: 'center',
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
         },
         emptyText: {
           color: colors.text,
@@ -375,13 +374,13 @@ const TaskScreen = ({
           flexDirection: 'row',
           alignItems: 'center',
           marginBottom: 12,
-          paddingVertical: 12,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           borderRadius: 14,
           backgroundColor: 'rgba(255, 217, 61, 0.12)',
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: 'rgba(255, 217, 61, 0.35)',
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
         },
         errorBannerIcon: {
           flexShrink: 0,
@@ -403,8 +402,8 @@ const TaskScreen = ({
         },
         errorBannerRetry: {
           flexShrink: 0,
-          paddingVertical: 8,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.CHIP_INSET,
           borderRadius: 12,
           backgroundColor: colors.glassFill,
         },

@@ -18,8 +18,8 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
     },
     scrollContent: {
       paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-      paddingTop: 8,
-      paddingBottom: 120,
+      paddingTop: SPACING.sm,
+      paddingBottom: SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA - SPACING.CHIP_INSET,
     },
     introPanel: {
       ...t.FOCUS_PANEL,
@@ -48,7 +48,7 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
     card: {
       backgroundColor: colors.cardBackground,
       borderRadius: 22,
-      padding: SPACING.SCREEN_EDGE_INSET,
+      padding: SPACING.CARD_INNER_INSET,
       marginBottom: 14,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
@@ -72,8 +72,8 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
     },
     primaryButton: {
       alignSelf: 'flex-start',
-      paddingVertical: 12,
-      paddingHorizontal: 18,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
+      paddingHorizontal: SPACING.HERO_INSET,
       borderRadius: 14,
       backgroundColor: colors.accentLineSoft,
       borderWidth: StyleSheet.hairlineWidth,
@@ -86,8 +86,8 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
     },
     stopButton: {
       marginTop: 8,
-      paddingVertical: 12,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
+      paddingHorizontal: SPACING.CHIP_INSET,
       borderRadius: 14,
       backgroundColor: colors.dangerSoft ?? 'rgba(255, 107, 107, 0.16)',
       borderWidth: StyleSheet.hairlineWidth,
@@ -132,7 +132,7 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
     activePanel: {
       backgroundColor: colors.cardBackground,
       borderRadius: 22,
-      padding: 24,
+      padding: SPACING.HERO_INSET,
       alignItems: 'center',
       alignSelf: 'stretch',
       borderWidth: StyleSheet.hairlineWidth,
@@ -150,7 +150,7 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
     },
     selectedRow: {
       marginTop: 12,
-      paddingTop: 12,
+      paddingTop: SPACING.CHIP_INSET,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: t.FOCUS_BORDER_SUBTLE,
       flexDirection: 'row',
@@ -183,7 +183,7 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
       borderRadius: 14,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
-      padding: 14,
+      padding: SPACING.INPUT_INSET,
       color: colors.text,
       fontSize: 15,
       lineHeight: 22,
@@ -194,8 +194,8 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
       minHeight: 160,
     },
     saveButton: {
-      paddingVertical: 14,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingVertical: SPACING.CHIP_INSET,
+      paddingHorizontal: SPACING.CHIP_INSET,
       borderRadius: 14,
       backgroundColor: colors.accentLineSoft,
       borderWidth: StyleSheet.hairlineWidth,
@@ -212,8 +212,8 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
     },
     secondaryButton: {
       flex: 1,
-      paddingVertical: 12,
-      paddingHorizontal: 14,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
+      paddingHorizontal: SPACING.CHIP_INSET,
       borderRadius: 14,
       backgroundColor: colors.glassFill,
       borderWidth: StyleSheet.hairlineWidth,
@@ -227,7 +227,7 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
     },
     buttonRow: {
       flexDirection: 'row',
-      gap: 12,
+      gap: SPACING.CHIP_INSET,
       alignItems: 'stretch',
     },
     promptText: {
@@ -242,8 +242,8 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
       opacity: 0.95,
     },
     actionButton: {
-      paddingVertical: 12,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
+      paddingHorizontal: SPACING.CHIP_INSET,
       borderRadius: 14,
       backgroundColor: colors.accentLineSoft,
       borderWidth: StyleSheet.hairlineWidth,
@@ -264,14 +264,14 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
     },
     navRow: {
       flexDirection: 'row',
-      gap: 12,
+      gap: SPACING.CHIP_INSET,
       alignSelf: 'stretch',
       marginBottom: 16,
     },
     navButton: {
       flex: 1,
-      paddingVertical: 14,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingVertical: SPACING.CHIP_INSET,
+      paddingHorizontal: SPACING.CHIP_INSET,
       borderRadius: 14,
       backgroundColor: colors.glassFill,
       borderWidth: StyleSheet.hairlineWidth,
@@ -297,8 +297,8 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
     },
     ctaHero: {
       marginTop: 8,
-      paddingVertical: 28,
-      paddingHorizontal: 24,
+      paddingVertical: SPACING.HERO_INSET,
+      paddingHorizontal: SPACING.HERO_INSET,
       borderRadius: 22,
       backgroundColor: colors.accentLineSoft,
       borderWidth: StyleSheet.hairlineWidth,
@@ -349,7 +349,7 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
       flexDirection: 'row',
       alignItems: 'center',
       marginBottom: 16,
-      gap: 8,
+      gap: SPACING.sm,
     },
     inlineBackLabel: {
       fontSize: 15,
@@ -358,7 +358,7 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
     },
     practiceBlock: {
       ...t.FOCUS_PANEL,
-      padding: SPACING.SCREEN_EDGE_INSET,
+      padding: SPACING.CARD_INNER_INSET,
     },
     practiceExample: {
       fontSize: 14,
@@ -366,15 +366,15 @@ export function createTechniqueScreenStyles(colors, resolvedScheme = 'light') {
       fontStyle: 'italic',
       textAlign: 'center',
       marginBottom: 20,
-      paddingVertical: 12,
-      paddingHorizontal: 14,
+      paddingVertical: SPACING.CARD_INNER_INSET,
+      paddingHorizontal: SPACING.CARD_INNER_INSET,
       backgroundColor: colors.chromeInput,
       borderRadius: 14,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
     },
     listGap: {
-      gap: 14,
+      gap: SPACING.HERO_INSET_COMPACT,
     },
   });
 }

@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { SOFT_ATTENTION_PALETTE } from '../../utils/taskPriorityPalette';
+import { SPACING } from '../../constants/ui';
 
 export default function TasksSummaryStrip({
   todayCount = 0,
@@ -41,14 +42,14 @@ export default function TasksSummaryStrip({
       StyleSheet.create({
         row: {
           flexDirection: 'row',
-          gap: 8,
+          gap: SPACING.sm,
           marginBottom: 14,
         },
         tile: {
           flex: 1,
           borderRadius: 14,
-          paddingVertical: 12,
-          paddingHorizontal: 10,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           backgroundColor: colors.chromeCard,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.chromeCardBorder,

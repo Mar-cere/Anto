@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import { resolveInsightsHeroGradient } from '../../utils/insightsHeroGradient';
 import SheetBrandGradient from '../common/SheetBrandGradient';
@@ -22,7 +23,7 @@ export default function WeeklyInsightHero({ periodLabel, headline, body }) {
           borderColor: dark ? colors.glassOutline : colors.border,
         },
         inner: {
-          padding: 18,
+          padding: SPACING.HERO_INSET,
         },
         period: {
           fontSize: 12,

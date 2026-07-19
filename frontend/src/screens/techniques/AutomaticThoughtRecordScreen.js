@@ -198,7 +198,7 @@ const AutomaticThoughtRecordScreen = () => {
         stepRow: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
+          gap: SPACING.sm,
           marginBottom: 16,
         },
         stepDot: {
@@ -213,8 +213,8 @@ const AutomaticThoughtRecordScreen = () => {
         stepConnector: { flex: 1, height: 2, backgroundColor: colors.accentLineSoft },
         distortionRow: { marginTop: SPACING.sm },
         distortionOption: {
-          paddingVertical: 10,
-          paddingHorizontal: 12,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 10,
           borderWidth: 1,
           marginBottom: 8,

@@ -85,17 +85,33 @@ Tema claro/oscuro e i18n: skill **anto-i18n-theme-review** (fuente de verdad).
 
 | Token | Valor | Uso |
 |-------|-------|-----|
-| `SCREEN_EDGE_INSET` | 14 | Margen horizontal estándar de pantalla |
-| `xs`–`xxl` | 4–48 | Padding interno general |
+| `SCREEN_EDGE_INSET` | 12 | Margen horizontal estándar de pantalla |
+| `CARD_INNER_INSET` | 10 | Padding interno de cards / paneles |
+| `INPUT_INSET` | 12 | Padding interno de inputs |
+| `CHIP_INSET_COMPACT` / `CHIP_INSET` | 10 / 12 | Chips, pills y CTAs (compacto / estándar) |
+| `HERO_INSET_COMPACT` / `HERO_INSET` | 14 / 16 | Heroes y superficies generosas |
+| `xs`–`xxl` | 4–48 | Padding interno general / ritmo |
 | `FLOATING_NAV_SCROLL_BOTTOM_EXTRA` | 132 | Padding inferior en scroll con barra flotante |
 | `md` | 16 | Gap entre secciones (también `SECTION_GAP` en dashboard) |
+
+**Gaps (`gap:`):** preferir tokens — `sm` (8), `CARD_INNER`/`CHIP_COMPACT` (10), `CHIP`/`SCREEN_EDGE` (12), `HERO_COMPACT` (14), `md`/`HERO` (16), `lg` (24). No dejar `gap: 8|10|12|14|16` sueltos.
+
+**Regla anti doble gutter:** si el scroll/lista/`contentContainer` ya usa `SCREEN_EDGE_INSET`, los hijos (empty, error, strips, banners) **no** deben volver a aplicar `paddingHorizontal`/`marginHorizontal`/`padding` con `SCREEN_EDGE_INSET`. Excepción: componentes hermanos del scroll (fuera del content padded), p. ej. strips del chat o headers sticky.
+
+| Rol | Token |
+|-----|-------|
+| Borde de pantalla / gutter | `SCREEN_EDGE_INSET` |
+| Dentro de card / panel / fila | `CARD_INNER_INSET` |
+| Input | `INPUT_INSET` |
+| Chip / CTA | `CHIP_INSET` / `CHIP_INSET_COMPACT` |
+| Hero / superficie generosa | `HERO_INSET` / `HERO_INSET_COMPACT` |
 
 **Radios habituales:**
 - Cards: 20–22px (`CARD_RADIUS`, `GROUPED_RADIUS`)
 - Hero: 24px
 - Icon wraps: 12–14px
 - Pills / chips / CTAs redondeados: `borderRadius: 999`
-- Inputs: 12px
+- Inputs: `INPUT_INSET` (12)
 
 ---
 
@@ -228,7 +244,7 @@ screens/miPantalla/
 ```
 Diseño Anto:
 - [ ] useTheme() + tokens (no hex sueltos)
-- [ ] SPACING.SCREEN_EDGE_INSET en bordes horizontales
+- [ ] SPACING: SCREEN_EDGE 12, CARD_INNER 10, INPUT 12, CHIP 10/12, HERO 14/16; sin doble gutter
 - [ ] Scroll con padding inferior si hay FloatingNavBar
 - [ ] Ruta en ROUTES + StackNavigator (si pantalla nueva)
 - [ ] Reutiliza patrones dashboard/globalStyles existentes

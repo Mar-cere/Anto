@@ -7,6 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 import {
   ADDITIONAL_CONTROLS_MARGIN_LEFT,
   BUTTON_SIZE,
@@ -67,13 +68,13 @@ export default function PomodoroControls({
         },
         presetsChips: {
           flexDirection: 'row',
-          gap: 8,
+          gap: SPACING.sm,
           justifyContent: 'center',
           alignItems: 'center',
         },
         presetChip: {
-          paddingHorizontal: 10,
-          paddingVertical: 8,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
+          paddingVertical: SPACING.sm,
           minHeight: 34,
           borderRadius: 999,
           backgroundColor: colors.glassFill,

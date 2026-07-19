@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function WeeklyInsightConductCard({ title, body, ctaLabel, onPress }) {
@@ -11,7 +12,7 @@ export default function WeeklyInsightConductCard({ title, body, ctaLabel, onPres
       StyleSheet.create({
         card: {
           borderRadius: 18,
-          padding: 16,
+          padding: SPACING.HERO_INSET_COMPACT,
           marginBottom: 14,
           backgroundColor: colors.primary,
         },
@@ -34,8 +35,8 @@ export default function WeeklyInsightConductCard({ title, body, ctaLabel, onPres
           flexDirection: 'row',
           alignItems: 'center',
           gap: 6,
-          paddingVertical: 8,
-          paddingHorizontal: 12,
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 999,
           backgroundColor: 'rgba(255,255,255,0.16)',
         },

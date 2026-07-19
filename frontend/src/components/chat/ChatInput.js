@@ -23,7 +23,7 @@ import {
   useChatTexts,
 } from '../../screens/chat/chatScreenConstants';
 
-const DOCK_BLUR = Platform.OS === 'ios' ? 48 : 36;
+const DOCK_BLUR = Platform.OS === 'ios' ? 56 : 40;
 
 export default function ChatInput({
   value,
@@ -73,11 +73,6 @@ export default function ChatInput({
           paddingHorizontal: LAYOUT.INPUT_CONTAINER_PADDING_HORIZONTAL,
           paddingTop: LAYOUT.INPUT_CONTAINER_PADDING_VERTICAL,
           paddingBottom: bottomPad,
-          shadowColor: chatColors.PRIMARY,
-          shadowOffset: { width: 0, height: -6 },
-          shadowOpacity: dark ? 0.18 : 0.1,
-          shadowRadius: 16,
-          elevation: 8,
           overflow: 'hidden',
         },
         dockBackground: {
@@ -88,18 +83,23 @@ export default function ChatInput({
         },
         dockTint: {
           ...StyleSheet.absoluteFillObject,
-          backgroundColor: dark
-            ? chatColors.INPUT_DOCK_TINT_DARK
-            : chatColors.INPUT_DOCK_TINT_LIGHT,
+          backgroundColor:
+            Platform.OS === 'ios'
+              ? dark
+                ? chatColors.INPUT_DOCK_TINT_DARK
+                : chatColors.INPUT_DOCK_TINT_LIGHT
+              : dark
+                ? chatColors.INPUT_DOCK_TINT_DARK_FALLBACK
+                : chatColors.INPUT_DOCK_TINT_LIGHT_FALLBACK,
         },
         topAccent: {
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
-          height: StyleSheet.hairlineWidth * 2,
+          height: StyleSheet.hairlineWidth,
           backgroundColor: chatColors.INPUT_DOCK_TOP_LINE,
-          opacity: dark ? 0.55 : 0.85,
+          opacity: dark ? 0.4 : 0.55,
         },
         row: {
           flexDirection: 'row',
@@ -133,7 +133,7 @@ export default function ChatInput({
         },
         sendButtonDisabled: {
           backgroundColor: chatColors.SEND_BUTTON_DISABLED_BACKGROUND,
-          borderColor: chatColors.INPUT_FIELD_BORDER,
+          borderColor: chatColors.SEND_BUTTON_DISABLED_BORDER,
         },
       }),
     [bottomPad, chatColors, dark],
@@ -141,6 +141,9 @@ export default function ChatInput({
 
   const isEmpty = (value || '').trim() === '';
   const cannotSend = isEmpty || sendDisabled;
+  const sendIconColor = cannotSend
+    ? chatColors.SEND_BUTTON_DISABLED_ICON
+    : chatColors.SEND_BUTTON_ICON;
 
   return (
     <KeyboardAvoidingView
@@ -187,11 +190,7 @@ export default function ChatInput({
             accessibilityLabel={TEXTS.INPUT_SEND_A11Y_LABEL}
             accessibilityState={{ disabled: Boolean(cannotSend) }}
           >
-            <Ionicons
-              name="send"
-              size={ICON_SIZES.SEND}
-              color={cannotSend ? chatColors.ACCENT : chatColors.PRIMARY}
-            />
+            <Ionicons name="send" size={ICON_SIZES.SEND} color={sendIconColor} />
           </TouchableOpacity>
         </View>
       </View>

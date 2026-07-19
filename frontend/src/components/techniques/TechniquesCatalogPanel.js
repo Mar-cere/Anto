@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import DashboardGroupedRow from '../dashboard/DashboardGroupedRow';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import { createDashboardStyles } from '../../styles/dashboardTheme';
 import {
@@ -322,7 +323,7 @@ export default function TechniquesCatalogPanel({
     return (
       <View style={embedded ? undefined : styles.scrollContent}>
         {renderQuickAccess()}
-        <View style={[styles.centerContainer, embedded && { minHeight: 120, paddingVertical: 20 }]}>
+        <View style={[styles.centerContainer, embedded && { minHeight: 120, paddingVertical: SPACING.HERO_INSET }]}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>{TEXTS.LOADING}</Text>
         </View>
@@ -334,7 +335,7 @@ export default function TechniquesCatalogPanel({
     return (
       <>
         {renderQuickAccess()}
-        <View style={[styles.centerContainer, embedded && { minHeight: 120, paddingVertical: 20 }]}>
+        <View style={[styles.centerContainer, embedded && { minHeight: 120, paddingVertical: SPACING.HERO_INSET }]}>
           <MaterialCommunityIcons name="alert-circle" size={40} color={colors.error} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={() => loadTechniques()}>
@@ -350,7 +351,7 @@ export default function TechniquesCatalogPanel({
     return (
       <View style={embedded ? undefined : styles.scrollContent}>
         {renderQuickAccess()}
-        <View style={[styles.centerContainer, { paddingVertical: embedded ? 16 : 24 }]}>
+        <View style={[styles.centerContainer, { paddingVertical: embedded ? SPACING.HERO_INSET : SPACING.lg }]}>
           <MaterialCommunityIcons
             name={isFilteredEmpty ? 'filter-off' : 'book-open-variant'}
             size={40}

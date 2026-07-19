@@ -68,7 +68,7 @@ const ProtocolProgressIndicator = ({
         container: {
           backgroundColor: colors.cardBackground,
           borderRadius: 12,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 12,
           borderWidth: 1,
           borderColor: colors.accentLine,
@@ -87,7 +87,7 @@ const ProtocolProgressIndicator = ({
         headerLeft: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
+          gap: SPACING.sm,
         },
         title: {
           fontSize: 14,
@@ -95,7 +95,7 @@ const ProtocolProgressIndicator = ({
           color: colors.text,
         },
         pauseButton: {
-          padding: 4,
+          padding: SPACING.xs,
         },
         protocolName: {
           fontSize: 16,
@@ -126,7 +126,7 @@ const ProtocolProgressIndicator = ({
         skipButton: {
           alignSelf: 'flex-end',
           paddingVertical: 6,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingHorizontal: SPACING.CHIP_INSET,
         },
         skipButtonText: {
           fontSize: 12,

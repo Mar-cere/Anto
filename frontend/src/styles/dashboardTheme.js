@@ -89,7 +89,7 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
     },
     surfaceCard: {
       ...t.SURFACE,
-      padding: 18,
+      padding: SPACING.HERO_INSET,
     },
     groupedCard: {
       ...t.GROUPED_SURFACE,
@@ -116,7 +116,7 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
     },
     sectionFooterLink: {
       alignSelf: 'center',
-      paddingVertical: 12,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
       marginTop: 4,
     },
     sectionFooterLinkText: {
@@ -131,21 +131,21 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       marginLeft: 6,
     },
     inlineState: {
-      paddingVertical: 20,
-      paddingHorizontal: 8,
+      paddingVertical: SPACING.HERO_INSET,
+      paddingHorizontal: SPACING.sm,
       alignItems: 'center',
       justifyContent: 'center',
     },
     heroCard: {
       ...t.HERO_SURFACE,
-      padding: 22,
+      padding: SPACING.HERO_INSET,
       minHeight: 148,
       marginBottom: t.SECTION_GAP,
     },
     heroCardStreakOnly: {
       minHeight: 88,
-      paddingVertical: 18,
-      paddingHorizontal: 20,
+      paddingVertical: SPACING.HERO_INSET,
+      paddingHorizontal: SPACING.HERO_INSET,
       justifyContent: 'center',
       overflow: 'hidden',
       backgroundColor: 'transparent',
@@ -160,7 +160,7 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
     heroStreakDynamicRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 14,
+      gap: SPACING.HERO_INSET_COMPACT,
       zIndex: 1,
     },
     heroStreakIconWrap: {
@@ -216,8 +216,8 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       alignSelf: 'flex-start',
       flexWrap: 'wrap',
       gap: 6,
-      paddingVertical: 10,
-      paddingHorizontal: 14,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
+      paddingHorizontal: SPACING.CHIP_INSET,
       borderRadius: 999,
       marginBottom: t.SECTION_GAP,
       borderWidth: StyleSheet.hairlineWidth,
@@ -241,8 +241,8 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
     heroStreakChipStreakOnly: {
       marginBottom: 0,
       alignSelf: 'flex-start',
-      paddingVertical: 10,
-      paddingHorizontal: 16,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
+      paddingHorizontal: SPACING.HERO_INSET_COMPACT,
       gap: 7,
       minHeight: 44,
     },
@@ -273,7 +273,7 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       gap: 5,
       marginBottom: 10,
       paddingVertical: 6,
-      paddingHorizontal: 12,
+      paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
       borderRadius: 999,
       backgroundColor: 'rgba(255, 255, 255, 0.16)',
       borderWidth: StyleSheet.hairlineWidth,
@@ -316,8 +316,8 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       flexDirection: 'row',
       alignItems: 'center',
       marginTop: 18,
-      paddingVertical: 11,
-      paddingHorizontal: 16,
+      paddingVertical: SPACING.CHIP_INSET,
+      paddingHorizontal: SPACING.HERO_INSET_COMPACT,
       borderRadius: 999,
       backgroundColor: dark ? 'rgba(255, 255, 255, 0.14)' : 'rgba(255, 255, 255, 0.22)',
       borderWidth: StyleSheet.hairlineWidth,
@@ -330,14 +330,14 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
     },
     statsRow: {
       flexDirection: 'row',
-      gap: 12,
+      gap: SPACING.CHIP_INSET,
       marginBottom: t.SECTION_GAP,
     },
     statCard: {
       flex: 1,
       ...t.SURFACE,
-      paddingVertical: 18,
-      paddingHorizontal: 16,
+      paddingVertical: SPACING.HERO_INSET,
+      paddingHorizontal: SPACING.HERO_INSET_COMPACT,
     },
     statCardSolo: {
       flex: 1,
@@ -374,8 +374,8 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
     groupedRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 14,
-      paddingHorizontal: 16,
+      paddingVertical: SPACING.CHIP_INSET,
+      paddingHorizontal: SPACING.HERO_INSET_COMPACT,
       minHeight: 68,
     },
     groupedRowBorder: {
@@ -418,8 +418,8 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       flex: 1,
       minWidth: 0,
       alignItems: 'center',
-      paddingVertical: 10,
-      paddingHorizontal: 10,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
+      paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
       borderRadius: 999,
       borderWidth: StyleSheet.hairlineWidth,
     },
@@ -444,13 +444,13 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
     moodRow: {
       flexDirection: 'row',
       flexWrap: 'nowrap',
-      gap: 8,
+      gap: SPACING.sm,
       marginTop: 14,
     },
     antoRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
+      gap: SPACING.CHIP_INSET,
     },
     antoAvatar: {
       width: 48,
@@ -478,8 +478,8 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       color: colors.textSecondary,
     },
     antoCta: {
-      paddingVertical: 9,
-      paddingHorizontal: 14,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
+      paddingHorizontal: SPACING.CHIP_INSET,
       borderRadius: 999,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: colors.accentLine,
@@ -507,13 +507,13 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
     moodActionRow: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 8,
+      gap: SPACING.sm,
       marginTop: 12,
     },
     moodActionChip: {
       borderRadius: 999,
-      paddingVertical: 9,
-      paddingHorizontal: 14,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
+      paddingHorizontal: SPACING.CHIP_INSET,
       borderWidth: StyleSheet.hairlineWidth,
     },
     moodActionChipPrimary: {
@@ -537,7 +537,7 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
     moodExpandedHeader: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      gap: 8,
+      gap: SPACING.sm,
     },
     moodExpandedTitle: {
       flex: 1,
@@ -545,12 +545,12 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
     },
     moodCollapseIconBtn: {
       paddingTop: 2,
-      paddingLeft: 4,
+      paddingLeft: SPACING.xs,
     },
     moodCollapsedRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: SPACING.CARD_INNER_INSET,
       minHeight: 44,
     },
     moodCollapsedTextCol: {
@@ -570,12 +570,12 @@ export function createDashboardStyles(colors, resolvedScheme = 'light') {
       color: colors.textMuted,
     },
     homeInsightCard: {
-      padding: 18,
+      padding: SPACING.HERO_INSET,
     },
     homeInsightRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      gap: 12,
+      gap: SPACING.CHIP_INSET,
       marginTop: 10,
     },
     homeInsightIconWrap: {

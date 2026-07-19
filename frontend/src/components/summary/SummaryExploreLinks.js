@@ -2,6 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 
 export default function SummaryExploreLinks({ sectionTitle, links }) {
@@ -19,7 +20,7 @@ export default function SummaryExploreLinks({ sectionTitle, links }) {
           letterSpacing: 0.6,
           color: colors.textMuted ?? colors.textSecondary,
           marginBottom: 8,
-          paddingHorizontal: 4,
+          paddingHorizontal: SPACING.xs,
         },
         group: {
           borderRadius: 18,
@@ -31,9 +32,9 @@ export default function SummaryExploreLinks({ sectionTitle, links }) {
         row: {
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: 14,
-          paddingHorizontal: 14,
-          gap: 12,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
+          gap: SPACING.CHIP_INSET,
           borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor: colors.border,
         },

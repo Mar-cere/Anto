@@ -44,7 +44,7 @@ export default function HabitsScreenHeader({
         header: {
           paddingHorizontal: HEADER_PADDING,
           paddingBottom: HEADER_PADDING,
-          paddingTop: 8,
+          paddingTop: SPACING.sm,
         },
         headerTitle: {
           fontSize: 22,
@@ -69,7 +69,7 @@ export default function HabitsScreenHeader({
         filterButton: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
+          gap: SPACING.sm,
           paddingVertical: FILTER_PADDING_VERTICAL,
           paddingHorizontal: FILTER_PADDING_HORIZONTAL,
           borderRadius: FILTER_BORDER_RADIUS,
@@ -96,15 +96,15 @@ export default function HabitsScreenHeader({
           borderRadius: 14,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingVertical: 8,
-          gap: 8,
+          paddingHorizontal: SPACING.INPUT_INSET,
+          paddingVertical: SPACING.sm,
+          gap: SPACING.sm,
         },
         searchInput: {
           flex: 1,
           color: colors.text,
           fontSize: 16,
-          paddingVertical: 8,
+          paddingVertical: SPACING.sm,
         },
       }),
     [colors, t, HC],

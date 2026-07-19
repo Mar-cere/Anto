@@ -3,12 +3,12 @@
  * Usada en Perfil y en Inicio.
  */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SPACING } from '../constants/ui';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useProfileTexts } from '../screens/profileScreen/profileScreenConstants';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { SPACING } from '../constants/ui';
 import { getLastSessionDisplayText } from '../utils/dashboardHomeUtils';
 
 function formatGeneratedAt(iso, language) {
@@ -50,12 +50,12 @@ export function LastSessionSummaryCard({ summary, onOpenChat, flushWithParentGut
       StyleSheet.create({
         container: {
           paddingHorizontal: flushWithParentGutter ? 0 : SPACING.SCREEN_EDGE_INSET,
-          paddingBottom: 8,
+          paddingBottom: SPACING.sm,
         },
         card: {
           backgroundColor: card.bg,
           borderRadius: 12,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           borderWidth: 1,
           borderColor: card.border,
         },
@@ -77,7 +77,7 @@ export function LastSessionSummaryCard({ summary, onOpenChat, flushWithParentGut
           fontWeight: '600',
           color: card.meta,
           backgroundColor: card.badgeBg,
-          paddingHorizontal: 8,
+          paddingHorizontal: SPACING.sm,
           paddingVertical: 3,
           borderRadius: 8,
           overflow: 'hidden',
@@ -97,8 +97,8 @@ export function LastSessionSummaryCard({ summary, onOpenChat, flushWithParentGut
           alignSelf: 'flex-start',
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: 8,
-          paddingHorizontal: 14,
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.CHIP_INSET,
           borderRadius: 12,
           backgroundColor: card.badgeBg,
           borderWidth: 1,

@@ -5,6 +5,7 @@
  */
 
 import { Ionicons } from '@expo/vector-icons';
+import { SPACING } from '../constants/ui';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -71,12 +72,12 @@ export default function ChangePasswordScreen({ navigation }) {
       StyleSheet.create({
         safeArea: { flex: 1, backgroundColor: colors.background },
         scroll: { flexGrow: 1 },
-        container: { flex: 1, padding: 24 },
+        container: { flex: 1, padding: SPACING.SCREEN_EDGE_INSET },
         header: {
           flexDirection: 'row',
           alignItems: 'center',
           marginBottom: 28,
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         backBtn: {
           width: 40,
@@ -113,16 +114,16 @@ export default function ChangePasswordScreen({ navigation }) {
           borderRadius: 12,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
-          paddingHorizontal: 14,
+          paddingHorizontal: SPACING.INPUT_INSET,
         },
         inputRowError: { borderColor: colors.error },
         input: {
           flex: 1,
           fontSize: 16,
           color: colors.text,
-          paddingVertical: 14,
+          paddingVertical: SPACING.CHIP_INSET,
         },
-        eyeBtn: { padding: 8 },
+        eyeBtn: { padding: SPACING.sm },
         errorText: {
           color: colors.error,
           fontSize: 12,
@@ -133,7 +134,7 @@ export default function ChangePasswordScreen({ navigation }) {
           marginTop: 12,
           backgroundColor: colors.primary,
           borderRadius: 14,
-          paddingVertical: 16,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
           alignItems: 'center',
         },
         buttonDisabled: { opacity: 0.55 },
@@ -145,7 +146,7 @@ export default function ChangePasswordScreen({ navigation }) {
         successCard: {
           marginTop: 40,
           alignItems: 'center',
-          padding: 24,
+          padding: SPACING.HERO_INSET,
           borderRadius: 16,
           backgroundColor: colors.accentLineSoft,
           borderWidth: StyleSheet.hairlineWidth,
@@ -169,8 +170,8 @@ export default function ChangePasswordScreen({ navigation }) {
           marginTop: 24,
           backgroundColor: colors.primary,
           borderRadius: 14,
-          paddingVertical: 14,
-          paddingHorizontal: 32,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.HERO_INSET,
         },
         successButtonText: {
           color: colors.textOnPrimary ?? '#fff',

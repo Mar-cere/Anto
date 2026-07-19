@@ -3,6 +3,7 @@
  * Avatar con iniciales, campos agrupados en card, botón de guardado prominente.
  */
 import { Ionicons } from '@expo/vector-icons';
+import { SPACING } from '../constants/ui';
 import React, { useMemo } from 'react';
 import {
   ActivityIndicator,
@@ -49,7 +50,7 @@ export default function EditProfileScreen({ navigation }) {
       StyleSheet.create({
         safe: { flex: 1, backgroundColor: colors.background },
         scroll: { flexGrow: 1 },
-        container: { padding: 24 },
+        container: { padding: SPACING.SCREEN_EDGE_INSET },
         header: {
           flexDirection: 'row',
           alignItems: 'center',
@@ -72,8 +73,8 @@ export default function EditProfileScreen({ navigation }) {
           letterSpacing: -0.3,
         },
         editBtn: {
-          paddingHorizontal: 14,
-          paddingVertical: 8,
+          paddingHorizontal: SPACING.INPUT_INSET,
+          paddingVertical: SPACING.sm,
           borderRadius: 10,
           backgroundColor: colors.accentLineSoft,
           borderWidth: StyleSheet.hairlineWidth,
@@ -117,7 +118,7 @@ export default function EditProfileScreen({ navigation }) {
           borderRadius: 16,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
-          padding: 20,
+          padding: SPACING.HERO_INSET,
           marginBottom: 20,
         },
         cardTitle: {
@@ -143,7 +144,7 @@ export default function EditProfileScreen({ navigation }) {
           borderRadius: 12,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
-          paddingHorizontal: 14,
+          paddingHorizontal: SPACING.INPUT_INSET,
         },
         inputRowDisabled: {
           opacity: 0.6,
@@ -154,7 +155,7 @@ export default function EditProfileScreen({ navigation }) {
           flex: 1,
           fontSize: 16,
           color: colors.text,
-          paddingVertical: 13,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
         },
         inputIcon: { marginRight: 10 },
         helperText: {
@@ -172,7 +173,7 @@ export default function EditProfileScreen({ navigation }) {
         saveBtn: {
           backgroundColor: colors.primary,
           borderRadius: 14,
-          paddingVertical: 16,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
           alignItems: 'center',
           marginTop: 8,
         },
@@ -188,7 +189,7 @@ export default function EditProfileScreen({ navigation }) {
           justifyContent: 'center',
           backgroundColor: colors.successSoft ?? '#e8fce8',
           borderRadius: 12,
-          paddingVertical: 12,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           marginBottom: 16,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.success ?? '#4BB543',

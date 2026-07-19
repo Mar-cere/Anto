@@ -82,7 +82,7 @@ export default function SubscriptionContent({
         scrollView: { flex: 1 },
         scrollContent: {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingTop: 8,
+          paddingTop: SPACING.sm,
         },
         hero: {
           alignItems: 'center',
@@ -106,7 +106,7 @@ export default function SubscriptionContent({
           marginBottom: 4,
         },
         sectionShell: {
-          padding: 14,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 18,
           borderRadius: 18,
           borderWidth: StyleSheet.hairlineWidth,
@@ -128,17 +128,17 @@ export default function SubscriptionContent({
         },
         planGrid: {
           flexDirection: 'row',
-          gap: 8,
+          gap: SPACING.sm,
           marginBottom: 18,
         },
         cta: {
           backgroundColor: colors.primary,
           borderRadius: 16,
-          paddingVertical: 16,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'row',
-          gap: 8,
+          gap: SPACING.sm,
           marginBottom: 12,
         },
         ctaDisabled: {
@@ -157,13 +157,13 @@ export default function SubscriptionContent({
           marginBottom: 16,
         },
         benefits: {
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
           marginBottom: 18,
         },
         benefitRow: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
         },
         benefitText: {
           flex: 1,
@@ -208,9 +208,9 @@ export default function SubscriptionContent({
           borderWidth: 1,
           borderColor: colors.error,
           borderRadius: 12,
-          paddingVertical: 12,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           marginTop: 12,
-          gap: 8,
+          gap: SPACING.sm,
         },
         cancelButtonText: { color: colors.error, fontSize: 16, fontWeight: '600' },
         restoreButton: {
@@ -219,8 +219,8 @@ export default function SubscriptionContent({
           justifyContent: 'center',
           marginTop: 4,
           marginBottom: 8,
-          paddingVertical: 12,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
+          paddingHorizontal: SPACING.CHIP_INSET,
         },
         restoreButtonText: {
           color: colors.textSecondary,
@@ -229,7 +229,7 @@ export default function SubscriptionContent({
           marginLeft: 8,
           textDecorationLine: 'underline',
         },
-        emptyContainer: { padding: 32, alignItems: 'center' },
+        emptyContainer: { paddingVertical: SPACING.HERO_INSET, alignItems: 'center' },
         emptyText: { color: colors.textSecondary, fontSize: 16, textAlign: 'center' },
       }),
     [colors, resolvedScheme, subscribing],

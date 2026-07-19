@@ -8,6 +8,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SPACING } from '../constants/ui';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -26,7 +27,6 @@ import {
 import { api, ENDPOINTS } from '../config/api';
 import { useToast } from '../context/ToastContext';
 import { useTheme } from '../context/ThemeContext';
-import { SPACING } from '../constants/ui';
 import { useSectionTranslations } from '../hooks/useTranslations';
 
 // Constantes de validación
@@ -215,7 +215,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'flex-start',
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           borderBottomWidth: 1,
           borderBottomColor: colors.border ?? 'rgba(36, 35, 79, 0.06)',
         },
@@ -241,15 +241,15 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
           lineHeight: 20,
         },
         closeButton: {
-          padding: 4,
+          padding: SPACING.xs,
         },
         scrollView: {
           maxHeight: 400,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
         },
         contactForm: {
           marginBottom: 24,
-          paddingBottom: 24,
+          paddingBottom: SPACING.HERO_INSET,
           borderBottomWidth: 1,
           borderBottomColor: colors.border ?? 'rgba(36, 35, 79, 0.06)',
         },
@@ -265,7 +265,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
           color: colors.primary,
         },
         removeButton: {
-          padding: 4,
+          padding: SPACING.xs,
         },
         inputGroup: {
           marginBottom: 16,
@@ -283,7 +283,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
           borderRadius: 12,
           borderWidth: 1,
           borderColor: colors.border ?? 'rgba(36, 35, 79, 0.10)',
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingHorizontal: SPACING.INPUT_INSET,
           minHeight: 50,
         },
         inputError: {
@@ -297,7 +297,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
           flex: 1,
           color: colors.text,
           fontSize: 16,
-          paddingVertical: 12,
+          paddingVertical: SPACING.CHIP_INSET,
         },
         errorText: {
           color: colors.error,
@@ -315,7 +315,7 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CHIP_INSET,
           borderRadius: 12,
           borderWidth: 2,
           borderColor: colors.primary,
@@ -331,14 +331,14 @@ const EmergencyContactsModal = ({ visible, onClose, onSave, existingContacts = [
         modalActions: {
           flexDirection: 'row',
           justifyContent: 'space-between',
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           borderTopWidth: 1,
           borderTopColor: colors.border ?? 'rgba(36, 35, 79, 0.06)',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         actionButton: {
           flex: 1,
-          paddingVertical: 14,
+          paddingVertical: SPACING.CHIP_INSET,
           borderRadius: 12,
           alignItems: 'center',
           justifyContent: 'center',

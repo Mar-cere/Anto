@@ -37,7 +37,7 @@ const DashboardScroll = ({
         },
         contentContainer: {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingTop: 8,
+          paddingTop: SPACING.sm,
         },
         navSpacer: {
           height: scrollBottomInset,

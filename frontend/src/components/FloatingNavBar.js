@@ -119,8 +119,8 @@ const FloatingNavBar = ({
         tabInner: {
           alignItems: 'center',
           justifyContent: 'center',
-          paddingVertical: 8,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 14,
         },
         tabInnerActive: {

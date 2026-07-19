@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useLanguage } from '../../context/LanguageContext';
+import { SPACING } from '../../constants/ui';
 import {
   ABC_MACRO_CYCLE_COPY,
   getAbcMacroCycleInterventionHint,
@@ -96,7 +97,7 @@ export default function AbcMacroCycleVisual({
       StyleSheet.create({
         wrap: {
           marginTop: compact ? 6 : 10,
-          paddingTop: compact ? 8 : 10,
+          paddingTop: compact ? SPACING.sm : SPACING.CARD_INNER_INSET,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.border,
         },

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
+import { SPACING } from '../../constants/ui';
 import { getFocusTheme } from '../../styles/focusCardTheme';
 import { lightColors } from '../../styles/themePalettes';
 
@@ -27,8 +28,8 @@ export function createCardStyles(colors, resolvedScheme = 'light') {
   const commonStyles = StyleSheet.create({
     cardContainer: {
       ...t.FOCUS_PANEL,
-      paddingVertical: 12,
-      paddingHorizontal: 12,
+      paddingVertical: SPACING.CARD_INNER_INSET,
+      paddingHorizontal: SPACING.CARD_INNER_INSET,
     },
     cardHeader: {
       flexDirection: 'row',
@@ -39,7 +40,7 @@ export function createCardStyles(colors, resolvedScheme = 'light') {
     titleContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 12,
+      gap: SPACING.CHIP_INSET,
       flex: 1,
       minWidth: 0,
     },
@@ -58,8 +59,8 @@ export function createCardStyles(colors, resolvedScheme = 'light') {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
       borderRadius: 12,
       backgroundColor: colors.accentLineSoft,
       flexShrink: 0,
@@ -72,16 +73,16 @@ export function createCardStyles(colors, resolvedScheme = 'light') {
     itemContainer: {
       backgroundColor: cardColors.cardBg,
       borderRadius: 14,
-      paddingVertical: 12,
-      paddingHorizontal: 12,
+      paddingVertical: SPACING.CARD_INNER_INSET,
+      paddingHorizontal: SPACING.CARD_INNER_INSET,
       marginBottom: 8,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
     },
     emptyContainer: {
       alignItems: 'center',
-      padding: 24,
-      gap: 12,
+      padding: SPACING.HERO_INSET,
+      gap: SPACING.CHIP_INSET,
     },
     emptyText: {
       color: t.FOCUS_META,
@@ -93,9 +94,9 @@ export function createCardStyles(colors, resolvedScheme = 'light') {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 10,
-      paddingVertical: 12,
-      paddingHorizontal: 12,
+      gap: SPACING.CARD_INNER_INSET,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
+      paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
       marginTop: 16,
       borderRadius: 14,
       backgroundColor: colors.accentLineSoft,
@@ -109,15 +110,15 @@ export function createCardStyles(colors, resolvedScheme = 'light') {
       fontWeight: '500',
     },
     loader: {
-      padding: 12,
+      padding: SPACING.CARD_INNER_INSET,
     },
   });
 
   const compactStyles = StyleSheet.create({
     emptyContainer: {
-      paddingVertical: 10,
-      paddingHorizontal: 8,
-      gap: 8,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
+      paddingHorizontal: SPACING.sm,
+      gap: SPACING.sm,
     },
     emptyText: {
       fontSize: 14,
@@ -125,7 +126,7 @@ export function createCardStyles(colors, resolvedScheme = 'light') {
     },
     addButton: {
       marginTop: 6,
-      paddingVertical: 9,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
       borderRadius: 12,
       borderColor: colors.accentLine,
       backgroundColor: colors.accentLineSoft,

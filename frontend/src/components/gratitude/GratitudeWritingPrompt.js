@@ -33,7 +33,7 @@ export default function GratitudeWritingPrompt({
         card: {
           marginTop: 14,
           marginBottom: 4,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           borderRadius: 22,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: t.FOCUS_BORDER_SUBTLE,

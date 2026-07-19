@@ -27,13 +27,13 @@ export default function SubscriptionLegalSection({
     () =>
       StyleSheet.create({
         section: {
-          marginBottom: inShell ? 0 : 20,
-          paddingVertical: inShell ? 0 : 16,
-          paddingHorizontal: inShell ? 0 : 4,
+          marginBottom: inShell ? 0 : SPACING.HERO_INSET,
+          paddingVertical: inShell ? 0 : SPACING.HERO_INSET,
+          paddingHorizontal: inShell ? 0 : SPACING.xs,
         },
         sectionCompact: {
-          marginTop: inShell ? 0 : 24,
-          paddingTop: inShell ? 0 : 20,
+          marginTop: inShell ? 0 : SPACING.lg,
+          paddingTop: inShell ? 0 : SPACING.HERO_INSET,
           borderTopWidth: inShell ? 0 : 1,
           borderTopColor: colors.border,
           marginBottom: 0,
@@ -47,14 +47,14 @@ export default function SubscriptionLegalSection({
         legalLink: {
           flexDirection: 'row',
           alignItems: 'center',
-          paddingVertical: 12,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           marginBottom: 8,
           backgroundColor: colors.chromeCard,
           borderRadius: 12,
           borderWidth: 1,
           borderColor: colors.border,
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         legalLinkText: {
           flex: 1,

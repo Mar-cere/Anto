@@ -43,16 +43,23 @@ describe('ui constants', () => {
 
   describe('SPACING', () => {
     it('debe tener espaciados positivos', () => {
-      expect(SPACING.SCREEN_EDGE_INSET).toBe(14);
+      expect(SPACING.SCREEN_EDGE_INSET).toBe(12);
+      expect(SPACING.CARD_INNER_INSET).toBe(10);
+      expect(SPACING.INPUT_INSET).toBe(12);
+      expect(SPACING.CHIP_INSET_COMPACT).toBe(10);
+      expect(SPACING.CHIP_INSET).toBe(12);
+      expect(SPACING.HERO_INSET_COMPACT).toBe(14);
+      expect(SPACING.HERO_INSET).toBe(16);
       expect(SPACING.FLOATING_NAV_DOCK_INSET_RELIEF).toBe(24);
       expect(SPACING.FLOATING_NAV_DOCK_ABOVE_SAFE).toBe(0);
       expect(SPACING.FLOATING_NAV_DOCK_MIN_FROM_BOTTOM).toBe(8);
       expect(SPACING.FLOATING_NAV_DOCK_FALLBACK_BOTTOM_WEB).toBe(34);
       expect(SPACING.FLOATING_NAV_SCROLL_BOTTOM_EXTRA).toBe(132);
       expect(SPACING.CONTENT_PADDING_BOTTOM).toBe(132);
-      expect(SPACING.ERROR_PADDING).toBe(15);
+      expect(SPACING.ERROR_PADDING).toBe(SPACING.HERO_INSET_COMPACT);
       expect(SPACING.ERROR_MARGIN_BOTTOM).toBe(20);
-      expect(SPACING.ERROR_BUTTON_PADDING_HORIZONTAL).toBe(15);
+      expect(SPACING.ERROR_BUTTON_PADDING_HORIZONTAL).toBe(SPACING.CHIP_INSET);
+      expect(SPACING.ERROR_BUTTON_PADDING_VERTICAL).toBe(SPACING.sm);
     });
     it('todos los valores deben ser números positivos', () => {
       Object.values(SPACING).forEach((s) => {

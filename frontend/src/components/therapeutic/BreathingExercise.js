@@ -125,10 +125,10 @@ const BreathingExercise = ({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          paddingVertical: 16,
-          paddingHorizontal: 32,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
+          paddingHorizontal: SPACING.HERO_INSET,
           borderRadius: 14,
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         primaryButton: {
           backgroundColor: colors.primary,

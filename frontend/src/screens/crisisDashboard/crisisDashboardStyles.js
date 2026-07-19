@@ -52,8 +52,8 @@ export function createCrisisDashboardStyles(colors) {
   },
   retryButton: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: SPACING.CHIP_INSET,
+    paddingVertical: SPACING.CHIP_INSET_COMPACT,
     borderRadius: 12,
     marginTop: 24,
   },
@@ -67,13 +67,13 @@ export function createCrisisDashboardStyles(colors) {
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-    paddingTop: 16,
-    paddingBottom: 16,
+    paddingTop: SPACING.HERO_INSET_COMPACT,
+    paddingBottom: SPACING.HERO_INSET_COMPACT,
     borderBottomWidth: 1,
     borderBottomColor: CARD_BORDER,
   },
   backButton: {
-    padding: 8,
+    padding: SPACING.sm,
   },
   title: {
     fontSize: TYPOGRAPHY.TITLE,
@@ -115,8 +115,8 @@ export function createCrisisDashboardStyles(colors) {
     color: colors.textSecondary,
     fontStyle: 'italic',
     textAlign: 'center',
-    paddingVertical: 28,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    paddingVertical: SPACING.HERO_INSET,
+    // Sin paddingHorizontal: el `section` padre ya aporta SCREEN_EDGE.
     lineHeight: 20,
   },
   periodSelectorContainer: {
@@ -133,7 +133,7 @@ export function createCrisisDashboardStyles(colors) {
     width: '48%',
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: SPACING.SCREEN_EDGE_INSET,
+    padding: SPACING.CARD_INNER_INSET,
     marginBottom: 12,
     alignItems: 'center',
     borderWidth: 1,
@@ -154,7 +154,7 @@ export function createCrisisDashboardStyles(colors) {
   riskCard: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: SPACING.SCREEN_EDGE_INSET,
+    padding: SPACING.CARD_INNER_INSET,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -167,8 +167,8 @@ export function createCrisisDashboardStyles(colors) {
     fontWeight: '600',
   },
   riskBadge: {
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-    paddingVertical: 8,
+    paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
+    paddingVertical: SPACING.sm,
     borderRadius: 20,
   },
   riskText: {
@@ -180,13 +180,13 @@ export function createCrisisDashboardStyles(colors) {
     flexDirection: 'row',
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: 4,
+    padding: SPACING.xs,
     borderWidth: 1,
     borderColor: CARD_BORDER,
   },
   periodButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: SPACING.CHIP_INSET,
+    paddingVertical: SPACING.sm,
     borderRadius: 10,
     minWidth: 60,
     alignItems: 'center',
@@ -205,7 +205,7 @@ export function createCrisisDashboardStyles(colors) {
   chartContainer: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: SPACING.SCREEN_EDGE_INSET,
+    padding: SPACING.CARD_INNER_INSET,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: CARD_BORDER,
@@ -217,7 +217,7 @@ export function createCrisisDashboardStyles(colors) {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: SPACING.sm,
   },
   trendText: {
     color: colors.text,
@@ -227,7 +227,7 @@ export function createCrisisDashboardStyles(colors) {
   historyItem: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: SPACING.SCREEN_EDGE_INSET,
+    padding: SPACING.CARD_INNER_INSET,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: CARD_BORDER,
@@ -268,7 +268,7 @@ export function createCrisisDashboardStyles(colors) {
   },
   emptyContainer: {
     alignItems: 'center',
-    padding: 40,
+    padding: SPACING.SCREEN_EDGE_INSET,
     marginTop: 40,
   },
   emptyTitle: {
@@ -304,7 +304,7 @@ export function createCrisisDashboardStyles(colors) {
     alignItems: 'center',
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: SPACING.SCREEN_EDGE_INSET,
+    padding: SPACING.CARD_INNER_INSET,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: CARD_BORDER,

@@ -2,6 +2,7 @@
  * Micro-guías interactivas (#90–#99) — vista única con timeline.
  */
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SPACING } from '../../constants/ui';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -173,7 +174,7 @@ export default function MicroGuideScreen() {
         </View>
       ) : finished ? (
         <ScrollView
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + SPACING.xl }]}
         >
           <View style={styles.doneHero}>
             <View style={styles.doneIconWrap}>
@@ -252,7 +253,7 @@ export default function MicroGuideScreen() {
             ) : null}
           </ScrollView>
 
-          <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+          <View style={[styles.footer, { paddingBottom: insets.bottom + SPACING.SCREEN_EDGE_INSET }]}>
             <TouchableOpacity
               style={styles.primaryBtn}
               onPress={handleComplete}

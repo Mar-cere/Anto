@@ -149,16 +149,16 @@ const CreateTaskModal = ({
         },
         scrollContent: {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingBottom: Platform.OS === 'ios' ? 36 : 28,
-          gap: 16,
+          paddingBottom: Platform.OS === 'ios' ? SPACING.xl : SPACING.lg + SPACING.xs,
+          gap: SPACING.md,
         },
         modalHeader: {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingTop: 14,
-          paddingBottom: 12,
+          paddingTop: SPACING.CHIP_INSET,
+          paddingBottom: SPACING.CHIP_INSET,
         },
         modalTitle: {
           fontSize: 17,
@@ -172,8 +172,8 @@ const CreateTaskModal = ({
           gap: 6,
         },
         keyboardDismissBtn: {
-          paddingVertical: 8,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.CHIP_INSET,
           borderRadius: 12,
           backgroundColor: colors.accentLineSoft,
           borderWidth: StyleSheet.hairlineWidth,
@@ -185,7 +185,7 @@ const CreateTaskModal = ({
           color: colors.primary,
         },
         closeButton: {
-          padding: 8,
+          padding: SPACING.sm,
           borderRadius: 12,
           backgroundColor: colors.glassFill,
           borderWidth: StyleSheet.hairlineWidth,
@@ -193,7 +193,7 @@ const CreateTaskModal = ({
         },
         typeSelector: {
           flexDirection: 'row',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
           marginBottom: 4,
         },
         typeButton: {
@@ -201,9 +201,9 @@ const CreateTaskModal = ({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 8,
-          paddingVertical: 12,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          gap: SPACING.sm,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
+          paddingHorizontal: SPACING.CHIP_INSET,
           borderRadius: 14,
           backgroundColor: colors.glassFill,
           borderWidth: StyleSheet.hairlineWidth,
@@ -229,7 +229,7 @@ const CreateTaskModal = ({
           color: colors.error,
         },
         inputContainer: {
-          gap: 8,
+          gap: SPACING.sm,
         },
         inputLabel: {
           color: colors.text,
@@ -245,7 +245,7 @@ const CreateTaskModal = ({
         input: {
           backgroundColor: colors.chromeInput,
           borderRadius: 14,
-          padding: 14,
+          padding: SPACING.INPUT_INSET,
           color: colors.text,
           fontSize: 16,
           borderWidth: StyleSheet.hairlineWidth,
@@ -275,17 +275,17 @@ const CreateTaskModal = ({
           marginTop: 4,
         },
         dateTimeContainer: {
-          gap: 8,
+          gap: SPACING.sm,
         },
         dateTimeButtons: {
           flexDirection: 'row',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         dateTimeButton: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
-          padding: 14,
+          gap: SPACING.sm,
+          padding: SPACING.INPUT_INSET,
           borderRadius: 14,
           backgroundColor: colors.accentLineSoft,
           borderWidth: StyleSheet.hairlineWidth,
@@ -316,7 +316,7 @@ const CreateTaskModal = ({
           backgroundColor: Platform.OS === 'ios' ? colors.chromeInput : 'transparent',
           borderRadius: 14,
           marginVertical: 8,
-          paddingVertical: Platform.OS === 'ios' ? 8 : 0,
+          paddingVertical: Platform.OS === 'ios' ? SPACING.sm : 0,
           borderWidth: Platform.OS === 'ios' ? StyleSheet.hairlineWidth : 0,
           borderColor: t.FOCUS_BORDER_SUBTLE,
         },
@@ -339,8 +339,8 @@ const CreateTaskModal = ({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 12,
-          padding: 14,
+          gap: SPACING.CHIP_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           borderRadius: 14,
           backgroundColor: colors.accentLineSoft,
           borderWidth: StyleSheet.hairlineWidth,
@@ -367,7 +367,7 @@ const CreateTaskModal = ({
         },
         priorityButtons: {
           flexDirection: 'row',
-          gap: 8,
+          gap: SPACING.sm,
         },
         priorityButton: {
           flex: 1,
@@ -375,7 +375,7 @@ const CreateTaskModal = ({
           alignItems: 'center',
           justifyContent: 'center',
           gap: 6,
-          paddingVertical: 12,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           paddingHorizontal: 6,
           borderRadius: 14,
           backgroundColor: colors.chromeInput,
@@ -398,7 +398,7 @@ const CreateTaskModal = ({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: 14,
+          padding: SPACING.CARD_INNER_INSET,
           borderRadius: 14,
           backgroundColor: colors.glassFill,
           borderWidth: StyleSheet.hairlineWidth,
@@ -408,8 +408,8 @@ const CreateTaskModal = ({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingVertical: 12,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.CARD_INNER_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           borderRadius: 14,
           backgroundColor: colors.glassFill,
           borderWidth: StyleSheet.hairlineWidth,
@@ -418,7 +418,7 @@ const CreateTaskModal = ({
         notificationHeader: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
+          gap: SPACING.sm,
         },
         notificationLabel: {
           color: colors.textSecondary,
@@ -428,7 +428,7 @@ const CreateTaskModal = ({
         notificationLeft: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
           flex: 1,
           minWidth: 0,
         },
@@ -447,12 +447,12 @@ const CreateTaskModal = ({
           marginTop: 2,
         },
         submitButtonContainer: {
-          paddingTop: 4,
+          paddingTop: SPACING.xs,
         },
         submitButton: {
           backgroundColor: colors.primary,
-          paddingVertical: 16,
-          paddingHorizontal: 18,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
+          paddingHorizontal: SPACING.HERO_INSET,
           borderRadius: 999,
           alignItems: 'center',
         },
@@ -465,7 +465,7 @@ const CreateTaskModal = ({
         loadingContainer: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
         },
         submitButtonText: {
           color: colors.textOnPrimary,
@@ -1031,16 +1031,16 @@ const CreateTaskModal = ({
   },
   scrollContent: {
     paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-    paddingBottom: Platform.OS === 'ios' ? 36 : 28,
-    gap: 16,
+    paddingBottom: Platform.OS === 'ios' ? SPACING.xl : SPACING.lg + SPACING.xs,
+    gap: SPACING.md,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-    paddingTop: 14,
-    paddingBottom: 12,
+    paddingTop: SPACING.CHIP_INSET,
+    paddingBottom: SPACING.CHIP_INSET,
   },
   modalTitle: {
     fontSize: 17,
@@ -1054,8 +1054,8 @@ const CreateTaskModal = ({
     gap: 6,
   },
   keyboardDismissBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.CHIP_INSET,
     borderRadius: 12,
     backgroundColor: 'rgba(30, 131, 211, 0.12)',
     borderWidth: StyleSheet.hairlineWidth,
@@ -1067,13 +1067,13 @@ const CreateTaskModal = ({
     color: colors.primary,
   },
   closeButton: {
-    padding: 8,
+    padding: SPACING.sm,
     borderRadius: 12,
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   typeSelector: {
     flexDirection: 'row',
-    gap: 12,
+    gap: SPACING.CHIP_INSET,
     marginBottom: 4,
   },
   typeButton: {
@@ -1081,9 +1081,9 @@ const CreateTaskModal = ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    gap: SPACING.sm,
+    paddingVertical: SPACING.CHIP_INSET_COMPACT,
+    paddingHorizontal: SPACING.CHIP_INSET,
     borderRadius: 14,
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderWidth: StyleSheet.hairlineWidth,
@@ -1109,7 +1109,7 @@ const CreateTaskModal = ({
     color: colors.error,
   },
   inputContainer: {
-    gap: 8,
+    gap: SPACING.sm,
   },
   inputLabel: {
     color: 'rgba(92, 90, 120, 0.88)',
@@ -1121,7 +1121,7 @@ const CreateTaskModal = ({
   input: {
     backgroundColor: 'rgba(255, 255, 255, 0.04)',
     borderRadius: 14,
-    padding: 14,
+    padding: SPACING.INPUT_INSET,
     color: colors.text,
     fontSize: 16,
     borderWidth: StyleSheet.hairlineWidth,
@@ -1151,17 +1151,17 @@ const CreateTaskModal = ({
     marginTop: 4,
   },
   dateTimeContainer: {
-    gap: 8,
+    gap: SPACING.sm,
   },
   dateTimeButtons: {
     flexDirection: 'row',
-    gap: 12,
+    gap: SPACING.CHIP_INSET,
   },
   dateTimeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    padding: 14,
+    gap: SPACING.sm,
+    padding: SPACING.INPUT_INSET,
     borderRadius: 14,
     backgroundColor: 'rgba(30, 131, 211, 0.08)',
     borderWidth: StyleSheet.hairlineWidth,
@@ -1190,7 +1190,7 @@ const CreateTaskModal = ({
     backgroundColor: Platform.OS === 'ios' ? 'rgba(255, 255, 255, 0.04)' : 'transparent',
     borderRadius: 14,
     marginVertical: 8,
-    paddingVertical: Platform.OS === 'ios' ? 8 : 0,
+    paddingVertical: Platform.OS === 'ios' ? SPACING.sm : 0,
     borderWidth: Platform.OS === 'ios' ? StyleSheet.hairlineWidth : 0,
     borderColor: t.FOCUS_BORDER_SUBTLE,
   },
@@ -1212,7 +1212,7 @@ const CreateTaskModal = ({
   },
   priorityButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: SPACING.sm,
   },
   priorityButton: {
     flex: 1,
@@ -1220,7 +1220,7 @@ const CreateTaskModal = ({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    padding: 12,
+    padding: SPACING.CHIP_INSET_COMPACT,
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'transparent',
@@ -1237,8 +1237,8 @@ const CreateTaskModal = ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    paddingVertical: SPACING.CARD_INNER_INSET,
+    paddingHorizontal: SPACING.CARD_INNER_INSET,
     backgroundColor: 'rgba(255, 255, 255, 0.03)',
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
@@ -1247,7 +1247,7 @@ const CreateTaskModal = ({
   notificationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SPACING.sm,
   },
   notificationLabel: {
     color: t.FOCUS_META,
@@ -1256,12 +1256,12 @@ const CreateTaskModal = ({
   },
   submitButtonContainer: {
     marginTop: 8,
-    paddingBottom: 4,
+    paddingBottom: SPACING.xs,
   },
   submitButton: {
     backgroundColor: colors.primary,
-    paddingVertical: 16,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    paddingVertical: SPACING.HERO_INSET_COMPACT,
+    paddingHorizontal: SPACING.CHIP_INSET,
     borderRadius: 999,
     alignItems: 'center',
   },
@@ -1280,7 +1280,7 @@ const CreateTaskModal = ({
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: SPACING.sm,
   },
 }); */
 

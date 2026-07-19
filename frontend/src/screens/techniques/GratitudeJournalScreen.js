@@ -128,7 +128,7 @@ function createStyles(colors, t) {
     composerCard: {
       backgroundColor: colors.cardBackground,
       borderRadius: 22,
-      padding: SPACING.SCREEN_EDGE_INSET,
+      padding: SPACING.CARD_INNER_INSET,
       marginBottom: 14,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
@@ -136,7 +136,7 @@ function createStyles(colors, t) {
     privacyRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
+      gap: SPACING.sm,
       marginBottom: 10,
     },
     privacyText: {
@@ -163,12 +163,12 @@ function createStyles(colors, t) {
     },
     templatesRow: {
       paddingVertical: 6,
-      gap: 10,
+      gap: SPACING.CARD_INNER_INSET,
     },
     templateChip: {
       borderRadius: 999,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-      paddingVertical: 8,
+      paddingHorizontal: SPACING.CHIP_INSET,
+      paddingVertical: SPACING.sm,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
       backgroundColor: colors.glassFill,
@@ -180,7 +180,7 @@ function createStyles(colors, t) {
     },
     linesBlock: {
       marginTop: 10,
-      gap: 10,
+      gap: SPACING.CARD_INNER_INSET,
     },
     lineRow: {
       flexDirection: 'row',
@@ -189,8 +189,8 @@ function createStyles(colors, t) {
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
       backgroundColor: colors.chromeInput,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-      paddingVertical: 8,
+      paddingHorizontal: SPACING.INPUT_INSET,
+      paddingVertical: SPACING.sm,
     },
     linePrefix: {
       color: t.FOCUS_META,
@@ -208,19 +208,19 @@ function createStyles(colors, t) {
     },
     composerFooter: {
       marginTop: 18,
-      paddingTop: 4,
+      paddingTop: SPACING.xs,
     },
     footerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       marginTop: 14,
-      gap: 12,
+      gap: SPACING.CHIP_INSET,
     },
     toggleRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 10,
+      gap: SPACING.CARD_INNER_INSET,
     },
     toggleLabel: {
       color: t.FOCUS_META,
@@ -230,9 +230,9 @@ function createStyles(colors, t) {
     subtleIconButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-      paddingVertical: 10,
+      gap: SPACING.sm,
+      paddingHorizontal: SPACING.CHIP_INSET,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
       borderRadius: 14,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_ACCENT_BORDER,
@@ -258,7 +258,7 @@ function createStyles(colors, t) {
     entryCard: {
       backgroundColor: colors.cardBackground,
       borderRadius: 22,
-      padding: SPACING.SCREEN_EDGE_INSET,
+      padding: SPACING.CARD_INNER_INSET,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
       marginBottom: 12,
@@ -280,8 +280,8 @@ function createStyles(colors, t) {
       marginTop: 12,
     },
     deleteButton: {
-      paddingVertical: 10,
-      paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+      paddingVertical: SPACING.CHIP_INSET_COMPACT,
+      paddingHorizontal: SPACING.CHIP_INSET,
       borderRadius: 14,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
@@ -295,7 +295,7 @@ function createStyles(colors, t) {
     emptyStateCard: {
       backgroundColor: colors.cardBackground,
       borderRadius: 22,
-      padding: SPACING.SCREEN_EDGE_INSET,
+      padding: SPACING.CARD_INNER_INSET,
       borderWidth: StyleSheet.hairlineWidth,
       borderColor: t.FOCUS_BORDER_SUBTLE,
       alignItems: 'center',
@@ -608,7 +608,7 @@ const GratitudeJournalScreen = () => {
           style={styles.scrollView}
           contentContainerStyle={[
             techniqueScreenStyles.scrollContent,
-            { paddingBottom: insets.bottom + 32 },
+            { paddingBottom: insets.bottom + SPACING.xl },
           ]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
@@ -810,7 +810,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBackground,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: FOCUS_BORDER_SUBTLE,
-    padding: SPACING.SCREEN_EDGE_INSET,
+    padding: SPACING.CARD_INNER_INSET,
     marginBottom: 14,
   },
   privacyRow: {
@@ -843,12 +843,12 @@ const styles = StyleSheet.create({
   templatesRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingBottom: 12,
+    gap: SPACING.sm,
+    paddingBottom: SPACING.CHIP_INSET,
   },
   templateChip: {
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-    paddingVertical: 8,
+    paddingHorizontal: SPACING.CHIP_INSET,
+    paddingVertical: SPACING.sm,
     borderRadius: 999,
     backgroundColor: 'rgba(255,255,255,0.04)',
     borderWidth: StyleSheet.hairlineWidth,
@@ -860,7 +860,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   linesBlock: {
-    gap: 8,
+    gap: SPACING.sm,
   },
   lineRow: {
     flexDirection: 'row',
@@ -869,7 +869,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: FOCUS_BORDER_SUBTLE,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    paddingHorizontal: SPACING.INPUT_INSET,
     minHeight: 48,
   },
   linePrefix: {
@@ -883,7 +883,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.white,
     fontSize: 15,
-    paddingVertical: 12,
+    paddingVertical: SPACING.INPUT_INSET,
     lineHeight: 20,
   },
   composerFooter: {
@@ -901,10 +901,10 @@ const styles = StyleSheet.create({
   entriesHeaderRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: SPACING.CARD_INNER_INSET,
   },
   filterChip: {
-    paddingHorizontal: 10,
+    paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
     paddingVertical: 6,
     borderRadius: 999,
     backgroundColor: 'rgba(255,255,255,0.04)',
@@ -939,8 +939,8 @@ const styles = StyleSheet.create({
   entryCard: {
     backgroundColor: colors.cardBackground,
     borderRadius: 22,
-    paddingVertical: 14,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    paddingVertical: SPACING.CHIP_INSET,
+    paddingHorizontal: SPACING.CARD_INNER_INSET,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: FOCUS_BORDER_SUBTLE,
   },
@@ -955,13 +955,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
-    paddingVertical: 16,
+    paddingVertical: SPACING.HERO_INSET_COMPACT,
   },
   entryHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: SPACING.CARD_INNER_INSET,
     marginBottom: 8,
   },
   entryDateKicker: {
@@ -992,8 +992,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBackground,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: FOCUS_BORDER_SUBTLE,
-    padding: 18,
-    gap: 8,
+    padding: SPACING.HERO_INSET,
+    gap: SPACING.sm,
   },
   emptyTitle: {
     color: 'rgba(255,255,255,0.92)',

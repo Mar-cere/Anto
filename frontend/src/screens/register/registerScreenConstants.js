@@ -1,7 +1,7 @@
 /**
  * Constantes de layout y UI para RegisterScreen
  */
-import { OPACITIES, SCALES } from '../../constants/ui';
+import { OPACITIES, SCALES, SPACING } from '../../constants/ui';
 
 export const STORAGE_KEYS = {
   USER_TOKEN: 'userToken',
@@ -11,8 +11,8 @@ export const STORAGE_KEYS = {
 };
 
 export const IMAGE_OPACITY = OPACITIES.IMAGE_BACKGROUND;
-export const HORIZONTAL_PADDING = 20;
-export const VERTICAL_PADDING = 40;
+export const HORIZONTAL_PADDING = SPACING.SCREEN_EDGE_INSET;
+export const VERTICAL_PADDING = SPACING.xxl;
 export const TITLE_MARGIN_TOP = 60;
 export const TITLE_MARGIN_BOTTOM = 10;
 export const SUBTITLE_MARGIN_BOTTOM = 30;

@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CardHeader, useCardStylesDynamic } from './common/CardStyles';
 import Svg, { Circle } from 'react-native-svg';
 import { useTheme } from '../context/ThemeContext';
+import { SPACING } from '../constants/ui';
 import { getFocusTheme } from '../styles/focusCardTheme';
 import { useSectionTranslations } from '../hooks/useTranslations';
 
@@ -469,7 +470,7 @@ const createStyles = (colors, t) => ({
   contentContainer: {
     alignItems: 'center',
     gap: 22,
-    paddingVertical: 12,
+    paddingVertical: SPACING.CARD_INNER_INSET,
   },
   collapseHandle: {
     width: '100%',
@@ -488,8 +489,8 @@ const createStyles = (colors, t) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: SPACING.CARD_INNER_INSET,
+    paddingHorizontal: SPACING.CARD_INNER_INSET,
     borderRadius: 14,
     backgroundColor: colors.glassFill,
     borderWidth: StyleSheet.hairlineWidth,
@@ -498,14 +499,14 @@ const createStyles = (colors, t) => ({
   compactLeft: {
     flex: 1,
     minWidth: 0,
-    gap: 8,
+    gap: SPACING.sm,
   },
   compactChip: {
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
     paddingVertical: 5,
     borderRadius: 999,
     backgroundColor: colors.glassFill,
@@ -526,7 +527,7 @@ const createStyles = (colors, t) => ({
   compactRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: SPACING.CARD_INNER_INSET,
   },
   compactPlayBtn: {
     width: 38,
@@ -546,7 +547,7 @@ const createStyles = (colors, t) => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
+    paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
     paddingVertical: 5,
     borderRadius: 999,
     backgroundColor: colors.glassFill,
@@ -596,8 +597,8 @@ const createStyles = (colors, t) => ({
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: '100%',
-    paddingHorizontal: 12,
-    paddingTop: 12,
+    paddingHorizontal: SPACING.CARD_INNER_INSET,
+    paddingTop: SPACING.CARD_INNER_INSET,
     marginTop: 4,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: t.FOCUS_BORDER_SUBTLE,

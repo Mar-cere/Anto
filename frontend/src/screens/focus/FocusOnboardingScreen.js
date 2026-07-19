@@ -294,7 +294,7 @@ function createStyles(colors, resolvedScheme, width) {
     },
     scrollContent: {
       paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-      paddingVertical: SPACING.lg,
+      paddingVertical: SPACING.HERO_INSET,
     },
     header: {
       marginBottom: SPACING.xl,
@@ -322,7 +322,7 @@ function createStyles(colors, resolvedScheme, width) {
       borderRadius: 16,
       borderWidth: 2,
       borderColor: 'transparent',
-      padding: SPACING.lg,
+      padding: SPACING.HERO_INSET,
     },
     themeCardSelected: {
       borderColor: colors.primary,
@@ -376,7 +376,7 @@ function createStyles(colors, resolvedScheme, width) {
     },
     goalInput: {
       minHeight: 80,
-      paddingTop: SPACING.md,
+      paddingTop: SPACING.INPUT_INSET,
     },
     actions: {
       gap: SPACING.md,
@@ -393,7 +393,7 @@ function createStyles(colors, resolvedScheme, width) {
       fontWeight: '600',
     },
     skipButton: {
-      paddingVertical: SPACING.md,
+      paddingVertical: SPACING.CHIP_INSET,
       alignItems: 'center',
     },
     skipButtonText: {

@@ -91,7 +91,7 @@ export default function SoftCrisisCheckInStrip({
         },
         openBtn: {
           paddingVertical: 6,
-          paddingHorizontal: 10,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 10,
           backgroundColor: colors.accentLineSoft,
         },
@@ -112,7 +112,7 @@ export default function SoftCrisisCheckInStrip({
           gap: SPACING.sm,
         },
         dismissBtn: {
-          padding: 4,
+          padding: SPACING.xs,
         },
         techniqueRow: {
           flexDirection: 'row',

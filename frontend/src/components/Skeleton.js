@@ -9,6 +9,7 @@
  */
 
 import React, { useMemo, useEffect, useRef } from 'react';
+import { SPACING } from '../constants/ui';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { getFocusTheme } from '../styles/focusCardTheme';
@@ -83,8 +84,8 @@ export const SkeletonCard = ({ style }) => {
       StyleSheet.create({
         card: {
           ...t.FOCUS_PANEL,
-          paddingVertical: 20,
-          paddingHorizontal: 18,
+          paddingVertical: SPACING.HERO_INSET,
+          paddingHorizontal: SPACING.HERO_INSET,
         },
         row: {
           flexDirection: 'row',

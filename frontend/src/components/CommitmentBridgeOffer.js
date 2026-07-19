@@ -2,9 +2,9 @@
  * Oferta opcional de guardar como compromiso tras crear tarea/hábito desde chat (#202 v1.1).
  */
 import React, { memo, useMemo } from 'react';
+import { SPACING } from '../constants/ui';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
-import { SPACING } from '../constants/ui';
 
 function CommitmentBridgeOffer({
   title,
@@ -20,10 +20,9 @@ function CommitmentBridgeOffer({
     () =>
       StyleSheet.create({
         wrap: {
-          marginHorizontal: SPACING.SCREEN_EDGE_INSET,
-          marginTop: 12,
-          marginBottom: 8,
-          padding: 14,
+          marginTop: SPACING.CHIP_INSET,
+          marginBottom: SPACING.sm,
+          padding: SPACING.CARD_INNER_INSET,
           borderRadius: 12,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
@@ -44,11 +43,11 @@ function CommitmentBridgeOffer({
         row: {
           flexDirection: 'row',
           flexWrap: 'wrap',
-          gap: 8,
+          gap: SPACING.sm,
         },
         primary: {
-          paddingVertical: 8,
-          paddingHorizontal: 12,
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 10,
           backgroundColor: colors.primary,
         },
@@ -58,8 +57,8 @@ function CommitmentBridgeOffer({
           fontWeight: '600',
         },
         ghost: {
-          paddingVertical: 8,
-          paddingHorizontal: 12,
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 10,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,

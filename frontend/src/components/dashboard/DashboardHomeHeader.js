@@ -30,13 +30,13 @@ const DashboardHomeHeader = memo(({ userData }) => {
           alignItems: 'flex-end',
           justifyContent: 'space-between',
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingTop: 8,
-          paddingBottom: 12,
+          paddingTop: SPACING.sm,
+          paddingBottom: SPACING.CHIP_INSET,
         },
         copy: {
           flex: 1,
           minWidth: 0,
-          paddingRight: 12,
+          paddingRight: SPACING.CHIP_INSET,
         },
         eyebrow: {
           fontSize: 11,

@@ -9,6 +9,7 @@
  */
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SPACING } from '../constants/ui';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -30,7 +31,6 @@ import Header from '../components/Header';
 import ParticleBackground from '../components/ParticleBackground';
 import { api, ENDPOINTS } from '../config/api';
 import { useTheme } from '../context/ThemeContext';
-import { SPACING } from '../constants/ui';
 import { useMappedSectionTexts } from '../hooks/useTranslations';
 import AbcMacroPatternsCard from '../components/abc/AbcMacroPatternsCard';
 
@@ -138,9 +138,9 @@ const TherapeuticTechniquesStatsScreen = () => {
           width: (width - 60) / 2 - 7.5,
           backgroundColor: colors.cardBackground,
           borderRadius: 14,
-          padding: 18,
+          padding: SPACING.HERO_INSET,
           alignItems: 'center',
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
           shadowColor: colors.glassShadow ?? colors.shadowAmbient,
           shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.1,
@@ -158,7 +158,7 @@ const TherapeuticTechniquesStatsScreen = () => {
           textAlign: 'center',
         },
         listContainer: {
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         listItem: {
           flexDirection: 'row',
@@ -188,7 +188,7 @@ const TherapeuticTechniquesStatsScreen = () => {
           alignItems: 'center',
           gap: 4,
           backgroundColor: `${colors.warning}20`,
-          paddingHorizontal: 10,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           paddingVertical: 6,
           borderRadius: 12,
         },
@@ -205,7 +205,10 @@ const TherapeuticTechniquesStatsScreen = () => {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          padding: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.HERO_INSET,
+        },
+        centerContainerScreen: {
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
         },
         loadingText: {
           marginTop: 15,
@@ -230,7 +233,7 @@ const TherapeuticTechniquesStatsScreen = () => {
         },
         devLink: {
           marginTop: 24,
-          padding: 14,
+          padding: SPACING.CARD_INNER_INSET,
           borderRadius: 10,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
@@ -245,8 +248,8 @@ const TherapeuticTechniquesStatsScreen = () => {
         },
         retryButton: {
           marginTop: 20,
-          paddingHorizontal: 24,
-          paddingVertical: 12,
+          paddingHorizontal: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 10,
           backgroundColor: colors.primary,
           shadowColor: colors.primary,
@@ -538,7 +541,7 @@ const TherapeuticTechniquesStatsScreen = () => {
   const renderContent = () => {
     if (loading) {
       return (
-        <View style={styles.centerContainer}>
+        <View style={[styles.centerContainer, styles.centerContainerScreen]}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>{TEXTS.LOADING}</Text>
         </View>
@@ -547,7 +550,7 @@ const TherapeuticTechniquesStatsScreen = () => {
 
     if (error) {
       return (
-        <View style={styles.centerContainer}>
+        <View style={[styles.centerContainer, styles.centerContainerScreen]}>
           <MaterialCommunityIcons name="alert-circle" size={48} color={colors.error} />
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={loadStats}>

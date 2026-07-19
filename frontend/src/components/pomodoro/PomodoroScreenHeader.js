@@ -4,6 +4,7 @@
  */
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { SPACING } from '../../constants/ui';
 import { useNavigation } from '@react-navigation/native';
 import React, { useMemo } from 'react';
 import { Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
@@ -68,12 +69,12 @@ export default function PomodoroScreenHeader({
           justifyContent: 'space-between',
           paddingHorizontal: HEADER_PADDING,
           paddingBottom: HEADER_PADDING,
-          paddingTop: 8,
+          paddingTop: SPACING.sm,
         },
         backButton: {
           marginRight: 4,
           marginTop: 2,
-          padding: 4,
+          padding: SPACING.xs,
         },
         headerLeft: {
           flexDirection: 'row',

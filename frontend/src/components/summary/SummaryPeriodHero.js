@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import { resolveInsightsHeroGradient } from '../../utils/insightsHeroGradient';
 import SheetBrandGradient from '../common/SheetBrandGradient';
@@ -24,7 +25,7 @@ export default function SummaryPeriodHero({ periodTitle, intro, pulseLine, pulse
           backgroundColor: dark ? colors.chromeCard : colors.surface,
         },
         inner: {
-          padding: 18,
+          padding: SPACING.HERO_INSET,
         },
         period: {
           fontSize: 12,
@@ -50,9 +51,9 @@ export default function SummaryPeriodHero({ periodTitle, intro, pulseLine, pulse
         pulseRow: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
+          gap: SPACING.sm,
           marginTop: 14,
-          paddingTop: 14,
+          paddingTop: SPACING.CHIP_INSET,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.border,
         },
@@ -61,7 +62,7 @@ export default function SummaryPeriodHero({ periodTitle, intro, pulseLine, pulse
           alignItems: 'center',
           gap: 6,
           paddingVertical: 6,
-          paddingHorizontal: 10,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 999,
           backgroundColor: colors.accentLineSoft,
         },

@@ -2,6 +2,7 @@
  * Pantalla de bienvenida — primera impresión de la app.
  */
 import { useNavigation } from '@react-navigation/native';
+import { SPACING } from '../constants/ui';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo, useRef } from 'react';
 import {
@@ -19,7 +20,6 @@ import ParticleBackground from '../components/ParticleBackground';
 import WelcomeBrandBackdrop from '../components/welcome/WelcomeBrandBackdrop';
 import { ANIMATION_DURATIONS, ANIMATION_VALUES } from '../constants/animations';
 import { ROUTES } from '../constants/routes';
-import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
 import { getWelcomeScreenTheme } from '../utils/welcomeScreenTheme';
@@ -124,7 +124,7 @@ const HomeScreen = () => {
         brandRow: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
           marginBottom: 18,
         },
         logo: {
@@ -142,9 +142,9 @@ const HomeScreen = () => {
           alignSelf: 'flex-start',
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
-          paddingHorizontal: 12,
-          paddingVertical: 8,
+          gap: SPACING.sm,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
+          paddingVertical: SPACING.sm,
           borderRadius: 999,
           backgroundColor: theme.badgeBg,
           borderWidth: 1,
@@ -186,7 +186,7 @@ const HomeScreen = () => {
           minHeight: 24,
         },
         actions: {
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
           marginBottom: 18,
         },
         actionBtn: {
@@ -221,7 +221,7 @@ const HomeScreen = () => {
         },
         faqWrap: {
           alignSelf: 'center',
-          paddingVertical: 8,
+          paddingVertical: SPACING.sm,
         },
         faqText: {
           color: theme.faq,
@@ -265,8 +265,8 @@ const HomeScreen = () => {
           style={[
             styles.content,
             {
-              paddingTop: Math.max(insets.top, 12),
-              paddingBottom: Math.max(insets.bottom, 20),
+              paddingTop: Math.max(insets.top, SPACING.SCREEN_EDGE_INSET),
+              paddingBottom: Math.max(insets.bottom, SPACING.HERO_INSET),
               opacity: fadeAnim,
               transform: [{ translateY: translateYAnim }],
             },

@@ -6,6 +6,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useLanguage } from '../../context/LanguageContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import { useTheme } from '../../context/ThemeContext';
+import { SPACING } from '../../constants/ui';
 import {
   resolveTccLiteBubbleDisplay,
   shouldShowTccLiteBubbleFooter,
@@ -27,7 +28,7 @@ export default function TccLiteMessageFooter({ tccLite }) {
       StyleSheet.create({
         wrap: {
           marginTop: 10,
-          paddingTop: 10,
+          paddingTop: SPACING.CHIP_INSET_COMPACT,
           borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.borderSubtle || 'rgba(0,0,0,0.08)',
           gap: 6,

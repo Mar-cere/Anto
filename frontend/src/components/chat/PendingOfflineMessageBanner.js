@@ -22,12 +22,12 @@ const PendingOfflineMessageBanner = ({
         container: {
           backgroundColor:
             resolvedScheme === 'dark' ? 'rgba(255, 217, 61, 0.14)' : 'rgba(255, 217, 61, 0.12)',
-          paddingVertical: 12,
+          paddingVertical: SPACING.CHIP_INSET,
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 999,
-          gap: 10,
+          gap: SPACING.CARD_INNER_INSET,
           borderBottomWidth: StyleSheet.hairlineWidth,
           borderBottomColor:
             resolvedScheme === 'dark' ? 'rgba(255, 217, 61, 0.4)' : 'rgba(255, 217, 61, 0.35)',
@@ -40,8 +40,8 @@ const PendingOfflineMessageBanner = ({
           lineHeight: 19,
         },
         button: {
-          paddingVertical: 10,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
+          paddingHorizontal: SPACING.CHIP_INSET,
           borderRadius: 14,
           backgroundColor: chatColors.SEND_BUTTON_BACKGROUND,
           borderWidth: StyleSheet.hairlineWidth,

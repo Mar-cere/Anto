@@ -77,7 +77,7 @@ export default function ExperientialPatternsScreen() {
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingVertical: 10,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           borderBottomWidth: 1,
           borderBottomColor: colors.border,
           backgroundColor: colors.chromeHeader,
@@ -86,8 +86,8 @@ export default function ExperientialPatternsScreen() {
         headerTitle: { color: colors.text, fontSize: 18, fontWeight: '700' },
         content: {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingTop: SPACING.md,
-          paddingBottom: insets.bottom + 40,
+          paddingTop: SPACING.HERO_INSET,
+          paddingBottom: insets.bottom + SPACING.xxl,
         },
         intro: { color: colors.textSecondary, fontSize: 14, lineHeight: 21, marginBottom: 16 },
         consentCard: {
@@ -95,11 +95,11 @@ export default function ExperientialPatternsScreen() {
           borderRadius: 14,
           borderWidth: 1,
           borderColor: colors.chromeCardBorder,
-          padding: 14,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 16,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         consentTextWrap: { flex: 1 },
         consentTitle: { color: colors.text, fontSize: 15, fontWeight: '700', marginBottom: 4 },
@@ -109,21 +109,33 @@ export default function ExperientialPatternsScreen() {
           borderRadius: 14,
           borderWidth: 1,
           borderColor: colors.chromeCardBorder,
-          padding: 14,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 10,
         },
         statement: { color: colors.text, fontSize: 15, lineHeight: 22, marginBottom: 10 },
         archiveBtn: {
           alignSelf: 'flex-start',
           paddingVertical: 6,
-          paddingHorizontal: 12,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 999,
           backgroundColor: colors.surfaceMuted || colors.chromeCard,
           borderWidth: 1,
           borderColor: colors.border,
         },
         archiveBtnText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
-        center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+        center: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: SPACING.SCREEN_EDGE_INSET,
+        },
+        /** Empty dentro de FlatList: el content ya tiene SCREEN_EDGE. */
+        centerInList: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingVertical: SPACING.HERO_INSET,
+        },
         emptyTitle: {
           color: colors.text,
           fontSize: 18,
@@ -139,8 +151,8 @@ export default function ExperientialPatternsScreen() {
         },
         retry: {
           marginTop: 16,
-          paddingHorizontal: 16,
-          paddingVertical: 10,
+          paddingHorizontal: SPACING.HERO_INSET_COMPACT,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 999,
           backgroundColor: colors.primary,
         },
@@ -206,7 +218,7 @@ export default function ExperientialPatternsScreen() {
   return (
     <View style={styles.container}>
       <ParticleBackground />
-      <View style={[styles.header, { paddingTop: Math.max(insets.top, 8) }]}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, SPACING.sm) }]}>
         <TouchableOpacity
           style={styles.headerButton}
           onPress={() => navigation.goBack()}
@@ -255,7 +267,7 @@ export default function ExperientialPatternsScreen() {
             </>
           }
           ListEmptyComponent={
-            <View style={styles.center}>
+            <View style={styles.centerInList}>
               <Text style={styles.emptyTitle}>{T.EMPTY_TITLE}</Text>
               <Text style={styles.emptyMessage}>{T.EMPTY_MESSAGE}</Text>
             </View>

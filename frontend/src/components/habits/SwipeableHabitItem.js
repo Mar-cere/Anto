@@ -67,6 +67,7 @@ import { hasAntoOrigin } from '../../utils/tasksAndHabitsUtils';
 import AntoSourceChip from '../tasksAndHabits/AntoSourceChip';
 import { useTheme } from '../../context/ThemeContext';
 
+import { SPACING } from '../../constants/ui';
 const ACTIVE_OPACITY = 0.7;
 
 export default function SwipeableHabitItem({
@@ -199,7 +200,7 @@ export default function SwipeableHabitItem({
         habitTitleContainer: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
           flex: 1,
         },
         iconContainer: {

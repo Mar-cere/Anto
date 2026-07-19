@@ -103,8 +103,8 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
         itemCard: {
           backgroundColor: colors.chromeCard,
           borderRadius: 16,
-          paddingVertical: 12,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.chromeCardBorder,
           shadowColor: colors.glassShadow,
@@ -138,8 +138,8 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
           backgroundColor: SOFT_ATTENTION_PALETTE.bg,
         },
         itemCardCompact: {
-          paddingVertical: 10,
-          paddingHorizontal: 11,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
+          paddingHorizontal: SPACING.CHIP_INSET,
         },
         completedItem: {
           opacity: 0.72,
@@ -169,7 +169,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
         itemTitleContainer: {
           flexDirection: 'row',
           alignItems: 'flex-start',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
           flex: 1,
         },
         iconContainer: {
@@ -195,7 +195,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
           marginBottom: 4,
         },
         typePill: {
-          paddingHorizontal: 8,
+          paddingHorizontal: SPACING.sm,
           paddingVertical: 3,
           borderRadius: 999,
           borderWidth: StyleSheet.hairlineWidth,
@@ -220,7 +220,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
           color: colors.error,
         },
         timePill: {
-          paddingHorizontal: 9,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           paddingVertical: 3,
           borderRadius: 999,
           backgroundColor: colors.glassFill,
@@ -273,7 +273,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
           marginTop: 8,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
+          gap: SPACING.sm,
         },
         subtasksPreviewText: {
           flex: 1,
@@ -293,7 +293,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
         itemActions: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         completeButton: {
           padding: 6,
@@ -316,14 +316,14 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
         itemMetadata: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         dateContainer: {
           flexDirection: 'row',
           alignItems: 'center',
           gap: 6,
           backgroundColor: colors.glassFill,
-          paddingHorizontal: 10,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           paddingVertical: 6,
           borderRadius: 10,
         },
@@ -332,7 +332,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
           alignItems: 'center',
           gap: 6,
           backgroundColor: colors.glassFill,
-          paddingHorizontal: 10,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           paddingVertical: 6,
           borderRadius: 10,
         },
@@ -345,15 +345,15 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
           fontSize: 11,
         },
         metaContainerCompact: {
-          paddingHorizontal: 8,
-          paddingVertical: 4,
+          paddingHorizontal: SPACING.sm,
+          paddingVertical: SPACING.xs,
         },
         priorityBadge: {
           flexDirection: 'row',
           alignItems: 'center',
           gap: 4,
           paddingVertical: 6,
-          paddingHorizontal: 10,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 12,
           borderWidth: StyleSheet.hairlineWidth,
         },
@@ -376,7 +376,7 @@ const TaskItem = ({ item, onPress, onToggleComplete, onDelete, swipeRow, delayPr
         },
         badgeContainer: {
           flexDirection: 'row',
-          gap: 8,
+          gap: SPACING.sm,
         },
       }),
     [colors],

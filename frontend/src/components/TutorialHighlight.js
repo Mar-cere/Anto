@@ -9,7 +9,7 @@ import { SPACING } from '../constants/ui';
 import { useTheme } from '../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
-const SCREEN_EDGE = SPACING.SCREEN_EDGE_INSET ?? 14;
+const SCREEN_EDGE = SPACING.SCREEN_EDGE_INSET;
 const NAV_CENTER_WIDTH = 64;
 
 function navTabHighlight(index) {

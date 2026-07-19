@@ -44,13 +44,12 @@ export function createEmergencyAlertsHistoryStyles(colors) {
     fontSize: 13,
     textAlign: 'center',
     marginBottom: 24,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
     lineHeight: 18,
   },
   retryButton: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: SPACING.CHIP_INSET,
+    paddingVertical: SPACING.CHIP_INSET,
     borderRadius: 8,
   },
   retryButtonText: {
@@ -63,12 +62,12 @@ export function createEmergencyAlertsHistoryStyles(colors) {
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-    paddingVertical: 12,
+    paddingVertical: SPACING.CHIP_INSET,
     borderBottomWidth: 1,
     borderBottomColor: CARD_BORDER,
   },
   backButton: {
-    padding: 8,
+    padding: SPACING.sm,
   },
   headerTitle: {
     color: colors.text,
@@ -86,8 +85,8 @@ export function createEmergencyAlertsHistoryStyles(colors) {
   },
   tab: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 4,
+    paddingVertical: SPACING.CHIP_INSET,
+    paddingHorizontal: SPACING.xs,
     alignItems: 'center',
     justifyContent: 'center',
     borderBottomWidth: 2,
@@ -144,7 +143,7 @@ export function createEmergencyAlertsHistoryStyles(colors) {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingBottom: SPACING.xl,
   },
   tabContent: {
     padding: SPACING.SCREEN_EDGE_INSET,
@@ -152,7 +151,7 @@ export function createEmergencyAlertsHistoryStyles(colors) {
   summaryCard: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: SPACING.SCREEN_EDGE_INSET,
+    padding: SPACING.CARD_INNER_INSET,
     marginBottom: 20,
     alignItems: 'center',
     borderWidth: 1,
@@ -174,11 +173,10 @@ export function createEmergencyAlertsHistoryStyles(colors) {
     textAlign: 'center',
     marginTop: 12,
     lineHeight: 17,
-    paddingHorizontal: 8,
+    paddingHorizontal: SPACING.sm,
   },
   tabErrorContainer: {
-    paddingVertical: 32,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    paddingVertical: SPACING.xl,
     alignItems: 'center',
   },
   tabErrorText: {
@@ -190,8 +188,8 @@ export function createEmergencyAlertsHistoryStyles(colors) {
   },
   tabRetryButton: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
+    paddingHorizontal: SPACING.CHIP_INSET,
+    paddingVertical: SPACING.CHIP_INSET,
     borderRadius: 8,
   },
   tabRetryButtonText: {
@@ -211,7 +209,7 @@ export function createEmergencyAlertsHistoryStyles(colors) {
   chartContainer: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: 10,
+    padding: SPACING.CHIP_INSET_COMPACT,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: CARD_BORDER,
@@ -222,7 +220,7 @@ export function createEmergencyAlertsHistoryStyles(colors) {
   historyItem: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: SPACING.SCREEN_EDGE_INSET,
+    padding: SPACING.CARD_INNER_INSET,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: CARD_BORDER,
@@ -253,8 +251,8 @@ export function createEmergencyAlertsHistoryStyles(colors) {
     marginTop: 4,
   },
   statusBadge: {
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-    paddingVertical: 4,
+    paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
+    paddingVertical: SPACING.xs,
     borderRadius: 12,
   },
   statusBadgeText: {
@@ -276,8 +274,8 @@ export function createEmergencyAlertsHistoryStyles(colors) {
     marginRight: 8,
   },
   riskBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
     borderRadius: 8,
   },
   riskBadgeText: {
@@ -288,14 +286,14 @@ export function createEmergencyAlertsHistoryStyles(colors) {
   channelsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: SPACING.sm,
   },
   channelBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.glassFill,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
     borderRadius: 8,
     gap: 4,
   },
@@ -309,8 +307,8 @@ export function createEmergencyAlertsHistoryStyles(colors) {
   },
   testBadge: {
     backgroundColor: colors.primary,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
     borderRadius: 8,
     alignSelf: 'flex-start',
     marginTop: 8,
@@ -323,7 +321,7 @@ export function createEmergencyAlertsHistoryStyles(colors) {
   contactCard: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: SPACING.SCREEN_EDGE_INSET,
+    padding: SPACING.CARD_INNER_INSET,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: CARD_BORDER,
@@ -337,7 +335,7 @@ export function createEmergencyAlertsHistoryStyles(colors) {
   contactStats: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
+    gap: SPACING.md,
   },
   contactStat: {
     flexDirection: 'row',
@@ -356,7 +354,7 @@ export function createEmergencyAlertsHistoryStyles(colors) {
   patternCard: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: SPACING.SCREEN_EDGE_INSET,
+    padding: SPACING.CARD_INNER_INSET,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: CARD_BORDER,
@@ -364,7 +362,7 @@ export function createEmergencyAlertsHistoryStyles(colors) {
   patternRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: SPACING.CHIP_INSET,
   },
   patternText: {
     color: colors.text,
@@ -378,7 +376,7 @@ export function createEmergencyAlertsHistoryStyles(colors) {
     marginBottom: 12,
   },
   patternItem: {
-    paddingVertical: 8,
+    paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -397,11 +395,11 @@ export function createEmergencyAlertsHistoryStyles(colors) {
   recommendationCard: {
     backgroundColor: CARD_SURFACE,
     borderRadius: 12,
-    padding: SPACING.SCREEN_EDGE_INSET,
+    padding: SPACING.CARD_INNER_INSET,
     marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: SPACING.CHIP_INSET,
     borderWidth: 1,
     borderColor: CARD_BORDER,
   },
@@ -414,12 +412,11 @@ export function createEmergencyAlertsHistoryStyles(colors) {
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
+    paddingVertical: SPACING.xxl + SPACING.CHIP_INSET,
   },
   statsTabEmptyWrap: {
     alignItems: 'center',
-    paddingVertical: 28,
-    paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+    paddingVertical: SPACING.HERO_INSET,
     marginBottom: 8,
   },
   emptyTitle: {
@@ -433,13 +430,13 @@ export function createEmergencyAlertsHistoryStyles(colors) {
     color: colors.textSecondary,
     fontSize: 14,
     textAlign: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: SPACING.HERO_INSET,
   },
   emptyCtaButton: {
     marginTop: 24,
     backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 14,
+    paddingHorizontal: SPACING.CHIP_INSET,
+    paddingVertical: SPACING.CHIP_INSET,
     borderRadius: 12,
   },
   emptyCtaButtonText: {

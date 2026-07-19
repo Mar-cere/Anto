@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import React, { memo, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import { computePaywallPlanPricing } from '../../utils/paywallPlanPricing';
 
@@ -37,7 +38,7 @@ function PaywallFeaturedPlanCard({
           opacity: isDisabled ? 0.55 : 1,
         },
         inner: {
-          padding: 18,
+          padding: SPACING.HERO_INSET,
           minHeight: 132,
         },
         badge: {
@@ -45,8 +46,8 @@ function PaywallFeaturedPlanCard({
           flexDirection: 'row',
           alignItems: 'center',
           gap: 4,
-          paddingHorizontal: 10,
-          paddingVertical: 4,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
+          paddingVertical: SPACING.xs,
           borderRadius: 999,
           backgroundColor: 'rgba(255,255,255,0.16)',
           marginBottom: 12,
@@ -60,7 +61,7 @@ function PaywallFeaturedPlanCard({
           flexDirection: 'row',
           alignItems: 'flex-end',
           justifyContent: 'space-between',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         duration: {
           color: colors.white,
@@ -93,8 +94,8 @@ function PaywallFeaturedPlanCard({
         currentPill: {
           marginTop: 10,
           alignSelf: 'flex-start',
-          paddingHorizontal: 10,
-          paddingVertical: 4,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
+          paddingVertical: SPACING.xs,
           borderRadius: 999,
           backgroundColor: 'rgba(76, 175, 80, 0.25)',
         },

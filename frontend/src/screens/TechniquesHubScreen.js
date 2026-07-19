@@ -72,7 +72,7 @@ export default function TechniquesHubScreen() {
         },
         content: {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingTop: showBack ? 0 : 8,
+          paddingTop: showBack ? 0 : SPACING.sm,
         },
         pageTitle: {
           fontSize: 30,

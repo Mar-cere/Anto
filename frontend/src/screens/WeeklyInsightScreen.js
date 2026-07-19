@@ -219,8 +219,8 @@ export default function WeeklyInsightScreen({ navigation }) {
         },
         content: {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingTop: 4,
-          paddingBottom: insets.bottom + 32,
+          paddingTop: SPACING.xs,
+          paddingBottom: insets.bottom + SPACING.xl,
           flexGrow: 1,
         },
         disclaimer: {
@@ -230,7 +230,7 @@ export default function WeeklyInsightScreen({ navigation }) {
           marginTop: 4,
           marginBottom: 16,
         },
-        center: { paddingVertical: 48, alignItems: 'center' },
+        center: { paddingVertical: SPACING.xxl, alignItems: 'center' },
       }),
     [colors, insets.top, insets.bottom],
   );

@@ -8,6 +8,7 @@
  */
 
 import { Ionicons } from '@expo/vector-icons';
+import { SPACING } from '../constants/ui';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -25,7 +26,6 @@ import {
 import { useToast } from '../context/ToastContext';
 import { api, ENDPOINTS } from '../config/api';
 import { useTheme } from '../context/ThemeContext';
-import { SPACING } from '../constants/ui';
 import { getEmergencyContactId } from '../utils/emergencyContactUtils';
 import { useSectionTranslations } from '../hooks/useTranslations';
 
@@ -155,7 +155,7 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
           maxHeight: '92%',
-          paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+          paddingBottom: Platform.OS === 'ios' ? SPACING.HERO_INSET : SPACING.CARD_INNER_INSET,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: colors.border,
         },
@@ -173,7 +173,7 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
           color: colors.text,
         },
         closeButton: {
-          padding: 4,
+          padding: SPACING.xs,
         },
         scrollView: {
           flex: 1,
@@ -197,8 +197,8 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
           borderRadius: 12,
           borderWidth: 1,
           borderColor: colors.border,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingVertical: 12,
+          paddingHorizontal: SPACING.INPUT_INSET,
+          paddingVertical: SPACING.CHIP_INSET,
         },
         inputError: {
           borderColor: colors.error,
@@ -229,11 +229,11 @@ const EditEmergencyContactModal = ({ visible, onClose, onSave, contact }) => {
           padding: SPACING.SCREEN_EDGE_INSET,
           borderTopWidth: 1,
           borderTopColor: colors.border,
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         button: {
           flex: 1,
-          paddingVertical: 14,
+          paddingVertical: SPACING.CHIP_INSET,
           borderRadius: 12,
           alignItems: 'center',
           justifyContent: 'center',

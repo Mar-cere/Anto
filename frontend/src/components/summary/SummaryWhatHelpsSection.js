@@ -7,6 +7,7 @@ import * as Haptics from 'expo-haptics';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useLanguage } from '../../context/LanguageContext';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 import chatService from '../../services/chatService';
@@ -70,7 +71,7 @@ export default function SummaryWhatHelpsSection() {
         },
         card: {
           borderRadius: 14,
-          padding: 14,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 8,
           backgroundColor: colors.glassFill || colors.surface,
           borderWidth: StyleSheet.hairlineWidth,
@@ -100,7 +101,7 @@ export default function SummaryWhatHelpsSection() {
           marginTop: 6,
           fontWeight: '500',
         },
-        loading: { paddingVertical: 12, alignItems: 'center' },
+        loading: { paddingVertical: SPACING.CHIP_INSET, alignItems: 'center' },
       }),
     [colors],
   );

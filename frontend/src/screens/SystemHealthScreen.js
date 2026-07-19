@@ -141,7 +141,7 @@ const SystemHealthScreen = () => {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          padding: 32,
+          padding: SPACING.SCREEN_EDGE_INSET,
         },
         errorText: {
           marginTop: 16,
@@ -151,8 +151,8 @@ const SystemHealthScreen = () => {
         },
         retryButton: {
           marginTop: 24,
-          paddingHorizontal: 24,
-          paddingVertical: 12,
+          paddingHorizontal: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.CHIP_INSET,
           backgroundColor: colors.primary,
           borderRadius: 8,
         },
@@ -173,14 +173,14 @@ const SystemHealthScreen = () => {
         card: {
           backgroundColor: colors.cardBackground || colors.background,
           borderRadius: 12,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           borderWidth: 1,
           borderColor: colors.border || `${colors.accent}30`,
         },
         statusCard: {
           backgroundColor: colors.cardBackground || colors.background,
           borderRadius: 12,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           borderLeftWidth: 4,
         },
         statusHeader: {
@@ -197,7 +197,7 @@ const SystemHealthScreen = () => {
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          paddingVertical: 8,
+          paddingVertical: SPACING.sm,
           borderBottomWidth: 1,
           borderBottomColor: colors.border || `${colors.accent}20`,
         },
@@ -213,7 +213,7 @@ const SystemHealthScreen = () => {
         },
         subsection: {
           marginTop: 16,
-          paddingTop: 16,
+          paddingTop: SPACING.HERO_INSET_COMPACT,
           borderTopWidth: 1,
           borderTopColor: colors.border || `${colors.accent}20`,
         },

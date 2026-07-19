@@ -270,8 +270,8 @@ export default function SummaryScreen() {
         },
         topBar: {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingTop: 4,
-          paddingBottom: 16,
+          paddingTop: SPACING.xs,
+          paddingBottom: SPACING.HERO_INSET_COMPACT,
         },
         segment: {
           flexDirection: 'row',
@@ -284,8 +284,8 @@ export default function SummaryScreen() {
           borderColor: colors.border,
         },
         segmentItem: {
-          paddingVertical: 8,
-          paddingHorizontal: 22,
+          paddingVertical: SPACING.sm,
+          paddingHorizontal: SPACING.HERO_INSET,
           borderRadius: 999,
         },
         segmentItemOn: {
@@ -320,7 +320,7 @@ export default function SummaryScreen() {
         },
         scroll: {
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingBottom: 40,
+          paddingBottom: SPACING.xxl,
         },
         sheetWrap: {
           position: 'relative',
@@ -332,12 +332,12 @@ export default function SummaryScreen() {
           backgroundColor: colors.cardBackground,
           borderWidth: 1,
           borderColor: colors.border,
-          paddingVertical: 12,
-          paddingHorizontal: 8,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.sm,
         },
         contentPad: {
-          paddingHorizontal: 8,
-          paddingBottom: 4,
+          paddingHorizontal: SPACING.sm,
+          paddingBottom: SPACING.xs,
         },
         sheetDimmed: {
           opacity: 0.48,
@@ -347,7 +347,7 @@ export default function SummaryScreen() {
           backgroundColor: colors.overlay,
           justifyContent: 'center',
           alignItems: 'center',
-          paddingVertical: 16,
+          paddingVertical: SPACING.HERO_INSET_COMPACT,
         },
         staleSpinner: {
           marginTop: 12,
@@ -357,7 +357,7 @@ export default function SummaryScreen() {
           flexWrap: 'wrap',
           justifyContent: 'space-between',
           width: '100%',
-          paddingHorizontal: 10,
+          paddingHorizontal: SPACING.CHIP_INSET_COMPACT,
           maxWidth: 400,
           alignSelf: 'center',
         },
@@ -373,14 +373,13 @@ export default function SummaryScreen() {
           flexWrap: 'wrap',
           justifyContent: 'space-between',
           paddingHorizontal: 6,
-          paddingTop: 10,
-          paddingBottom: 4,
+          paddingTop: SPACING.CHIP_INSET_COMPACT,
+          paddingBottom: SPACING.xs,
         },
         narrativeCard: {
-          marginHorizontal: 12,
           marginTop: 12,
           marginBottom: 8,
-          padding: 14,
+          padding: SPACING.CARD_INNER_INSET,
           borderRadius: 14,
           borderWidth: 1,
           borderColor: colors.border,
@@ -412,9 +411,8 @@ export default function SummaryScreen() {
           fontWeight: '500',
         },
         weeklyInsightBtn: {
-          marginHorizontal: 12,
           marginBottom: 10,
-          padding: 14,
+          padding: SPACING.CARD_INNER_INSET,
           borderRadius: 14,
           borderWidth: 1,
           borderColor: colors.primary,
@@ -434,7 +432,7 @@ export default function SummaryScreen() {
         tile: {
           width: '48%',
           alignItems: 'center',
-          paddingVertical: 18,
+          paddingVertical: SPACING.HERO_INSET,
           marginBottom: 4,
         },
         tileIcon: {
@@ -458,13 +456,12 @@ export default function SummaryScreen() {
         divider: {
           height: StyleSheet.hairlineWidth,
           backgroundColor: colors.border,
-          marginHorizontal: SPACING.SCREEN_EDGE_INSET,
           marginVertical: 6,
         },
         pulseBlock: {
-          paddingHorizontal: 18,
-          paddingVertical: 14,
-          paddingBottom: 18,
+          paddingHorizontal: SPACING.HERO_INSET,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingBottom: SPACING.HERO_INSET,
         },
         pulseTitle: {
           fontSize: 12,
@@ -481,8 +478,7 @@ export default function SummaryScreen() {
           opacity: 0.92,
         },
         emptyWrap: {
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingVertical: 28,
+          paddingVertical: SPACING.HERO_INSET,
           alignItems: 'center',
         },
         emptyIcon: {
@@ -502,7 +498,7 @@ export default function SummaryScreen() {
           textAlign: 'center',
           lineHeight: 21,
           marginBottom: 22,
-          paddingHorizontal: 4,
+          paddingHorizontal: SPACING.xs,
         },
         ctaIcon: {
           marginRight: 8,
@@ -512,8 +508,8 @@ export default function SummaryScreen() {
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: colors.primary,
-          paddingVertical: 14,
-          paddingHorizontal: 24,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.CHIP_INSET,
           borderRadius: 999,
           width: '100%',
           maxWidth: 320,
@@ -530,8 +526,8 @@ export default function SummaryScreen() {
           justifyContent: 'center',
           borderWidth: 1,
           borderColor: colors.border,
-          paddingVertical: 12,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
+          paddingHorizontal: SPACING.CHIP_INSET,
           borderRadius: 999,
           width: '100%',
           maxWidth: 320,
@@ -562,13 +558,12 @@ export default function SummaryScreen() {
           fontSize: 12,
           color: colors.textSecondary,
           opacity: 0.75,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
         },
         centered: {
           flex: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          padding: 32,
+          padding: SPACING.SCREEN_EDGE_INSET,
         },
         loadingHint: {
           marginTop: 18,
@@ -584,8 +579,8 @@ export default function SummaryScreen() {
         retryBtn: {
           borderWidth: 1,
           borderColor: colors.border,
-          paddingHorizontal: 24,
-          paddingVertical: 12,
+          paddingHorizontal: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
           borderRadius: 999,
           backgroundColor: colors.accentLineSoft,
         },
@@ -598,12 +593,12 @@ export default function SummaryScreen() {
           flex: 1,
           backgroundColor: colors.backdropStrong ?? colors.overlay,
           justifyContent: 'center',
-          paddingHorizontal: 24,
+          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
         },
         modalCard: {
           backgroundColor: colors.modalSurface,
           borderRadius: 20,
-          padding: 22,
+          padding: SPACING.HERO_INSET,
           borderWidth: 1,
           borderColor: colors.border,
         },
@@ -622,8 +617,8 @@ export default function SummaryScreen() {
         modalBtn: {
           alignSelf: 'flex-end',
           backgroundColor: colors.accentLineSoft,
-          paddingVertical: 10,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
+          paddingHorizontal: SPACING.CHIP_INSET,
           borderRadius: 999,
           borderWidth: 1,
           borderColor: colors.border,

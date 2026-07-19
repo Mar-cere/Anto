@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import { SPACING } from '../constants/ui';
 import {
   View,
   Text,
@@ -18,7 +19,6 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 import { useSectionTranslations } from '../hooks/useTranslations';
-import { SPACING } from '../constants/ui';
 import { captureBoundaryError } from '../utils/sentry';
 
 // Constantes
@@ -129,7 +129,7 @@ function ErrorBoundaryView({ boundaryProps }) {
           flexGrow: 1,
           justifyContent: 'center',
           alignItems: 'center',
-          paddingVertical: 40,
+          paddingVertical: SPACING.xxl,
         },
         iconContainer: {
           marginBottom: 24,
@@ -146,20 +146,19 @@ function ErrorBoundaryView({ boundaryProps }) {
           color: colors.textSecondary,
           textAlign: 'center',
           marginBottom: 32,
-          paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
         },
         buttonContainer: {
           width: '100%',
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         button: {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          paddingVertical: 14,
-          paddingHorizontal: 24,
+          paddingVertical: SPACING.CHIP_INSET,
+          paddingHorizontal: SPACING.CHIP_INSET,
           borderRadius: 12,
-          gap: 8,
+          gap: SPACING.sm,
         },
         retryButton: {
           backgroundColor: colors.primary,
@@ -177,13 +176,13 @@ function ErrorBoundaryView({ boundaryProps }) {
           marginTop: 32,
           borderTopWidth: 1,
           borderTopColor: `${colors.textSecondary}30`,
-          paddingTop: 20,
+          paddingTop: SPACING.HERO_INSET,
         },
         detailsToggle: {
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingVertical: 12,
+          paddingVertical: SPACING.CHIP_INSET_COMPACT,
         },
         detailsToggleText: {
           color: colors.textSecondary,
@@ -192,7 +191,7 @@ function ErrorBoundaryView({ boundaryProps }) {
         detailsContent: {
           backgroundColor: `${colors.textSecondary}10`,
           borderRadius: 8,
-          padding: 12,
+          padding: SPACING.CARD_INNER_INSET,
           marginTop: 8,
         },
         detailsTitle: {

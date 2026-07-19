@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { SPACING } from '../../constants/ui';
 import { useTheme } from '../../context/ThemeContext';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 
@@ -40,9 +41,9 @@ export default function GratitudeJournalPromoCard() {
         card: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
-          paddingVertical: 14,
-          paddingHorizontal: 14,
+          gap: SPACING.CHIP_INSET,
+          paddingVertical: SPACING.CARD_INNER_INSET,
+          paddingHorizontal: SPACING.CARD_INNER_INSET,
           borderRadius: 17,
           backgroundColor: colors.chromeCard,
         },

@@ -94,7 +94,7 @@ const AboutScreen = () => {
           justifyContent: 'space-between',
           alignItems: 'center',
           paddingHorizontal: SPACING.SCREEN_EDGE_INSET,
-          paddingVertical: 12,
+          paddingVertical: SPACING.CHIP_INSET,
           marginBottom: 8,
         },
         headerButton: {
@@ -113,7 +113,7 @@ const AboutScreen = () => {
         },
         scrollContent: {
           padding: SPACING.SCREEN_EDGE_INSET,
-          paddingBottom: 32,
+          paddingBottom: SPACING.xl,
         },
         section: {
           marginBottom: 32,
@@ -122,7 +122,7 @@ const AboutScreen = () => {
           flexDirection: 'row',
           alignItems: 'center',
           marginBottom: 16,
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         sectionTitle: {
           fontSize: 22,
@@ -139,7 +139,7 @@ const AboutScreen = () => {
           flexDirection: 'row',
           backgroundColor: colors.chromeCard,
           borderRadius: 12,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 12,
           borderWidth: 1,
           borderColor: colors.chromeCardBorder,
@@ -172,10 +172,10 @@ const AboutScreen = () => {
           alignItems: 'center',
           backgroundColor: colors.chromeCard,
           borderRadius: 12,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           borderWidth: 1,
           borderColor: colors.chromeCardBorder,
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         contactEmail: {
           fontSize: 16,
@@ -187,11 +187,11 @@ const AboutScreen = () => {
           alignItems: 'center',
           backgroundColor: colors.chromeCard,
           borderRadius: 12,
-          padding: SPACING.SCREEN_EDGE_INSET,
+          padding: SPACING.CARD_INNER_INSET,
           marginBottom: 12,
           borderWidth: 1,
           borderColor: colors.chromeCardBorder,
-          gap: 12,
+          gap: SPACING.CHIP_INSET,
         },
         legalLinkText: {
           flex: 1,
@@ -218,7 +218,7 @@ const AboutScreen = () => {
         versionContainer: {
           alignItems: 'center',
           marginTop: 16,
-          paddingTop: 24,
+          paddingTop: SPACING.HERO_INSET,
           borderTopWidth: 1,
           borderTopColor: colors.border,
         },
