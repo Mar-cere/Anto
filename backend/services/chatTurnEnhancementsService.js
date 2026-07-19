@@ -28,6 +28,7 @@ import {
   markExperientialPatternFollowUpAsked,
   shouldShowExperientialFollowUpChips,
 } from './experientialFollowUpService.js';
+import { buildExperientialRecallPlan } from './experientialRecallService.js';
 import {
   isChatObservationalContextBlocked,
   isLlmCrisisTherapeuticExtrasBlocked,
@@ -277,6 +278,39 @@ export async function planChatTurnEnhancements({
     }
   }
 
+  // Recall temático entre conversaciones (promesa B): si no hay follow-up due ni compromiso.
+  let experientialRecallPlan = null;
+  if (
+    !blockObservationalSnippets &&
+    !commitmentDue &&
+    !experientialFollowUpPlan?.promptSnippet
+  ) {
+    try {
+      experientialRecallPlan = await withTimeout(
+        buildExperientialRecallPlan({
+          userId,
+          userContent: String(userContent || '').trim(),
+          riskLevel,
+          language: lang,
+          skipBecauseCommitmentDue: false,
+          skipBecauseFollowUpDue: false,
+        }),
+        CHAT_CONTEXT_SNIPPET_TIMEOUT_MS,
+      );
+    } catch {
+      experientialRecallPlan = null;
+    }
+  }
+
+  // Mutex RAG (#203): compromiso / follow-up #211 / recall ganan prioridad.
+  if (
+    commitmentDue ||
+    experientialFollowUpPlan?.promptSnippet ||
+    experientialRecallPlan?.promptSnippet
+  ) {
+    personalPatternRagPromptSnippet = null;
+  }
+
   return {
     suggestionPlan,
     tccLitePlan,
@@ -289,11 +323,30 @@ export async function planChatTurnEnhancements({
     sessionCommitmentPromptSnippet,
     commitmentFollowUpCommitmentId,
     experientialFollowUpPlan,
+    experientialRecallPlan,
   };
 }
 
 export function buildOpenaiEnhancementSnippets(enhancements, options = {}) {
   const blockTherapeutic = options.blockCrisisExtras === true;
+  const commitmentFollowUpPromptSnippet = blockTherapeutic
+    ? null
+    : enhancements.commitmentFollowUpPlan?.promptSnippet || null;
+  const sessionCommitmentPromptSnippet = blockTherapeutic
+    ? null
+    : enhancements.sessionCommitmentPromptSnippet || null;
+  const experientialFollowUpPromptSnippet = blockTherapeutic
+    ? null
+    : enhancements.experientialFollowUpPlan?.promptSnippet || null;
+  const experientialRecallPromptSnippet = blockTherapeutic
+    ? null
+    : enhancements.experientialRecallPlan?.promptSnippet || null;
+  const memoryHigherPriority = Boolean(
+    commitmentFollowUpPromptSnippet ||
+      sessionCommitmentPromptSnippet ||
+      experientialFollowUpPromptSnippet ||
+      experientialRecallPromptSnippet,
+  );
   return {
     psychoeducationPromptSnippet: blockTherapeutic
       ? null
@@ -306,16 +359,13 @@ export function buildOpenaiEnhancementSnippets(enhancements, options = {}) {
       : enhancements.tccLitePlan?.promptSnippet || null,
     digitalPhenotypePromptSnippet: enhancements.digitalPhenotypePromptSnippet || null,
     recentAbcPromptSnippet: enhancements.recentAbcPromptSnippet || null,
-    personalPatternRagPromptSnippet: enhancements.personalPatternRagPromptSnippet || null,
-    commitmentFollowUpPromptSnippet: blockTherapeutic
+    personalPatternRagPromptSnippet: memoryHigherPriority
       ? null
-      : enhancements.commitmentFollowUpPlan?.promptSnippet || null,
-    sessionCommitmentPromptSnippet: blockTherapeutic
-      ? null
-      : enhancements.sessionCommitmentPromptSnippet || null,
-    experientialFollowUpPromptSnippet: blockTherapeutic
-      ? null
-      : enhancements.experientialFollowUpPlan?.promptSnippet || null,
+      : enhancements.personalPatternRagPromptSnippet || null,
+    commitmentFollowUpPromptSnippet,
+    sessionCommitmentPromptSnippet,
+    experientialFollowUpPromptSnippet,
+    experientialRecallPromptSnippet,
   };
 }
 

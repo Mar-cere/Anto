@@ -904,7 +904,7 @@ export const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emoci
 - Nunca muestres IDs internos o etiquetas técnicas. Usa nombres humanos y simples.
 
 ### Memoria y privacidad
-- No prometas "guardar" datos. Puedes decir "lo recordaré en esta conversación".
+- No prometas "guardar" datos de forma indefinida. Si el contexto del sistema trae memoria del proceso o continuidad observacional (con consentimiento), puedes anclar con suavidad; si no, limita a esta conversación.
 - No pidas datos personales sensibles por defecto. Si necesitas algo sensible, pide permiso primero.
 
 ### Enfoque terapéutico
@@ -931,6 +931,7 @@ export const ENHANCEMENT_PROMPT_SNIPPET_KEYS = [
   'personalPatternRagPromptSnippet',
   'commitmentFollowUpPromptSnippet',
   'experientialFollowUpPromptSnippet',
+  'experientialRecallPromptSnippet',
 ];
 
 /**
@@ -1303,11 +1304,6 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     systemMessage += recentAbcSnippet;
   }
 
-  const personalPatternRagSnippet = String(contexto.personalPatternRagPromptSnippet || '').trim();
-  if (personalPatternRagSnippet) {
-    systemMessage += personalPatternRagSnippet;
-  }
-
   const commitmentFollowUpSnippet = String(contexto.commitmentFollowUpPromptSnippet || '').trim();
   if (commitmentFollowUpSnippet) {
     systemMessage += commitmentFollowUpSnippet;
@@ -1324,6 +1320,31 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   ).trim();
   if (experientialFollowUpSnippet && !commitmentFollowUpSnippet && !sessionCommitmentSnippet) {
     systemMessage += experientialFollowUpSnippet;
+  }
+
+  // Recall temático (promesa B): tras follow-up due; no compite con #202
+  const experientialRecallSnippet = String(
+    contexto.experientialRecallPromptSnippet || '',
+  ).trim();
+  if (
+    experientialRecallSnippet &&
+    !commitmentFollowUpSnippet &&
+    !sessionCommitmentSnippet &&
+    !experientialFollowUpSnippet
+  ) {
+    systemMessage += experientialRecallSnippet;
+  }
+
+  // RAG #203: último en prioridad; muteo si hay #202 / #211 / recall
+  const personalPatternRagSnippet = String(contexto.personalPatternRagPromptSnippet || '').trim();
+  if (
+    personalPatternRagSnippet &&
+    !commitmentFollowUpSnippet &&
+    !sessionCommitmentSnippet &&
+    !experientialFollowUpSnippet &&
+    !experientialRecallSnippet
+  ) {
+    systemMessage += personalPatternRagSnippet;
   }
 
   if (contexto.crisis?.riskLevel && shouldAttachCrisisContextToPrompt(contexto.crisis.riskLevel)) {

@@ -24,12 +24,14 @@ describe('applyEnhancementSnippetsToPromptContext (passthrough de snippets)', ()
     expect(out).not.toBe(base);
   });
 
-  it('incluye los snippets clave (fenotipo #216, RAG #203, follow-up #202)', () => {
+  it('incluye los snippets clave (fenotipo #216, RAG #203, follow-up #202, recall B)', () => {
     expect(ENHANCEMENT_PROMPT_SNIPPET_KEYS).toEqual(
       expect.arrayContaining([
         'digitalPhenotypePromptSnippet',
         'personalPatternRagPromptSnippet',
         'commitmentFollowUpPromptSnippet',
+        'experientialFollowUpPromptSnippet',
+        'experientialRecallPromptSnippet',
       ]),
     );
   });
@@ -52,5 +54,36 @@ describe('buildContextualizedPrompt + passthrough end-to-end', () => {
     );
     const { systemMessage } = await buildContextualizedPrompt({ content: 'hola' }, ctx);
     expect(systemMessage).toContain('PHENOTYPE_MARKER_216');
+  });
+
+  it('concatena el snippet de recall experiencial (promesa B)', async () => {
+    const ctx = applyEnhancementSnippetsToPromptContext(
+      { emotional: {}, contextual: {} },
+      { experientialRecallPromptSnippet: '\n\nRECALL_MARKER_B\n' },
+    );
+    const { systemMessage } = await buildContextualizedPrompt({ content: 'hola' }, ctx);
+    expect(systemMessage).toContain('RECALL_MARKER_B');
+  });
+
+  it('mutea RAG si hay recall en el mismo contexto', async () => {
+    const ctx = applyEnhancementSnippetsToPromptContext(
+      { emotional: {}, contextual: {} },
+      {
+        personalPatternRagPromptSnippet: '\n\nRAG_MARKER_203\n',
+        experientialRecallPromptSnippet: '\n\nRECALL_MARKER_B\n',
+      },
+    );
+    const { systemMessage } = await buildContextualizedPrompt({ content: 'hola' }, ctx);
+    expect(systemMessage).toContain('RECALL_MARKER_B');
+    expect(systemMessage).not.toContain('RAG_MARKER_203');
+  });
+
+  it('concatena RAG cuando no hay follow-up ni recall', async () => {
+    const ctx = applyEnhancementSnippetsToPromptContext(
+      { emotional: {}, contextual: {} },
+      { personalPatternRagPromptSnippet: '\n\nRAG_MARKER_203\n' },
+    );
+    const { systemMessage } = await buildContextualizedPrompt({ content: 'hola' }, ctx);
+    expect(systemMessage).toContain('RAG_MARKER_203');
   });
 });

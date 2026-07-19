@@ -55,11 +55,17 @@ export async function resetConversationSessionState(conversationId, { full = tru
       },
       { $set: { status: 'cancelled' } },
     );
+    // Preservar jobs con transcriptSnapshot (extract tras borrar chat).
     await ExperientialPatternJob.updateMany(
       {
         userId: uid,
         conversationId: convOid,
         status: { $in: ['pending', 'processing'] },
+        $or: [
+          { transcriptSnapshot: { $exists: false } },
+          { transcriptSnapshot: null },
+          { transcriptSnapshot: { $size: 0 } },
+        ],
       },
       { $set: { status: 'cancelled' } },
     );

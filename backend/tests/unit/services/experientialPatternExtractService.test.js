@@ -1,4 +1,8 @@
-import { sanitizeExtractedCandidates } from '../../../services/experientialPatternExtractService.js';
+import {
+  sanitizeExtractedCandidates,
+  buildTranscriptSnapshotFromMessages,
+  resolveMessagesForExperientialExtractJob,
+} from '../../../services/experientialPatternExtractService.js';
 
 describe('experientialPatternExtractService', () => {
   it('acepta candidatos de alta confianza', () => {
@@ -52,5 +56,40 @@ describe('experientialPatternExtractService', () => {
       ],
     });
     expect(out).toHaveLength(2);
+  });
+
+  it('buildTranscriptSnapshotFromMessages normaliza y trunca', () => {
+    const snap = buildTranscriptSnapshotFromMessages([
+      { role: 'user', content: 'hola mañanas', createdAt: new Date('2026-01-01') },
+      { role: 'assistant', content: 'cuéntame más', metadata: { riskLevel: 'LOW' } },
+      { role: 'tool', content: 'ignorar' },
+    ]);
+    expect(snap).toHaveLength(2);
+    expect(snap[0].role).toBe('user');
+    expect(snap[1].metadata).toEqual({ riskLevel: 'LOW' });
+  });
+
+  it('resolveMessagesForExperientialExtractJob prioriza snapshot sobre live', () => {
+    const job = {
+      transcriptSnapshot: [
+        { role: 'user', content: 'desde snapshot sobre mañanas difíciles' },
+        { role: 'assistant', content: 'ok' },
+      ],
+    };
+    const liveNewestFirst = [
+      { role: 'user', content: 'live' },
+    ];
+    const msgs = resolveMessagesForExperientialExtractJob(job, liveNewestFirst);
+    expect(msgs[0].content).toMatch(/snapshot/);
+    expect(msgs).toHaveLength(2);
+  });
+
+  it('resolveMessagesForExperientialExtractJob usa live si no hay snapshot', () => {
+    const liveNewestFirst = [
+      { role: 'assistant', content: 'b' },
+      { role: 'user', content: 'a' },
+    ];
+    const msgs = resolveMessagesForExperientialExtractJob({}, liveNewestFirst);
+    expect(msgs.map((m) => m.content)).toEqual(['a', 'b']);
   });
 });

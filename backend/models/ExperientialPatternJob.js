@@ -48,6 +48,22 @@ const experientialPatternJobSchema = new mongoose.Schema(
       default: 0,
       min: 0,
     },
+    /**
+     * Transcript capturado al schedule (p. ej. borrar chat) para que el worker
+     * no dependa de Message.find tras deleteMany.
+     */
+    transcriptSnapshot: {
+      type: [
+        {
+          _id: false,
+          role: { type: String, enum: ['user', 'assistant', 'system'], required: true },
+          content: { type: String, default: '', maxlength: 4000 },
+          metadata: { type: mongoose.Schema.Types.Mixed, default: undefined },
+          createdAt: { type: Date, default: null },
+        },
+      ],
+      default: undefined,
+    },
   },
   { timestamps: true },
 );

@@ -610,6 +610,7 @@ export const setupSocketIO = (server) => {
           commitmentFollowUpPromptSnippet: promptSnippets.commitmentFollowUpPromptSnippet,
           sessionCommitmentPromptSnippet: promptSnippets.sessionCommitmentPromptSnippet,
           experientialFollowUpPromptSnippet: promptSnippets.experientialFollowUpPromptSnippet,
+          experientialRecallPromptSnippet: promptSnippets.experientialRecallPromptSnippet,
           crisis: buildOpenaiCrisisContext({
             riskLevel,
             isCrisis,

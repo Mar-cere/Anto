@@ -66,7 +66,7 @@ Ver también `backend/config/features.js`.
 | `ENABLE_REMINDERS` | off | Recordatorios contactos emergencia |
 | `ENABLE_WEEKLY_SUMMARY_EMAIL` | off | Correo aviso resumen semanal |
 | `ENABLE_SWAGGER` | off en prod | Documentación `/api-docs` |
-| `PERSONAL_PATTERN_RAG_ENABLED` | off | RAG patrones personales cross-sesión (#203); requiere embeddings |
+| `PERSONAL_PATTERN_RAG_ENABLED` | off | RAG patrones personales cross-sesión (#203); requiere embeddings y **consent** de Memoria del proceso (`signalConsent.experientialPatterns`). En non-prod también `TOPIC_FREE_EMBEDDINGS_ENABLED=true` si embeddings no están on por defecto. Atlas opcional (`ATLAS_VECTOR_SEARCH_ENABLED`). |
 | `EXPERIENTIAL_PATTERNS_ENABLED` | activo | API + persistencia memoria del proceso (#203/#211); `false` desactiva |
 | `EXPERIENTIAL_FOLLOWUP_ENABLED` | activo | Follow-up evolutivo en chat; `false` desactiva |
 | `EXPERIENTIAL_EXTRACT_ENABLED` | activo | Worker extracción al cierre de sesión; `false` desactiva |

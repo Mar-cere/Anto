@@ -16,6 +16,7 @@ import {
   getTopicFreeEmbeddingMinSimilarity,
 } from './topicFreeEmbeddingService.js';
 import { findSimilarMemoryIndexEvents } from './topicFreeVectorSearchService.js';
+import { hasExperientialPatternsConsent } from './experientialPatternService.js';
 
 export const MEMORY_INTERVENTION_ID = 'personal-pattern';
 export const MEMORY_EVENT_TYPE = 'memory_index';
@@ -98,6 +99,9 @@ export async function indexPersonalPatternFromUserMessage({
 } = {}) {
   if (!isPersonalPatternRagEnabled()) return { indexed: false, reason: 'disabled' };
   if (!userId || !conversationId) return { indexed: false, reason: 'missing_ids' };
+  if (!(await hasExperientialPatternsConsent(userId))) {
+    return { indexed: false, reason: 'no_consent' };
+  }
   if (isChatObservationalContextBlocked(riskLevel)) {
     return { indexed: false, reason: 'risk_blocked' };
   }
@@ -158,6 +162,7 @@ export async function retrievePersonalPatternMemories({
   limit = SNIPPET_MAX_MEMORIES,
 } = {}) {
   if (!isPersonalPatternRagEnabled() || !userId) return [];
+  if (!(await hasExperientialPatternsConsent(userId))) return [];
 
   const snippet = buildTopicFreeFromUserContent(userContent, { minLength: MIN_CONTENT_CHARS });
   if (!snippet || isSensitiveForPersonalMemory(userContent)) return [];
@@ -195,6 +200,7 @@ export async function buildPersonalPatternRagSnippet({
   riskLevel = 'LOW',
 } = {}) {
   if (!isPersonalPatternRagEnabled() || !userId) return null;
+  if (!(await hasExperientialPatternsConsent(userId))) return null;
   if (isChatObservationalContextBlocked(riskLevel)) return null;
 
   const content = String(userContent || '').trim();

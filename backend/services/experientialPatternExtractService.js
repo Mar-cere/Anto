@@ -23,9 +23,11 @@ import metricsService from './metricsService.js';
 const MIN_USER_TURNS = 3;
 const MIN_USER_CHARS = 80;
 const MESSAGES_LIMIT = 40;
+const SNAPSHOT_CONTENT_MAX = 2000;
 const CONFIDENCE_THRESHOLD = 0.75;
 const MAX_PATTERNS = 2;
 const DEFAULT_DELAY_MINUTES = 7;
+const CLEAR_SNAPSHOT_DELAY_MINUTES = 1;
 const STALE_MS = () =>
   Math.max(60_000, Number(process.env.EXPERIENTIAL_EXTRACT_STALE_MS) || 15 * 60 * 1000);
 const MAX_ATTEMPTS = () =>
@@ -73,6 +75,41 @@ function countUserStats(msgs) {
   return { userTurns, userChars };
 }
 
+/**
+ * Normaliza mensajes para transcriptSnapshot (exportable para tests).
+ */
+export function buildTranscriptSnapshotFromMessages(msgs = []) {
+  const list = Array.isArray(msgs) ? msgs : [];
+  return list
+    .filter((m) => m && (m.role === 'user' || m.role === 'assistant' || m.role === 'system'))
+    .slice(-MESSAGES_LIMIT)
+    .map((m) => ({
+      role: m.role,
+      content: String(m.content || '').slice(0, SNAPSHOT_CONTENT_MAX),
+      metadata: m.metadata && typeof m.metadata === 'object' ? m.metadata : undefined,
+      createdAt: m.createdAt ? new Date(m.createdAt) : null,
+    }));
+}
+
+/**
+ * Resuelve mensajes para extract: snapshot del job o Message.find en vivo.
+ */
+export function resolveMessagesForExperientialExtractJob(job, liveMessages = null) {
+  const snap = Array.isArray(job?.transcriptSnapshot) ? job.transcriptSnapshot : null;
+  if (snap && snap.length > 0) {
+    return snap.map((m) => ({
+      role: m.role,
+      content: m.content,
+      metadata: m.metadata,
+      createdAt: m.createdAt,
+    }));
+  }
+  if (Array.isArray(liveMessages)) {
+    return [...liveMessages].reverse();
+  }
+  return [];
+}
+
 function conversationHasCrisis(msgs) {
   for (const m of msgs || []) {
     const risk = normalizeStoredCrisisRiskLevel(m?.metadata?.riskLevel || m?.metadata?.crisis?.riskLevel);
@@ -115,28 +152,65 @@ export async function scheduleExperientialPatternExtract(userId, conversationId,
     .select('createdAt')
     .lean();
   const baselineLastMessageAt = lastMsg?.createdAt ? new Date(lastMsg.createdAt) : new Date(0);
-  const delayMinutes = clampDelayMinutes(opts.delayMinutes);
+  const captureSnapshot = opts.captureSnapshot === true;
+  const delayMinutes = clampDelayMinutes(
+    opts.delayMinutes ?? (captureSnapshot ? CLEAR_SNAPSHOT_DELAY_MINUTES : DEFAULT_DELAY_MINUTES),
+  );
   const runAt = new Date(Date.now() + delayMinutes * 60 * 1000);
 
-  await ExperientialPatternJob.updateMany(
-    { userId: uid, conversationId: cid, status: { $in: ['pending', 'processing'] } },
-    { $set: { status: 'cancelled' } },
-  );
+  // Con snapshot nuevo (clear): reemplaza jobs previos del hilo.
+  // Sin snapshot (salida normal): no cancela extracts ya capturados al borrar.
+  const cancelFilter = captureSnapshot
+    ? {
+        userId: uid,
+        conversationId: cid,
+        status: { $in: ['pending', 'processing'] },
+      }
+    : {
+        userId: uid,
+        conversationId: cid,
+        status: { $in: ['pending', 'processing'] },
+        $or: [
+          { transcriptSnapshot: { $exists: false } },
+          { transcriptSnapshot: null },
+          { transcriptSnapshot: { $size: 0 } },
+        ],
+      };
+  await ExperientialPatternJob.updateMany(cancelFilter, { $set: { status: 'cancelled' } });
 
-  const job = await ExperientialPatternJob.create({
+  let transcriptSnapshot;
+  if (captureSnapshot) {
+    const recentMsgs = await Message.find({ conversationId: cid })
+      .sort({ createdAt: -1 })
+      .limit(MESSAGES_LIMIT)
+      .select('role content metadata createdAt')
+      .lean();
+    transcriptSnapshot = buildTranscriptSnapshotFromMessages([...recentMsgs].reverse());
+    if (!transcriptSnapshot.some((m) => m.role === 'user')) {
+      return { scheduled: false, reason: 'NO_MESSAGES' };
+    }
+  }
+
+  const jobPayload = {
     userId: uid,
     conversationId: cid,
     runAt,
     baselineLastMessageAt,
     status: 'pending',
     attempts: 0,
-  });
+  };
+  if (transcriptSnapshot) {
+    jobPayload.transcriptSnapshot = transcriptSnapshot;
+  }
+
+  const job = await ExperientialPatternJob.create(jobPayload);
 
   return {
     scheduled: true,
     runAt: job.runAt.toISOString(),
     delayMinutes,
     baselineLastMessageAt: baselineLastMessageAt.toISOString(),
+    hasTranscriptSnapshot: Boolean(transcriptSnapshot?.length),
   };
 }
 
@@ -194,22 +268,32 @@ async function processOneJob(job) {
     return;
   }
 
-  const newer = await Message.exists({
-    conversationId,
-    createdAt: { $gt: job.baselineLastMessageAt },
-  });
-  if (newer) {
-    await ExperientialPatternJob.updateOne({ _id: job._id }, { $set: { status: 'cancelled' } });
-    return;
+  const hasSnapshot =
+    Array.isArray(job.transcriptSnapshot) && job.transcriptSnapshot.length > 0;
+
+  if (!hasSnapshot) {
+    const newer = await Message.exists({
+      conversationId,
+      createdAt: { $gt: job.baselineLastMessageAt },
+    });
+    if (newer) {
+      await ExperientialPatternJob.updateOne({ _id: job._id }, { $set: { status: 'cancelled' } });
+      return;
+    }
   }
 
-  // Últimos N mensajes del cierre (no el inicio del hilo).
-  const recentMsgs = await Message.find({ conversationId })
-    .sort({ createdAt: -1 })
-    .limit(MESSAGES_LIMIT)
-    .select('role content metadata createdAt')
-    .lean();
-  const msgs = [...recentMsgs].reverse();
+  let msgs;
+  if (hasSnapshot) {
+    msgs = resolveMessagesForExperientialExtractJob(job);
+  } else {
+    // Últimos N mensajes del cierre (no el inicio del hilo).
+    const recentMsgs = await Message.find({ conversationId })
+      .sort({ createdAt: -1 })
+      .limit(MESSAGES_LIMIT)
+      .select('role content metadata createdAt')
+      .lean();
+    msgs = resolveMessagesForExperientialExtractJob(job, recentMsgs);
+  }
 
   const { userTurns, userChars } = countUserStats(msgs);
   if (userTurns < MIN_USER_TURNS || userChars < MIN_USER_CHARS || conversationHasCrisis(msgs)) {
@@ -375,4 +459,6 @@ export default {
   startExperientialPatternExtractWorker,
   stopExperientialPatternExtractWorker,
   sanitizeExtractedCandidates,
+  buildTranscriptSnapshotFromMessages,
+  resolveMessagesForExperientialExtractJob,
 };

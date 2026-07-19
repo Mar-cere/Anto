@@ -1,6 +1,6 @@
 # Contrato v1: patrones experienciales / memoria del proceso (#203 / #211)
 
-**Versión:** 1.0  
+**Versión:** 1.1  
 **Fecha:** Julio 2026  
 **Relacionado:** [PROPUESTAS_ACOMPANAMIENTO_IA_MATRIZ.md](./PROPUESTAS_ACOMPANAMIENTO_IA_MATRIZ.md) (#203, #211, #1), [CONTRATO_COMPROMISOS_V1.md](./CONTRATO_COMPROMISOS_V1.md) (#202), [PROTOCOLO_CRISIS_V1.md](./PROTOCOLO_CRISIS_V1.md).
 
@@ -10,6 +10,7 @@
 |----|-----|
 | Recordar observaciones subjetivas con ancla temporal («las mañanas eran difíciles») | Diagnosticar ni etiquetar esquemas clínicos |
 | Retomar con contraste suave («¿sientes que ha cambiado?») | Insistir, culpar o evaluar |
+| Anclar entre conversaciones si el mensaje solapa un patrón activo o pregunta por un recuerdo (con consent) | Inventar detalles fuera de patrones guardados |
 | Consentimiento opt-in + archivar | Extraer o preguntar sin consentimiento |
 | Coexistir con compromisos (#202) | Sustituir compromisos ni UserFact biográficos |
 
@@ -39,10 +40,18 @@ Flags: `EXPERIENTIAL_PATTERNS_ENABLED`, `EXPERIENTIAL_FOLLOWUP_ENABLED`, `EXPERI
 
 ## 4. Gates de chat
 
-Prioridad: crisis → compromiso #202 due → patrón experiencial due → RAG #203.
+Prioridad: crisis → compromiso #202 due → patrón experiencial due (#211) → **recall temático (promesa B)** → RAG #203 (opt-in por env).
 
-Bloqueo: `isChatObservationalContextBlocked`, cooldown post-crisis (mismo util que #202). Sin consent → sin inject ni extract.
+| Camino | Cuándo | Chips |
+|--------|--------|-------|
+| Follow-up due (#211) | `followUpAt` vencido, primer turno (o CTA Home) | Sí |
+| Recall temático | Consent + patrones activos + solapamiento temático **o** pregunta por recuerdo | No (solo snippet) |
+| RAG personal (#203) | Flag + embeddings + **mismo consent** + hits semánticos; **muteo** si hay #202 / #211 / recall | No |
+
+Bloqueo: `isChatObservationalContextBlocked`, cooldown post-crisis (mismo util que #202). Sin consent → sin inject, extract ni index/retrieve RAG.
 
 ## 5. Extracción
 
 Al cierre de sesión (job diferido, espejo last-session-summary): 0–2 patrones, confidence ≥ 0.75, dedupe `normalizedKey` 90d, cap 20 activos/usuario.
+
+**Borrar conversación:** antes de `Message.deleteMany`, se agenda extract con `transcriptSnapshot` (delay corto). El worker usa el snapshot y no depende de mensajes ya borrados. `resetConversationSessionState` no cancela jobs que tengan snapshot.

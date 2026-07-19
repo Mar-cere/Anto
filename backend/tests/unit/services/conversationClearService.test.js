@@ -5,7 +5,8 @@ import { jest } from '@jest/globals';
 
 const mockUpdateOne = jest.fn();
 const mockDeleteMany = jest.fn();
-const mockJobUpdateMany = jest.fn();
+const mockSessionJobUpdateMany = jest.fn();
+const mockExperientialJobUpdateMany = jest.fn();
 const mockUserUpdateOne = jest.fn();
 
 await jest.unstable_mockModule('../../../models/Conversation.js', () => ({
@@ -20,7 +21,12 @@ await jest.unstable_mockModule('../../../models/ChatInterventionEvent.js', () =>
 
 await jest.unstable_mockModule('../../../models/SessionSummaryJob.js', () => ({
   __esModule: true,
-  default: { updateMany: mockJobUpdateMany },
+  default: { updateMany: mockSessionJobUpdateMany },
+}));
+
+await jest.unstable_mockModule('../../../models/ExperientialPatternJob.js', () => ({
+  __esModule: true,
+  default: { updateMany: mockExperientialJobUpdateMany },
 }));
 
 await jest.unstable_mockModule('../../../models/User.js', () => ({
@@ -37,7 +43,8 @@ describe('conversationClearService', () => {
     jest.clearAllMocks();
     mockUpdateOne.mockResolvedValue({ modifiedCount: 1 });
     mockDeleteMany.mockResolvedValue({ deletedCount: 2 });
-    mockJobUpdateMany.mockResolvedValue({ modifiedCount: 1 });
+    mockSessionJobUpdateMany.mockResolvedValue({ modifiedCount: 1 });
+    mockExperientialJobUpdateMany.mockResolvedValue({ modifiedCount: 1 });
     mockUserUpdateOne.mockResolvedValue({ modifiedCount: 1 });
   });
 
@@ -63,7 +70,8 @@ describe('conversationClearService', () => {
     expect(mockDeleteMany).toHaveBeenCalledWith(
       expect.objectContaining({ conversationId: expect.anything() }),
     );
-    expect(mockJobUpdateMany).not.toHaveBeenCalled();
+    expect(mockSessionJobUpdateMany).not.toHaveBeenCalled();
+    expect(mockExperientialJobUpdateMany).not.toHaveBeenCalled();
     expect(mockUserUpdateOne).not.toHaveBeenCalled();
   });
 
@@ -71,7 +79,22 @@ describe('conversationClearService', () => {
     await resetConversationSessionState('507f1f77bcf86cd799439011', {
       userId: '507f1f77bcf86cd799439099',
     });
-    expect(mockJobUpdateMany).toHaveBeenCalled();
+    expect(mockSessionJobUpdateMany).toHaveBeenCalled();
+    expect(mockExperientialJobUpdateMany).toHaveBeenCalled();
     expect(mockUserUpdateOne).toHaveBeenCalled();
+  });
+
+  it('al cancelar extract experiencial excluye jobs con transcriptSnapshot', async () => {
+    await resetConversationSessionState('507f1f77bcf86cd799439011', {
+      userId: '507f1f77bcf86cd799439099',
+    });
+    expect(mockExperientialJobUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        $or: expect.arrayContaining([
+          expect.objectContaining({ transcriptSnapshot: { $exists: false } }),
+        ]),
+      }),
+      expect.objectContaining({ $set: { status: 'cancelled' } }),
+    );
   });
 });

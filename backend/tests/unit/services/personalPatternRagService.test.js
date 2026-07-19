@@ -6,6 +6,7 @@ const mockCreate = jest.fn();
 const mockCount = jest.fn();
 const mockFindOne = jest.fn();
 const mockFind = jest.fn();
+const mockHasConsent = jest.fn(async () => true);
 
 await jest.unstable_mockModule('../../../config/features.js', () => ({
   features: { personalPatternRag: true },
@@ -19,6 +20,10 @@ await jest.unstable_mockModule('../../../services/topicFreeEmbeddingService.js',
 
 await jest.unstable_mockModule('../../../services/topicFreeVectorSearchService.js', () => ({
   findSimilarMemoryIndexEvents: mockFindSimilar,
+}));
+
+await jest.unstable_mockModule('../../../services/experientialPatternService.js', () => ({
+  hasExperientialPatternsConsent: mockHasConsent,
 }));
 
 await jest.unstable_mockModule('../../../models/ChatInterventionEvent.js', () => ({
@@ -40,6 +45,7 @@ const {
 describe('personalPatternRagService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockHasConsent.mockResolvedValue(true);
     mockEmbed.mockResolvedValue([0.1, 0.2, 0.3]);
     mockFindOne.mockReturnValue({
       select: () => ({
@@ -70,6 +76,19 @@ describe('personalPatternRagService', () => {
     });
     expect(out.indexed).toBe(true);
     expect(mockCreate).toHaveBeenCalled();
+  });
+
+  it('no indexa sin consent de Memoria del proceso', async () => {
+    mockHasConsent.mockResolvedValue(false);
+    const out = await indexPersonalPatternFromUserMessage({
+      userId: '507f1f77bcf86cd799439011',
+      conversationId: '507f1f77bcf86cd799439012',
+      content: 'hoy la reunión con mi jefe me dejó agotado',
+      riskLevel: 'LOW',
+    });
+    expect(out.indexed).toBe(false);
+    expect(out.reason).toBe('no_consent');
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 
   it('no indexa en riesgo bloqueado', async () => {
@@ -131,5 +150,26 @@ describe('personalPatternRagService', () => {
       riskLevel: 'HIGH',
     });
     expect(out).toBeNull();
+  });
+
+  it('no devuelve snippet sin consent', async () => {
+    mockHasConsent.mockResolvedValue(false);
+    mockFindSimilar.mockResolvedValue([
+      {
+        topicFree: 'reunión difícil con el jefe',
+        createdAt: new Date(),
+        conversationId: '507f1f77bcf86cd799439099',
+        score: 0.9,
+      },
+    ]);
+    const out = await buildPersonalPatternRagSnippet({
+      userId: '507f1f77bcf86cd799439011',
+      userContent: 'otra vez tuve una reunión tensa en el trabajo',
+      conversationId: '507f1f77bcf86cd799439012',
+      language: 'es',
+      riskLevel: 'LOW',
+    });
+    expect(out).toBeNull();
+    expect(mockFindSimilar).not.toHaveBeenCalled();
   });
 });

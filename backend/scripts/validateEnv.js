@@ -56,7 +56,7 @@ const RELEASE_1_4_4_VARS = {
 
 // Variables opcionales 1.5.0 (Bloque D)
 const RELEASE_1_5_0_VARS = {
-  PERSONAL_PATTERN_RAG_ENABLED: 'RAG patrones personales cross-sesión (requiere embeddings + Atlas)',
+  PERSONAL_PATTERN_RAG_ENABLED: 'RAG patrones personales (embeddings; consent Memoria del proceso; Atlas opcional)',
   ENABLE_CRISIS_HARD_STOP: 'Hard-stop sin LLM en crisis HIGH explícita',
 };
 

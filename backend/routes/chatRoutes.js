@@ -131,6 +131,7 @@ import { normalizeTccLiteState } from '../services/tccLiteConversationStateServi
 import { tccLiteStepIndex, tccLiteStepOrder } from '../utils/tccLiteCopy.js';
 import { getAutomaticThoughtDistortionLabel } from '../constants/automaticThoughtDistortionPicker.js';
 import { resetConversationSessionState } from '../services/conversationClearService.js';
+import { scheduleExperientialPatternExtract } from '../services/experientialPatternExtractService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import {
     HISTORIAL_LIMITE,
@@ -1743,6 +1744,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           commitmentFollowUpPromptSnippet: promptSnippets.commitmentFollowUpPromptSnippet,
           sessionCommitmentPromptSnippet: promptSnippets.sessionCommitmentPromptSnippet,
           experientialFollowUpPromptSnippet: promptSnippets.experientialFollowUpPromptSnippet,
+          experientialRecallPromptSnippet: promptSnippets.experientialRecallPromptSnippet,
           crisisMetricTransport: req.query.stream === 'true' ? 'sse' : 'http',
         };
 
@@ -3089,6 +3091,21 @@ router.delete('/conversations/:conversationId', protect, validarConversationId, 
   try {
     const { conversationId } = req.params;
     const { role } = req.query;
+
+    // Antes del delete: capturar transcript para extract de memoria del proceso.
+    if (!role) {
+      try {
+        await scheduleExperientialPatternExtract(req.user._id, conversationId, {
+          captureSnapshot: true,
+          delayMinutes: 1,
+        });
+      } catch (scheduleErr) {
+        console.warn(
+          '[experientialExtract] schedule on clear skipped',
+          scheduleErr?.message || scheduleErr,
+        );
+      }
+    }
 
     const query = {
       conversationId,

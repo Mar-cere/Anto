@@ -39,8 +39,22 @@ await jest.unstable_mockModule('../../../services/recentAbcChatContextService.js
   buildRecentAbcChatSnippet: jest.fn().mockResolvedValue(null),
 }));
 
+const mockBuildPersonalPatternRagSnippet = jest.fn().mockResolvedValue(null);
 await jest.unstable_mockModule('../../../services/personalPatternRagService.js', () => ({
-  buildPersonalPatternRagSnippet: jest.fn().mockResolvedValue(null),
+  buildPersonalPatternRagSnippet: mockBuildPersonalPatternRagSnippet,
+}));
+
+const mockBuildExperientialFollowUpPlan = jest.fn().mockResolvedValue(null);
+await jest.unstable_mockModule('../../../services/experientialFollowUpService.js', () => ({
+  buildExperientialFollowUpPlan: mockBuildExperientialFollowUpPlan,
+  detectExperientialFollowUpAnswer: jest.fn().mockResolvedValue(undefined),
+  markExperientialPatternFollowUpAsked: jest.fn().mockResolvedValue(undefined),
+  shouldShowExperientialFollowUpChips: jest.fn().mockReturnValue(false),
+}));
+
+const mockBuildExperientialRecallPlan = jest.fn().mockResolvedValue(null);
+await jest.unstable_mockModule('../../../services/experientialRecallService.js', () => ({
+  buildExperientialRecallPlan: mockBuildExperientialRecallPlan,
 }));
 
 const mockBuildCommitmentFollowUpPlan = jest.fn().mockResolvedValue(null);
@@ -98,6 +112,14 @@ describe('chatTurnEnhancementsService', () => {
     mockToTccLiteClientPayload.mockReturnValue({ active: true, step: 'capture_thought' });
     mockSaveTccLiteState.mockResolvedValue(undefined);
     mockRecordShown.mockResolvedValue(undefined);
+    mockBuildPersonalPatternRagSnippet.mockResolvedValue(null);
+    mockBuildExperientialFollowUpPlan.mockResolvedValue(null);
+    mockBuildExperientialRecallPlan.mockResolvedValue(null);
+    mockBuildSessionCommitmentPromptSnippet.mockResolvedValue({
+      snippet: null,
+      commitmentId: null,
+      label: null,
+    });
   });
 
   it('planChatTurnEnhancements prioriza follow-up v1 y no llama al plan legacy', async () => {
@@ -181,12 +203,51 @@ describe('chatTurnEnhancementsService', () => {
         suggestionPlan: { psychoeducationPromptSnippet: 'PSICO' },
         activeTccProtocolsPromptSnippet: 'TCC PROTO',
         tccLitePlan: { promptSnippet: 'TCC LITE' },
+        experientialRecallPlan: { promptSnippet: 'RECALL' },
+        experientialFollowUpPlan: { promptSnippet: 'FOLLOW' },
       },
       { blockCrisisExtras: true },
     );
     expect(snippets.psychoeducationPromptSnippet).toBeNull();
     expect(snippets.activeTccProtocolsPromptSnippet).toBeNull();
     expect(snippets.tccLitePromptSnippet).toBeNull();
+    expect(snippets.experientialRecallPromptSnippet).toBeNull();
+    expect(snippets.experientialFollowUpPromptSnippet).toBeNull();
+  });
+
+  it('buildOpenaiEnhancementSnippets mutea RAG si hay recall', () => {
+    const snippets = buildOpenaiEnhancementSnippets(
+      {
+        personalPatternRagPromptSnippet: 'RAG_SNIP',
+        experientialRecallPlan: { promptSnippet: 'RECALL_SNIP' },
+      },
+      { blockCrisisExtras: false },
+    );
+    expect(snippets.experientialRecallPromptSnippet).toBe('RECALL_SNIP');
+    expect(snippets.personalPatternRagPromptSnippet).toBeNull();
+  });
+
+  it('planChatTurnEnhancements mutea RAG cuando hay recall temático', async () => {
+    mockBuildPersonalPatternRagSnippet.mockResolvedValue('\n\nRAG_SNIP\n');
+    mockBuildExperientialRecallPlan.mockResolvedValue({
+      promptSnippet: '\n\nRECALL_SNIP\n',
+      patterns: [],
+    });
+
+    const result = await planChatTurnEnhancements({
+      userId: '507f1f77bcf86cd799439011',
+      conversationId: '507f1f77bcf86cd799439012',
+      userContent: '¿recuerdas mis mañanas?',
+      conversationHistory: [{ role: 'user', content: 'hola' }],
+      emotionalAnalysis: { mainEmotion: 'calma' },
+      contextualAnalysis: {},
+      riskLevel: 'LOW',
+      sessionIntention: null,
+      language: 'es',
+    });
+
+    expect(result.experientialRecallPlan?.promptSnippet).toMatch(/RECALL/);
+    expect(result.personalPatternRagPromptSnippet).toBeNull();
   });
 
   it('planChatTurnEnhancements omite sugerencias y TCC en crisis MEDIUM', async () => {

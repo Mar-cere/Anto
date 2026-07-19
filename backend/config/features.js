@@ -16,7 +16,7 @@
  * | emailVerificationReminder  | ENABLE_EMAIL_VERIFICATION_REMINDER | activo | recordatorio ~24 h tras registro sin verificar (valor + invitación, sin código) |
  * | weeklySummaryEmail         | ENABLE_WEEKLY_SUMMARY_EMAIL o ENABLE_WEEKLY_TIPS_EMAIL | off | aviso resumen semanal (neutro); slot `WEEKLY_TIPS_EMAIL_SLOT`; regalo trial +N días tras envío: `WEEKLY_SUMMARY_TRIAL_GIFT_DAYS` (default: 1 si APP_TRIAL_DAYS≤1, si no min(2, APP_TRIAL_DAYS)), desactivar con `WEEKLY_SUMMARY_TRIAL_GIFT_ENABLED=false` |
  * | lastSessionSummaryWorker   | ENABLE_LAST_SESSION_SUMMARY    | activo salvo `false` | worker continuidad último chat (#4+#47); tick `LAST_SESSION_SUMMARY_TICK_MS`; reencola `processing` viejos con `LAST_SESSION_SUMMARY_STALE_MS` (default 15 min); reintentos LLM `LAST_SESSION_SUMMARY_MAX_ATTEMPTS` (default 2, máx 5) |
- * | personalPatternRag         | PERSONAL_PATTERN_RAG_ENABLED   | off     | RAG patrones personales cross-sesión (#203); requiere embeddings |
+ * | personalPatternRag         | PERSONAL_PATTERN_RAG_ENABLED   | off     | RAG patrones personales (#203); embeddings + consent Memoria del proceso |
  * | experientialPatterns       | EXPERIENTIAL_PATTERNS_ENABLED  | activo salvo `false` | API + persistencia memoria del proceso (#203/#211) |
  * | experientialFollowUp       | EXPERIENTIAL_FOLLOWUP_ENABLED  | activo salvo `false` | inyección follow-up evolutivo en chat |
  * | experientialExtract        | EXPERIENTIAL_EXTRACT_ENABLED   | activo salvo `false` | worker extracción al cierre de sesión |
@@ -77,7 +77,7 @@ export const features = Object.freeze({
   weeklyInsightLlm: process.env.WEEKLY_INSIGHT_LLM_ENABLED === 'true',
   /** Worker continuidad último chat (#4+#47). Default activo salvo `false`. */
   lastSessionSummaryWorker: envIsNotFalse(process.env.ENABLE_LAST_SESSION_SUMMARY),
-  /** RAG patrones personales (#203). Opt-in: `PERSONAL_PATTERN_RAG_ENABLED=true` + embeddings. */
+  /** RAG patrones personales (#203). Opt-in: `PERSONAL_PATTERN_RAG_ENABLED=true` + embeddings + consent Memoria del proceso. */
   personalPatternRag: process.env.PERSONAL_PATTERN_RAG_ENABLED === 'true',
   /** API + persistencia memoria del proceso (#203/#211). Default activo salvo `false`. */
   experientialPatterns: envIsNotFalse(process.env.EXPERIENTIAL_PATTERNS_ENABLED),
