@@ -164,6 +164,22 @@ describe('buildCommitmentFollowUpPlan', () => {
     const plan = await buildCommitmentFollowUpPlan({ userId: VALID_ID });
     expect(plan).toBeNull();
   });
+
+  it('omite follow-up si el label es eco de burbuja o soft-resume', async () => {
+    mockFindOne.mockReturnValue(
+      chain({
+        _id: VALID_ID,
+        label:
+          'Está bien no saberlo ahora; a veces solo se siente la carga sin poder nombrarla.',
+      }),
+    );
+    expect(await buildCommitmentFollowUpPlan({ userId: VALID_ID })).toBeNull();
+
+    mockFindOne.mockReturnValue(
+      chain({ _id: VALID_ID, label: 'Volver a este tema cuando te venga bien' }),
+    );
+    expect(await buildCommitmentFollowUpPlan({ userId: VALID_ID })).toBeNull();
+  });
 });
 
 describe('markCommitmentFollowUpAsked', () => {

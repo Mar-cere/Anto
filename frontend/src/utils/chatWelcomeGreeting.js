@@ -3,7 +3,7 @@
  */
 import { getTranslations } from '../constants/translations';
 import { sanitizeProposedCommitments } from './sanitizeProposedCommitments.js';
-import { isGenericCommitmentLabel } from './commitmentDisplayCopy.js';
+import { isUsableCommitmentFollowUpLabel } from './commitmentLabelUtils.js';
 
 const GREETING_VARIATIONS_ES = {
   morning: [
@@ -191,7 +191,7 @@ export function reconstructPersistedCommitmentFollowUp(messages) {
 
   const source = messages[lastIdx];
   const cf = source.metadata?.commitmentFollowUp;
-  if (!cf?.id || isGenericCommitmentLabel(cf.label)) return messages;
+  if (!cf?.id || !isUsableCommitmentFollowUpLabel(cf.label)) return messages;
 
   const block = {
     id: `commitment-follow-up-loaded-${source._id || source.id || lastIdx}`,

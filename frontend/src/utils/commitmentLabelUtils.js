@@ -74,6 +74,31 @@ export function looksLikeChatBubbleCommitmentLabel(label) {
   return false;
 }
 
+/** «Volver a este tema…»: útil para aparcar, no para preguntar «¿pudiste hacerlo?». */
+export function isSoftResumeCommitmentLabel(label) {
+  const n = normalizeCommitmentLabel(label);
+  if (!n) return false;
+  return (
+    n.includes('volver a este tema') ||
+    n.includes('come back to this topic') ||
+    n.includes('retomar este tramo') ||
+    n.includes('retomar este tema') ||
+    (n.includes('cuando te venga bien') && n.length <= 64)
+  );
+}
+
+/**
+ * Labels válidos para chips de follow-up en chat: acción concreta, no eco ni soft-resume.
+ */
+export function isUsableCommitmentFollowUpLabel(label) {
+  const raw = String(label || '').trim();
+  if (!raw) return false;
+  if (looksLikeChatBubbleCommitmentLabel(raw)) return false;
+  if (isSoftResumeCommitmentLabel(raw)) return false;
+  if (isGenericInterventionLabel(raw)) return false;
+  return isConcreteCommitmentLabel(raw);
+}
+
 /**
  * Oculta seguimiento en dashboard cuando el compromiso BA duplica la fila del plan semanal
  * o la etiqueta es genérica (sin acción concreta).

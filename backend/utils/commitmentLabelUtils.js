@@ -67,3 +67,25 @@ export function looksLikeChatBubbleLabel(text) {
   }
   return false;
 }
+
+export function isSoftResumeCommitmentLabel(label) {
+  const n = normalizeCommitmentLabel(label);
+  if (!n) return false;
+  return (
+    n.includes('volver a este tema') ||
+    n.includes('come back to this topic') ||
+    n.includes('retomar este tramo') ||
+    n.includes('retomar este tema') ||
+    (n.includes('cuando te venga bien') && n.length <= 64)
+  );
+}
+
+/** Labels válidos para follow-up en chat (#202). */
+export function isUsableCommitmentFollowUpLabel(label) {
+  const raw = String(label || '').trim();
+  if (!raw) return false;
+  if (looksLikeChatBubbleLabel(raw)) return false;
+  if (isSoftResumeCommitmentLabel(raw)) return false;
+  if (isGenericInterventionCatalogLabel(raw)) return false;
+  return true;
+}

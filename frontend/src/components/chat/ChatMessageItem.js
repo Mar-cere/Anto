@@ -27,11 +27,11 @@ import {
   useChatColors,
   useChatTexts,
 } from '../../screens/chat/chatScreenConstants';
+import { buildCommitmentDisplayTitle } from '../../utils/commitmentDisplayCopy';
 import {
-  buildCommitmentDisplayTitle,
-  isGenericCommitmentLabel,
-} from '../../utils/commitmentDisplayCopy';
-import { looksLikeChatBubbleCommitmentLabel } from '../../utils/commitmentLabelUtils';
+  isUsableCommitmentFollowUpLabel,
+  looksLikeChatBubbleCommitmentLabel,
+} from '../../utils/commitmentLabelUtils';
 import { useSectionTranslations } from '../../hooks/useTranslations';
 
 function resolveCommitmentProposalLabel(proposal, texts) {
@@ -157,6 +157,14 @@ const createStyles = (themeColors, c) =>
     width: '92%',
     maxWidth: '92%',
     marginTop: SPACING.sm,
+  },
+  commitmentFollowUpEyebrow: {
+    fontSize: 11,
+    fontWeight: '600',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: themeColors.textMuted || c.ACCENT,
+    marginBottom: 8,
   },
   suggestionsTitle: {
     fontSize: 11,
@@ -341,24 +349,35 @@ const createStyles = (themeColors, c) =>
     paddingHorizontal: 6,
   },
   commitmentFollowUpCard: {
-    borderRadius: LAYOUT.MESSAGE_BUBBLE_BORDER_RADIUS,
+    borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: themeColors.border,
-    backgroundColor: themeColors.cardBackground || themeColors.surface || themeColors.background,
-    padding: LAYOUT.MESSAGE_BUBBLE_PADDING + 2,
+    borderColor: themeColors.chromeCardBorder || themeColors.border,
+    backgroundColor:
+      themeColors.chromeCard ||
+      themeColors.cardBackground ||
+      themeColors.surface ||
+      themeColors.background,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
     width: '100%',
+    shadowColor: themeColors.glassShadow || themeColors.shadowAmbient || '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
   },
   commitmentFollowUpLabel: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
+    lineHeight: 22,
     color: themeColors.text,
-    marginBottom: 4,
+    marginBottom: 6,
   },
   commitmentFollowUpPrompt: {
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 14,
+    lineHeight: 20,
     color: themeColors.textSecondary,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   commitmentFollowUpChips: {
     flexDirection: 'row',
@@ -366,9 +385,9 @@ const createStyles = (themeColors, c) =>
     gap: 8,
   },
   commitmentFollowUpChip: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 14,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: themeColors.primary,
     backgroundColor: themeColors.accentLineSoft || 'transparent',
@@ -735,12 +754,15 @@ function ChatMessageItem({
 
   if (message.type === 'commitment_follow_up' && message.commitmentFollowUp?.id) {
     const cf = message.commitmentFollowUp;
-    if (isGenericCommitmentLabel(cf.label)) return null;
+    if (!isUsableCommitmentFollowUpLabel(cf.label)) return null;
     const L = COMMITMENT_FOLLOW_UP_COPY[language === 'en' ? 'en' : 'es'];
     const title = buildCommitmentDisplayTitle({ label: cf.label }, DASH);
+    const eyebrow =
+      DASH.FOCUS_COMMITMENT_FOLLOW_UP_CHAT_EYEBROW ||
+      (language === 'en' ? 'Something we agreed' : 'Algo que quedamos');
     const prompt =
-      DASH.FOCUS_COMMITMENT_FOLLOW_UP_SHORT ||
-      (language === 'en' ? 'Were you able to do it?' : '¿Pudiste hacerlo?');
+      DASH.FOCUS_COMMITMENT_FOLLOW_UP_CHAT_PROMPT ||
+      (language === 'en' ? 'How did that go?' : '¿Cómo te fue con eso?');
     const options = [
       ['yes', L.yes],
       ['partial', L.partial],
@@ -752,29 +774,30 @@ function ChatMessageItem({
         <View
           style={styles.commitmentFollowUpShell}
           accessibilityRole="summary"
-          accessibilityLabel={`${title}. ${prompt}`}
+          accessibilityLabel={`${eyebrow}. ${title}. ${prompt}`}
         >
           <View style={styles.commitmentFollowUpCard}>
+            <Text style={styles.commitmentFollowUpEyebrow}>{eyebrow}</Text>
             {title ? (
-              <Text style={styles.commitmentFollowUpLabel} numberOfLines={2}>
-                {title}
+              <Text style={styles.commitmentFollowUpLabel} numberOfLines={3}>
+                {`«${title}»`}
               </Text>
             ) : null}
             <Text style={styles.commitmentFollowUpPrompt}>{prompt}</Text>
             <View style={styles.commitmentFollowUpChips}>
-            {options.map(([answer, label]) => (
-              <TouchableOpacity
-                key={answer}
-                style={styles.commitmentFollowUpChip}
-                onPress={() => onCommitmentFollowUpAnswer?.(cf.id, answer, message)}
-                accessibilityRole="button"
-                accessibilityLabel={label}
-              >
-                <Text style={styles.commitmentFollowUpChipText}>{label}</Text>
-              </TouchableOpacity>
-            ))}
+              {options.map(([answer, label]) => (
+                <TouchableOpacity
+                  key={answer}
+                  style={styles.commitmentFollowUpChip}
+                  onPress={() => onCommitmentFollowUpAnswer?.(cf.id, answer, message)}
+                  accessibilityRole="button"
+                  accessibilityLabel={label}
+                >
+                  <Text style={styles.commitmentFollowUpChipText}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        </View>
         </View>
       </View>
     );
@@ -782,12 +805,14 @@ function ChatMessageItem({
 
   if (message.type === 'experiential_follow_up' && message.experientialFollowUp?.id) {
     const ef = message.experientialFollowUp;
+    const eyebrow =
+      EP?.CHAT_EYEBROW || (language === 'en' ? 'From your process' : 'De tu proceso');
     const prompt =
       EP?.FOLLOW_UP_PROMPT ||
       (language === 'en'
         ? 'Do you feel that has changed a bit?'
         : '¿Sientes que eso ha cambiado un poco?');
-    const title = ef.statementPreview || '';
+    const title = String(ef.statementPreview || '').trim();
     const options = [
       ['changed', EP?.CHIP_CHANGED || (language === 'en' ? 'Yes, a bit' : 'Sí, un poco')],
       [
@@ -801,12 +826,13 @@ function ChatMessageItem({
         <View
           style={styles.commitmentFollowUpShell}
           accessibilityRole="summary"
-          accessibilityLabel={`${title}. ${prompt}`}
+          accessibilityLabel={`${eyebrow}. ${title}. ${prompt}`}
         >
           <View style={styles.commitmentFollowUpCard}>
+            <Text style={styles.commitmentFollowUpEyebrow}>{eyebrow}</Text>
             {title ? (
               <Text style={styles.commitmentFollowUpLabel} numberOfLines={3}>
-                {title}
+                {`«${title}»`}
               </Text>
             ) : null}
             <Text style={styles.commitmentFollowUpPrompt}>{prompt}</Text>

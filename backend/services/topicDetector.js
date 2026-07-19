@@ -15,7 +15,8 @@ class TopicDetector {
         keywords: ['trabajo', 'empleo', 'estudio', 'carrera', 'examen']
       },
       salud: {
-        patterns: /(?:salud|enfermedad|dolor|duele|dolores|síntoma|médico|doctor|hospital|medicina|tratamiento|terapia|físico|mental|psicológico|ansiedad|depresión|fatiga|energía|comer|alimentación|peso|ejercicio|gimnasio|me.*duele|tengo.*dolor|dolor.*de|duele.*la|duele.*el|duele.*mi)/i,
+        patterns:
+          /(?:salud|enfermedad|\bdolor\b|duele|dolores|síntoma|médico|doctor|hospital|medicina|tratamiento|terapia|físico|mental|psicológico|ansiedad|depresión|fatiga|energía|\bcomer\b|alimentación|(?<!\p{L})peso(?!\p{L})|ejercicio|gimnasio|me.*duele|tengo.*dolor|dolor.*de|duele.*la|duele.*el|duele.*mi)/iu,
         keywords: ['salud', 'enfermedad', 'dolor', 'duele', 'médico', 'terapia']
       },
       sueño: {
@@ -28,7 +29,9 @@ class TopicDetector {
         keywords: ['autoestima', 'autoimagen', 'apariencia', 'cuerpo', 'valgo', 'veo']
       },
       futuro: {
-        patterns: /(?:futuro|mañana|próximo|siguiente|plan|meta|objetivo|aspiración|esperanza|miedo.*al.*futuro|ansiedad.*por.*el.*futuro|qué.*pasará|incertidumbre)/i,
+        // Evitar subcadenas: «mañanas» ≠ mañana (día siguiente); «planta»/«metal» ≠ plan/meta.
+        patterns:
+          /(?:\bfuturo\b|(?<!\p{L})mañana(?!\p{L})|\bpróximo\b|\bsiguiente\b|(?<!\p{L})plan(?!\p{L})|(?<!\p{L})meta(?!\p{L})|\bobjetivo\b|\baspiración\b|\besperanza\b|miedo.*al.*futuro|ansiedad.*por.*el.*futuro|qué.*pasará|incertidumbre)/iu,
         keywords: ['futuro', 'mañana', 'plan', 'meta', 'objetivo', 'aspiración']
       },
       pasado: {
@@ -41,7 +44,7 @@ class TopicDetector {
         keywords: ['soledad', 'aislado', 'desconectado', 'me siento solo', 'me siento sola'],
       },
       pérdida: {
-        patterns: /(?:pérdida|duelo|muerte|fallec(?:ió|ió)|mur(?:ió|ió)|se.*fue|ya.*no.*está|extrañ(?:o|ar)|ech(?:o|ar).*de.*menos|despedida)/i,
+        patterns: /(?:pérdida|\bduelo\b|muerte|fallec(?:ió|ió)|mur(?:ió|ió)|se.*fue|ya.*no.*está|extrañ(?:o|ar)|ech(?:o|ar).*de.*menos|despedida)/i,
         keywords: ['pérdida', 'duelo', 'muerte', 'falleció', 'extraño']
       },
       dinero: {

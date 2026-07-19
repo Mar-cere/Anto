@@ -45,6 +45,36 @@ describe('reconstructPersistedCommitmentFollowUp', () => {
     ];
     expect(reconstructPersistedCommitmentFollowUp(messages)).toHaveLength(1);
   });
+
+  it('no reconstruye ecos de burbuja ni soft-resume', () => {
+    const bubble = [
+      {
+        id: 'a1',
+        role: 'assistant',
+        metadata: {
+          commitmentFollowUp: {
+            id: 'c1',
+            label:
+              'Está bien no saberlo ahora; a veces solo se siente la carga sin poder nombrarla.',
+          },
+        },
+      },
+    ];
+    expect(reconstructPersistedCommitmentFollowUp(bubble)).toHaveLength(1);
+    const soft = [
+      {
+        id: 'a2',
+        role: 'assistant',
+        metadata: {
+          commitmentFollowUp: {
+            id: 'c2',
+            label: 'Volver a este tema cuando te venga bien',
+          },
+        },
+      },
+    ];
+    expect(reconstructPersistedCommitmentFollowUp(soft)).toHaveLength(1);
+  });
 });
 
 describe('chatWelcomeGreeting', () => {

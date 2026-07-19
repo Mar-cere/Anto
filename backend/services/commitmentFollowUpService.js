@@ -15,6 +15,7 @@ import { updateSessionCommitment } from './sessionCommitmentService.js';
 import { isChatObservationalContextBlocked } from '../utils/chatObservationalContext.js';
 import { isUserInPostCrisisCommitmentCooldown } from '../utils/commitmentPostCrisisGuard.js';
 import { normalizeApiLanguage } from '../utils/apiLanguage.js';
+import { isUsableCommitmentFollowUpLabel } from '../utils/commitmentLabelUtils.js';
 
 /** Solo se pregunta al inicio del hilo (primer turno real del usuario). */
 const MAX_USER_TURNS_FOR_ASK = 1;
@@ -144,6 +145,9 @@ export async function buildCommitmentFollowUpPlan({
     .lean();
 
   if (!doc) return null;
+
+  // No preguntar «¿pudiste?» por ecos de burbuja ni soft-resume sin acción.
+  if (!isUsableCommitmentFollowUpLabel(doc.label)) return null;
 
   const promptSnippet = buildCommitmentFollowUpPromptSnippet(doc.label, language);
   if (!promptSnippet) return null;

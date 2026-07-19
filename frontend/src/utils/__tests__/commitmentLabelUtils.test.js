@@ -3,6 +3,8 @@ import {
   formatCommitmentFollowUpPrompt,
   isConcreteCommitmentLabel,
   isDashboardCommitmentActionable,
+  isSoftResumeCommitmentLabel,
+  isUsableCommitmentFollowUpLabel,
   looksLikeChatBubbleCommitmentLabel,
   shouldHideDashboardCommitmentFollowUp,
 } from '../commitmentLabelUtils';
@@ -24,6 +26,18 @@ describe('commitmentLabelUtils', () => {
     expect(looksLikeChatBubbleCommitmentLabel('Retomar este tramo cuando te venga bien')).toBe(
       false,
     );
+  });
+
+  it('solo permite follow-up de chat con acción concreta', () => {
+    expect(isSoftResumeCommitmentLabel('Volver a este tema cuando te venga bien')).toBe(true);
+    expect(isUsableCommitmentFollowUpLabel('Salir a caminar 10 minutos')).toBe(true);
+    expect(
+      isUsableCommitmentFollowUpLabel(
+        'Está bien no saberlo ahora; a veces solo se siente la carga sin poder nombrarla.',
+      ),
+    ).toBe(false);
+    expect(isUsableCommitmentFollowUpLabel('Volver a este tema cuando te venga bien')).toBe(false);
+    expect(isUsableCommitmentFollowUpLabel('Activación conductual')).toBe(false);
   });
 
   it('oculta compromiso BA cuando hay fila de plan semanal', () => {

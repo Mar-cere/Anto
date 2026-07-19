@@ -48,6 +48,12 @@ describe('TopicDetector Service', () => {
       expect(topic).toBe('futuro');
     });
 
+    it('no confunde «las mañanas» con tema futuro', () => {
+      expect(
+        topicDetector.detectTopic('Últimamente las mañanas son lo más difícil del día'),
+      ).not.toBe('futuro');
+    });
+
     it('debe detectar tema de pasado', () => {
       const topic = topicDetector.detectTopic('Recuerdo cosas del pasado que me molestan');
       
