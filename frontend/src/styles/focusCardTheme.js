@@ -26,7 +26,8 @@ export function getFocusTheme(colors, resolvedScheme = 'light') {
     FOCUS_PANEL: {
       alignSelf: 'stretch',
       ...dash.SURFACE,
-      paddingVertical: 18,
+      paddingTop: SPACING.md,
+      paddingBottom: SPACING.md,
       paddingHorizontal: 18,
     },
     FOCUS_INNER_ROW: {
@@ -62,11 +63,12 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
     },
     card: {
       ...t.FOCUS_PANEL,
-      paddingBottom: 14,
+      // Inferior un poco más corto: la lista agrupada ya aporta peso visual abajo.
+      paddingBottom: SPACING.sm + 2,
     },
     groupLabel: {
       ...dash.SECTION_TITLE,
-      marginBottom: 10,
+      marginBottom: SPACING.sm + 2,
     },
     groupedList: {
       ...dash.GROUPED_SURFACE,
@@ -364,7 +366,7 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
     },
     activeFocusInlineLink: {
       alignSelf: 'flex-start',
-      marginTop: 12,
+      marginTop: SPACING.sm,
       paddingVertical: 2,
     },
     activeFocusStartHint: {
