@@ -55,8 +55,13 @@ export const sanitizeString = (input, options = {}) => {
   return sanitized;
 };
 
-/** Claves de cuerpo JSON que pueden llevar recibos PKCS7 en Base64 (Apple); no truncar a 10k. */
-const LONG_SAFE_STRING_KEYS = new Set(['receipt', 'transactionReceipt', 'receipt-data']);
+/** Claves de cuerpo JSON con payloads largos de Apple (PKCS7 / JWS ASN V2); no truncar a 10k. */
+const LONG_SAFE_STRING_KEYS = new Set([
+  'receipt',
+  'transactionReceipt',
+  'receipt-data',
+  'signedPayload',
+]);
 
 /**
  * Sanitiza un objeto recursivamente
