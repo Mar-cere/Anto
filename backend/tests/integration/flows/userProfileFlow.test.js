@@ -46,7 +46,7 @@ describe('Flujo completo: Perfil de Usuario', () => {
       name: 'Usuario de Prueba',
       preferences: {
         theme: 'light',
-        notifications: true,
+        notifications: { enabled: true },
         language: 'es'
       }
     });

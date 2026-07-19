@@ -44,7 +44,7 @@ describe('Flujo completo: Contactos de Emergencia', () => {
       salt,
       preferences: {
         theme: 'light',
-        notifications: true,
+        notifications: { enabled: true },
         language: 'es'
       },
       emergencyContacts: [

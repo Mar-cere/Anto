@@ -33,7 +33,7 @@ const createUserWithHashedPassword = async (userData) => {
     emailVerified: true, // Para que login funcione en tests
     preferences: {
       theme: 'light',
-      notifications: true,
+      notifications: { enabled: true },
       language: 'es'
     },
     stats: {

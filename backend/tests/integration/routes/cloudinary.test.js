@@ -34,7 +34,7 @@ const createUserAndToken = async () => {
     salt,
     preferences: {
       theme: 'light',
-      notifications: true,
+      notifications: { enabled: true },
       language: 'es'
     },
     stats: {

@@ -33,7 +33,7 @@ const createUserAndToken = async () => {
     emailVerified: true,
     preferences: {
       theme: 'light',
-      notifications: true,
+      notifications: { enabled: true },
       language: 'es'
     },
     stats: {
@@ -83,7 +83,7 @@ describe('Task Routes', () => {
         emailVerified: true,
         preferences: {
           theme: 'light',
-          notifications: true,
+          notifications: { enabled: true },
           language: 'es'
         },
         stats: {
@@ -474,7 +474,7 @@ describe('Task Routes', () => {
         salt,
         preferences: {
           theme: 'light',
-          notifications: true,
+          notifications: { enabled: true },
           language: 'es'
         },
         stats: {

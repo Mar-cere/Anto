@@ -45,7 +45,7 @@ describe('Flujo completo: Técnicas Terapéuticas', () => {
       salt,
       preferences: {
         theme: 'light',
-        notifications: true,
+        notifications: { enabled: true },
         language: 'es'
       }
     });

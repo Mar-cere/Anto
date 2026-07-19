@@ -45,7 +45,7 @@ describe('Flujo completo: Suscripción y Pago', () => {
       salt,
       preferences: {
         theme: 'light',
-        notifications: true,
+        notifications: { enabled: true },
         language: 'es'
       }
     });

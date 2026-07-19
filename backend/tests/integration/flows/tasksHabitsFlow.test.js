@@ -47,7 +47,7 @@ describe('Flujo completo: Tareas y Hábitos', () => {
       emailVerified: true,
       preferences: {
         theme: 'light',
-        notifications: true,
+        notifications: { enabled: true },
         language: 'es'
       }
     });

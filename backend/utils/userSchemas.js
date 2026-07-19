@@ -9,6 +9,7 @@ import {
   sanitizeCountryPreference,
   sanitizeRegionCountryPreference,
 } from './countryPreferences.js';
+import { normalizePreferencesNotifications } from './preferencesNotifications.js';
 
 export function getUpdateProfileSchema(copy) {
   return Joi.object({
@@ -43,7 +44,23 @@ export function getUpdateProfileSchema(copy) {
       }),
     preferences: Joi.object({
       theme: Joi.string().valid('light', 'dark', 'auto'),
-      notifications: Joi.boolean(),
+      // Legacy: boolean; actual: objeto con enabled / canales / sesiones
+      notifications: Joi.alternatives()
+        .try(
+          Joi.boolean(),
+          Joi.object({
+            enabled: Joi.boolean(),
+            emailEnabled: Joi.boolean(),
+            pushEnabled: Joi.boolean(),
+            scheduledSessions: Joi.object({
+              enabled: Joi.boolean(),
+              sessions: Joi.array().max(10),
+              lastNotificationAt: Joi.date().allow(null),
+              pausedUntil: Joi.date().allow(null),
+            }).unknown(true),
+          }).unknown(true)
+        )
+        .custom((value) => normalizePreferencesNotifications(value)),
       language: Joi.string().valid('es', 'en'),
       timezone: Joi.string().trim().max(64),
       /** País explícito (ISO, legacy o prefijo telefónico) para números de emergencia */

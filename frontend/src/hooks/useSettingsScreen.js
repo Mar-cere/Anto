@@ -147,14 +147,21 @@ export function useSettingsScreen({ navigation }) {
       const nextNotificationPreferences =
         getMergedNotificationPreferences(patch);
       try {
+        const currentNotifications =
+          typeof currentPreferences?.notifications === 'object' &&
+          currentPreferences?.notifications != null
+            ? currentPreferences.notifications
+            : {
+                enabled: currentPreferences?.notifications !== false,
+              };
         const result = await api.put(ENDPOINTS.UPDATE_PROFILE, {
           preferences: {
             ...currentPreferences,
-            // Mantener consistencia: si el usuario marca enabled=false, también apagamos preferences.notifications.
-            notifications:
-              nextNotificationPreferences?.enabled === false
-                ? false
-                : (currentPreferences?.notifications ?? true),
+            // Mantener consistencia con el schema (objeto, no boolean).
+            notifications: {
+              ...currentNotifications,
+              enabled: nextNotificationPreferences?.enabled !== false,
+            },
           },
           notificationPreferences: nextNotificationPreferences,
         });
@@ -228,9 +235,14 @@ export function useSettingsScreen({ navigation }) {
     try {
       const hasPermissions = await areNotificationsEnabled();
       const token = await getStoredPushToken();
+      const prefsNotifications = user?.preferences?.notifications;
+      const prefsNotificationsEnabled =
+        typeof prefsNotifications === 'object' && prefsNotifications != null
+          ? prefsNotifications.enabled !== false
+          : prefsNotifications !== false;
       const enabledByServerPrefs =
         user?.notificationPreferences?.enabled !== false &&
-        user?.preferences?.notifications !== false;
+        prefsNotificationsEnabled;
       setPushNotificationsEnabled(
         hasPermissions && !!token && enabledByServerPrefs,
       );

@@ -10,6 +10,7 @@ import { createRateLimiter } from '../utils/createRateLimiter.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { resolveAppLanguage } from '../utils/resolveAppLanguage.js';
 import { notificationApiCopy } from '../utils/notificationApiCopy.js';
+import { isPreferencesNotificationsEnabled } from '../utils/preferencesNotifications.js';
 
 const router = express.Router();
 
@@ -77,7 +78,7 @@ router.post('/push-token', authenticateToken, async (req, res) => {
       !hadToken &&
       inTrial &&
       prevUser?.notificationPreferences?.enabled !== false &&
-      prevUser?.preferences?.notifications !== false
+      isPreferencesNotificationsEnabled(prevUser?.preferences?.notifications)
     ) {
       try {
         const pushLanguage = resolveAppLanguage({

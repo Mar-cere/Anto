@@ -202,7 +202,7 @@ router.post('/register', registerLimiter, async (req, res) => {
       emailVerificationCodeExpires: codeExpires,
       preferences: {
         theme: 'light',
-        notifications: true,
+        notifications: { enabled: true },
         language: initialLanguage,
       },
       stats: {

@@ -45,7 +45,7 @@ describe('Flujo completo: Detección y Manejo de Crisis', () => {
       salt,
       preferences: {
         theme: 'light',
-        notifications: true,
+        notifications: { enabled: true },
         language: 'es'
       },
       emergencyContacts: [

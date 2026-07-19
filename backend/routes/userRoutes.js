@@ -16,6 +16,7 @@ import cacheService from '../services/cacheService.js';
 import userProfileService from '../services/userProfileService.js';
 import { resolveRequestLanguage } from '../utils/apiLanguage.js';
 import { normalizeCountryPreferences } from '../utils/countryPreferences.js';
+import { normalizePreferencesNotifications } from '../utils/preferencesNotifications.js';
 import { validationErrorBody, validateBody } from '../utils/apiValidation.js';
 import logger from '../utils/logger.js';
 import { userApiCopy } from '../utils/userApiCopy.js';
@@ -316,10 +317,17 @@ router.put('/me', authenticateToken, validateUserObjectId, updateProfileLimiter,
     // Actualizar campos (merge para objetos anidados)
     Object.keys(valueForUpdate).forEach(key => {
       if (key === 'preferences') {
+        const incomingPrefs = { ...valueForUpdate.preferences };
+        if (Object.prototype.hasOwnProperty.call(incomingPrefs, 'notifications')) {
+          incomingPrefs.notifications = normalizePreferencesNotifications(
+            incomingPrefs.notifications,
+            user.preferences?.notifications
+          );
+        }
         // Asegurar que user.preferences existe antes de hacer el spread
         user.preferences = {
           ...(user.preferences || {}),
-          ...valueForUpdate.preferences
+          ...incomingPrefs
         };
         user.markModified('preferences');
       } else if (key === 'notificationPreferences') {

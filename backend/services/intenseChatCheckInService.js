@@ -5,6 +5,7 @@
 import IntenseChatCheckIn from '../models/IntenseChatCheckIn.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
+import { isPreferencesNotificationsEnabled } from '../utils/preferencesNotifications.js';
 import pushNotificationService from './pushNotificationService.js';
 
 export const DELAY_MIN_MS = 2 * 60 * 1000;
@@ -59,7 +60,7 @@ class IntenseChatCheckInService {
       if (user.notificationPreferences?.enabled === false) {
         return { scheduled: false, reason: 'notifications_disabled' };
       }
-      if (user.preferences?.notifications === false) {
+      if (!isPreferencesNotificationsEnabled(user.preferences?.notifications)) {
         return { scheduled: false, reason: 'preference_notifications_off' };
       }
 
@@ -151,7 +152,11 @@ class IntenseChatCheckInService {
         }
 
         const user = await User.findById(row.userId).select('+pushToken notificationPreferences preferences.notifications').lean();
-        if (!user?.pushToken || user.notificationPreferences?.enabled === false || user.preferences?.notifications === false) {
+        if (
+          !user?.pushToken ||
+          user.notificationPreferences?.enabled === false ||
+          !isPreferencesNotificationsEnabled(user.preferences?.notifications)
+        ) {
           await IntenseChatCheckIn.updateOne(
             { _id: row._id },
             { $set: { status: 'skipped', skipReason: 'no_token_or_prefs' } }

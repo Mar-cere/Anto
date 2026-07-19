@@ -50,7 +50,7 @@ describe('Flujo completo: Chat con Análisis Emocional', () => {
       salt,
       preferences: {
         theme: 'light',
-        notifications: true,
+        notifications: { enabled: true },
         language: 'es'
       },
       subscription: trialSubscriptionFixture(),

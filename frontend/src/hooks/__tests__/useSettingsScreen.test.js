@@ -150,7 +150,7 @@ describe('useSettingsScreen', () => {
     it('fusiona tipos y envía PUT con notificationPreferences completas', async () => {
       mockAuth.user = {
         id: '1',
-        preferences: { notifications: true, timezone: 'Etc/UTC' },
+        preferences: { notifications: { enabled: true }, timezone: 'Etc/UTC' },
         notificationPreferences: {
           enabled: true,
           morning: { enabled: false, hour: 9, minute: 0 },
@@ -188,10 +188,10 @@ describe('useSettingsScreen', () => {
       );
     });
 
-    it('con enabled false alinea preferences.notifications a false', async () => {
+    it('con enabled false alinea preferences.notifications.enabled a false', async () => {
       mockAuth.user = {
         id: '1',
-        preferences: { notifications: true, timezone: 'Etc/UTC' },
+        preferences: { notifications: { enabled: true }, timezone: 'Etc/UTC' },
         notificationPreferences: {
           enabled: true,
           types: {
@@ -217,7 +217,9 @@ describe('useSettingsScreen', () => {
       expect(api.put).toHaveBeenCalledWith(
         '/api/users/me',
         expect.objectContaining({
-          preferences: expect.objectContaining({ notifications: false }),
+          preferences: expect.objectContaining({
+            notifications: expect.objectContaining({ enabled: false }),
+          }),
           notificationPreferences: expect.objectContaining({ enabled: false }),
         }),
       );

@@ -99,7 +99,7 @@ describe('profileScreenConstants', () => {
       expect(DEFAULT_USER_DATA).toHaveProperty('lastLogin', null);
       expect(DEFAULT_USER_DATA.preferences).toMatchObject({
         theme: 'light',
-        notifications: true,
+        notifications: { enabled: true },
       });
       expect(DEFAULT_USER_DATA.stats).toHaveProperty('tasksCompleted', 0);
       expect(DEFAULT_USER_DATA.stats).toHaveProperty('habitsStreak', 0);

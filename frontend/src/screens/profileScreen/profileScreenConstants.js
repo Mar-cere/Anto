@@ -153,7 +153,7 @@ export const DEFAULT_USER_DATA = {
   username: '',
   email: '',
   lastLogin: null,
-  preferences: { theme: 'light', notifications: true },
+  preferences: { theme: 'light', notifications: { enabled: true } },
   stats: { tasksCompleted: 0, habitsStreak: 0, lastActive: null },
 };
 
