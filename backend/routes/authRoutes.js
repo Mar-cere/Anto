@@ -140,7 +140,7 @@ router.get('/health', (req, res) => {
     status: 'OK', 
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
-    version: '1.5.4'
+    version: '1.5.5'
   });
 });
 
