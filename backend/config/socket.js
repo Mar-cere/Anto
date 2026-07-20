@@ -22,6 +22,10 @@ import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention
 import { normalizeStoredCrisisRiskLevel, buildOpenaiCrisisContext, shouldIncludeCrisisInOpenaiContext } from '../constants/crisis.js';
 import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
+import {
+  buildProductActionResolveMetricData,
+  resolveTurnProposedProductActions,
+} from '../services/chat/productActionTool.js';
 import { recordEngagementSignal } from '../services/engagementStreakService.js';
 import { ENGAGEMENT_SIGNAL } from '../utils/engagementStreakWeights.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
@@ -543,11 +547,16 @@ export const setupSocketIO = (server) => {
           resumeExperientialFollowUp: data?.resumeExperientialFollowUp === true,
           isCrisis,
         });
+        const socketLang =
+          userProfile?.preferences?.language === 'en' || socketUser?.preferences?.language === 'en'
+            ? 'en'
+            : 'es';
         const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements, {
           blockCrisisExtras: isLlmCrisisTherapeuticExtrasBlocked({
             riskLevel,
             userMessage: messageText,
           }),
+          language: socketLang,
         });
         const showCommitmentFollowUpChips = shouldShowCommitmentFollowUpChips({
           conversationHistory,
@@ -557,6 +566,9 @@ export const setupSocketIO = (server) => {
           conversationHistory,
           forceFollowUp: data?.resumeExperientialFollowUp === true,
         });
+        const softCrisisCheckInActive =
+          crisisTurnClientExtras?.softCrisisCheckInState?.active === true ||
+          Boolean(crisisTurnClientExtras?.softCrisisCheckIn);
 
         if (
           shouldIncludeCrisisInOpenaiContext(riskLevel, {
@@ -601,6 +613,8 @@ export const setupSocketIO = (server) => {
           conversationPattern,
           sessionIntention: sessionIntentionSafe,
           responseStrategyHint,
+          language: socketLang,
+          softCrisisCheckInActive,
           psychoeducationPromptSnippet: promptSnippets.psychoeducationPromptSnippet,
           activeTccProtocolsPromptSnippet: promptSnippets.activeTccProtocolsPromptSnippet,
           tccLitePromptSnippet: promptSnippets.tccLitePromptSnippet,
@@ -611,6 +625,8 @@ export const setupSocketIO = (server) => {
           sessionCommitmentPromptSnippet: promptSnippets.sessionCommitmentPromptSnippet,
           experientialFollowUpPromptSnippet: promptSnippets.experientialFollowUpPromptSnippet,
           experientialRecallPromptSnippet: promptSnippets.experientialRecallPromptSnippet,
+          techniqueSuggestionPromptSnippet: promptSnippets.techniqueSuggestionPromptSnippet,
+          gratitudeJournalPromptSnippet: promptSnippets.gratitudeJournalPromptSnippet,
           crisis: buildOpenaiCrisisContext({
             riskLevel,
             isCrisis,
@@ -783,17 +799,29 @@ export const setupSocketIO = (server) => {
             assistantContent: response.content,
             conversationHistory,
           });
+        let productActionSource = 'none';
+        let productActionToolEnabledForTurn =
+          response.context?.productActionToolEnabled === true;
         try {
-          proposedProductActions = chatProductActionProposalService.buildProposedProductActions({
-            riskLevel,
-            isCrisis,
+          const resolved = resolveTurnProposedProductActions({
+            toolActions: response.context?.toolProposedProductActions,
+            productActionToolEnabled: productActionToolEnabledForTurn,
             userContent: messageText,
-            assistantContent: response.content,
-            sessionIntention: conversation?.sessionIntention,
-            conversationId: conversation._id,
-            assistantMessageId: assistantMessage._id,
-            conversationHistory,
+            buildHeuristic: () =>
+              chatProductActionProposalService.buildProposedProductActions({
+                riskLevel,
+                isCrisis,
+                userContent: messageText,
+                assistantContent: response.content,
+                sessionIntention: conversation?.sessionIntention,
+                conversationId: conversation._id,
+                assistantMessageId: assistantMessage._id,
+                conversationHistory,
+              }),
           });
+          proposedProductActions = resolved.actions;
+          productActionSource = resolved.source;
+          productActionToolEnabledForTurn = resolved.toolEnabled;
         } catch (propErr) {
           console.error('[SocketIO] proposedProductActions:', propErr);
         }
@@ -833,6 +861,7 @@ export const setupSocketIO = (server) => {
               {
                 count: proposedProductActions.length,
                 types: proposedProductActions.map((a) => a.type),
+                source: productActionSource,
                 transport: 'socket'
               },
               currentUserId,
@@ -849,6 +878,20 @@ export const setupSocketIO = (server) => {
               console.warn('[SocketIO] product proposal cap inc:', incErr?.message || incErr)
             );
         }
+
+        metricsService
+          .recordMetric(
+            'product_action_resolve',
+            buildProductActionResolveMetricData({
+              toolEnabled: productActionToolEnabledForTurn,
+              source: productActionSource,
+              actions: proposedProductActions,
+              transport: 'socket',
+            }),
+            currentUserId,
+            { conversationId: String(conversation._id) }
+          )
+          .catch(() => {});
 
         const proposedCommitments =
           proposedProductActions.length > 0

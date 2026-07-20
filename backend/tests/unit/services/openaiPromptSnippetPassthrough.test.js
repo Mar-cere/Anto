@@ -2,6 +2,7 @@ import {
   applyEnhancementSnippetsToPromptContext,
   buildContextualizedPrompt,
   ENHANCEMENT_PROMPT_SNIPPET_KEYS,
+  PROMPT_CONTEXT_PASSTHROUGH_KEYS,
 } from '../../../services/openai/openaiPromptBuilder.js';
 
 describe('applyEnhancementSnippetsToPromptContext (passthrough de snippets)', () => {
@@ -17,6 +18,22 @@ describe('applyEnhancementSnippetsToPromptContext (passthrough de snippets)', ()
     });
   });
 
+  it('reenvía contexto de turno (fase, mood, distress, rolling summary, etc.)', () => {
+    const gen = {
+      rollingSummary: 'Resumen de prueba',
+      sessionPhase: 'acute',
+      dailyMoodCheckIn: { mood: 'tired' },
+      distress: { theme: 'harm_intrusive_thoughts' },
+      safetyHistory: [{ role: 'user', content: 'hola' }],
+      sessionEmotionalIntensity: 8,
+    };
+    const out = applyEnhancementSnippetsToPromptContext({ base: 1 }, gen);
+    for (const key of Object.keys(gen)) {
+      expect(PROMPT_CONTEXT_PASSTHROUGH_KEYS).toContain(key);
+      expect(out[key]).toEqual(gen[key]);
+    }
+  });
+
   it('no añade claves ausentes ni muta el contexto base', () => {
     const base = { base: 1 };
     const out = applyEnhancementSnippetsToPromptContext(base, {});
@@ -24,15 +41,21 @@ describe('applyEnhancementSnippetsToPromptContext (passthrough de snippets)', ()
     expect(out).not.toBe(base);
   });
 
-  it('incluye los snippets clave (fenotipo #216, RAG #203, follow-up #202, recall B)', () => {
+  it('incluye sessionCommitment y snippets clave (fenotipo #216, RAG #203, follow-up #202, recall B, técnicas/gratitud)', () => {
     expect(ENHANCEMENT_PROMPT_SNIPPET_KEYS).toEqual(
       expect.arrayContaining([
+        'sessionCommitmentPromptSnippet',
         'digitalPhenotypePromptSnippet',
         'personalPatternRagPromptSnippet',
         'commitmentFollowUpPromptSnippet',
         'experientialFollowUpPromptSnippet',
         'experientialRecallPromptSnippet',
+        'techniqueSuggestionPromptSnippet',
+        'gratitudeJournalPromptSnippet',
       ]),
+    );
+    expect(PROMPT_CONTEXT_PASSTHROUGH_KEYS).toEqual(
+      expect.arrayContaining(['productActionToolEnabled', 'softCrisisCheckInActive']),
     );
   });
 });
@@ -85,5 +108,28 @@ describe('buildContextualizedPrompt + passthrough end-to-end', () => {
     );
     const { systemMessage } = await buildContextualizedPrompt({ content: 'hola' }, ctx);
     expect(systemMessage).toContain('RAG_MARKER_203');
+  });
+
+  it('concatena sessionCommitment al system message', async () => {
+    const ctx = applyEnhancementSnippetsToPromptContext(
+      { emotional: {}, contextual: {} },
+      { sessionCommitmentPromptSnippet: '\n\nSESSION_COMMITMENT_MARKER\n' },
+    );
+    const { systemMessage } = await buildContextualizedPrompt({ content: 'hola' }, ctx);
+    expect(systemMessage).toContain('SESSION_COMMITMENT_MARKER');
+  });
+
+  it('inyecta rolling summary y fase cuando vienen del passthrough', async () => {
+    const ctx = applyEnhancementSnippetsToPromptContext(
+      { emotional: {}, contextual: {} },
+      {
+        rollingSummary: 'La persona habló de sueño y estrés laboral.',
+        sessionPhase: 'acute',
+      },
+    );
+    const { systemMessage } = await buildContextualizedPrompt({ content: 'hola' }, ctx);
+    expect(systemMessage).toContain('Resumen acumulado del hilo');
+    expect(systemMessage).toContain('sueño y estrés laboral');
+    expect(systemMessage).toContain('### Cierre con avance (fase de seguridad)');
   });
 });

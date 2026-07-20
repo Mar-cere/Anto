@@ -8,6 +8,7 @@ import {
   sanitizeContinuationText,
 } from './lastSessionSummaryService.js';
 import { getEmotionInsightMeta, normalizeInsightLanguage } from '../utils/sessionInsightCopy.js';
+import { buildObservationalFidelitySnippet } from './chat/observationalFidelitySnippet.js';
 
 const HEADLINE_MAX = 90;
 const TRANSCRIPT_MAX = 6000;
@@ -90,9 +91,10 @@ export async function generateSessionInsightHeadline({
     : '';
 
   const model = process.env.SESSION_INSIGHT_HEADLINE_MODEL || 'gpt-4o-mini';
+  const fidelity = buildObservationalFidelitySnippet(en ? 'en' : 'es');
   const system = en
-    ? 'You write ONE warm headline (max 90 chars) for a post-chat emotional insight screen in a wellbeing app. Speak to the user in second person (you), never "We understand…". Ground it in the WHOLE arc of the user messages (not only the last one). Prefer the main emotional load (e.g. sleep trouble, stress, panic, exhaustion) over a side theme. Not clinical. No diagnosis. No quotes. No generic wellness slogans. JSON only: {"headline":"..."}'
-    : 'Escribes UN titular cálido (máx. 90 caracteres) para una pantalla de insight post-chat en una app de bienestar. Habla en segunda persona (tú), nunca «Entendemos…». Ancla el titular en el arco COMPLETO de los mensajes (no solo el último). Prioriza la carga emocional principal (p. ej. mal dormir, estrés, pánico, agotamiento) sobre un tema lateral. No clínico. Sin diagnóstico. Sin comillas. Sin eslóganes genéricos de bienestar. Solo JSON: {"headline":"..."}';
+    ? `You write ONE warm headline (max 90 chars) for a post-chat emotional insight screen in a wellbeing app. Speak to the user in second person (you), never "We understand…". Ground it in the WHOLE arc of the user messages (not only the last one). Prefer the main emotional load (e.g. sleep trouble, stress, panic, exhaustion) over a side theme. Not clinical. No diagnosis. No quotes. No generic wellness slogans. ${fidelity} JSON only: {"headline":"..."}`
+    : `Escribes UN titular cálido (máx. 90 caracteres) para una pantalla de insight post-chat en una app de bienestar. Habla en segunda persona (tú), nunca «Entendemos…». Ancla el titular en el arco COMPLETO de los mensajes (no solo el último). Prioriza la carga emocional principal (p. ej. mal dormir, estrés, pánico, agotamiento) sobre un tema lateral. No clínico. Sin diagnóstico. Sin comillas. Sin eslóganes genéricos de bienestar. ${fidelity} Solo JSON: {"headline":"..."}`;
 
   const userPrompt = en
     ? `Dominant emotion: ${emotionMeta.label}.\n${patternHint}\nFallback headline: ${fallbackHeadline}\n\nUser messages (chronological):\n${transcript}\n\nReturn JSON with a single headline that feels personal and validating. Cover the main thread of the session, not a late side detail alone.`

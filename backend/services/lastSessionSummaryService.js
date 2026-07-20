@@ -9,6 +9,7 @@ import SessionSummaryJob from '../models/SessionSummaryJob.js';
 import User from '../models/User.js';
 import openaiService from './openaiService.js';
 import logger from '../utils/logger.js';
+import { buildObservationalFidelitySnippet } from './chat/observationalFidelitySnippet.js';
 import {
   focusCopy,
   focusLocale,
@@ -376,6 +377,8 @@ async function processOneJob(job) {
   const sessionHint = formatSessionEndedHint(sessionEndedAt, language);
   const userPrompt = `${sessionHint ? `${sessionHint}\n\n` : ''}Transcript (chronological order, truncated if needed):\n${transcript}\n\nReturn ONLY JSON with exact shape:\n{"bullets":["..."],"bridge":"..."}\n- bullets: at most ${limits.maxBullets} strings, each max ${limits.bulletMaxChars} characters. Summarize themes the USER shared (not assistant farewells).\n- bridge: 1-2 short sentences inviting a calm return next time, max ${limits.bridgeMaxChars} characters total. Do NOT quote goodbye lines, "take care", or closing phrases from the assistant.\n- ${langDirective}`;
 
+  const fidelity = buildObservationalFidelitySnippet(language === 'en' ? 'en' : 'es');
+
   const systemLang =
     language === 'en'
       ? 'You write a brief continuity summary for emotional wellbeing conversations in an app (not a clinical report or weekly activity summary).'
@@ -392,7 +395,7 @@ async function processOneJob(job) {
       messages: [
         {
           role: 'system',
-          content: `${systemLang} ${limits.systemExtra} ${systemTail}`
+          content: `${systemLang} ${limits.systemExtra} ${systemTail}\n${fidelity}`
         },
         { role: 'user', content: userPrompt }
       ],

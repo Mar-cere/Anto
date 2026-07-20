@@ -30,6 +30,17 @@ import {
   resolveChatLanguage,
 } from './openai/openaiPromptBuilder.js';
 import {
+  accumulateStreamToolCallDeltas,
+  buildProposedActionsFromToolArgs,
+  extractProposeProductActionArgs,
+  getProposeProductActionToolDefinition,
+  isProductActionToolEligible,
+} from './chat/productActionTool.js';
+import {
+  evaluateProposedProductActionsState,
+} from './conversationProductProposalCapService.js';
+import { isExplicitProductActionRequest } from './chatProductActionProposalService.js';
+import {
   adaptCachedResponse,
   generateResponseCacheKey,
   isCachedResponseValid,
@@ -221,12 +232,12 @@ class OpenAIService {
       if (err instanceof CircuitBreakerOpenError || err?.code === 'CIRCUIT_BREAKER_OPEN') {
         throw err;
       }
-      const retriable =
+      const retriableReasoning =
         body.reasoning_effort != null &&
         (err?.status === 400 ||
           err?.code === 'unsupported_parameter' ||
           /reasoning|unsupported|unknown parameter/i.test(msg));
-      if (retriable) {
+      if (retriableReasoning) {
         const { reasoning_effort: _ignored, ...rest } = body;
         console.warn('[OpenAI] reasoning_effort no aceptado; reintento sin él:', msg);
         return await openaiBreaker.exec(() =>
@@ -234,6 +245,23 @@ class OpenAIService {
             openai.chat.completions.create(rest),
             OPENAI_TIMEOUT_MS,
             { label: 'OpenAI chat.completions.create (retry w/o reasoning_effort)' }
+          )
+        );
+      }
+
+      const retriableTools =
+        (body.tools != null || body.tool_choice != null) &&
+        (err?.status === 400 ||
+          err?.code === 'unsupported_parameter' ||
+          /tool|function.?call|unsupported|unknown parameter/i.test(msg));
+      if (retriableTools) {
+        const { tools: _t, tool_choice: _tc, ...rest } = body;
+        console.warn('[OpenAI] tools no aceptados; reintento sin tools:', msg);
+        return await openaiBreaker.exec(() =>
+          withTimeout(
+            openai.chat.completions.create(rest),
+            OPENAI_TIMEOUT_MS,
+            { label: 'OpenAI chat.completions.create (retry w/o tools)' }
           )
         );
       }
@@ -275,6 +303,42 @@ class OpenAIService {
         offScopeRedirect: true,
       },
     };
+  }
+
+  /**
+   * Decide si el turno puede exponer la tool propose_product_action.
+   * @returns {Promise<boolean>}
+   */
+  async resolveProductActionToolEnabled(contexto, contenidoNormalizado, analisisEmocional, analisisContextual) {
+    if (contexto.isGuest === true) return false;
+    if (contexto.softCrisisCheckInActive === true) return false;
+
+    let capAllows = true;
+    if (!isExplicitProductActionRequest(contenidoNormalizado)) {
+      try {
+        const probe = await evaluateProposedProductActionsState(
+          contenidoNormalizado,
+          contexto.currentConversationId || contexto.conversationId,
+          [{ type: 'propose_task', id: 'cap-probe', draft: { title: 'probe' } }],
+        );
+        capAllows = Array.isArray(probe.actions) && probe.actions.length > 0;
+      } catch {
+        capAllows = true;
+      }
+    }
+
+    return isProductActionToolEligible({
+      isGuest: contexto.isGuest === true,
+      crisis: contexto.crisis,
+      emotional: analisisEmocional,
+      contextual: analisisContextual,
+      userMessage: contenidoNormalizado,
+      sessionIntention: contexto.sessionIntention,
+      softCrisisCheckInActive: contexto.softCrisisCheckInActive === true,
+      capAllows,
+      riskLevel: contexto.crisis?.riskLevel,
+      isCrisis: Boolean(contexto.crisis?.riskLevel === 'HIGH' || contexto.crisis?.riskLevel === 'MEDIUM'),
+    });
   }
 
   /**
@@ -358,6 +422,12 @@ class OpenAIService {
 
       // 3. Construir Prompt Contextualizado (módulo openaiPromptBuilder)
       const sessionTrends = isGuest ? null : sessionEmotionalMemory.analyzeTrends(mensaje.userId);
+      const productActionToolEnabled = await this.resolveProductActionToolEnabled(
+        contexto,
+        contenidoNormalizado,
+        analisisEmocional,
+        analisisContextual,
+      );
       const prompt = await buildContextualizedPrompt(
         { ...mensaje, content: contenidoNormalizado },
         applyEnhancementSnippetsToPromptContext(
@@ -381,7 +451,9 @@ class OpenAIService {
             isGuest,
             sessionRetention: contexto.sessionRetention,
             sessionIntention: contexto.sessionIntention,
-            conversationPattern: contexto.conversationPattern
+            conversationPattern: contexto.conversationPattern,
+            productActionToolEnabled,
+            softCrisisCheckInActive: contexto.softCrisisCheckInActive === true,
           },
           contexto,
         )
@@ -466,25 +538,30 @@ class OpenAIService {
       const selectedModel = modelRouting.model;
       console.log(`[OpenAI] Prompt length: ${promptLength} chars, Context messages: ${contextMessagesCount}, User message: ${userMessageLength} chars, Max completion tokens: ${maxCompletionTokens}, Response style: ${userResponseStyle}, Model: ${selectedModel}`);
       let completion;
+      const completionBody = {
+        model: selectedModel,
+        messages: [
+          {
+            role: 'system',
+            content: prompt.systemMessage
+          },
+          ...prompt.contextMessages,
+          {
+            role: 'user',
+            content: contenidoNormalizado
+          }
+        ],
+        max_completion_tokens: maxCompletionTokens,
+        reasoning_effort: getChatReasoningEffortForContext(contexto)
+        // GPT-5 mini: menos reasoning_effort suele bajar latencia. OPENAI_CHAT_REASONING_EFFORT para override.
+        // Crisis MEDIUM/HIGH → medium en getChatReasoningEffortForContext.
+      };
+      if (productActionToolEnabled) {
+        completionBody.tools = [getProposeProductActionToolDefinition()];
+        completionBody.tool_choice = 'auto';
+      }
       try {
-        completion = await this.createChatCompletionResilient({
-          model: selectedModel,
-          messages: [
-            {
-              role: 'system',
-              content: prompt.systemMessage
-            },
-            ...prompt.contextMessages,
-            {
-              role: 'user',
-              content: contenidoNormalizado
-            }
-          ],
-          max_completion_tokens: maxCompletionTokens,
-          reasoning_effort: getChatReasoningEffortForContext(contexto)
-          // GPT-5 mini: menos reasoning_effort suele bajar latencia. OPENAI_CHAT_REASONING_EFFORT para override.
-          // Crisis MEDIUM/HIGH → medium en getChatReasoningEffortForContext.
-        });
+        completion = await this.createChatCompletionResilient(completionBody);
       } catch (apiError) {
         // Circuit breaker abierto: fallback inmediato (mejor UX que esperar/reintentar)
         if (apiError instanceof CircuitBreakerOpenError || apiError?.code === 'CIRCUIT_BREAKER_OPEN') {
@@ -526,7 +603,19 @@ class OpenAIService {
       }
 
       let respuestaGenerada = completion.choices[0]?.message?.content?.trim();
-      
+      const toolProposedProductActions = productActionToolEnabled
+        ? buildProposedActionsFromToolArgs(
+            extractProposeProductActionArgs(completion.choices[0]?.message?.tool_calls),
+          )
+        : [];
+      if (!respuestaGenerada && toolProposedProductActions.length > 0) {
+        const lang = resolveChatLanguage(contexto);
+        respuestaGenerada =
+          lang === 'en'
+            ? 'I drafted a small step you can confirm in the app if it helps.'
+            : 'Dejé un borrador de un paso pequeño que puedes confirmar en la app si te sirve.';
+      }
+
       // Capitalizar la primera letra de la respuesta
       if (respuestaGenerada && respuestaGenerada.length > 0) {
         respuestaGenerada = respuestaGenerada.charAt(0).toUpperCase() + respuestaGenerada.slice(1);
@@ -796,6 +885,9 @@ class OpenAIService {
         context: {
           emotional: analisisEmocional,
           contextual: analisisContextual,
+          modelRouting,
+          productActionToolEnabled,
+          toolProposedProductActions,
           therapeutic: selectedTechnique ? {
             technique: selectedTechnique.name,
             type: selectedTechnique.type,
@@ -864,6 +956,12 @@ class OpenAIService {
         });
 
     const sessionTrends = sessionEmotionalMemory.analyzeTrends(mensaje.userId);
+    const productActionToolEnabled = await this.resolveProductActionToolEnabled(
+      contexto,
+      contenidoNormalizado,
+      analisisEmocional,
+      analisisContextual,
+    );
     const prompt = await buildContextualizedPrompt(
       { ...mensaje, content: contenidoNormalizado },
       applyEnhancementSnippetsToPromptContext(
@@ -887,7 +985,9 @@ class OpenAIService {
           isGuest: contexto.isGuest === true,
           sessionRetention: contexto.sessionRetention,
           sessionIntention: contexto.sessionIntention,
-          conversationPattern: contexto.conversationPattern
+          conversationPattern: contexto.conversationPattern,
+          productActionToolEnabled,
+          softCrisisCheckInActive: contexto.softCrisisCheckInActive === true,
         },
         contexto,
       )
@@ -908,7 +1008,7 @@ class OpenAIService {
 
     let stream;
     try {
-      stream = await this.createChatCompletionResilient({
+      const streamBody = {
         model: selectedModel,
         messages: [
           { role: 'system', content: prompt.systemMessage },
@@ -919,7 +1019,12 @@ class OpenAIService {
         reasoning_effort: getChatReasoningEffortForContext(contexto),
         stream: true,
         stream_options: { include_usage: true }
-      });
+      };
+      if (productActionToolEnabled) {
+        streamBody.tools = [getProposeProductActionToolDefinition()];
+        streamBody.tool_choice = 'auto';
+      }
+      stream = await this.createChatCompletionResilient(streamBody);
     } catch (apiError) {
       // Circuit breaker abierto: responder rápido con fallback (sin streaming real).
       if (apiError instanceof CircuitBreakerOpenError || apiError?.code === 'CIRCUIT_BREAKER_OPEN') {
@@ -956,11 +1061,16 @@ class OpenAIService {
     }
 
     let buffer = '';
+    let streamToolCalls = [];
     for await (const chunk of stream) {
-      const delta = chunk.choices?.[0]?.delta?.content;
+      const choiceDelta = chunk.choices?.[0]?.delta;
+      const delta = choiceDelta?.content;
       if (delta) {
         buffer += delta;
         yield { type: 'chunk', content: delta };
+      }
+      if (productActionToolEnabled && choiceDelta) {
+        streamToolCalls = accumulateStreamToolCallDeltas(streamToolCalls, choiceDelta);
       }
       if (chunk.usage) {
         const usage = chunk.usage;
@@ -980,7 +1090,18 @@ class OpenAIService {
       }
     }
 
-    const rawContent = buffer.trim();
+    const toolProposedProductActions = productActionToolEnabled
+      ? buildProposedActionsFromToolArgs(extractProposeProductActionArgs(streamToolCalls))
+      : [];
+
+    let rawContent = buffer.trim();
+    if (!rawContent && toolProposedProductActions.length > 0) {
+      const lang = resolveChatLanguage(contexto);
+      rawContent =
+        lang === 'en'
+          ? 'I drafted a small step you can confirm in the app if it helps.'
+          : 'Dejé un borrador de un paso pequeño que puedes confirmar en la app si te sirve.';
+    }
     if (!rawContent) {
       const fallback = this.generarRespuestaFallback(analisisEmocional, analisisContextual);
       const result = await this._postProcessStreamedContent(fallback || ERROR_MESSAGES.DEFAULT_FALLBACK, {
@@ -999,7 +1120,16 @@ class OpenAIService {
         crisisMetricTransport: this.resolveCrisisMetricTransport(contexto),
         sessionPhase: contexto.sessionPhase,
       });
-      yield { type: 'done', content: result.content, context: { ...result.context, modelRouting } };
+      yield {
+        type: 'done',
+        content: result.content,
+        context: {
+          ...result.context,
+          modelRouting,
+          productActionToolEnabled,
+          toolProposedProductActions,
+        },
+      };
       return;
     }
 
@@ -1021,7 +1151,16 @@ class OpenAIService {
       crisisMetricTransport: this.resolveCrisisMetricTransport(contexto),
       sessionPhase: contexto.sessionPhase,
     });
-    yield { type: 'done', content: result.content, context: { ...result.context, modelRouting } };
+    yield {
+      type: 'done',
+      content: result.content,
+      context: {
+        ...result.context,
+        modelRouting,
+        productActionToolEnabled,
+        toolProposedProductActions,
+      },
+    };
   }
 
   /**

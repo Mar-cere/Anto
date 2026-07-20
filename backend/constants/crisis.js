@@ -897,13 +897,14 @@ export const generateCrisisSystemPrompt = (riskLevel, countryOrSource = 'GENERAL
   }
   prompt += '\n';
   prompt += `INSTRUCCIONES CRÍTICAS:\n`;
-  prompt += `1. Prioriza la seguridad del usuario sobre todo\n`;
+  prompt += `1. Prioriza la seguridad del usuario sobre todo (esta sección PREVALECE sobre ritmo/brevedad/preferencias de tono más abajo)\n`;
   prompt += `2. Valida sus emociones sin minimizar\n`;
   prompt += `3. Proporciona recursos de emergencia de forma clara y directa\n`;
   prompt += `4. Mantén tono humano y presente; evita planes terapéuticos, hábitos o técnicas\n`;
   prompt += `5. Pregunta por seguridad inmediata y apoyo cercano si falta en la conversación\n`;
+  prompt += `6. EXCEPCIÓN a "máx. 1 pregunta" / "no asumir": las preguntas de seguridad del protocolo SÍ están obligatorias aquí\n`;
   if (riskLevel === 'HIGH') {
-    prompt += `6. URGENTE: Insta al usuario a contactar servicios de emergencia si está en peligro inmediato\n`;
+    prompt += `7. URGENTE: Insta al usuario a contactar servicios de emergencia si está en peligro inmediato\n`;
   }
   if (riskLevel === 'MEDIUM') {
     prompt += `\n${generateCrisisMediumResponseConstraints(language)}\n`;

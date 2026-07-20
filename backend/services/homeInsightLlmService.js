@@ -9,6 +9,7 @@ import {
   sanitizeObservationalText,
 } from '../utils/clinicalContentGuardrails.js';
 import { cacheTtlSecondsUntilUtcEndOfDay } from './homeRotatingInsightCache.js';
+import { buildObservationalFidelitySnippet } from './chat/observationalFidelitySnippet.js';
 
 const HOME_INSIGHT_MIN_LEN = 24;
 const HOME_INSIGHT_MAX_LEN = 220;
@@ -109,10 +110,12 @@ function buildLlmContextPayload({
 
 function systemPrompt(language) {
   const lang = normalizeFocusLanguage(language);
+  const fidelity = buildObservationalFidelitySnippet(lang);
   if (lang === 'en') {
     return [
       'You write one short home insight for a mental health companion app (Anto).',
       'Tone: warm, curious, validating — invite reflection, never shame.',
+      fidelity,
       'Rules:',
       '- One sentence only, max 200 characters.',
       '- Ground the sentence in the themes/emotions/samples from the JSON (sleep, stress, etc.).',
@@ -127,6 +130,7 @@ function systemPrompt(language) {
   return [
     'Escribes un insight breve para el home de una app de salud mental (Anto).',
     'Tono: cálido, curioso, validante — invita a mirar el patrón, nunca avergonzar.',
+    fidelity,
     'Reglas:',
     '- Una sola oración, máximo 200 caracteres.',
     '- Ancla la frase en los temas/emociones/muestras del JSON (sueño, estrés, etc.).',

@@ -37,6 +37,10 @@ import { normalizeApiLanguage } from '../utils/apiLanguage.js';
 import Message from '../models/Message.js';
 import { sanitizeProposedCommitments } from '../utils/sanitizeProposedCommitments.js';
 import { buildSessionCommitmentPromptSnippet } from './sessionCommitmentPromptSnippet.js';
+import {
+  buildGratitudeJournalPromptSnippet,
+  buildTechniqueSuggestionPromptSnippet,
+} from './chat/techniqueSuggestionPromptSnippet.js';
 import { markCommitmentFollowUpShown } from './sessionCommitmentService.js';
 import metricsService from './metricsService.js';
 import { detectParaphrasisInResponse } from './chat/paraphrasDetectionService.js';
@@ -347,6 +351,19 @@ export function buildOpenaiEnhancementSnippets(enhancements, options = {}) {
       experientialFollowUpPromptSnippet ||
       experientialRecallPromptSnippet,
   );
+  const suggestionIds = (enhancements.suggestionPlan?.formatted || [])
+    .map((s) => s?.id || s?.interventionId || s)
+    .filter(Boolean)
+    .map(String);
+  const lang =
+    options.language === 'en' || enhancements.language === 'en' ? 'en' : 'es';
+  const techniqueSuggestionPromptSnippet = blockTherapeutic
+    ? null
+    : buildTechniqueSuggestionPromptSnippet(suggestionIds, lang) || null;
+  const gratitudeJournalPromptSnippet = blockTherapeutic
+    ? null
+    : buildGratitudeJournalPromptSnippet(suggestionIds, lang) || null;
+
   return {
     psychoeducationPromptSnippet: blockTherapeutic
       ? null
@@ -366,6 +383,8 @@ export function buildOpenaiEnhancementSnippets(enhancements, options = {}) {
     sessionCommitmentPromptSnippet,
     experientialFollowUpPromptSnippet,
     experientialRecallPromptSnippet,
+    techniqueSuggestionPromptSnippet,
+    gratitudeJournalPromptSnippet,
   };
 }
 

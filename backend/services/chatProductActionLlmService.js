@@ -11,6 +11,7 @@ import {
 } from './chatProductActionProposalService.js';
 import { OPENAI_MODEL } from '../constants/openai.js';
 import { withTimeout } from '../utils/withTimeout.js';
+import { buildObservationalFidelitySnippet } from './chat/observationalFidelitySnippet.js';
 
 const LLM_TIMEOUT_RAW = parseInt(process.env.CHAT_PRODUCT_ACTION_LLM_TIMEOUT_MS || '12000', 10);
 const LLM_TIMEOUT_MS = Math.min(
@@ -106,6 +107,7 @@ async function extractDraftWithLlm(action, userContent, assistantContent, ctx = 
   const proposalType = action.type;
 
   const system = `Eres un asistente que extrae datos estructurados para una app de bienestar (Anto). No debes emitir diagnósticos ni consejo médico.
+${buildObservationalFidelitySnippet('es')}
 Debes responder con un único objeto JSON (sin markdown, sin texto antes ni después).
 
 Si proposalType es "propose_task", usa estas claves en el JSON raíz:

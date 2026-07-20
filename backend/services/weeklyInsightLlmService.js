@@ -3,6 +3,7 @@
  */
 import openaiService from './openaiService.js';
 import { sanitizeObservationalText } from '../utils/clinicalContentGuardrails.js';
+import { buildObservationalFidelitySnippet } from './chat/observationalFidelitySnippet.js';
 
 const MANDATORY_DISCLAIMER_ES = [
   'Correlaciones observacionales, no causas ni diagnósticos.',
@@ -118,9 +119,11 @@ export async function enrichPatternInsightWithLlm({
   const lang = language === 'en' ? 'en' : 'es';
   const periodLabel = periodKind === 'month' ? (lang === 'en' ? 'month' : 'mes') : lang === 'en' ? 'week' : 'semana';
 
+  const fidelity = buildObservationalFidelitySnippet(lang);
   const system =
     lang === 'en'
       ? `You write observational wellness pattern reports for a mental health companion app.
+${fidelity}
 Rules (strict):
 - JSON only, no markdown.
 - NO diagnoses, NO clinical labels, NO medication advice.
@@ -130,6 +133,7 @@ Rules (strict):
 - Always include disclaimers array with non-clinical framing.
 Schema: {"headline":"string","insights":[{"type":"string","label":"string","detail":"string"}],"conductSuggestion":"string|null","disclaimers":["string"]}`
       : `Escribes informes observacionales de bienestar para una app de acompañamiento emocional.
+${fidelity}
 Reglas (estrictas):
 - Solo JSON, sin markdown.
 - SIN diagnósticos, SIN etiquetas clínicas, SIN consejos de medicación.

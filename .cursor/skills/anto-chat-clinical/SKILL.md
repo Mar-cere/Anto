@@ -145,6 +145,21 @@ Copy visible (tono neutro, ES/EN): skill **anto-i18n-theme-review**.
 
 ---
 
+## Jerarquía canónica del system prompt
+
+Al modificar prompts del chat, respetar este orden (si hay conflicto, gana el de arriba):
+
+1. **Seguridad / crisis**
+2. **Fidelidad al mensaje** (polaridad literal; no hipótesis categóricas no dichas)
+3. **Ritmo conversacional** (diálogos; máx. 1 pregunta/turno; ejercicios = plus, no must)
+4. **Preferencias explícitas** del usuario (brevedad/tono), salvo override de crisis
+5. **Estilo / variación / herramientas opcionales**
+
+Ensamblado: `buildContextualizedPrompt` en `backend/services/openai/openaiPromptBuilder.js`  
+(snippets: `canonicalPromptHierarchySnippet`, `messageComprehensionSnippet`, grounding, paráfrasis).
+
+Fuera de crisis, **no asumir** gana sobre paráfrasis empática creativa.
+
 ## Checklist al modificar chat
 
 ```
@@ -155,7 +170,8 @@ Chat / clínico:
 - [ ] Product actions: proponer → confirmar → POST; nunca auto-persistir
 - [ ] Guest chat: sin acciones productivas
 - [ ] Copy ES/EN y tono neutro (skill anto-i18n-theme-review)
-- [ ] Tests del dominio ejecutados (ver abajo)
+- [ ] Prompts: respetar jerarquía canónica; fidelidad > paráfrasis creativa
+- [ ] Tests del dominio ejecutados (ver abajo), incl. test:prompt-golden si tocas prompts
 ```
 
 ---
@@ -185,6 +201,14 @@ Ejecutar la suite más específica al área tocada; no solo `test:unit` genéric
 | Contrato acciones chat | `docs/CONTRATO_CHAT_ACCIONES_V1.md` |
 | Estilos comunicación | `docs/ESTILOS_COMUNICACION.md` |
 | Playbook conversaciones | `docs/PLAYBOOK_OPERATIVO_MEJORA_CONVERSACIONES_V1.md` |
+| Jerarquía canónica prompt | `backend/services/chat/canonicalPromptHierarchySnippet.js` |
+| Comprensión / polaridad | `backend/services/chat/messageComprehensionSnippet.js` |
+| Mapa herramientas app | `backend/services/chat/appToolkitMapSnippet.js` |
+| Policy anti-cargante tareas/hábitos | `backend/services/chat/productActionProposalPolicySnippet.js` |
+| Tool tareas/hábitos | `backend/services/chat/productActionTool.js` |
+| Bridge técnicas / gratitud (prompt) | `backend/services/chat/techniqueSuggestionPromptSnippet.js` |
+| Soft check-in #19 prompt | `backend/services/chat/softCrisisCheckInPromptSnippet.js` |
+| Fidelidad observacional (satélites) | `backend/services/chat/observationalFidelitySnippet.js` |
 | Guardrails contenido | `backend/utils/clinicalContentGuardrails.js` |
 | Tono español | `backend/utils/copyToneGuards.mjs` |
 | Crisis turn extras | `backend/services/crisisTurnClientExtrasService.js` |

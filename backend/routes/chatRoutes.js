@@ -42,6 +42,10 @@ import { detectShortModeFromSession } from '../services/chat/responseLengthPrefe
 import { inferChatSessionPhase } from '../services/chat/sessionPhaseHints.js';
 import chatProductActionLlmService from '../services/chatProductActionLlmService.js';
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
+import {
+  buildProductActionResolveMetricData,
+  resolveTurnProposedProductActions,
+} from '../services/chat/productActionTool.js';
 import clinicalScalesService from '../services/clinicalScalesService.js';
 import conversationProductProposalCapService from '../services/conversationProductProposalCapService.js';
 import chatCommitmentProposalService from '../services/chatCommitmentProposalService.js';
@@ -1690,7 +1694,13 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           riskLevel,
           userMessage: content.trim(),
         });
-        const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements, { blockCrisisExtras });
+        const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements, {
+          blockCrisisExtras,
+          language: appLanguageForChat,
+        });
+        const softCrisisCheckInActive =
+          crisisTurnClientExtras?.softCrisisCheckInState?.active === true ||
+          Boolean(crisisTurnClientExtras?.softCrisisCheckIn);
 
         const openaiContext = {
           rollingSummary: conversation?.rollingSummary || null,
@@ -1716,6 +1726,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           sessionTrends,
           userMessage: content.trim(),
           distress: harmDistressContext.distress,
+          softCrisisCheckInActive,
           _promptTelemetry: {
             userId: req.user._id,
             conversationId,
@@ -1745,6 +1756,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           sessionCommitmentPromptSnippet: promptSnippets.sessionCommitmentPromptSnippet,
           experientialFollowUpPromptSnippet: promptSnippets.experientialFollowUpPromptSnippet,
           experientialRecallPromptSnippet: promptSnippets.experientialRecallPromptSnippet,
+          techniqueSuggestionPromptSnippet: promptSnippets.techniqueSuggestionPromptSnippet,
+          gratitudeJournalPromptSnippet: promptSnippets.gratitudeJournalPromptSnippet,
           crisisMetricTransport: req.query.stream === 'true' ? 'sse' : 'http',
         };
 
@@ -2037,17 +2050,29 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                     assistantContent: response.content,
                     conversationHistory,
                   });
+                let productActionSource = 'none';
+                let productActionToolEnabledForTurn =
+                  response.context?.productActionToolEnabled === true;
                 try {
-                  proposedProductActions = chatProductActionProposalService.buildProposedProductActions({
-                    riskLevel,
-                    isCrisis,
+                  const resolved = resolveTurnProposedProductActions({
+                    toolActions: response.context?.toolProposedProductActions,
+                    productActionToolEnabled: productActionToolEnabledForTurn,
                     userContent: content,
-                    assistantContent: response.content,
-                    sessionIntention: conversation?.sessionIntention,
-                    conversationId,
-                    assistantMessageId: assistantMessage._id,
-                    conversationHistory,
+                    buildHeuristic: () =>
+                      chatProductActionProposalService.buildProposedProductActions({
+                        riskLevel,
+                        isCrisis,
+                        userContent: content,
+                        assistantContent: response.content,
+                        sessionIntention: conversation?.sessionIntention,
+                        conversationId,
+                        assistantMessageId: assistantMessage._id,
+                        conversationHistory,
+                      }),
                   });
+                  proposedProductActions = resolved.actions;
+                  productActionSource = resolved.source;
+                  productActionToolEnabledForTurn = resolved.toolEnabled;
                 } catch (propErr) {
                   console.error('[ChatRoutes] proposedProductActions (stream):', propErr);
                 }
@@ -2088,6 +2113,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                       {
                         count: proposedProductActions.length,
                         types: proposedProductActions.map((a) => a.type),
+                        source: productActionSource,
                         transport: 'sse'
                       },
                       req.user._id.toString(),
@@ -2104,6 +2130,20 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                       console.warn('[ChatRoutes] product proposal cap inc (stream):', incErr?.message || incErr)
                     );
                 }
+
+                metricsService
+                  .recordMetric(
+                    'product_action_resolve',
+                    buildProductActionResolveMetricData({
+                      toolEnabled: productActionToolEnabledForTurn,
+                      source: productActionSource,
+                      actions: proposedProductActions,
+                      transport: 'sse',
+                    }),
+                    req.user._id.toString(),
+                    { conversationId: String(conversationId) }
+                  )
+                  .catch(() => {});
 
                 const proposedCommitments =
                   proposedProductActions.length > 0
@@ -2561,17 +2601,29 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
             assistantContent: response.content,
             conversationHistory,
           });
+        let productActionSource = 'none';
+        let productActionToolEnabledForTurn =
+          response.context?.productActionToolEnabled === true;
         try {
-          proposedProductActions = chatProductActionProposalService.buildProposedProductActions({
-            riskLevel,
-            isCrisis,
+          const resolved = resolveTurnProposedProductActions({
+            toolActions: response.context?.toolProposedProductActions,
+            productActionToolEnabled: productActionToolEnabledForTurn,
             userContent: content,
-            assistantContent: response.content,
-            sessionIntention: conversation?.sessionIntention,
-            conversationId,
-            assistantMessageId: assistantMessage._id,
-            conversationHistory,
+            buildHeuristic: () =>
+              chatProductActionProposalService.buildProposedProductActions({
+                riskLevel,
+                isCrisis,
+                userContent: content,
+                assistantContent: response.content,
+                sessionIntention: conversation?.sessionIntention,
+                conversationId,
+                assistantMessageId: assistantMessage._id,
+                conversationHistory,
+              }),
           });
+          proposedProductActions = resolved.actions;
+          productActionSource = resolved.source;
+          productActionToolEnabledForTurn = resolved.toolEnabled;
         } catch (propErr) {
           console.error('[ChatRoutes] proposedProductActions (non-stream):', propErr);
         }
@@ -2612,6 +2664,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               {
                 count: proposedProductActions.length,
                 types: proposedProductActions.map((a) => a.type),
+                source: productActionSource,
                 transport: 'http_json'
               },
               req.user._id.toString(),
@@ -2628,6 +2681,20 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               console.warn('[ChatRoutes] product proposal cap inc (non-stream):', incErr?.message || incErr)
             );
         }
+
+        metricsService
+          .recordMetric(
+            'product_action_resolve',
+            buildProductActionResolveMetricData({
+              toolEnabled: productActionToolEnabledForTurn,
+              source: productActionSource,
+              actions: proposedProductActions,
+              transport: 'http_json',
+            }),
+            req.user._id.toString(),
+            { conversationId: String(conversationId) }
+          )
+          .catch(() => {});
 
         const proposedCommitments =
           proposedProductActions.length > 0

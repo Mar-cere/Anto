@@ -10,12 +10,15 @@ beforeAll(() => {
 });
 
 describe('prompt regression golden (#119)', () => {
-  it('BASE_ASSISTANT_PROMPT mantiene anclas de seguridad y anti-minimización en crisis', () => {
+  it('BASE_ASSISTANT_PROMPT mantiene anclas de seguridad, tono y conversación primero', () => {
     expect(BASE_ASSISTANT_PROMPT).toContain('autolesión');
     expect(BASE_ASSISTANT_PROMPT).toContain('suicidio');
     expect(BASE_ASSISTANT_PROMPT).toContain('No diagnostiques');
     expect(BASE_ASSISTANT_PROMPT).toContain('español neutro');
     expect(BASE_ASSISTANT_PROMPT).toContain('nunca voseo');
+    expect(BASE_ASSISTANT_PROMPT).toContain('Invitar al desahogo');
+    expect(BASE_ASSISTANT_PROMPT).toContain('plus');
+    expect(BASE_ASSISTANT_PROMPT).toContain('No asumir gana');
   });
 
   for (const c of PROMPT_GOLDEN_CASES) {

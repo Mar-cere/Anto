@@ -9,7 +9,291 @@ import { SENSITIVE_VNP_INTENSITY_MIN } from '../../services/chat/sensitiveRespon
 const longLowConfUser =
   'Llevo días mal y no sé si quiero solo desahogarme o que me orientes con algo concreto.';
 
+const screenshotProgressEs =
+  'Nada he podido avanzar con mis cosas, mi pareja esta yendo a psicóloga y se siente relativamente mejor';
+const screenshotProgressEsComma =
+  'Nada, he podido avanzar con mis cosas, mi pareja está yendo a psicóloga y se siente relativamente mejor';
+const screenshotProgressEn =
+  "Nothing much, I've been able to make progress with my stuff, my partner is going to a psychologist and feels relatively better";
+const screenshotNegationEs =
+  'Nada no he podido avanzar con mis cosas esta semana y me frustra';
+
 export const PROMPT_GOLDEN_CASES = [
+  {
+    id: 'core_anchors_es_default',
+    message: { content: 'Hoy quiero hablar un rato de cómo me siento' },
+    context: {
+      emotional: { mainEmotion: 'neutral', intensity: 4 },
+      contextual: {
+        intencion: { tipo: 'CONVERSACION_GENERAL', confianza: 0.85 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'GENERAL' }
+      },
+      currentMessage: 'Hoy quiero hablar un rato de cómo me siento',
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: [
+        '### IDIOMA DE RESPUESTA',
+        '### POLÍTICA DE GROUNDING',
+        '### Reescritura anti-robot',
+        '### Jerarquía canónica de reglas',
+        '### Mapa de herramientas de la app',
+        'como máximo una',
+        'Invitar al desahogo',
+        '### Acciones de producto'
+      ],
+      noneOf: []
+    }
+  },
+  {
+    id: 'core_anchors_en_profile',
+    message: { content: 'I want to talk about how I feel today' },
+    context: {
+      profile: { preferences: { language: 'en' } },
+      emotional: { mainEmotion: 'neutral', intensity: 4 },
+      contextual: {
+        intencion: { tipo: 'CONVERSACION_GENERAL', confianza: 0.85 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'GENERAL' }
+      },
+      currentMessage: 'I want to talk about how I feel today',
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: [
+        '### RESPONSE LANGUAGE',
+        '### GROUNDING POLICY',
+        '### Message comprehension',
+        '### Canonical rule hierarchy',
+        '### App toolkit map',
+        '### Product actions'
+      ],
+      noneOf: []
+    }
+  },
+  {
+    id: 'soft_check_in_active_anchors',
+    message: { content: 'sigo un poco mal pero ya no tan intenso' },
+    context: {
+      softCrisisCheckInActive: true,
+      emotional: { mainEmotion: 'ansiedad', intensity: 6 },
+      contextual: {
+        intencion: { tipo: 'AYUDA_EMOCIONAL', confianza: 0.8 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'EMOCIONAL' }
+      },
+      currentMessage: 'sigo un poco mal pero ya no tan intenso',
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: ['### Modo check-in suave (#19)', 'propongas tareas'],
+      noneOf: ['tool disponible, prefiere NO usarla']
+    }
+  },
+  {
+    id: 'technique_and_gratitude_snippet_anchors',
+    message: { content: 'Estoy ansiosa y quizás escribir ayuda' },
+    context: {
+      techniqueSuggestionPromptSnippet: `
+
+### Tarjetas de técnica este turno
+La app puede mostrar una tarjeta de: respiración.
+No inventes otras técnicas. No empujes si solo quieren hablar. Sin IDs internos en la respuesta.`,
+      gratitudeJournalPromptSnippet: `
+
+### Tarjeta de diario / gratitud
+Puede aparecer una tarjeta voluntaria de diario o gratitud. No prometas que se guardó. Invita solo si encaja.`,
+      emotional: { mainEmotion: 'ansiedad', intensity: 6 },
+      contextual: {
+        intencion: { tipo: 'AYUDA_EMOCIONAL', confianza: 0.8 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'EMOCIONAL' }
+      },
+      currentMessage: 'Estoy ansiosa y quizás escribir ayuda',
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: [
+        '### Tarjetas de técnica este turno',
+        'tarjeta de: respiración',
+        '### Tarjeta de diario / gratitud',
+        'No prometas que se guardó',
+        'Pomodoro'
+      ],
+      noneOf: ['breathing_exercise']
+    }
+  },
+  {
+    id: 'product_action_tool_enabled_policy',
+    message: { content: 'Quiero guardar ordenar el escritorio en mis tareas' },
+    context: {
+      productActionToolEnabled: true,
+      emotional: { mainEmotion: 'neutral', intensity: 4 },
+      contextual: {
+        intencion: { tipo: 'CONVERSACION_GENERAL', confianza: 0.8 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'GENERAL' }
+      },
+      sessionIntention: 'plan',
+      currentMessage: 'Quiero guardar ordenar el escritorio en mis tareas',
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: [
+        '### Acciones de producto (tareas/hábitos) — tool disponible',
+        'propose_product_action',
+        'como máximo una vez'
+      ],
+      noneOf: []
+    }
+  },
+  {
+    id: 'screenshot_nada_he_podido_progress',
+    message: { content: screenshotProgressEs },
+    context: {
+      emotional: { mainEmotion: 'neutral', intensity: 5 },
+      contextual: {
+        intencion: { tipo: 'CONVERSACION_GENERAL', confianza: 0.7 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'RELACIONES' }
+      },
+      currentMessage: screenshotProgressEs,
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: [
+        '### Comprensión del mensaje',
+        'Nada',
+        'he podido',
+        'no reformules como estancamiento',
+        '### Literal polarity caution'
+      ],
+      noneOf: []
+    }
+  },
+  {
+    id: 'screenshot_nada_comma_progress',
+    message: { content: screenshotProgressEsComma },
+    context: {
+      emotional: { mainEmotion: 'neutral', intensity: 5 },
+      contextual: {
+        intencion: { tipo: 'CONVERSACION_GENERAL', confianza: 0.7 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'RELACIONES' }
+      },
+      currentMessage: screenshotProgressEsComma,
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: [
+        '### Comprensión del mensaje',
+        '### Literal polarity caution',
+        'no reformules como estancamiento'
+      ],
+      noneOf: []
+    }
+  },
+  {
+    id: 'screenshot_nothing_much_progress_en',
+    message: { content: screenshotProgressEn },
+    context: {
+      profile: { preferences: { language: 'en' } },
+      emotional: { mainEmotion: 'neutral', intensity: 5 },
+      contextual: {
+        intencion: { tipo: 'CONVERSACION_GENERAL', confianza: 0.7 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'RELACIONES' }
+      },
+      currentMessage: screenshotProgressEn,
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: [
+        '### Message comprehension',
+        '### Literal polarity caution',
+        'reframe as being stuck'
+      ],
+      noneOf: []
+    }
+  },
+  {
+    id: 'screenshot_nada_no_he_podido_negation',
+    message: { content: screenshotNegationEs },
+    context: {
+      emotional: { mainEmotion: 'tristeza', intensity: 6 },
+      contextual: {
+        intencion: { tipo: 'AYUDA_EMOCIONAL', confianza: 0.75 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'EMOCIONAL' }
+      },
+      currentMessage: screenshotNegationEs,
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: ['### Comprensión del mensaje'],
+      noneOf: ['### Literal polarity caution']
+    }
+  },
+  {
+    id: 'force_short_mode_anchors',
+    message: { content: 'ok' },
+    context: {
+      forceShortMode: true,
+      emotional: { mainEmotion: 'neutral', intensity: 3 },
+      contextual: {
+        intencion: { tipo: 'CONVERSACION_GENERAL', confianza: 0.9 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'GENERAL' }
+      },
+      currentMessage: 'ok',
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: [
+        'PREFERENCIA DE SESIÓN',
+        'como máximo una pregunta',
+        'no inventes hipótesis'
+      ],
+      noneOf: []
+    }
+  },
+  {
+    id: 'crisis_overrides_short_and_allows_safety_q',
+    message: { content: 'tengo un plan para no seguir viviendo' },
+    context: {
+      forceShortMode: true,
+      emotional: { mainEmotion: 'tristeza', intensity: 9 },
+      contextual: {
+        intencion: { tipo: 'CRISIS', confianza: 0.9 },
+        urgencia: 'ALTA',
+        tema: { categoria: 'SALUD' }
+      },
+      crisis: { riskLevel: 'MEDIUM', country: 'GENERAL' },
+      currentMessage: 'tengo un plan para no seguir viviendo',
+      history: [],
+      memory: {}
+    },
+    expect: {
+      allOf: [
+        'NIVEL DE RIESGO: MEDIUM',
+        'EXCEPCIÓN a',
+        'preguntas de seguridad del protocolo',
+        'PREVALECE sobre ritmo'
+      ],
+      noneOf: []
+    }
+  },
   {
     id: 'vnp_high_intensity',
     message: { content: 'no aguanto más este dolor' },

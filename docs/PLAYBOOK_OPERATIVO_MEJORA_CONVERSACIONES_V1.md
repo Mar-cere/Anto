@@ -149,6 +149,7 @@ Resultado esperado:
 2. Guardrail factual (no inventar + incertidumbre explicita): implementado.
 3. Protocolo estructurado de crisis en post-procesado: implementado.
 4. Tests unitarios de regresion para los guardrails: implementados.
+5. **Jerarquía canónica del system prompt** (seguridad → fidelidad/polaridad → ritmo 1 pregunta → preferencias → estilo): ver skill `anto-chat-clinical` y snippets `canonicalPromptHierarchySnippet` / `messageComprehensionSnippet`. Fuera de crisis, no asumir gana sobre paráfrasis creativa. Regresión: `npm run test:prompt-golden`.
 
 ## 9) Medicion automatica (nuevo)
 

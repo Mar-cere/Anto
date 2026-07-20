@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import openaiService from './openaiService.js';
+import { buildObservationalFidelitySnippet } from './chat/observationalFidelitySnippet.js';
 
 const MIN_TOTAL_MESSAGES = 14;
 const REFRESH_EVERY_NEW_MESSAGES = 8;
@@ -103,7 +104,7 @@ export async function refreshRollingSummary({
       {
         role: 'system',
         content:
-          'Resumes conversaciones de apoyo emocional en español. Salida: 5 a 10 frases breves en tono neutro ("La persona…", "Se habló de…"). Solo hechos y temas útiles como contexto interno. Sin juicios, sin diagnósticos, sin consejos terapéuticos. Omite datos identificables innecesarios.'
+          `Resumes conversaciones de apoyo emocional en español. Salida: 5 a 10 frases breves en tono neutro ("La persona…", "Se habló de…"). Solo hechos y temas útiles como contexto interno. Sin juicios, sin diagnósticos, sin consejos terapéuticos. Omite datos identificables innecesarios.\n${buildObservationalFidelitySnippet('es')}`
       },
       {
         role: 'user',

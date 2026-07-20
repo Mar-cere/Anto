@@ -48,12 +48,21 @@ Flujo resumido:
 - El servidor persiste `clientRequestId` en `Task` / `Habit` con índice único parcial por `(userId, clientRequestId)` en documentos **no** borrados (soft delete); si ya existe un recurso activo con la misma clave, responde **HTTP 200** con el recurso existente y **`idempotentReplay: true`** en el JSON (además de `success` y `data`). Si es creación nueva, **HTTP 201** como siempre.
 - Sin `clientRequestId`, el comportamiento es el histórico (sin deduplicación por esta vía).
 
-### 3.2 Refinamiento del borrador en el paso A (LLM opcional)
+### 3.2 Origen del borrador en el paso A (tool del turno + heurística)
 
-- Tras la **heurística** que decide si hay propuesta y el tipo (`propose_task` / `propose_habit`), el servidor puede **enriquecer** el `draft` con una llamada breve a OpenAI (`backend/services/chatProductActionLlmService.js`).
-- La respuesta del modelo se **fusiona** con el borrador base y se **re-valida** en servidor (títulos acotados, fechas no anteriores a hoy, iconos y enums permitidos). Si el LLM falla o no hay API key, se envía solo el borrador heurístico.
-- **Variables de entorno:** `CHAT_PRODUCT_ACTION_LLM=false` desactiva el paso LLM; `OPENAI_PRODUCT_ACTION_MODEL` (opcional) elige modelo; `CHAT_PRODUCT_ACTION_LLM_TIMEOUT_MS` (default 12000) acota la espera.
+El paso A puede originarse de dos vías (prioridad):
+
+1. **Tool call en el turno de chat** (`propose_product_action` en `openaiService`): el modelo de conversación puede proponer **como máximo una** acción cuando el servidor declara elegibilidad (`isProductActionToolEligible`). Por defecto el prompt pide **no** llamar la tool. Args se parsean y validan en servidor (`productActionTool.js`); títulos genéricos se descartan.
+2. **Heurística de respaldo** (`buildProposedProductActions`):
+   - Si la tool **no** estuvo disponible en el turno → camino primario (léxico/intención, como antes).
+   - Si la tool **sí** estuvo disponible pero no hubo draft válido → solo si hay **pedido explícito** (“en mis tareas”) o necesidad **alta** (`getProductActionNeedLevel === 'high'`). Necesidad media no dispara fallback (anti-cargante).
+
+En ambos casos el servidor puede **enriquecer** el `draft` con una llamada breve a OpenAI (`chatProductActionLlmService.js`), fusionar y **re-validar**. Si el LLM falla o no hay API key, se envía el borrador ya validado.
+
+- **Variables de entorno:** `CHAT_PRODUCT_ACTION_LLM=false` desactiva el enriquecimiento; `OPENAI_PRODUCT_ACTION_MODEL` (opcional); `CHAT_PRODUCT_ACTION_LLM_TIMEOUT_MS` (default 12000).
 - No cambia el paso B ni C: el usuario sigue confirmando y el `POST` sigue validando con Joi.
+- **Anti-cargante:** tool solo si elegible; máx. 1/turno; cap por conversación; cero en guest, crisis, soft check-in #19.
+- **Métricas:** cada turno autenticado emite `product_action_resolve` con `toolEnabled`, `source` (`chat_tool_v1` \| `heuristic` \| `none`), `toolCalled`, `count` y `transport`. Las propuestas emitidas también llevan `source` en `product_action_proposed`.
 
 ---
 

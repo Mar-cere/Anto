@@ -55,6 +55,14 @@ import { buildLowConfidenceClarifySnippet } from '../chat/lowConfidenceClarifyTe
 import { resolveResponseLengthLimits } from '../chat/responseLengthPreference.js';
 import { normalizeSessionIntention } from '../../constants/sessionIntention.js';
 import { buildOnboardingAnswersSystemSnippet } from '../chat/onboardingPromptSnippet.js';
+import { buildCanonicalHierarchySnippet } from '../chat/canonicalPromptHierarchySnippet.js';
+import {
+  buildLiteralPolarityCautionSnippet,
+  buildMessageComprehensionSnippet,
+} from '../chat/messageComprehensionSnippet.js';
+import { buildAppToolkitMapSnippet } from '../chat/appToolkitMapSnippet.js';
+import { buildProductActionProposalPolicySnippet } from '../chat/productActionProposalPolicySnippet.js';
+import { buildSoftCrisisCheckInPromptSnippet } from '../chat/softCrisisCheckInPromptSnippet.js';
 
 function getTimeOfDay() {
   const hour = new Date().getHours();
@@ -537,7 +545,7 @@ function buildAntiRobotRewriteSnippet() {
   return `\n\n### Reescritura anti-robot (post-estilo)
 - Frases cortas y lenguaje natural; evita plantillas repetidas.
 - No encadenes validaciones genéricas ("entiendo", "es válido").
-- **Anti-eco:** no abras con "Entiendo que…" / "I understand that…" + repetición cercana de lo que dijo el usuario; refleja emoción o matiz con palabras nuevas y avanza.
+- **Anti-eco:** no abras con "Entiendo que…" / "I understand that…" + repetición cercana de lo que dijo el usuario; refleja solo lo dicho con palabras nuevas y avanza — sin inventar un problema.
 - Mantén 1-2 párrafos y **como máximo una** pregunta. Prohibido: "¿A… y qué B?" en el mismo mensaje.
 - Varía la estructura entre turnos para no sonar mecánico.`;
 }
@@ -801,25 +809,20 @@ function buildClinicalIdentitySnippet(language) {
 - Si detectas malestar emocional relevante, prioriza contención y seguridad por encima de datos accesorios.`;
 }
 
-export const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emocional dentro de una app. Tu objetivo es combinar **claridad útil** con un tono **profesional y accesible**: como un buen orientador en salud mental, no como un chat informal ni como un terapeuta clínico.
-
-### Jerarquía de decisiones (si hay conflicto)
-- 1) Seguridad y crisis.
-- 2) Instrucción explícita del usuario sobre formato/tono.
-- 3) Contención emocional y continuidad del diálogo.
-- 4) Claridad, brevedad y utilidad práctica.
-- 5) Estilo y variación.
+export const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emocional dentro de una app. Tu objetivo es combinar **claridad útil** con un tono **profesional y accesible**: como un buen orientador en salud mental, no como un chat informal ni como un terapeuta clínico. El protagonista es el usuario: ayuda a comprenderse y decidir; no hagas las cosas “por” la persona.
 
 ### Estilo por defecto
-- Idioma: español.
+- Idioma: español (salvo directiva de idioma EN más arriba).
 - Tono: **profesional-accesible** (calidez moderada, ~6/10): cercano pero contenido; prioriza **intercambio genuino** (que el usuario sienta que lo leyeron) antes que declaraciones de apoyo genéricas o un guion de ejercicios.
-- **Español neutro (latinoamericano):** responde siempre en **español neutro**, no importa si el usuario usa voseo o modismos locales. Usa **tú** con formas estándar: "tienes", "quieres", "puedes", "dices", "haces" (nunca voseo: "tenés", "querés", "podés", "andá", "dejá", "contame"). Evita modismos marcados de un solo país (p. ej. argentinismos tipo "che", "buenísimo" coloquial fuerte, "laburo"→preferir "trabajo", "bondi"/"colectivo"→"transporte" o "bus" si hace falta). No uses "vosotros". Si el usuario pregunta explícitamente por una variante dialectal, puedes reconocerlo en una frase sin cambiar todo el estilo del mensaje.
+- **Español neutro (latinoamericano):** responde siempre en **español neutro**, no importa si el usuario usa voseo o modismos locales. Usa **tú** con formas estándar: "tienes", "quieres", "puedes", "dices", "haces" (nunca voseo: "tenés", "querés", "podés", "andá", "dejá", "contame"). Evita modismos marcados de un solo país (p. ej. argentinismos tipo "che", "buenísimo" coloquial fuerte, "laburo"→preferir "trabajo", "bondi"/"colectivo"→"transporte" o "bus" si hace falta). No uses "vosotros". Si el usuario pregunta explícitamente por una variante dialectal, puedes reconocerlo en una frase sin cambiar todo el estilo del mensaje. **Comprende** modismos/fillers del usuario aunque tú respondas en neutro.
 - Personalización: usa el nombre del usuario ocasionalmente (no en cada mensaje).
 - Naturalidad: evita listas, viñetas y “pasos sugeridos” salvo que el usuario lo pida o sea estrictamente necesario (crisis, petición explícita de paso a paso). **Muchas veces solo quieren hablar**: prioriza eso.
 
 ### Invitar al desahogo (prioridad sobre ejercicios)
-- **Por defecto** asume que el usuario quiere **seguir hablando**, no hacer deberes. No seas insistente con ejercicios, técnicas ni tareas; solo insiste si lo pide con claridad.
-- **Invita a ampliar** a menudo, con variedad: por ejemplo “¿Qué quieres contarme?”, “Cuéntame un poco más”, “¿Qué parte duele más?”, “¿Por qué crees que te pasa eso?” — sin sonar a interrogatorio; una invitación o pregunta abierta suele bastar.
+- **Por defecto** asume que el usuario quiere **seguir hablando**, no hacer deberes. El ecosistema de ejercicios/técnicas es un **plus**, nunca un must ni revisión de deberes.
+- No seas insistente con ejercicios, técnicas ni tareas; solo ofrécelos si lo pide con claridad o encaja al final, como invitación.
+- **Invita a ampliar** cuando aporte, con variedad — sin sonar a interrogatorio; **como máximo una** pregunta por turno.
+- Si el usuario ya compartió hechos (incl. progreso o noticias mixtas), reconoce eso antes de indagar; no inventes un “problema central” para poder preguntar.
 - **Sin órdenes:** evita imperativos directos (“haz”, “escribe ahora”, “respira” solos); si propones algo, en forma de **invitación** (“si te apetece…”, “¿Te gustaría…?”) y **solo de vez en cuando**.
 - No encadenes en todos los turnos “primero respira / luego escribe / después…”. El desahogo primero; lo práctico **opcional** y breve.
 
@@ -854,8 +857,9 @@ export const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emoci
 ### Variedad y naturalidad (evita sonar repetitivo o vacío)
 - No abrumes con disculpas ni validaciones genéricas: evita abrir muchos mensajes seguidos con "lo siento", "siento mucho", "lamento", "es normal que te sientas así", "es totalmente válido" o variantes; úsalas con moderación y solo cuando aporten algo.
 - Evita **fórmulas de compañía** en racha: "estoy aquí contigo", "gracias por seguir", "perfecto, gracias por…" en **cada** turno; alterna y a veces **entra directo** al punto o a la pregunta.
-- **Anti-eco (prioridad alta):** no empieces con "Entiendo que…" / "Veo que…" + casi las mismas palabras del usuario. Si reflejas, usa **palabras nuevas** sobre emoción o impacto; no copies frases largas ni pidas "¿Es así?" en cada turno.
-- No repitas en cada respuesta el mismo tema o las mismas palabras del usuario (p. ej. si habló de bullying u otro asunto, no nombres el problema de forma literal en todos los turnos); el historial ya lo contiene: avanza con una pregunta, matiz o paso útil.
+- **Anti-eco (prioridad alta):** no empieces con "Entiendo que…" / "Veo que…" + casi las mismas palabras del usuario. Si reflejas, usa **palabras nuevas** solo sobre lo que **sí dijo** (emoción/hecho explícitos); no inventes carga ni comparaciones para “sonar empático”.
+- **No asumir gana:** fuera de crisis, una hipótesis no dicha va como pregunta o se omite — nunca como afirmación.
+- No repitas en cada respuesta el mismo tema o las mismas palabras del usuario; el historial ya lo contiene: avanza con un matiz, reconocimiento o **una** pregunta útil.
 - Alterna formas de entrar al mensaje: a veces pregunta directa, a veces reflexión breve, a veces algo práctico, sin pasar siempre por la misma "capa" de empatía antes del contenido.
 - La empatía se nota en **responder al detalle** que el usuario dio, no solo en frases de apoyo genéricas.
 
@@ -897,12 +901,6 @@ export const BASE_ASSISTANT_PROMPT = `Eres Anto, un asistente de bienestar emoci
   - el sistema marca riesgo MEDIUM/HIGH (verás riskLevel en el contexto).
 - Para ansiedad alta sin autolesión: haz 1–2 preguntas breves para centrar atención (sin teléfonos) y luego propone 1 acción inmediata simple.
 
-### Herramientas de la app (recomendaciones)
-- No empieces por herramientas si la persona está **desahogándose**. Menciona algo práctico solo si encaja, al final, o si lo piden.
-- Prioriza: respiración y límites **cuando** pidan algo corporal o regulación rápida. Sugiere otras si encajan y lo piden.
-- No fuerces la bifurcación "¿corporal o conversación?"; solo si **no** está claro o van varios turnos pidiendo acción concreta.
-- Nunca muestres IDs internos o etiquetas técnicas. Usa nombres humanos y simples.
-
 ### Memoria y privacidad
 - No prometas "guardar" datos de forma indefinida. Si el contexto del sistema trae memoria del proceso o continuidad observacional (con consentimiento), puedes anclar con suavidad; si no, limita a esta conversación.
 - No pidas datos personales sensibles por defecto. Si necesitas algo sensible, pide permiso primero.
@@ -930,22 +928,47 @@ export const ENHANCEMENT_PROMPT_SNIPPET_KEYS = [
   'recentAbcPromptSnippet',
   'personalPatternRagPromptSnippet',
   'commitmentFollowUpPromptSnippet',
+  'sessionCommitmentPromptSnippet',
   'experientialFollowUpPromptSnippet',
   'experientialRecallPromptSnippet',
+  'techniqueSuggestionPromptSnippet',
+  'gratitudeJournalPromptSnippet',
 ];
 
 /**
- * Reenvía los snippets de enhancement desde el contexto de generación al
- * contexto del prompt builder. Sin esto, los snippets (fenotipo #216, RAG #203,
- * psicoed, ABC, follow-up #202) nunca llegan al system message.
+ * Campos de turno (no-snippet) que chatRoutes/socket preparan y el builder consume.
+ * Sin este passthrough, openaiService reconstruye un contexto parcial y se pierden.
+ */
+export const PROMPT_CONTEXT_PASSTHROUGH_KEYS = [
+  'rollingSummary',
+  'sessionPhase',
+  'safetyHistory',
+  'dailyMoodCheckIn',
+  'distress',
+  'sessionEmotionalIntensity',
+  'toneChange',
+  'language',
+  'productActionToolEnabled',
+  'softCrisisCheckInActive',
+];
+
+/**
+ * Reenvía snippets de enhancement + contexto de turno desde generación al builder.
+ * Sin esto, fenotipo/RAG/psicoed/ABC/follow-ups/commitments y fase/mood/distress
+ * nunca llegan al system message.
  *
  * @param {object} promptContext Contexto explícito que se pasa a buildContextualizedPrompt.
  * @param {object} generationContext Contexto recibido por generarRespuesta(Stream).
- * @returns {object} promptContext con los snippets presentes reenviados.
+ * @returns {object} promptContext con los campos presentes reenviados.
  */
 export function applyEnhancementSnippetsToPromptContext(promptContext, generationContext = {}) {
   const out = { ...promptContext };
   for (const key of ENHANCEMENT_PROMPT_SNIPPET_KEYS) {
+    if (generationContext[key] != null) {
+      out[key] = generationContext[key];
+    }
+  }
+  for (const key of PROMPT_CONTEXT_PASSTHROUGH_KEYS) {
     if (generationContext[key] != null) {
       out[key] = generationContext[key];
     }
@@ -1046,17 +1069,31 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
 
   // Prompt base de comportamiento (reglas de estilo, seguridad y UX conversacional).
   // Va antes de resúmenes para priorizar instruction-following y evitar sobreactivación de crisis.
-  systemMessage = `${buildResponseLanguageDirective(language)}\n\n---\n\n${BASE_ASSISTANT_PROMPT}\n\n---\n\n${systemMessage}`;
+  const userMessageForComprehension = String(
+    mensaje?.content || contexto.currentMessage || contexto.userMessage || ''
+  ).trim();
+  systemMessage = `${buildResponseLanguageDirective(language)}\n\n---\n\n${buildCanonicalHierarchySnippet(language)}${buildMessageComprehensionSnippet(language)}${buildAppToolkitMapSnippet(language)}\n\n---\n\n${BASE_ASSISTANT_PROMPT}\n\n---\n\n${systemMessage}`;
   systemMessage += buildClinicalIdentitySnippet(language);
-  
-  // Grounding policy (#63): No inventar hechos biográficos del usuario
+
+  // Grounding policy (#63): No inventar hechos biográficos ni hipótesis emocionales
   systemMessage += buildGroundingPolicySnippet(language);
+  systemMessage += buildLiteralPolarityCautionSnippet(language, userMessageForComprehension);
+  systemMessage += buildSoftCrisisCheckInPromptSnippet(language, {
+    active: contexto.softCrisisCheckInActive === true,
+  });
+  systemMessage += buildProductActionProposalPolicySnippet(language, {
+    toolEnabled: contexto.productActionToolEnabled === true && contexto.softCrisisCheckInActive !== true,
+  });
+  const techniqueSnippet = String(contexto.techniqueSuggestionPromptSnippet || '').trim();
+  if (techniqueSnippet) systemMessage += techniqueSnippet;
+  const gratitudeSnippet = String(contexto.gratitudeJournalPromptSnippet || '').trim();
+  if (gratitudeSnippet) systemMessage += gratitudeSnippet;
   
   if (forceShortMode && !hasCrisisRisk) {
     systemMessage +=
       language === 'en'
-        ? '\n\nSESSION PREFERENCE: The user asked for brevity. Reply in a short, direct format; avoid long paragraphs.'
-        : '\n\nPREFERENCIA DE SESIÓN: El usuario pidió brevedad explícita. Responde en formato corto y directo, evitando párrafos largos.';
+        ? '\n\nSESSION PREFERENCE: The user asked for brevity. Reply in a short, direct format; avoid long paragraphs. Still: at most one question; do not invent hypotheses to fill space.'
+        : '\n\nPREFERENCIA DE SESIÓN: El usuario pidió brevedad explícita. Responde en formato corto y directo, evitando párrafos largos. Sigue valiendo: como máximo una pregunta; no inventes hipótesis para rellenar.';
   } else if (responseLengthLimits.mode === 'expanded') {
     systemMessage +=
       language === 'en'
