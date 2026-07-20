@@ -261,7 +261,8 @@ export function shouldAttachEmotionPsychoeducation(emotion, userContent = '', in
   if (intensity >= 8) return true;
   if (emotion === 'tristeza' && shouldBoostBaSuggestion(userContent)) return true;
   if (emotion === 'ansiedad' && shouldBoostExposureSuggestion(userContent)) return true;
-  if (emotion === 'enojo' && intensity >= 6) return true;
+  // Ira: no basta intensidad; hace falta impulso/enojo explícito (evita timeout/ira en culpa parental).
+  if (emotion === 'enojo' && hasExplicitAngerImpulseSignal(userContent)) return true;
   return false;
 }
 
@@ -445,8 +446,63 @@ export function applyAutomaticThoughtSuggestionPolicy(
   return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
 }
 
+/** Culpa / “fallarles” (ES/EN) — incluye parental sin la palabra “culpa”. */
+export const GUILT_SIGNAL_PATTERN =
+  /(?:\bculpa\b|culpable|culpabilid(?:ad|zarme)|me\s+echo\s+la\s+culpa|es\s+mi\s+culpa|fue\s+mi\s+culpa|la\s+culpa\s+es\s+m[ií]a|siento\s+(?:que\s+)?(?:les|le|los|la)\s+fall[oa]|les\s+fall[oa]|le\s+fall[oa]|fallar(?:les|le|los|la)|me\s+siento\s+(?:muy\s+)?(?:mal|horrible|pésimo)\s+por|(?:si\s+lo\s+hago|al\s+hacerlo).{0,40}fall[oa]|\bguilty\b|\bguilt\b|feel(?:ing)?\s+guilty|failing\s+(?:them|my\s+(?:kids?|children|partner|family))|bad\s+(?:mom|dad|parent)|i'?m\s+a\s+bad\s+(?:mom|dad|parent))/i;
+
+/**
+ * Ira / impulso explícito. No cuenta frustración suave (“me frenan”, “me cuesta”, “me molestó”).
+ */
+export const EXPLICIT_ANGER_IMPULSE_PATTERN =
+  /(?:\benojad[oa]\b|\benojo\b|\bira\b|\brabia\b|\brábia\b|\bfurios[oa]\b|explot(?:o|é|ar|ando)|me\s+voy\s+a\s+explotar|desbord(?:o|a|e|ado)|no\s+controlo\s+(?:mis\s+)?emociones|grit[eé]|gritar(?:le|les)?|golpe[eé]|me\s+salí\s+de\s+las\s+casillas|\bangry\b|\bfurious\b|\birritated\b|\bmad\b|lash(?:ed)?\s+out|reacted\s+badly|can'?t\s+control\s+my\s+emotions|emotionally\s+overwhelmed)/i;
+
+const ANGER_GATED_INTERVENTION_IDS = new Set([
+  'timeout_technique',
+  'anger_management',
+  'psychoeducation_anger',
+  'dbt_stop_skill',
+]);
+
+export function hasGuiltSignal(userContent = '') {
+  return GUILT_SIGNAL_PATTERN.test(String(userContent || ''));
+}
+
+export function hasExplicitAngerImpulseSignal(userContent = '') {
+  return EXPLICIT_ANGER_IMPULSE_PATTERN.test(String(userContent || ''));
+}
+
+/**
+ * Quita timeout / ira / STOP si no hay impulso explícito; deja respiración como respaldo.
+ * @param {string[]} ids
+ * @param {string} userContent
+ * @returns {string[]}
+ */
+export function applyAngerSuggestionGate(ids, userContent = '') {
+  if (!Array.isArray(ids) || ids.length === 0) return ids;
+  if (hasExplicitAngerImpulseSignal(userContent)) {
+    return ids.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
+  }
+  const hadTimeout = ids.includes('timeout_technique');
+  let list = ids.filter((id) => !ANGER_GATED_INTERVENTION_IDS.has(id));
+  if (list.length === 0) {
+    list = ['breathing_exercise', 'self_care'];
+  } else if (hadTimeout && !list.includes('breathing_exercise')) {
+    list = ['breathing_exercise', ...list];
+  }
+  return list.slice(0, MAX_CHAT_ACTION_SUGGESTIONS);
+}
+
 /** Emoción con reglas de sugerencias; cae a ansiedad/enojo si el texto lo indica (#85). */
 export function resolveSuggestionEmotion(mainEmotion, userContent = '') {
+  const text = String(userContent || '');
+  const guilt = hasGuiltSignal(text);
+  const anger = hasExplicitAngerImpulseSignal(text);
+
+  // Culpa fuerte + enojo débil/etiquetado → ruta de sugerencias de culpa (no timeout/ira).
+  if (guilt && !anger) {
+    return 'culpa';
+  }
+
   const known = new Set([
     'ansiedad',
     'tristeza',
@@ -455,7 +511,7 @@ export function resolveSuggestionEmotion(mainEmotion, userContent = '') {
     'soledad',
   ]);
   if (known.has(mainEmotion)) return mainEmotion;
-  const text = String(userContent || '');
+
   if (/(?:\bansios[oa]\b|\banxious\b|\bnervios[oa]\b|\bnervous\b)/i.test(text)) {
     return 'ansiedad';
   }
@@ -467,11 +523,7 @@ export function resolveSuggestionEmotion(mainEmotion, userContent = '') {
     return 'ansiedad';
   }
   if (mainEmotion === 'miedo') return 'ansiedad';
-  if (
-    /(?:desbord|explot(?:o|é)\s+sin\s+querer|no\s+controlo\s+(?:mis\s+)?emociones|emotionally\s+overwhelmed|can'?t\s+control\s+my\s+emotions|lash\s+out)/i.test(
-      text,
-    )
-  ) {
+  if (anger) {
     return 'enojo';
   }
   if (
@@ -495,14 +547,7 @@ export function resolveSuggestionEmotion(mainEmotion, userContent = '') {
   ) {
     return 'tristeza';
   }
-  if (
-    /(?:\bangry\b|\bfurious\b|\birritated\b|\bmad\b|\blash(?:ed)?\s+out|\breacted\s+badly)/i.test(
-      text,
-    )
-  ) {
-    return 'enojo';
-  }
-  if (/(?:\bguilty\b|\bguilt\b)/i.test(text)) {
+  if (guilt) {
     return 'culpa';
   }
   return mainEmotion;
@@ -670,14 +715,21 @@ class ActionSuggestionService {
         ? rankInterventionIds(enriched, rankingScores)
         : enriched;
     const psychoRequired = [...contextualPsycho, ...emotionPsycho];
-    const afterPolicies = applyAutomaticThoughtSuggestionPolicy(
-      applyExposureSuggestionPolicy(
-        applyBaSuggestionPolicy(
-          applyAbcSuggestionPolicy(ranked, {
-            emotion,
-            intensityLevel,
-            userContent,
-          }),
+    const afterPolicies = applyAngerSuggestionGate(
+      applyAutomaticThoughtSuggestionPolicy(
+        applyExposureSuggestionPolicy(
+          applyBaSuggestionPolicy(
+            applyAbcSuggestionPolicy(ranked, {
+              emotion,
+              intensityLevel,
+              userContent,
+            }),
+            {
+              emotion,
+              intensityLevel,
+              userContent,
+            },
+          ),
           {
             emotion,
             intensityLevel,
@@ -690,11 +742,7 @@ class ActionSuggestionService {
           userContent,
         },
       ),
-      {
-        emotion,
-        intensityLevel,
-        userContent,
-      },
+      userContent,
     );
     return prioritizeSuggestionBlock(afterPolicies, {
       psychoRequired,

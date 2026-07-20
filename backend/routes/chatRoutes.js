@@ -13,6 +13,10 @@ import {
 import { resolveHarmIntrusiveDistressContext, clampEmotionalIntensity, HARM_INTRUSIVE_DISTRESS_THEME } from '../constants/harmIntrusiveThoughts.js';
 import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
 import {
+  applyEmotionalThreadContinuity,
+  collectRecentUserTexts,
+} from '../services/chat/emotionalThreadContinuity.js';
+import {
   buildStreamingTtftMetrics,
   streamingTtftMetricPayload,
 } from '../utils/chatStreamingMetrics.js';
@@ -1213,10 +1217,14 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         
         // OPTIMIZACIÓN: Solo análisis críticos en paralelo (emocional y contextual)
         // Análisis de tendencias y crisis se harán después si es necesario
-        const [emotionalAnalysis, contextualAnalysis] = await Promise.all([
+        const [emotionalAnalysisRaw, contextualAnalysis] = await Promise.all([
           emotionalAnalyzer.analyzeEmotion(content, previousEmotionalPatterns),
           contextAnalyzer.analizarMensaje(userMessage, conversationHistory)
         ]);
+        const emotionalAnalysis = applyEmotionalThreadContinuity(
+          emotionalAnalysisRaw,
+          collectRecentUserTexts(conversationHistory, content, { newestFirst: true }),
+        );
 
         const memoryPrefetchPromise = memoryService
           .getRelevantContext(req.user._id, content.trim(), {

@@ -95,13 +95,26 @@ describe('chatPsychoeducationSuggestions (#85)', () => {
       expect(ids).toContain('psychoeducation_grief');
     });
 
-    it('shouldAttachEmotionPsychoeducation enojo desde intensidad 6', () => {
+    it('shouldAttachEmotionPsychoeducation enojo exige impulso explícito', () => {
       expect(shouldAttachEmotionPsychoeducation('enojo', 'Hoy me molestó algo', 6)).toBe(
-        true,
-      );
-      expect(shouldAttachEmotionPsychoeducation('enojo', 'Hoy me molestó algo', 5)).toBe(
         false,
       );
+      expect(
+        shouldAttachEmotionPsychoeducation(
+          'enojo',
+          'Estoy enojado y voy a explotar',
+          6,
+        ),
+      ).toBe(true);
+    });
+
+    it('resolveSuggestionEmotion fuerza culpa con “les fallo” aunque venga enojo', () => {
+      expect(
+        resolveSuggestionEmotion(
+          'enojo',
+          'Siento que les fallo si dejo a mis hijos para hacer mis cosas',
+        ),
+      ).toBe('culpa');
     });
 
     it('CONTEXTUAL_PSYCHOEDUCATION_RULES solo referencia ids válidos', () => {

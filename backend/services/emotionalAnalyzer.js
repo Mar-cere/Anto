@@ -94,7 +94,7 @@ class EmotionalAnalyzer {
       },
       culpa: {
         // `\bculpa\b`: sin límites, «disculpas» disparaba culpa.
-        patterns: /(?:\bculpa\b|culpable|culpabilid(?:ad|zarme)|responsable.*de|me.*siento.*culpable|estoy.*culpable|tengo.*culpa|siento.*culpa|me.*culpo|me.*echo.*la.*culpa|es.*mi.*culpa|fue.*mi.*culpa|la.*culpa.*es.*mía|me.*siento.*responsable)/i,
+        patterns: /(?:\bculpa\b|culpable|culpabilid(?:ad|zarme)|responsable.*de|me.*siento.*culpable|estoy.*culpable|tengo.*culpa|siento.*culpa|me.*culpo|me.*echo.*la.*culpa|es.*mi.*culpa|fue.*mi.*culpa|la.*culpa.*es.*mía|me.*siento.*responsable|siento\s+que\s+(?:les|le|los|la)\s+fall[oa]|les\s+fall[oa]|le\s+fall[oa]|fallar(?:les|le))/i,
         intensity: 6,
         category: 'negative'
       },

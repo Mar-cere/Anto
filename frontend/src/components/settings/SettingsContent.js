@@ -592,12 +592,14 @@ export default function SettingsContent({
         notificationsRight: {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 6,
+          gap: 4,
           flexShrink: 0,
+          marginLeft: 8,
         },
+        /** Solo ocupa ancho al guardar / flash; en reposo no aprieta el título. */
         notificationsStatusSlot: {
           minWidth: 0,
-          maxWidth: 88,
+          maxWidth: 72,
           minHeight: 28,
           alignItems: 'center',
           justifyContent: 'center',
@@ -607,16 +609,15 @@ export default function SettingsContent({
           color: COLORS.PRIMARY,
           fontSize: 12,
           fontWeight: '700',
-          letterSpacing: 0.3,
+          letterSpacing: 0.2,
         },
         chevronBtn: {
-          width: 34,
-          height: 34,
-          borderRadius: 10,
+          width: 30,
+          height: 30,
+          borderRadius: 9,
           justifyContent: 'center',
           alignItems: 'center',
           backgroundColor: themePalette.accentLineSoft,
-          marginLeft: 6,
         },
         chevronBtnDisabled: { opacity: 0.45 },
         notificationsExpanded: {
@@ -921,7 +922,14 @@ export default function SettingsContent({
               }
               accessibilityHint={TEXTS.NOTIFICATIONS_A11Y_HINT}
             >
-              <Text style={styles.itemTextNested}>{TEXTS.NOTIFICATIONS}</Text>
+              <Text
+                style={styles.itemTextNested}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.9}
+              >
+                {TEXTS.NOTIFICATIONS}
+              </Text>
               <Text style={styles.itemSubtext} numberOfLines={2}>
                 {notificationsExpanded
                   ? TEXTS.NOTIFICATIONS_SUB_EXPANDED
@@ -929,26 +937,28 @@ export default function SettingsContent({
               </Text>
             </TouchableOpacity>
             <View style={styles.notificationsRight}>
-              <View style={styles.notificationsStatusSlot}>
-                {notificationPrefsSaving ? (
-                  <ActivityIndicator
-                    size='small'
-                    color={COLORS.ACCENT}
-                    accessibilityLabel={TEXTS.NOTIFICATIONS_SAVING_A11Y}
-                  />
-                ) : (
-                  <Animated.View
-                    style={[styles.savedChipWrap, { opacity: savedOpacity }]}
-                    pointerEvents='none'
-                    accessibilityElementsHidden
-                    importantForAccessibility='no'
-                  >
-                    <Text style={styles.savedChipText}>
-                      {TEXTS.NOTIFICATIONS_SAVED}
-                    </Text>
-                  </Animated.View>
-                )}
-              </View>
+              {notificationPrefsSaving || notificationPrefsSavedFlash ? (
+                <View style={styles.notificationsStatusSlot}>
+                  {notificationPrefsSaving ? (
+                    <ActivityIndicator
+                      size='small'
+                      color={COLORS.ACCENT}
+                      accessibilityLabel={TEXTS.NOTIFICATIONS_SAVING_A11Y}
+                    />
+                  ) : (
+                    <Animated.View
+                      style={[styles.savedChipWrap, { opacity: savedOpacity }]}
+                      pointerEvents='none'
+                      accessibilityElementsHidden
+                      importantForAccessibility='no'
+                    >
+                      <Text style={styles.savedChipText}>
+                        {TEXTS.NOTIFICATIONS_SAVED}
+                      </Text>
+                    </Animated.View>
+                  )}
+                </View>
+              ) : null}
               <Switch
                 value={pushNotificationsEnabled}
                 onValueChange={onTogglePushNotifications}
@@ -973,7 +983,7 @@ export default function SettingsContent({
               >
                 <MaterialCommunityIcons
                   name={notificationsExpanded ? 'chevron-up' : 'chevron-down'}
-                  size={22}
+                  size={20}
                   color={COLORS.ACCENT}
                 />
               </TouchableOpacity>

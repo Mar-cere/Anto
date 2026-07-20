@@ -208,6 +208,8 @@ Ejecutar la suite más específica al área tocada; no solo `test:unit` genéric
 | Tool tareas/hábitos | `backend/services/chat/productActionTool.js` |
 | Bridge técnicas / gratitud (prompt) | `backend/services/chat/techniqueSuggestionPromptSnippet.js` |
 | Soft check-in #19 prompt | `backend/services/chat/softCrisisCheckInPromptSnippet.js` |
+| Retención primeros turnos | `backend/services/chat/earlyConversationRetentionSnippet.js` |
+| Continuidad emocional de hilo | `backend/services/chat/emotionalThreadContinuity.js` |
 | Fidelidad observacional (satélites) | `backend/services/chat/observationalFidelitySnippet.js` |
 | Guardrails contenido | `backend/utils/clinicalContentGuardrails.js` |
 | Tono español | `backend/utils/copyToneGuards.mjs` |

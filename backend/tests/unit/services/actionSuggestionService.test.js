@@ -6,8 +6,13 @@
 
 import actionSuggestionService, {
   applyAbcSuggestionPolicy,
+  applyAngerSuggestionGate,
+  hasExplicitAngerImpulseSignal,
+  hasGuiltSignal,
   resolveContextualPsychoeducationIds,
+  resolveSuggestionEmotion,
   shouldBoostAbcSuggestion,
+  shouldAttachEmotionPsychoeducation,
 } from '../../../services/actionSuggestionService.js';
 import { rankInterventionIds } from '../../../services/interventionRankingService.js';
 
@@ -326,13 +331,51 @@ describe('ActionSuggestionService', () => {
   });
 
   describe('Psicoeducación (#85)', () => {
-    it('incluye módulo de ira para emoción enojo', () => {
-      const suggestions = actionSuggestionService.generateSuggestions({
-        mainEmotion: 'enojo',
-        intensity: 6,
-        topic: 'general',
-      });
+    it('incluye módulo de ira solo con impulso/enojo explícito', () => {
+      const suggestions = actionSuggestionService.generateSuggestions(
+        { mainEmotion: 'enojo', intensity: 6, topic: 'general' },
+        {},
+        { userContent: 'Estoy muy enojado y siento que voy a explotar. 6/10' },
+      );
       expect(suggestions).toContain('psychoeducation_anger');
+    });
+
+    it('no empuja timeout ni ira con culpa parental (aunque la etiqueta sea enojo)', () => {
+      const msg =
+        'Mis hijos me frenan harto, me cuesta mucho dejarlos para hacer mis cosas. Siento que les fallo si lo hago';
+      expect(resolveSuggestionEmotion('enojo', msg)).toBe('culpa');
+      expect(hasGuiltSignal(msg)).toBe(true);
+      expect(hasExplicitAngerImpulseSignal(msg)).toBe(false);
+
+      const suggestions = actionSuggestionService.generateSuggestions(
+        { mainEmotion: 'enojo', intensity: 7, topic: 'relaciones' },
+        {},
+        { userContent: msg },
+      );
+      expect(suggestions).not.toContain('timeout_technique');
+      expect(suggestions).not.toContain('psychoeducation_anger');
+      expect(
+        suggestions.some((id) =>
+          ['self_compassion_exercise', 'abc_record', 'communication_tool', 'forgiveness_work'].includes(
+            id,
+          ),
+        ),
+      ).toBe(true);
+    });
+
+    it('applyAngerSuggestionGate quita timeout sin señal explícita', () => {
+      expect(
+        applyAngerSuggestionGate(
+          ['timeout_technique', 'breathing_exercise'],
+          'Me cuesta dejar a mis hijos un rato',
+        ),
+      ).not.toContain('timeout_technique');
+      expect(
+        applyAngerSuggestionGate(
+          ['timeout_technique', 'communication_tool'],
+          'Estoy furioso y grité sin querer',
+        ),
+      ).toContain('timeout_technique');
     });
 
     it('formatea tarjeta nativa en inglés', () => {

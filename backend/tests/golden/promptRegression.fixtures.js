@@ -439,6 +439,80 @@ Puede aparecer una tarjeta voluntaria de diario o gratitud. No prometas que se g
     }
   },
   {
+    id: 'early_product_capability_retention',
+    message: {
+      content: 'Puede ser para ansiedad, estrés, angustia y apoyo emocional?',
+    },
+    context: {
+      emotional: { mainEmotion: 'ansiedad', intensity: 5 },
+      contextual: {
+        intencion: { tipo: 'CONVERSACION_GENERAL', confianza: 0.5 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'EMOCIONAL' },
+      },
+      dailyMoodCheckIn: { mood: 'anxious', dateKey: '2026-07-19' },
+      currentMessage: 'Puede ser para ansiedad, estrés, angustia y apoyo emocional?',
+      history: [
+        {
+          role: 'assistant',
+          content: 'Gracias por marcarlo en el home. Estoy aquí contigo; ¿por dónde empezamos?',
+        },
+      ],
+      safetyHistory: [
+        {
+          role: 'assistant',
+          content: 'Gracias por marcarlo en el home. Estoy aquí contigo; ¿por dónde empezamos?',
+        },
+      ],
+      memory: {},
+    },
+    expect: {
+      allOf: [
+        '### Retención en conversación temprana',
+        'Pregunta de capacidad',
+        'Sin catálogo de features',
+        'Anti-cadena',
+      ],
+      noneOf: [],
+    },
+  },
+  {
+    id: 'early_attacks_and_professional_care_retention',
+    message: { content: 'Si tengo apoyo psicológico y medicamentos' },
+    context: {
+      emotional: { mainEmotion: 'neutral', intensity: 4 },
+      contextual: {
+        intencion: { tipo: 'CONVERSACION_GENERAL', confianza: 0.5 },
+        urgencia: 'NORMAL',
+        tema: { categoria: 'GENERAL' },
+      },
+      currentMessage: 'Si tengo apoyo psicológico y medicamentos',
+      history: [
+        { role: 'user', content: 'Tengo ataques de ansiedad y angustia regularmente' },
+        {
+          role: 'assistant',
+          content: 'Que te pase con regularidad puede desgastar mucho…',
+        },
+      ],
+      safetyHistory: [
+        { role: 'user', content: 'Tengo ataques de ansiedad y angustia regularmente' },
+        {
+          role: 'assistant',
+          content: 'Que te pase con regularidad puede desgastar mucho…',
+        },
+      ],
+      memory: {},
+    },
+    expect: {
+      allOf: [
+        '### Retención en conversación temprana',
+        'entre sesiones',
+        'Anti-cadena',
+      ],
+      noneOf: [],
+    },
+  },
+  {
     id: 'panic_attack_recovery_no_closure_prompt',
     message: { content: 'Ya va bajando' },
     context: {

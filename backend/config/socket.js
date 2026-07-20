@@ -21,6 +21,10 @@ import {
 import { sanitizeSessionIntentionForClient } from '../constants/sessionIntention.js';
 import { normalizeStoredCrisisRiskLevel, buildOpenaiCrisisContext, shouldIncludeCrisisInOpenaiContext } from '../constants/crisis.js';
 import { isLlmCrisisTherapeuticExtrasBlocked } from '../utils/chatObservationalContext.js';
+import {
+  applyEmotionalThreadContinuity,
+  collectRecentUserTexts,
+} from '../services/chat/emotionalThreadContinuity.js';
 import chatProductActionProposalService from '../services/chatProductActionProposalService.js';
 import {
   buildProductActionResolveMetricData,
@@ -248,7 +252,7 @@ export const setupSocketIO = (server) => {
         const conversationPattern = analyzeConversationPattern(conversationHistory, messageText);
 
         // 4. Análisis emocional y contextual (en paralelo)
-        const [emotionalAnalysis, contextualAnalysis, userProfile, socketUser] = await Promise.all([
+        const [emotionalAnalysisRaw, contextualAnalysis, userProfile, socketUser] = await Promise.all([
           emotionalAnalyzer.analyzeEmotion(messageText).catch(err => {
             console.error('[SocketIO] Error en análisis emocional:', err);
             return null;
@@ -263,6 +267,10 @@ export const setupSocketIO = (server) => {
           }),
           User.findById(userId).select('preferences phone').lean().catch(() => null),
         ]);
+        const emotionalAnalysis = applyEmotionalThreadContinuity(
+          emotionalAnalysisRaw,
+          collectRecentUserTexts(conversationHistory, messageText, { newestFirst: true }),
+        );
 
         const {
           riskLevel,

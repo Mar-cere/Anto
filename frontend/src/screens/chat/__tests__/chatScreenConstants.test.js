@@ -128,8 +128,9 @@ describe('chatScreenConstants', () => {
       expect(LAYOUT.INPUT_MAX_HEIGHT).toBe(100);
       expect(LAYOUT.INPUT_DOCK_PADDING_BOTTOM_EXTRA).toBe(2);
       expect(LAYOUT.INPUT_DOCK_PADDING_BOTTOM_KEYBOARD).toBe(4);
-      expect(LAYOUT.HEADER_PADDING_BELOW_SAFE).toBe(4);
-      expect(LAYOUT.CHAT_TOP_CHROME_BASE).toBe(52);
+      expect(LAYOUT.HEADER_PADDING_BELOW_SAFE).toBe(2);
+      expect(LAYOUT.HEADER_PADDING_BOTTOM).toBe(4);
+      expect(LAYOUT.CHAT_TOP_CHROME_BASE).toBe(48);
       expect(LAYOUT.MAX_MESSAGE_LENGTH).toBe(12000);
       expect(LAYOUT.FLATLIST_INITIAL_NUM_TO_RENDER).toBe(15);
     });

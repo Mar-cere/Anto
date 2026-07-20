@@ -63,6 +63,7 @@ import {
 import { buildAppToolkitMapSnippet } from '../chat/appToolkitMapSnippet.js';
 import { buildProductActionProposalPolicySnippet } from '../chat/productActionProposalPolicySnippet.js';
 import { buildSoftCrisisCheckInPromptSnippet } from '../chat/softCrisisCheckInPromptSnippet.js';
+import { buildEarlyConversationRetentionSnippet } from '../chat/earlyConversationRetentionSnippet.js';
 
 function getTimeOfDay() {
   const hour = new Date().getHours();
@@ -535,7 +536,7 @@ function buildPhaseRouterSnippet(contexto = {}) {
   const phase = contexto.sessionPhase || 'default';
   return `\n\n### Enrutador por fase
 - Fase actual: ${phase}.
-- INICIAL: contención breve + foco.
+- INICIAL: contención breve + foco en su historia (no entrevista de ingreso).
 - EN_CURSO: menos diagnóstico, más avance concreto.
 - BLOQUEO: bajar carga cognitiva con opciones cortas.
 - CIERRE: consolidar en 1 frase y dejar puerta de regreso clara.`;
@@ -1080,6 +1081,12 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   systemMessage += buildLiteralPolarityCautionSnippet(language, userMessageForComprehension);
   systemMessage += buildSoftCrisisCheckInPromptSnippet(language, {
     active: contexto.softCrisisCheckInActive === true,
+  });
+  systemMessage += buildEarlyConversationRetentionSnippet(language, {
+    userMessage: userMessageForComprehension,
+    history: contexto.history,
+    safetyHistory: contexto.safetyHistory,
+    dailyMoodCheckIn: contexto.dailyMoodCheckIn,
   });
   systemMessage += buildProductActionProposalPolicySnippet(language, {
     toolEnabled: contexto.productActionToolEnabled === true && contexto.softCrisisCheckInActive !== true,

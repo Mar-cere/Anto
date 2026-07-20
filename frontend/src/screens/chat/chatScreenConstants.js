@@ -232,13 +232,13 @@ export const SCROLL_THRESHOLD = 100;
 // UI / estilos numéricos
 export const LAYOUT = {
   BACKGROUND_OPACITY: 0.1,
-  /** Respiro bajo el safe-area top (el inset real lo aporta useSafeAreaInsets). */
-  HEADER_PADDING_BELOW_SAFE: SPACING.xs,
-  HEADER_PADDING_BOTTOM: SPACING.sm,
+  /** Respiro bajo el safe-area top (sin título central: más corto). */
+  HEADER_PADDING_BELOW_SAFE: 2,
+  HEADER_PADDING_BOTTOM: SPACING.xs,
   HEADER_PADDING_HORIZONTAL: GUTTER,
   HEADER_AVATAR_SIZE: 30,
   /** Estimación inicial hasta onLayout del chrome superior (sin banners). */
-  CHAT_TOP_CHROME_BASE: 52,
+  CHAT_TOP_CHROME_BASE: 48,
   /** Estimación inicial del dock (fila input + padding) hasta onLayout. */
   CHAT_DOCK_BASE: 58,
   MESSAGES_LIST_PADDING_HORIZONTAL: GUTTER,
