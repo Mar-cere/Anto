@@ -107,8 +107,18 @@ Endpoint ops: `GET /api/health/crisis-routing?windowHours=24&source=merged` (`me
 
 ## Health check
 
+- `GET /` — liveness mínima (proceso vivo; **no** comprueba Mongo). Útil como health check de Render si no quieres reinicios por blips de Atlas.
 - `GET /health` y `GET /api/health` — snapshot público: MongoDB, Redis, OpenAI configurado, Atlas (sin nombre de índice ni workers).
 - `GET /api/health/detailed` — workers, índice Atlas, memoria; en producción requiere usuario autenticado y tiene rate limit.
 - `GET /api/health/crisis-routing` — métricas ops camino A/B crisis (memoria + ventana Mongo); query `windowHours`, `source`.
 
 Códigos: `200` si el servicio responde (incluso `degraded`); `503` solo si MongoDB no está disponible (`unavailable`).
+
+Recomendación Render: health check de **liveness** en `GET /`; alertas de **readiness** con `GET /health` (UptimeRobot u otro). Las rutas `/api/*` (excepto `/api/health*`) responden `503` + `DATABASE_UNAVAILABLE` si Mongo no está conectado.
+
+### Mongo — reintentos
+
+| Variable | Default | Descripción |
+|----------|---------|-------------|
+| `MONGO_CONNECT_MAX_ATTEMPTS` | `5` | Intentos iniciales al arrancar |
+| `MONGO_CONNECT_RETRY_MS` | `2000` | Base del backoff entre intentos iniciales |

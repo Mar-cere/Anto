@@ -30,8 +30,13 @@ import {
   buildPublicHealthSnapshot,
   getHealthHttpStatus,
 } from './services/healthProbeService.js';
+import {
+  startMongoConnection,
+  stopMongoConnectionRetries,
+} from './services/mongoConnectionService.js';
 import { enqueueEmail } from './services/emailQueueService.js';
 import { notifyFatalError } from './services/errorAlertService.js';
+import { checkDatabaseConnection } from './middleware/checkDatabase.js';
 
 // Importación de rutas
 import { setupSocketIO } from './config/socket.js';
@@ -103,6 +108,7 @@ const getMongoDBStatus = () => {
 // Helper: cerrar conexión de MongoDB
 const closeMongoDBConnection = async () => {
   try {
+    stopMongoConnectionRetries();
     await mongoose.connection.close();
     logger.info('✅ Conexión a MongoDB cerrada correctamente');
   } catch (err) {
@@ -113,6 +119,7 @@ const closeMongoDBConnection = async () => {
 // Helper: manejar señales de terminación
 const handleShutdown = (signal) => {
   logger.info(`👋 Recibida señal ${signal}. Cerrando servidor...`);
+  stopMongoConnectionRetries();
   closeMongoDBConnection().then(() => {
     logger.info('👋 Servidor cerrado correctamente');
     process.exit(0);
@@ -280,77 +287,23 @@ const limiter = createRateLimiter({
 });
 app.use(limiter);
 
-// Conexión a MongoDB (no bloquea el inicio del servidor)
-const connectMongoDB = async () => {
-  // En modo test, no conectar automáticamente - los tests manejan su propia conexión
-  if (process.env.NODE_ENV === 'test') {
-    return;
-  }
-
-  try {
-    // Verificar que la URI esté definida
-    if (!config.mongodb.uri) {
-      console.warn('⚠️ MONGO_URI no está definida en las variables de entorno');
-      return;
-    }
-
-    // Validar formato de URI
-    if (!config.mongodb.uri.startsWith('mongodb://') && !config.mongodb.uri.startsWith('mongodb+srv://')) {
-      console.warn('⚠️ MONGO_URI debe comenzar con mongodb:// o mongodb+srv://');
-      return;
-    }
-
-    // Asegurar que la URI tenga un nombre de base de datos
-    let mongoUri = config.mongodb.uri;
-    if (!mongoUri.includes('/?') && !mongoUri.match(/\/[^?]+(\?|$)/)) {
-      // Si no tiene nombre de base de datos, agregar uno por defecto
-      const separator = mongoUri.includes('?') ? '&' : '?';
-      mongoUri = mongoUri.replace(/\?/, `${separator}dbName=anto`);
-    }
-
-    await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 10000, // Timeout de 10 segundos
-      socketTimeoutMS: 45000, // Timeout de socket de 45 segundos
-      maxPoolSize: 10, // Mantener hasta 10 conexiones en el pool
-      retryWrites: true,
-      w: 'majority'
-    });
-
-    logger.info('✅ Conexión exitosa a MongoDB');
-    logger.info(`📊 Base de datos: ${mongoose.connection.name || 'default'}`);
-    
-    // Asegurar índices después de conectar
-    try {
-      await ensureIndexes();
-    } catch (error) {
-      logger.warn('Error al crear índices:', { error: error.message });
-    }
-    
-    // Manejar eventos de conexión
-    mongoose.connection.on('error', (err) => {
-      logger.error('❌ Error en la conexión de MongoDB', { error: err.message });
-      logger.critical('Error crítico de base de datos', { error: err });
-    });
-
-    mongoose.connection.on('disconnected', () => {
-      logger.warn('⚠️ MongoDB desconectado. Intentando reconectar...');
-    });
-
-  } catch (err) {
-    logger.error('❌ Error conectando a MongoDB', { 
-      error: err.message,
-      stack: err.stack 
-    });
-    logger.warn('⚠️ El servidor continuará sin MongoDB. Algunas funcionalidades no estarán disponibles.');
-    // NO hacer process.exit(1) para que el servidor pueda iniciar
-  }
-};
-
-// Conectar a MongoDB de forma asíncrona (no bloquea el inicio)
-connectMongoDB();
+// Conexión a MongoDB (no bloquea el listen; reintenta con backoff si Atlas cae)
+if (process.env.NODE_ENV !== 'test') {
+  void startMongoConnection({
+    uri: config.mongodb.uri,
+    ensureIndexes,
+  });
+}
 
 // Rutas de la API
 logger.info('📋 Registrando rutas de la API...');
+// Readiness de negocio: sin Mongo → 503 claro (health público queda fuera).
+app.use('/api', (req, res, next) => {
+  if (req.path === '/health' || req.path.startsWith('/health/')) {
+    return next();
+  }
+  return checkDatabaseConnection(req, res, next);
+});
 app.use('/api/tasks', taskRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/journals', journalRoutes);
