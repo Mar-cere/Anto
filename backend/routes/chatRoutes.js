@@ -139,7 +139,6 @@ import { normalizeTccLiteState } from '../services/tccLiteConversationStateServi
 import { tccLiteStepIndex, tccLiteStepOrder } from '../utils/tccLiteCopy.js';
 import { getAutomaticThoughtDistortionLabel } from '../constants/automaticThoughtDistortionPicker.js';
 import { resetConversationSessionState } from '../services/conversationClearService.js';
-import { scheduleExperientialPatternExtract } from '../services/experientialPatternExtractService.js';
 import { cursorPaginate } from '../utils/pagination.js';
 import {
     HISTORIAL_LIMITE,
