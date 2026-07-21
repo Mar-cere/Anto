@@ -357,9 +357,10 @@ const getEmailFooter = (options = {}) => {
  * URL del botón “Abrir en la app” en correos (resumen semanal, confirmación Mercado Pago, etc.).
  *
  * Prioridad (modo normal):
- * 1. `EMAIL_APP_OPEN_LINK` — URL única para todos los CTAs (HTTPS recomendado en producción).
+ * 1. `EMAIL_APP_OPEN_LINK` — URL única para todos los CTAs (**HTTPS recomendado** en producción,
+ *    p. ej. `https://www.antoapps.com/open?to=weekly-summary`; ver `docs/open-app/`).
  * 2. `WEEKLY_SUMMARY_EMAIL_APP_LINK` — compat / override histórico.
- * 3. Si `WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY=true` — esquema (`WEEKLY_SUMMARY_APP_SCHEME`, default `anto`) + `WEEKLY_SUMMARY_APP_PATH` (por defecto `weekly-summary`). Se emite `anto:///ruta` (triple barra) para que el path sea reconocible por la app, no solo el host.
+ * 3. Si `WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY=true` — esquema (`WEEKLY_SUMMARY_APP_SCHEME`, default `anto`) + `WEEKLY_SUMMARY_APP_PATH` (por defecto `weekly-summary`). Se emite `anto:///ruta` (triple barra) para que el path sea reconocible por la app, no solo el host. **Frágil en Gmail** — preferir (1).
  * 4. `FRONTEND_URL` + `WEEKLY_SUMMARY_EMAIL_LINK_PATH`.
  *
  * Modo `subscriptionThankYou: true` (solo correo post-pago MP / agradecimiento):
@@ -1001,18 +1002,6 @@ const emailTemplates = {
               ${escapeHtmlText(context.warmBridgeLine)}
             </p>
 
-            <div class="${emailSectionPanelClass()}" style="${emailSectionPanelStyle({ accentBorder: true })}margin-bottom:22px;">
-              <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:16px;font-weight:700;margin:0 0 10px 0;line-height:1.3;">
-                ${escapeHtmlText(context.updatesSectionTitle)}
-              </p>
-              <p style="${body}margin-bottom:14px;">
-                ${escapeHtmlText(context.updatesIntro)}
-              </p>
-              <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.65;margin:0;padding-left:20px;text-align:left;">
-                ${updatesListHtml}
-              </ul>
-            </div>
-
             <div class="${emailGiftPanelClass()}" style="${emailGiftPanelStyle()}">
               <p style="color:${EMAIL_COLORS.PRIMARY_MEDIUM};font-size:11px;font-weight:700;margin:0 0 10px 0;letter-spacing:0.06em;text-transform:uppercase;">
                 ${escapeHtmlText(context.giftBadgeLabel)}
@@ -1026,9 +1015,25 @@ const emailTemplates = {
               <p style="${small}margin-bottom:0;line-height:1.55;">
                 ${escapeHtmlText(context.giftSecondary)}
               </p>
-              <p style="${small}margin-top:14px;margin-bottom:0;padding-top:14px;border-top:1px solid ${EMAIL_COLORS.BORDER};line-height:1.55;">
+              ${
+                context.postUpdatesActionLine
+                  ? `<p style="${small}margin-top:14px;margin-bottom:0;padding-top:14px;border-top:1px solid ${EMAIL_COLORS.BORDER};line-height:1.55;">
                 ${escapeHtmlText(context.postUpdatesActionLine)}
+              </p>`
+                  : ''
+              }
+            </div>
+
+            <div class="${emailSectionPanelClass()}" style="${emailSectionPanelStyle({ accentBorder: true })}margin:22px 0;">
+              <p style="color:${EMAIL_COLORS.TEXT_DARK};font-size:16px;font-weight:700;margin:0 0 10px 0;line-height:1.3;">
+                ${escapeHtmlText(context.updatesSectionTitle)}
               </p>
+              <p style="${body}margin-bottom:14px;">
+                ${escapeHtmlText(context.updatesIntro)}
+              </p>
+              <ul style="color:${EMAIL_COLORS.TEXT_DARK};font-size:14px;line-height:1.65;margin:0;padding-left:20px;text-align:left;">
+                ${updatesListHtml}
+              </ul>
             </div>
 
             <p style="${body}margin:22px 0 16px 0;text-align:center;">

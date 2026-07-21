@@ -342,7 +342,7 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: null
     },
-    /** Clave de campaña promocional (p. ej. `1.5.0`) para no reenviar la misma campaña de novedades. */
+    /** Clave de campaña promocional (p. ej. `1.5.6`) para no reenviar la misma campaña de novedades. */
     lastProductUpdateCampaignKey: {
       type: String,
       default: null,

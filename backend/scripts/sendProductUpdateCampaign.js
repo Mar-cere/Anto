@@ -7,12 +7,12 @@
  *
  * Variables recomendadas en el entorno del run:
  *   WEEKLY_SUMMARY_TRIAL_GIFT_DAYS=1
- *   PRODUCT_UPDATE_CAMPAIGN_ID=1.5.0   (default si no se pasa --campaign)
+ *   PRODUCT_UPDATE_CAMPAIGN_ID=1.5.6   (default si no se pasa --campaign)
  *
  * Uso (desde `backend/`):
  *   node scripts/sendProductUpdateCampaign.js --dry-run
  *   WEEKLY_SUMMARY_TRIAL_GIFT_DAYS=1 node scripts/sendProductUpdateCampaign.js --confirm
- *   node scripts/sendProductUpdateCampaign.js --confirm --campaign 1.5.0 --require-sessions
+ *   node scripts/sendProductUpdateCampaign.js --confirm --campaign 1.5.6 --require-sessions
  */
 
 import dotenv from 'dotenv';
@@ -36,7 +36,7 @@ function parseCampaignId(argv) {
   if (i >= 0 && argv[i + 1]) {
     return String(argv[i + 1]).trim();
   }
-  return String(process.env.PRODUCT_UPDATE_CAMPAIGN_ID || '1.5.0').trim();
+  return String(process.env.PRODUCT_UPDATE_CAMPAIGN_ID || '1.5.6').trim();
 }
 
 async function main() {
@@ -49,7 +49,7 @@ async function main() {
     process.env.PRODUCT_UPDATE_CAMPAIGN_CONFIRM === 'true';
 
   if (!campaignId) {
-    console.error('❌ campaignId vacío. Usa --campaign 1.5.0 o PRODUCT_UPDATE_CAMPAIGN_ID.');
+    console.error('❌ campaignId vacío. Usa --campaign 1.5.6 o PRODUCT_UPDATE_CAMPAIGN_ID.');
     process.exit(1);
   }
 
@@ -58,7 +58,7 @@ async function main() {
       'Uso:\n' +
         '  node scripts/sendProductUpdateCampaign.js --dry-run\n' +
         '  WEEKLY_SUMMARY_TRIAL_GIFT_DAYS=1 node scripts/sendProductUpdateCampaign.js --confirm\n' +
-        '  node scripts/sendProductUpdateCampaign.js --confirm --campaign 1.5.0\n' +
+        '  node scripts/sendProductUpdateCampaign.js --confirm --campaign 1.5.6\n' +
         '  o: PRODUCT_UPDATE_CAMPAIGN_CONFIRM=true node scripts/sendProductUpdateCampaign.js'
     );
     process.exit(1);

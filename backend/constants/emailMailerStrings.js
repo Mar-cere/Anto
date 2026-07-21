@@ -231,7 +231,7 @@ const STRINGS = {
       header: 'Te escribimos desde Anto',
       greeting: (name) => (name ? `Hola, <strong>${name}</strong> 👋` : 'Hola 👋'),
       greetingPlain: 'Hola',
-      highlight: 'Versión 1.5.0',
+      highlight: 'Versión 1.5.6',
       linkFallback:
         'Si el enlace no abre la app, inicia sesión manualmente. En <strong>Perfil</strong> encontrarás tu resumen semanal y mensual, si quieres consultarlo.',
       appStore: 'Descargar en App Store',
@@ -507,7 +507,7 @@ const STRINGS = {
       header: 'A note from Anto',
       greeting: (name) => (name ? `Hi, <strong>${name}</strong> 👋` : 'Hi there 👋'),
       greetingPlain: 'Hello',
-      highlight: 'Version 1.5.0',
+      highlight: 'Version 1.5.6',
       linkFallback:
         'If the link does not open the app, sign in manually. In <strong>Profile</strong> you will find your weekly and monthly summaries if you want to look back.',
       appStore: 'Download on the App Store',

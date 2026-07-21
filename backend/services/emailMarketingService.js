@@ -500,7 +500,7 @@ class EmailMarketingService {
    * @param {{ campaignId: string, requireMinSessions?: boolean }} options
    */
   async sendProductUpdateCampaignEmails(options = {}) {
-    const campaignId = String(options.campaignId || process.env.PRODUCT_UPDATE_CAMPAIGN_ID || '1.5.0').trim();
+    const campaignId = String(options.campaignId || process.env.PRODUCT_UPDATE_CAMPAIGN_ID || '1.5.6').trim();
     if (!campaignId) {
       throw new Error('campaignId vacío');
     }

@@ -16,73 +16,74 @@ import {
 } from './weeklySummaryEmailContext.js';
 
 const SUBJECT_BUILDERS_EN = [
-  () => `${APP_NAME} — we wanted to share what's new`,
-  () => `What's new in ${APP_NAME}, no rush`,
-  () => `A note from ${APP_NAME} for you`,
-  () => `${APP_NAME} got better: here's what changed`,
+  () => `${APP_NAME} — you do not start from scratch`,
+  () => `What you agreed to revisit now lives in ${APP_NAME}`,
+  () => `A note from ${APP_NAME}: continuity at your pace`,
+  () => `${APP_NAME} 1.5.6 — focus, memory, and what was left open`,
   () => `Hello again from ${APP_NAME}`,
-  () => `${APP_NAME} — version 1.5.0 updates`,
+  () => `${APP_NAME} — version 1.5.6 updates`,
   () => {
     const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'en');
-    return `${APP_NAME} — updates and, if you qualify, ${plus} trial`;
+    return `${APP_NAME} — what you agreed to revisit (${plus} if you qualify)`;
   },
   () => {
     const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'en');
     return `What's new in ${APP_NAME} (+ possible ${plus} trial)`;
   },
-  () => `${APP_NAME} — 1.5.0 update`,
+  () => `${APP_NAME} — 1.5.6 update`,
   () => `Thanks for staying — news from ${APP_NAME}`,
 ];
 
 const PREHEADER_VARIANTS_EN = [
-  () =>
-    'A calm note: app updates and a small extra if your account qualifies. No rush.',
+  () => {
+    const count = formatTrialGiftDaysCount(getWeeklySummaryTrialGiftDays(), 'en');
+    return `You do not start from scratch: focus, continuity, and memory under your control. If you qualify, ${count} of Premium.`;
+  },
   (name) =>
-    `A hello from ${name}. Below is what we improved; the rest is in the app whenever you want.`,
+    `It has been a while since we wrote from ${name}. The essentials of 1.5.6, in a few lines.`,
   (name) =>
-    `Not a task reminder or a report — just a hello and what's new in ${name}.`,
+    `In ${name}, what you agreed to revisit can live on Home — no homework, no rush.`,
   (name) =>
-    `If you have not opened ${name} in a while, we still wanted to reach out. Here are the updates.`,
+    `A hello from ${name}: continuity between conversations, and a small extra if your account qualifies.`,
   (name) =>
-    `Version 1.5.0 with chat and experience improvements. Everything else, at your pace.`,
+    `Version 1.5.6: choose a focus, revisit gently, remember with permission. At your pace.`,
   (name) => {
     const count = formatTrialGiftDaysCount(getWeeklySummaryTrialGiftDays(), 'en');
-    return `Updates in ${name} and, if you qualify, ${count} extra Premium trial.`;
+    return `Updates in ${name} and, if your account qualifies, ${count} extra Premium.`;
   },
 ];
 
 const LEAD_PARAGRAPH_VARIANTS_EN = [
   (name) =>
-    `We wanted to write with calm. You do not need a perfect week — ${name} is here whenever you feel like coming back.`,
+    `It has been a while since we wrote. The core idea of this update: in ${name} you do not start from scratch — you pick up what matters, at your pace.`,
   (name) =>
-    `We have been thinking about people who use ${name} at different paces. This email is a hello and a quick look at what we improved — nothing more.`,
+    `We wanted to share something simple. ${name} now helps you choose a focus, revisit what you agreed, and remember with your permission — without pressure or grading.`,
   (name) =>
-    `Thank you for trusting ${name}. Nothing urgent — we just wanted to say hi and share the updates.`,
+    `Thank you for staying with ${name}. Nothing urgent — just the essentials of 1.5.6.`,
   (name) =>
-    `Life gets busy and the app can wait. That is fine. ${name} welcomes you back the same whenever you are ready.`,
+    `If ${name} has been on pause, that is fine. When you return, the app is built to pick up with you — not to start over.`,
   (name) =>
-    `Think of this as a message from someone who respects your rhythm and hopes ${name} still helps.`,
+    `A calm note: fewer feature lists, one clear promise. In ${name}, each chat can add continuity when you allow it.`,
   (name) =>
-    `If it has been a while since you opened ${name}, we still wanted to say hello. Below is the heart of this update.`,
+    `If it has been days since you opened ${name}, we still wanted to say hello. Below: a note for your account and three changes that matter.`,
 ];
 
 const WARM_BRIDGE_VARIANTS_EN = [
-  () => 'Take your time reading — none of this expires today.',
-  () => 'We kept only the essentials so you do not have to hunt for them.',
-  () => 'Grouped by theme so you can skim quickly.',
+  () => 'First a note for your account; then the essentials in three lines.',
+  () => 'We kept it short on purpose — so you can read without rush.',
+  () => 'None of this expires today. Take what you need.',
 ];
 
 const INVITE_LINE_VARIANTS_EN = [
   (name) =>
-    `Whenever you feel like it, open ${name} and take a look. We will be there.`,
+    `Whenever you like, open ${name} and look at Home: your focus and what was left to revisit can live there.`,
   (name) =>
-    `If now works, one tap opens ${name}. If not, this will wait for you.`,
+    `If now works, one tap opens ${name}. If not, this will wait.`,
   (name) =>
     `One tap back to ${name}. No rush, no judgment.`,
   (name) =>
-    `Try the updates when you can — ${name} is not chasing you.`,
+    `Try what is new when you can — ${name} is not chasing you.`,
 ];
-
 const REFLECTION_PARAGRAPH_VARIANTS_EN = [
   (name) =>
     `Beyond chat, ${name} has an optional weekly and monthly summary if you want perspective later — no obligation.`,
@@ -192,13 +193,15 @@ export function buildWeeklySummaryEmailContextEn(user, isoParts) {
     locale: 'en',
   });
 
-  const updatesSectionTitle = 'What we improved';
+  const updatesSectionTitle = 'Three changes that matter';
   const updatesIntro =
-    'In version 1.5.0 we focused especially on safer chat in difficult moments and small experience details. The highlights:';
+    'Version 1.5.6. There is also smoother chat and more careful crisis support; this is what changes day to day most:';
 
   const updatesLines = [...WEEKLY_PRODUCT_NEWS_LINES];
 
-  const postUpdatesActionLine = `If you already use the app, check Profile to see whether your trial was extended. If you believe it should apply and do not see it, reply to this email with the address you use to sign in to ${APP_NAME}.`;
+  const postUpdatesActionLine = isPremium
+    ? ''
+    : `If in a few minutes you do not see the extended trial in Profile, reply to this email with the address you use to sign in to ${APP_NAME}.`;
 
   const downloadPrompt = `If you do not have the app yet, you can download it whenever you like.`;
 

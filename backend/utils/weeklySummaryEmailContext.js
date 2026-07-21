@@ -39,23 +39,23 @@ export function weeklyContentVariantIndex(isoWeekYear, isoWeek, modulo, salt = 0
   return ((n % modulo) + modulo) % modulo;
 }
 
-/** Asuntos: humanos primero; el resumen no lidera. */
+/** Asuntos: promesa de continuidad primero; regalo visible en algunas rotaciones. */
 const SUBJECT_BUILDERS = [
-  () => `${APP_NAME} — queríamos contarte las novedades`,
-  () => `Lo nuevo en ${APP_NAME}, sin prisa`,
-  () => `Un mensaje de ${APP_NAME} para ti`,
-  () => `${APP_NAME} mejoró: te contamos qué cambió`,
+  () => `${APP_NAME} — no empiezas de cero`,
+  () => `Lo que acordaste retomar ya vive en ${APP_NAME}`,
+  () => `Un mensaje de ${APP_NAME}: continuidad a tu ritmo`,
+  () => `${APP_NAME} 1.5.6 — foco, memoria y lo que quedó pendiente`,
   () => `Hola de nuevo desde ${APP_NAME}`,
-  () => `${APP_NAME} — novedades de la versión 1.5.0`,
+  () => `${APP_NAME} — novedades de la versión 1.5.6`,
   () => {
     const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'es');
-    return `${APP_NAME} — novedades y, si aplica a tu cuenta, ${plus} de prueba`;
+    return `${APP_NAME} — lo que acordaste retomar (${plus} si aplica)`;
   },
   () => {
     const plus = formatTrialGiftDaysPlus(getWeeklySummaryTrialGiftDays(), 'es');
     return `Lo nuevo en ${APP_NAME} (+ posible ${plus} de prueba)`;
   },
-  () => `${APP_NAME} te escribe — actualización 1.5.0`,
+  () => `${APP_NAME} te escribe — actualización 1.5.6`,
   () => `Gracias por seguir aquí — novedades en ${APP_NAME}`,
 ];
 
@@ -73,52 +73,54 @@ export function buildWeeklySummarySubjectLine(_weekLabel, isoWeekYear, isoWeek) 
 }
 
 const PREHEADER_VARIANTS = [
-  () =>
-    'Te escribimos con calma: novedades de la app y un detalle especial si aplica a tu cuenta. Sin prisa.',
+  () => {
+    const count = formatTrialGiftDaysCount(getWeeklySummaryTrialGiftDays(), 'es');
+    return `No empiezas de cero: foco, continuidad y memoria con tu control. Si aplica, ${count} de Premium.`;
+  },
   (name) =>
-    `Un saludo desde ${name}. A continuación, lo que mejoramos; el resto lo ves en la app cuando quieras.`,
+    `Hace tiempo que no te escribíamos desde ${name}. Lo esencial de la 1.5.6, en pocas líneas.`,
   (name) =>
-    `No es un recordatorio de tareas ni un informe: solo queríamos saludarte y contarte lo nuevo en ${name}.`,
+    `En ${name}, lo que acordaste retomar ya puede vivir en tu inicio — sin deberes ni prisa.`,
   (name) =>
-    `Si hace días que no abres ${name}, también queríamos acercarnos. Aquí tienes las novedades.`,
+    `Un saludo desde ${name}: continuidad entre conversaciones y un detalle si tu cuenta califica.`,
   (name) =>
-    `Versión 1.5.0 con mejoras en el chat y en la experiencia. Lo demás, a tu ritmo.`,
+    `Versión 1.5.6: eliges un foco, retomas con suavidad y recuerdas con permiso. A tu ritmo.`,
   (name) => {
     const count = formatTrialGiftDaysCount(getWeeklySummaryTrialGiftDays(), 'es');
-    return `Novedades en ${name} y, si aplica a tu cuenta, ${count} extra de prueba Premium.`;
+    return `Novedades en ${name} y, si tu cuenta califica, ${count} extra de Premium.`;
   },
 ];
 
 const LEAD_PARAGRAPH_VARIANTS = [
   (name) =>
-    `Queríamos escribirte con calma. No hace falta que hayas tenido una semana perfecta: ${name} sigue aquí cuando te venga bien retomar.`,
+    `Hace tiempo que no te escribíamos. La idea central de esta actualización: en ${name} no empiezas de cero — retomas lo que importa, a tu ritmo.`,
   (name) =>
-    `Hace unos días pensamos en quienes usan ${name} a distintos ritmos. Este correo es un saludo y un repaso de lo que hemos mejorado — nada más.`,
+    `Queríamos contarte algo simple. ${name} ahora te ayuda a elegir un foco, retomar lo acordado y recordar con tu permiso — sin presión ni evaluaciones.`,
   (name) =>
-    `Gracias por seguir confiando en ${name}. No te pedimos nada urgente; solo queríamos acercarnos y contarte las novedades.`,
+    `Gracias por seguir en ${name}. No hay nada urgente: solo queríamos acercarnos con lo esencial de la 1.5.6.`,
   (name) =>
-    `A veces la vida va acelerada y ${name} queda en pausa. Si te pasa, no pasa nada. Puedes volver cuando quieras; ${name} sigue ahí para ti.`,
+    `Si ${name} quedó en pausa, no pasa nada. Cuando vuelvas, la app está pensada para retomar contigo — no para empezar de cero otra vez.`,
   (name) =>
-    `Te escribimos como quien manda un mensaje a un conocido: con respeto, sin presión y con ganas de que ${name} te siga sirviendo.`,
+    `Te escribimos con calma: menos lista de funciones, más una promesa clara. En ${name}, cada charla puede sumar continuidad cuando tú lo permites.`,
   (name) =>
-    `Si llevas tiempo sin abrir ${name}, también queríamos saludarte. Más abajo está lo más importante de esta actualización.`,
+    `Si llevas días sin abrir ${name}, también queríamos saludarte. Abajo: un detalle para tu cuenta y tres cambios que importan.`,
 ];
 
 const WARM_BRIDGE_VARIANTS = [
-  () => 'Tómate lo que necesites para leerlo; nada de esto caduca hoy.',
-  () => 'Resumimos lo esencial para que no tengas que buscarlo tú.',
-  () => 'Lo ordenamos por temas para que puedas leer lo esencial con rapidez.',
+  () => 'Primero un detalle para tu cuenta; después, lo esencial en tres líneas.',
+  () => 'Lo ordenamos corto a propósito: para leerlo sin prisa.',
+  () => 'Nada de esto caduca hoy. Tómate lo que necesites.',
 ];
 
 const INVITE_LINE_VARIANTS = [
   (name) =>
-    `Cuando quieras, abre ${name} y mira con calma. Estaremos ahí.`,
+    `Cuando quieras, abre ${name} y mira tu inicio: ahí pueden vivir el foco y lo que quedó para retomar.`,
   (name) =>
-    `Si te viene bien ahora, puedes abrir ${name} con un clic. Si no, guardamos esto para cuando quieras.`,
+    `Si te viene bien ahora, un clic te lleva a ${name}. Si no, esto espera.`,
   (name) =>
     `Un clic y vuelves a ${name}. Sin prisa, sin juicios.`,
   (name) =>
-    `Prueba las novedades cuando puedas: ${name} no te presiona.`,
+    `Prueba lo nuevo cuando puedas: ${name} no te presiona.`,
 ];
 
 const REFLECTION_PARAGRAPH_VARIANTS = [
@@ -229,13 +231,15 @@ export function buildWeeklySummaryEmailContext(user, isoParts, language = 'es') 
     locale: 'es',
   });
 
-  const updatesSectionTitle = 'Lo que hemos mejorado';
+  const updatesSectionTitle = 'Tres cambios que importan';
   const updatesIntro =
-    'En la versión 1.5.0 mejoramos, sobre todo, el chat en momentos difíciles y algunos detalles de la experiencia. Esto es lo más visible:';
+    'Versión 1.5.6. También hay chat más fluido y crisis con más cuidado; esto es lo que más cambia tu día a día:';
 
   const updatesLines = [...WEEKLY_PRODUCT_NEWS_LINES];
 
-  const postUpdatesActionLine = `Si ya usas la app, revisa en Perfil si tu prueba se amplió. Si crees que debería aplicarse y no lo ves, responde a este correo con la dirección con la que inicias sesión en ${APP_NAME}.`;
+  const postUpdatesActionLine = isPremium
+    ? ''
+    : `Si en unos minutos no ves la prueba ampliada en Perfil, responde a este correo con el email de tu cuenta en ${APP_NAME}.`;
 
   const downloadPrompt = `Si aún no tienes la app, puedes descargarla e instalarla cuando quieras.`;
 

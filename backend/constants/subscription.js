@@ -119,23 +119,23 @@ export function buildWeeklySummaryGiftCopy({ giftDays, isPremium, appName, local
       giftBadgeLabel: en ? 'Your plan' : 'Tu plan',
       giftTitle: en ? 'Your Premium plan' : 'Tu plan Premium',
       giftPrimary: en
-        ? `You have an active paid subscription: the extra ${count} trial gift does not change your plan or create charges. Thank you for staying with ${appName}.`
-        : `Tienes suscripción de pago activa: el regalo extra de ${count} de prueba Premium no modifica tu plan ni genera cargos. Gracias por seguir en ${appName}.`,
+        ? `You already have Premium. The extra ${count} trial gift does not change your plan or create charges — thank you for staying with ${appName}.`
+        : `Ya tienes Premium. El regalo extra de ${count} de prueba no cambia tu plan ni genera cargos — gracias por seguir en ${appName}.`,
       giftSecondary: en
-        ? 'If you have not tried them yet, the updates are a little above; open them in the app with your session signed in.'
-        : 'Si aún no las has probado, las novedades están un poco más arriba; ábrelas en la app con tu sesión iniciada.',
+        ? 'Below is what is new; open it in the app whenever you like.'
+        : 'Más abajo está lo nuevo; ábrelo en la app cuando quieras.',
     };
   }
 
   return {
     giftBadgeLabel: en ? 'Gift' : 'Regalo',
-    giftTitle: en ? `Gift: ${plus} Premium trial` : `Regalo: ${plus} de prueba Premium`,
+    giftTitle: en ? `Gift: ${plus} of Premium trial` : `Regalo: ${plus} de prueba Premium`,
     giftPrimary: en
-      ? `If your account qualifies, we add ${count} of Premium trial when this email is sent from our system. You do not need to click a link to “activate” it: it applies when the message is dispatched.`
-      : `Si aplica a tu cuenta, sumamos ${count} de prueba Premium al enviarte este correo. No necesitas hacer clic en ningún enlace: se aplica de forma automática.`,
+      ? `If your account qualifies, we add ${count} of Premium when we send this email. No link to click: it applies automatically.`
+      : `Si tu cuenta califica, sumamos ${count} de Premium al enviarte este correo. Sin enlaces para activar: se aplica solo.`,
     giftSecondary: en
-      ? 'Check in the app (Profile or subscription) whether the extended trial is visible; stores sometimes take a few minutes to reflect it.'
-      : 'Revisa en Perfil o en Suscripción si ya ves la prueba ampliada; a veces la tienda tarda unos minutos en reflejarlo.',
+      ? 'In a few minutes, check Profile or Subscription. Stores can take a moment to catch up.'
+      : 'En unos minutos, revisa Perfil o Suscripción. A veces la tienda tarda un poco en reflejarlo.',
   };
 }
 

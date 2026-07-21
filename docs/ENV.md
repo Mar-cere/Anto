@@ -76,6 +76,23 @@ Ver también `backend/config/features.js`.
 | `ENABLE_CRISIS_HARD_STOP` | activo | Hard-stop sin LLM en HIGH + léxico explícito (#205) |
 | `ENABLE_CRISIS_ROUTING_SLO_MONITOR` | activo | Monitor SLO camino A/B crisis (agrega Mongo + alerta Sentry) |
 
+### CTA «Abrir Anto» en correos
+
+Gmail y muchos clientes **no abren** `anto://`. Usa un enlace HTTPS (puente) que sí funciona en el mail:
+
+| Variable | Requerida | Descripción |
+|----------|-----------|-------------|
+| `EMAIL_APP_OPEN_LINK` | Recomendada en prod | URL del botón principal. **Recomendado:** `https://www.antoapps.com/open?to=weekly-summary` (ver [docs/open-app/README.md](./open-app/README.md)). Tiene prioridad sobre los flags de abajo. |
+| `WEEKLY_SUMMARY_EMAIL_APP_LINK` | No | Override histórico del CTA (si no hay `EMAIL_APP_OPEN_LINK`). |
+| `WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY` | No | Si `true` y no hay HTTPS arriba, emite `anto:///weekly-summary` (frágil en clientes de correo). |
+| `WEEKLY_SUMMARY_APPSTORE_LINK` / `EMAIL_APPSTORE_LINK` | No | Link «Descargar en App Store» del pie del correo. |
+
+Tras publicar la página puente en antoapps.com, en local y en Render:
+
+```bash
+EMAIL_APP_OPEN_LINK=https://www.antoapps.com/open?to=weekly-summary
+```
+
 ### SLO crisis routing (`ENABLE_CRISIS_ROUTING_SLO_MONITOR`)
 
 | Variable | Default | Descripción |

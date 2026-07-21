@@ -33,7 +33,7 @@ describe('weeklyEmailSubjectIndex / buildWeeklySummarySubjectLine', () => {
       'en',
     );
     expect(ctx.weekLabel).toBe('Week 16 · 2026');
-    expect(ctx.updatesSectionTitle).toBe('What we improved');
+    expect(ctx.updatesSectionTitle).toBe('Three changes that matter');
     expect(ctx.subjectLine).toMatch(/Anto/i);
     expect(ctx.subjectLine).not.toMatch(/^Week \d+/);
   });
@@ -41,7 +41,7 @@ describe('weeklyEmailSubjectIndex / buildWeeklySummarySubjectLine', () => {
   it('algunas rotaciones mencionan el regalo con condición (sin prometer a todos)', () => {
     expect(weeklyEmailSubjectIndex(2026, 9)).toBe(7);
     const s = buildWeeklySummarySubjectLine('Semana 9 · 2026', 2026, 9);
-    expect(s).toMatch(/aplica|\+1|prueba|posible|requisitos/i);
+    expect(s).toMatch(/aplica|\+1|prueba|posible|requisitos|qualify/i);
     expect(s).not.toMatch(/\+2 d[ií]a/i);
   });
 });
@@ -62,21 +62,19 @@ describe('buildWeeklySummaryEmailContext', () => {
     expect(ctx.weekLabel).toBe('Semana 16 · 2026');
     expect(ctx.preheaderText.length).toBeGreaterThan(10);
     expect(ctx.benefitLines).toHaveLength(2);
-    expect(ctx.updatesSectionTitle).toBe('Lo que hemos mejorado');
+    expect(ctx.updatesSectionTitle).toBe('Tres cambios que importan');
     expect(ctx.updatesIntro.length).toBeGreaterThan(20);
     expect(ctx.benefitSectionTitle).toBe('Si quieres mirar atrás más adelante');
     expect(ctx.warmBridgeLine.length).toBeGreaterThan(10);
     expect(ctx.inviteLine).toMatch(/Anto|quieras|clic/i);
-    expect(ctx.updatesLines).toHaveLength(5);
-    expect(ctx.updatesLines.join(' ')).toMatch(
-      /crisis|recursos|conversaciones|chat|inglés|ajustes/i
-    );
-    expect(ctx.giftPrimary).toMatch(/enviarte este correo|enviar este correo|automática/i);
+    expect(ctx.updatesLines).toHaveLength(3);
+    expect(ctx.updatesLines.join(' ')).toMatch(/foco|retomar|memoria/i);
+    expect(ctx.giftPrimary).toMatch(/enviarte este correo|califica|automática|aplica solo/i);
     expect(ctx.giftBadgeLabel).toBe('Regalo');
     expect(ctx.giftTitle).toMatch(/1 día|Premium/i);
     expect(ctx.closingLine).toMatch(/Anto|abrazo|ritmo/i);
     expect(ctx.subjectLine).not.toContain('99');
-    expect(ctx.leadParagraph).toMatch(/Anto|presión|calma|novedades|confiar|conocido/i);
+    expect(ctx.leadParagraph).toMatch(/Anto|cero|foco|calma|1\.5\.6|continuidad/i);
   });
 
   it('usa username si no hay nombre', () => {
@@ -96,6 +94,7 @@ describe('buildWeeklySummaryEmailContext', () => {
     expect(ctx.giftBadgeLabel).toBe('Tu plan');
     expect(ctx.giftTitle).toMatch(/Premium/i);
     expect(ctx.giftPrimary).toMatch(/suscripción|Premium|plan/i);
+    expect(ctx.postUpdatesActionLine).toBe('');
   });
 
   it('incluye línea de acción tras regalo (Perfil o responder)', () => {

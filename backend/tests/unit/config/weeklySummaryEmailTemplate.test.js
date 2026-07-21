@@ -30,11 +30,13 @@ describe('weeklySummaryEmail plantilla', () => {
 
       expect(t.subject).toMatch(/Anto/i);
       expect(t.html).toContain('Week 16 · 2026');
-      expect(t.html).toContain('Week 16 · 2026');
       expect(t.html).toContain('A note from Anto');
-      expect(t.html).toContain('What we improved');
+      expect(t.html).toContain('Three changes that matter');
       expect(t.html).toContain('Open Anto');
       expect(t.html).toContain('Download on the App Store');
+      expect(t.html).toMatch(/Gift:|\+1 day of Premium trial/i);
+      expect(t.html).not.toContain('Abrir Anto');
+      expect(t.html).not.toContain('Tres cambios que importan');
       expect(t.html).not.toContain('Resumen semanal');
     });
   });

@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>Abrir Anto</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #e8edf8;
+        --card: #ffffff;
+        --text: #1d2b5f;
+        --muted: #5a6a8a;
+        --accent: #3d5a9e;
+        --border: rgba(29, 43, 95, 0.12);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1424;
+          --card: #1a2238;
+          --text: #e8edf8;
+          --muted: #a8b4d0;
+          --accent: #8fa8e0;
+          --border: rgba(232, 237, 248, 0.12);
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      main {
+        width: 100%;
+        max-width: 420px;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 28px 24px;
+        text-align: center;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.35rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+      p {
+        margin: 0 0 14px;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        color: var(--muted);
+      }
+      .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 18px;
+      }
+      a.btn {
+        display: block;
+        text-decoration: none;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+      a.btn-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+      a.btn-secondary {
+        background: transparent;
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+      .hint {
+        margin-top: 16px;
+        font-size: 0.82rem;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1 id="title">Abriendo Anto…</h1>
+      <p id="status">Si tienes la app instalada, debería abrirse en unos segundos.</p>
+
+      <div class="actions" id="fallback" hidden>
+        <a
+          class="btn btn-primary"
+          id="retry"
+          href="anto:///"
+          >Reintentar abrir Anto</a
+        >
+        <a
+          class="btn btn-secondary"
+          id="store"
+          href="https://apps.apple.com/cl/app/anto/id6756631911"
+          >Descargar en App Store</a
+        >
+        <p class="hint" id="androidHint">
+          En Android, si Anto ya está instalada y no se abrió, ábrela desde el icono. El acceso
+          anticipado puede no estar en Play Store pública.
+        </p>
+      </div>
+    </main>
+
+    <script>
+      (function () {
+        var APP_STORE = 'https://apps.apple.com/cl/app/anto/id6756631911';
+        var params = new URLSearchParams(window.location.search);
+        var to = (params.get('to') || 'app').trim().toLowerCase();
+        var lang = (params.get('lang') || navigator.language || 'es').slice(0, 2).toLowerCase();
+        var en = lang === 'en';
+
+        var deepLink;
+        if (!to || to === 'app' || to === 'home') {
+          deepLink = 'anto://';
+        } else {
+          deepLink = 'anto:///' + to.replace(/^\/+/, '');
+        }
+
+        var title = document.getElementById('title');
+        var status = document.getElementById('status');
+        var fallback = document.getElementById('fallback');
+        var retry = document.getElementById('retry');
+        var store = document.getElementById('store');
+        var androidHint = document.getElementById('androidHint');
+
+        if (en) {
+          title.textContent = 'Opening Anto…';
+          status.textContent = 'If the app is installed, it should open in a few seconds.';
+          retry.textContent = 'Try opening Anto again';
+          store.textContent = 'Download on the App Store';
+          androidHint.textContent =
+            'On Android, if Anto is installed and did not open, launch it from the home screen. Early access may not be on the public Play Store.';
+          document.documentElement.lang = 'en';
+          document.title = 'Open Anto';
+        }
+
+        retry.href = deepLink;
+        store.href = APP_STORE;
+
+        var hidden = false;
+        function showFallback() {
+          if (hidden) return;
+          hidden = true;
+          fallback.hidden = false;
+          title.textContent = en ? 'Open Anto' : 'Abrir Anto';
+          status.textContent = en
+            ? 'We could not confirm that the app opened. You can try again or use the store link.'
+            : 'No pudimos confirmar que la app se abrió. Puedes reintentar o usar el enlace de la tienda.';
+        }
+
+        // Intento inmediato + uno más (algunos WebViews tardan).
+        window.location.href = deepLink;
+        setTimeout(function () {
+          try {
+            var iframe = document.createElement('iframe');
+            iframe.style.display = 'none';
+            iframe.src = deepLink;
+            document.body.appendChild(iframe);
+            setTimeout(function () {
+              try {
+                document.body.removeChild(iframe);
+              } catch (_) {}
+            }, 1500);
+          } catch (_) {}
+        }, 250);
+
+        // Si seguimos visibles, mostrar fallback.
+        setTimeout(showFallback, 1600);
+        document.addEventListener('visibilitychange', function () {
+          if (document.hidden) {
+            /* app likely opened */
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>

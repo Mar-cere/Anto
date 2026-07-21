@@ -8,14 +8,17 @@
  * O:
  *   WEEKLY_SUMMARY_TEST_EMAIL=tu@email.com node scripts/sendWeeklySummaryTestEmail.js
  *
- * Requiere en .env lo mismo que el mailer (Gmail API, etc.) y, para el CTA app-only:
+ * CTA recomendado (HTTPS, iOS + Android desde Gmail):
+ *   EMAIL_APP_OPEN_LINK=https://www.antoapps.com/open?to=weekly-summary
+ *
+ * Fallback legacy (frágil en clientes de correo):
  *   WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY=true
  */
 
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import mailer from '../config/mailer.js';
+import mailer, { buildEmailAppOpenHref } from '../config/mailer.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -34,10 +37,20 @@ async function main() {
     process.exit(1);
   }
 
+  const ctaHref = buildEmailAppOpenHref(process.env);
   console.log(`Enviando resumen semanal de prueba a: ${to}`);
   console.log(`Usuario mostrado en plantilla: ${username}`);
-  if (process.env.WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY === 'true') {
-    console.log('CTA: modo app-only (esquema custom / anto://)');
+  console.log(`CTA href efectivo: ${ctaHref}`);
+  if (/^https?:\/\//i.test(ctaHref)) {
+    console.log('CTA: HTTPS (recomendado para Gmail / Android / iOS).');
+  } else if (/^anto:/i.test(ctaHref)) {
+    console.warn(
+      '⚠️  CTA: esquema anto:// — muchos clientes de correo no lo abren. ' +
+        'Usa EMAIL_APP_OPEN_LINK=https://www.antoapps.com/open?to=weekly-summary'
+    );
+  }
+  if (process.env.WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY === 'true' && !process.env.EMAIL_APP_OPEN_LINK) {
+    console.log('(WEEKLY_SUMMARY_EMAIL_OPEN_APP_ONLY=true sin EMAIL_APP_OPEN_LINK)');
   }
 
   try {
