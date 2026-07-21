@@ -30,7 +30,10 @@ import PaywallFeaturedPlanCard from './PaywallFeaturedPlanCard';
 import PaywallCompactPlanCard from './PaywallCompactPlanCard';
 import { useTheme } from '../../context/ThemeContext';
 import { SPACING } from '../../constants/ui';
-import { subscriptionLooksCurrentlyUsable } from '../../utils/subscriptionAccess';
+import {
+  resolveSubscriptionCancelUiAction,
+  subscriptionLooksCurrentlyUsable,
+} from '../../utils/subscriptionAccess';
 
 const GRID_PLAN_ORDER = ['quarterly', 'semestral', 'monthly'];
 
@@ -48,6 +51,17 @@ export default function SubscriptionContent({
   const { colors, resolvedScheme } = useTheme();
   const { loading: memoryLoading, stats } = usePaywallDayMemory();
   const hasActiveSubscription = subscriptionLooksCurrentlyUsable(subscriptionStatus);
+  const cancelAction = resolveSubscriptionCancelUiAction(
+    subscriptionStatus,
+    Platform.OS,
+  );
+  const showCancelOrManage =
+    hasActiveSubscription &&
+    (cancelAction === 'app_store' || cancelAction === 'api');
+  const cancelButtonLabel =
+    cancelAction === 'app_store'
+      ? TEXTS.MANAGE_APP_STORE_SUBSCRIPTION || TEXTS.CANCEL_SUBSCRIPTION
+      : TEXTS.CANCEL_SUBSCRIPTION;
   const [chosenPlanId, setChosenPlanId] = useState('yearly');
 
   const planById = useMemo(() => {
@@ -307,10 +321,14 @@ export default function SubscriptionContent({
             subscriptionEndDate={subscriptionStatus.subscriptionEndDate ?? null}
             isActive={subscriptionStatus.isActive}
           />
-          {hasActiveSubscription ? (
+          {showCancelOrManage ? (
             <TouchableOpacity style={styles.cancelButton} onPress={onCancelSubscription}>
-              <MaterialCommunityIcons name="cancel" size={20} color={colors.error} />
-              <Text style={styles.cancelButtonText}>{TEXTS.CANCEL_SUBSCRIPTION}</Text>
+              <MaterialCommunityIcons
+                name={cancelAction === 'app_store' ? 'apple' : 'cancel'}
+                size={20}
+                color={colors.error}
+              />
+              <Text style={styles.cancelButtonText}>{cancelButtonLabel}</Text>
             </TouchableOpacity>
           ) : null}
         </View>

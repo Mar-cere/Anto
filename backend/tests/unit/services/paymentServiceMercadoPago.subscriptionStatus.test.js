@@ -60,6 +60,7 @@ describe('paymentServiceMercadoPago.getSubscriptionStatus — días de trial', (
     expect(status.isInTrial).toBe(true);
     expect(status.daysRemaining).toBe(4);
     expect(status.trialEndDate).toEqual(trialEnd);
+    expect(status.billingProvider).toBe('trial');
   });
 
   it('incluye daysRemaining en usuario solo con trial en User', async () => {
@@ -85,5 +86,6 @@ describe('paymentServiceMercadoPago.getSubscriptionStatus — días de trial', (
     expect(status.isInTrial).toBe(true);
     expect(status.daysRemaining).toBe(4);
     expect(status.trialEndDate).toEqual(trialEnd);
+    expect(status.billingProvider).toBe('trial');
   });
 });

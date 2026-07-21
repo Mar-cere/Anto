@@ -16,7 +16,12 @@ import {
 import { API_URL } from '../config/api';
 import { useToast } from '../context/ToastContext';
 import { useSubscription } from '../context/SubscriptionContext';
-import { subscriptionLooksCurrentlyUsable } from '../utils/subscriptionAccess';
+import {
+  resolveSubscriptionCancelUiAction,
+  subscriptionLooksCurrentlyUsable,
+} from '../utils/subscriptionAccess';
+
+const APP_STORE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 
 function extractErrorCode(errorLike) {
   const directErrorCode = String(errorLike?.errorCode || '').trim();
@@ -50,6 +55,20 @@ function resolveCancelErrorMessageByCode(errorLike, texts) {
   if (code === 'TIMEOUT' || code === 'ETIMEDOUT') {
     return texts.PAYMENT_ERROR_TIMEOUT || texts.CANCEL_ERROR;
   }
+  if (code === 'TRIAL_NO_PAID_SUBSCRIPTION') {
+    return texts.CANCEL_TRIAL_NO_PAID || texts.CANCEL_ERROR;
+  }
+  if (code === 'CANCEL_VIA_APP_STORE') {
+    return texts.CANCEL_VIA_APP_STORE || texts.CANCEL_ERROR;
+  }
+  if (code === 'SUBSCRIPTION_NOT_FOUND' || code === 'NOT_FOUND') {
+    return texts.CANCEL_NOT_FOUND || texts.CANCEL_ERROR;
+  }
+  if (code === 'SUBSCRIPTION_NOT_CANCELLABLE') {
+    return texts.CANCEL_NOT_CANCELLABLE || texts.CANCEL_ERROR;
+  }
+  const backendMessage = String(errorLike?.error || errorLike?.message || '').trim();
+  if (backendMessage) return backendMessage;
   return texts.CANCEL_ERROR;
 }
 
@@ -432,6 +451,51 @@ export function useSubscriptionScreen() {
       .sort((a, b) => (planOrder[a.id] || 999) - (planOrder[b.id] || 999));
   }, [plans]);
 
+  const openAppStoreSubscriptions = useCallback(async () => {
+    if (Platform.OS !== 'ios') {
+      showToast({
+        message: TEXTS.CANCEL_VIA_APP_STORE || TEXTS.CANCEL_NOT_CANCELLABLE,
+        type: 'info',
+        duration: 5500,
+      });
+      return;
+    }
+    try {
+      const canOpen = await Linking.canOpenURL(APP_STORE_SUBSCRIPTIONS_URL);
+      if (canOpen) {
+        await Linking.openURL(APP_STORE_SUBSCRIPTIONS_URL);
+        return;
+      }
+    } catch (_) {
+      // fall through
+    }
+    showToast({
+      message: TEXTS.CANCEL_VIA_APP_STORE || TEXTS.CANCEL_ERROR,
+      type: 'info',
+      duration: 5500,
+    });
+  }, [showToast, TEXTS]);
+
+  const confirmManageAppStoreSubscription = useCallback(() => {
+    if (Platform.OS !== 'ios') {
+      showToast({
+        message: TEXTS.CANCEL_VIA_APP_STORE || TEXTS.CANCEL_NOT_CANCELLABLE,
+        type: 'info',
+        duration: 5500,
+      });
+      return;
+    }
+    Alert.alert(TEXTS.MANAGE_APP_STORE_TITLE, TEXTS.MANAGE_APP_STORE_MESSAGE, [
+      { text: TEXTS.BACK, style: 'cancel' },
+      {
+        text: TEXTS.MANAGE_APP_STORE_OPEN,
+        onPress: () => {
+          openAppStoreSubscriptions();
+        },
+      },
+    ]);
+  }, [TEXTS, openAppStoreSubscriptions, showToast]);
+
   const confirmCancelSubscription = useCallback(async () => {
     Alert.alert(
       TEXTS.CANCEL_SUBSCRIPTION,
@@ -452,9 +516,21 @@ export function useSubscriptionScreen() {
                 });
                 await loadData();
               } else {
+                const code = extractErrorCode(response);
+                if (code === 'CANCEL_VIA_APP_STORE' && Platform.OS === 'ios') {
+                  confirmManageAppStoreSubscription();
+                  return;
+                }
+                const infoCodes = new Set([
+                  'TRIAL_NO_PAID_SUBSCRIPTION',
+                  'CANCEL_VIA_APP_STORE',
+                  'SUBSCRIPTION_NOT_CANCELLABLE',
+                  'SUBSCRIPTION_NOT_FOUND',
+                  'NOT_FOUND',
+                ]);
                 showToast({
                   message: resolveCancelErrorMessageByCode(response, TEXTS),
-                  type: 'error',
+                  type: infoCodes.has(code) ? 'info' : 'error',
                 });
               }
             } catch (err) {
@@ -469,9 +545,34 @@ export function useSubscriptionScreen() {
         },
       ]
     );
-  }, [loadData, showToast, TEXTS]);
+  }, [loadData, showToast, TEXTS, confirmManageAppStoreSubscription]);
 
   const handleCancelSubscription = useCallback(() => {
+    const cancelAction = resolveSubscriptionCancelUiAction(
+      subscriptionStatus,
+      Platform.OS,
+    );
+    if (cancelAction === 'none') {
+      showToast({
+        message: TEXTS.CANCEL_TRIAL_NO_PAID,
+        type: 'info',
+        duration: 5000,
+      });
+      return;
+    }
+    if (cancelAction === 'not_cancellable') {
+      showToast({
+        message: TEXTS.CANCEL_NOT_CANCELLABLE,
+        type: 'info',
+        duration: 5500,
+      });
+      return;
+    }
+    if (cancelAction === 'app_store') {
+      confirmManageAppStoreSubscription();
+      return;
+    }
+
     const currentPlanId = subscriptionStatus?.plan;
     const cheaperPlans = getCheaperPlans(currentPlanId);
     if (cheaperPlans.length > 0) {
@@ -513,7 +614,15 @@ export function useSubscriptionScreen() {
     } else {
       confirmCancelSubscription();
     }
-  }, [subscriptionStatus, getCheaperPlans, handleSubscribe, confirmCancelSubscription, TEXTS]);
+  }, [
+    subscriptionStatus,
+    getCheaperPlans,
+    handleSubscribe,
+    confirmCancelSubscription,
+    confirmManageAppStoreSubscription,
+    showToast,
+    TEXTS,
+  ]);
 
   const handleRestorePurchases = useCallback(async () => {
     if (Platform.OS !== 'ios' || !storeKitService.isAvailable()) {

@@ -3027,6 +3027,18 @@ export const SUBSCRIPTION = {
   CANCEL_CONFIRM: '¿Estás seguro de que deseas cancelar tu suscripción?',
   CANCEL_SUCCESS: 'Suscripción cancelada exitosamente',
   CANCEL_ERROR: 'Error al cancelar la suscripción',
+  CANCEL_TRIAL_NO_PAID:
+    'Estás en el periodo de prueba. No hay una suscripción de pago que cancelar; el acceso termina automáticamente al finalizar la prueba.',
+  CANCEL_VIA_APP_STORE:
+    'Tu suscripción se gestiona con App Store. Cancélala desde Ajustes de Apple > tu nombre > Suscripciones.',
+  CANCEL_NOT_FOUND: 'No encontramos una suscripción de pago activa para cancelar.',
+  CANCEL_NOT_CANCELLABLE:
+    'No se puede cancelar esta suscripción desde la app. Si pagaste con App Store, adminístrala desde tu cuenta de Apple.',
+  MANAGE_APP_STORE_SUBSCRIPTION: 'Administrar en App Store',
+  MANAGE_APP_STORE_TITLE: 'Administrar suscripción',
+  MANAGE_APP_STORE_MESSAGE:
+    'Las suscripciones de iOS se cancelan desde App Store. Te llevaremos a tus suscripciones de Apple.',
+  MANAGE_APP_STORE_OPEN: 'Abrir App Store',
   NO_PLANS: 'No hay planes disponibles en este momento',
   LEGAL_TITLE: 'Términos y Política de Privacidad',
   TERMS_EULA_LABEL: 'Términos de Uso (EULA)',

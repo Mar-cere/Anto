@@ -1,4 +1,45 @@
 /**
+ * Acción de cancelación/gestión según proveedor de facturación (sin fallback de plataforma).
+ * @param {object|null|undefined} status - Respuesta de getSubscriptionStatus
+ * @returns {'none'|'app_store'|'api'|null} null = proveedor desconocido / sin dato
+ */
+export function getSubscriptionCancelAction(status) {
+  if (!subscriptionLooksCurrentlyUsable(status)) return 'none';
+  const provider = String(status?.billingProvider || '').toLowerCase();
+  const st = String(status?.status || '').toLowerCase();
+  if (
+    provider === 'trial' ||
+    status?.isInTrial === true ||
+    st === 'trial' ||
+    st === 'trialing'
+  ) {
+    return 'none';
+  }
+  if (provider === 'apple') return 'app_store';
+  if (provider === 'mercadopago') return 'api';
+  return null;
+}
+
+/**
+ * Acción de UI definitiva: aplica fallback por plataforma y evita App Store fuera de iOS.
+ * @param {object|null|undefined} status
+ * @param {string} [platformOS]
+ * @returns {'none'|'app_store'|'api'|'not_cancellable'}
+ */
+export function resolveSubscriptionCancelUiAction(status, platformOS = 'ios') {
+  const os = String(platformOS || '').toLowerCase();
+  const action = getSubscriptionCancelAction(status);
+  if (action === 'none') return 'none';
+  if (action === 'app_store') {
+    return os === 'ios' ? 'app_store' : 'not_cancellable';
+  }
+  if (action === 'api') return 'api';
+  // unknown / billingProvider ausente (p. ej. caché antigua)
+  if (os === 'ios') return 'app_store';
+  return 'api';
+}
+
+/**
  * Criterio de UI / cliente alineado con la intención de `interpretSubscriptionAccess` en el backend.
  * Usar con la respuesta de `getSubscriptionStatus` (objeto con `success`).
  *

@@ -885,10 +885,16 @@ class PaymentService {
       };
     } catch (error) {
       console.error('Error cancelando suscripción:', error);
+      const backendError =
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.message ||
+        'Error al cancelar suscripción';
       return {
         success: false,
-        error: error.message || 'Error al cancelar suscripción',
+        error: backendError,
         errorCode: resolveServiceErrorCode(error, 'SUBSCRIPTION_CANCEL_ERROR'),
+        code: error?.response?.data?.code || undefined,
       };
     }
   }

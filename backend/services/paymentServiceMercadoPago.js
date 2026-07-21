@@ -18,6 +18,8 @@ import logger from '../utils/logger.js';
 import { calculateDaysRemainingUntil } from '../utils/subscriptionDaysRemaining.js';
 import { fetchMercadoPagoPaymentById, fetchMercadoPagoPreapprovalById } from '../utils/mercadopagoPaymentApi.js';
 import { isSubscriptionRenewalPayment } from '../utils/subscriptionPaymentEmail.js';
+import { resolveBillingProvider } from '../utils/subscriptionBillingProvider.js';
+import { AppError } from '../utils/errors.js';
 
 /**
  * Cuando la vista efectiva es "expired", invalida el caché de GET /subscription-status
@@ -627,44 +629,75 @@ class PaymentServiceMercadoPago {
    */
   async cancelSubscription(userId, cancelImmediately = false) {
     const subscription = await Subscription.findOne({ userId });
-    if (!subscription) {
-      throw new Error('Suscripción no encontrada');
+    const userLean = await User.findById(userId).select('subscription').lean();
+    const userSub = userLean?.subscription || null;
+    const billingProvider = resolveBillingProvider(subscription, userSub);
+
+    if (billingProvider === 'trial') {
+      throw new AppError(
+        'No hay una suscripción de pago que cancelar. El periodo de prueba termina automáticamente.',
+        409,
+        true,
+        'TRIAL_NO_PAID_SUBSCRIPTION',
+      );
     }
 
-    // Si tiene ID de suscripción de Mercado Pago, cancelarla en el proveedor
-    // para evitar renovaciones futuras no deseadas.
-    if (subscription.mercadopagoSubscriptionId) {
-      const providerResult = await this.cancelMercadoPagoPreapproval(subscription.mercadopagoSubscriptionId);
+    if (billingProvider === 'apple') {
+      throw new AppError(
+        'Las suscripciones de App Store se cancelan desde la cuenta de Apple.',
+        409,
+        true,
+        'CANCEL_VIA_APP_STORE',
+      );
+    }
+
+    // Único canal cancelable aquí: preapproval de Mercado Pago.
+    if (subscription?.mercadopagoSubscriptionId) {
+      const providerResult = await this.cancelMercadoPagoPreapproval(
+        subscription.mercadopagoSubscriptionId,
+      );
       subscription.metadata = {
-        ...subscription.metadata,
+        ...(subscription.metadata && typeof subscription.metadata === 'object'
+          ? subscription.metadata
+          : {}),
         mercadopagoCancellation: {
           requestedAt: new Date().toISOString(),
           providerStatus: providerResult?.status || 'cancelled',
           providerId: providerResult?.id || subscription.mercadopagoSubscriptionId,
         },
       };
-    }
 
-    // Actualizar en base de datos
-    await subscription.cancel(cancelImmediately);
+      await subscription.cancel(cancelImmediately);
 
-    // Actualizar usuario
-    const user = await User.findById(userId);
-    if (user) {
-      if (cancelImmediately) {
-        user.subscription.status = 'expired';
-      } else {
-        user.subscription.status = 'premium';
+      const user = await User.findById(userId);
+      if (user?.subscription) {
+        if (cancelImmediately) {
+          user.subscription.status = 'expired';
+        } else {
+          user.subscription.status = 'premium';
+        }
+        await user.save();
       }
-      await user.save();
+
+      return {
+        success: true,
+        canceledAt: subscription.canceledAt,
+        cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
+        mercadopagoSubscriptionId: subscription.mercadopagoSubscriptionId || null,
+        billingProvider: 'mercadopago',
+      };
     }
 
-    return {
-      success: true,
-      canceledAt: subscription.canceledAt,
-      cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-      mercadopagoSubscriptionId: subscription.mercadopagoSubscriptionId || null,
-    };
+    if (!subscription && billingProvider === 'none') {
+      throw new AppError('Suscripción no encontrada', 404, true, 'SUBSCRIPTION_NOT_FOUND');
+    }
+
+    throw new AppError(
+      'No hay una suscripción de pago cancelable en este canal.',
+      409,
+      true,
+      'SUBSCRIPTION_NOT_CANCELLABLE',
+    );
   }
 
   /**
@@ -708,6 +741,7 @@ class PaymentServiceMercadoPago {
       return {
         hasSubscription: false,
         status: 'free',
+        billingProvider: 'none',
       };
     }
 
@@ -736,6 +770,7 @@ class PaymentServiceMercadoPago {
         daysRemaining,
         cancelAtPeriodEnd: false,
         canceledAt: null,
+        billingProvider: resolveBillingProvider(subscription, userSub, now),
       };
     }
 
@@ -786,6 +821,7 @@ class PaymentServiceMercadoPago {
         daysRemaining,
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
         canceledAt: subscription.canceledAt,
+        billingProvider: resolveBillingProvider(subscription, userSub, now),
       };
       if (resolvedStatus === 'expired') {
         await finalizeExpiredSubscriptionView(userId, result, userSub);
@@ -816,6 +852,7 @@ class PaymentServiceMercadoPago {
         subscriptionStartDate: userSubscription.subscriptionStartDate,
         subscriptionEndDate: userSubscription.subscriptionEndDate,
         daysRemaining: 0,
+        billingProvider: resolveBillingProvider(null, userSubscription, now),
       };
       await finalizeExpiredSubscriptionView(userId, result, userSub);
       return result;
@@ -838,6 +875,7 @@ class PaymentServiceMercadoPago {
         subscriptionStartDate: userSubscription.subscriptionStartDate,
         subscriptionEndDate: userSubscription.subscriptionEndDate,
         daysRemaining: 0,
+        billingProvider: 'none',
       };
       await finalizeExpiredSubscriptionView(userId, result, userSub);
       return result;
@@ -872,6 +910,7 @@ class PaymentServiceMercadoPago {
       subscriptionStartDate: userSubscription.subscriptionStartDate,
       subscriptionEndDate: userSubscription.subscriptionEndDate,
       daysRemaining,
+      billingProvider: resolveBillingProvider(null, userSubscription, now),
     };
   }
 

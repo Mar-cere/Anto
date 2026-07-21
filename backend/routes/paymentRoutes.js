@@ -504,10 +504,34 @@ router.post(
         ...result,
       });
     } catch (error) {
-      console.error('Error cancelando suscripción:', error);
-      res.status(500).json({
+      const rawStatus = Number(error?.statusCode);
+      const statusCode =
+        Number.isInteger(rawStatus) && rawStatus >= 400 && rawStatus < 600 ? rawStatus : 500;
+      const code =
+        typeof error?.code === 'string' && error.code.trim()
+          ? error.code.trim().toUpperCase()
+          : 'CANCEL_ERROR';
+      const copy = req.apiCopy;
+      let message = copy.cancelError;
+      if (code === 'SUBSCRIPTION_NOT_FOUND') message = copy.cancelNotFound;
+      else if (code === 'TRIAL_NO_PAID_SUBSCRIPTION') message = copy.cancelTrialNoPaid;
+      else if (code === 'CANCEL_VIA_APP_STORE') message = copy.cancelViaAppStore;
+      else if (code === 'SUBSCRIPTION_NOT_CANCELLABLE') message = copy.cancelNotCancellable;
+
+      if (statusCode >= 500) {
+        logger.requestError(req, error, 'Error cancelando suscripción');
+      } else {
+        logger.payment('POST /cancel-subscription rejected', {
+          userId: req.user?._id?.toString?.(),
+          code,
+          statusCode,
+        });
+      }
+
+      res.status(statusCode).json({
         success: false,
-        error: error.message || req.apiCopy.cancelError,
+        error: message,
+        code,
       });
     }
   }

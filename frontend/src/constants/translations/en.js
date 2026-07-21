@@ -3014,6 +3014,18 @@ export const SUBSCRIPTION = {
   CANCEL_CONFIRM: 'Are you sure you want to cancel your subscription?',
   CANCEL_SUCCESS: 'Subscription cancelled successfully',
   CANCEL_ERROR: 'Could not cancel subscription',
+  CANCEL_TRIAL_NO_PAID:
+    'You are on a free trial. There is no paid subscription to cancel; access ends automatically when the trial finishes.',
+  CANCEL_VIA_APP_STORE:
+    'Your subscription is managed by the App Store. Cancel it in Apple Settings > your name > Subscriptions.',
+  CANCEL_NOT_FOUND: 'We could not find an active paid subscription to cancel.',
+  CANCEL_NOT_CANCELLABLE:
+    'This subscription cannot be cancelled from the app. If you paid with the App Store, manage it from your Apple account.',
+  MANAGE_APP_STORE_SUBSCRIPTION: 'Manage in App Store',
+  MANAGE_APP_STORE_TITLE: 'Manage subscription',
+  MANAGE_APP_STORE_MESSAGE:
+    'iOS subscriptions are cancelled in the App Store. We will take you to your Apple subscriptions.',
+  MANAGE_APP_STORE_OPEN: 'Open App Store',
   NO_PLANS: 'No plans are available at the moment',
   LEGAL_TITLE: 'Terms and Privacy Policy',
   TERMS_EULA_LABEL: 'Terms of Use (EULA)',
