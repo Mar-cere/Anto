@@ -813,18 +813,26 @@ router.post(
           subscription: result.subscription,
         });
       } else {
+        const isOwnershipConflict = result.code === 'APPLE_OWNERSHIP_CONFLICT';
+        const clientError = isOwnershipConflict
+          ? req.apiCopy.appleOwnershipConflict
+          : result.error;
+
         logger.error('POST /validate-receipt: Error procesando suscripción', {
             userId: userId.toString(),
             productId,
             transactionId: transactionId || originalTransactionIdentifierIOS,
             error: result.error,
+            code: result.code,
             status: result.status,
             duration,
-            possibleCauses: [
-              'Producto no configurado correctamente en App Store Connect',
-              'Suscripción semanal puede requerir configuración especial',
-              'Verificar que el producto esté activo y disponible',
-            ],
+            possibleCauses: isOwnershipConflict
+              ? ['OID Apple ya vinculado a otra cuenta Anto activa']
+              : [
+                  'Producto no configurado correctamente en App Store Connect',
+                  'Suscripción semanal puede requerir configuración especial',
+                  'Verificar que el producto esté activo y disponible',
+                ],
           });
         
         logger.payment('POST /validate-receipt: error procesando suscripción', {
@@ -832,13 +840,15 @@ router.post(
           productId,
           transactionId: transactionId || originalTransactionIdentifierIOS,
           error: result.error,
+          code: result.code,
           status: result.status,
           duration,
         });
 
-        res.status(400).json({
+        res.status(isOwnershipConflict ? 409 : 400).json({
           success: false,
-          error: result.error,
+          error: clientError,
+          code: result.code || undefined,
           status: result.status,
         });
       }

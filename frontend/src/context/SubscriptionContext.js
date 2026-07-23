@@ -7,8 +7,10 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
+import { AppState, Platform } from 'react-native';
 import paymentService, {
   setSubscriptionStatusChangeHandler,
 } from '../services/paymentService';
@@ -89,6 +91,18 @@ export function SubscriptionProvider({ children }) {
 
   const userId = user?._id || user?.id || null;
 
+  const trySyncPendingApple = useCallback(
+    async (statusSnapshot) => {
+      if (Platform.OS !== 'ios') return;
+      if (subscriptionLooksCurrentlyUsable(statusSnapshot)) return;
+      const syncResult = await paymentService.syncPendingApplePurchases();
+      if (syncResult?.success && syncResult.subscription) {
+        await syncAfterPayment(syncResult.subscription);
+      }
+    },
+    [syncAfterPayment],
+  );
+
   useEffect(() => {
     if (!userId) {
       setSubscriptionStatus(null);
@@ -112,6 +126,8 @@ export function SubscriptionProvider({ children }) {
         } else {
           setTrialInfo(null);
         }
+        // Cuenta nueva / restore pendiente: intentar vincular historial Apple local
+        await trySyncPendingApple(status);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -120,7 +136,29 @@ export function SubscriptionProvider({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [userId, applySubscriptionStatus]);
+  }, [userId, applySubscriptionStatus, trySyncPendingApple]);
+
+  const appStateRef = useRef(AppState.currentState);
+  useEffect(() => {
+    if (!userId || Platform.OS !== 'ios') return undefined;
+
+    const onChange = (nextState) => {
+      const prev = appStateRef.current;
+      appStateRef.current = nextState;
+      if (prev.match(/inactive|background/) && nextState === 'active') {
+        void (async () => {
+          const status = await paymentService.getSubscriptionStatus({ forceRefresh: true });
+          applySubscriptionStatus(status);
+          await trySyncPendingApple(status);
+        })();
+      }
+    };
+
+    const sub = AppState.addEventListener('change', onChange);
+    return () => {
+      if (typeof sub?.remove === 'function') sub.remove();
+    };
+  }, [userId, applySubscriptionStatus, trySyncPendingApple]);
 
   useEffect(() => {
     setSubscriptionStatusChangeHandler((validationSubscription) => {

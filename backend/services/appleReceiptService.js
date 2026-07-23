@@ -36,6 +36,89 @@ export const PLAN_DURATION_DAYS = {
 
 class AppleReceiptService {
   /**
+   * Ownership del original_transaction_id de Apple.
+   * - Otro usuario activo → conflicto (no transferir).
+   * - Soft-deleted / liberado → liberar OID residual y permitir bind al JWT actual.
+   *
+   * @param {string|import('mongoose').Types.ObjectId} userId
+   * @param {string|null|undefined} originalTransactionId
+   * @returns {Promise<{ ok: true } | { ok: false, code: string, error: string }>}
+   */
+  async assertAppleOriginalTransactionOwnership(userId, originalTransactionId) {
+    const oid = originalTransactionId ? String(originalTransactionId) : null;
+    if (!oid) {
+      return { ok: true };
+    }
+
+    const currentUserId = userId.toString();
+    const holders = await Subscription.find({
+      'metadata.appleOriginalTransactionId': oid,
+    })
+      .select('userId metadata')
+      .lean();
+
+    for (const sub of holders) {
+      const ownerId = sub.userId?.toString();
+      if (!ownerId || ownerId === currentUserId) {
+        continue;
+      }
+      if (sub.metadata?.releasedAt) {
+        continue;
+      }
+
+      const owner = await User.findById(ownerId).select('isActive').lean();
+      if (owner && owner.isActive !== false) {
+        logger.payment('[AppleReceipt] Conflicto de ownership Apple OID', {
+          currentUserId,
+          ownerId,
+          originalTransactionId: oid,
+        });
+        return {
+          ok: false,
+          code: 'APPLE_OWNERSHIP_CONFLICT',
+          error: 'APPLE_OWNERSHIP_CONFLICT',
+        };
+      }
+
+      // Dueño soft-deleted o inexistente: liberar OID para transferir a la cuenta actual
+      const releasedAt = new Date();
+      await Subscription.updateOne(
+        { _id: sub._id },
+        {
+          $set: {
+            metadata: {
+              ...(sub.metadata && typeof sub.metadata === 'object' ? sub.metadata : {}),
+              appleOriginalTransactionId: null,
+              appleTransactionId: null,
+              releasedAppleOriginalTransactionId: oid,
+              releasedAt,
+              releasedReason: 'transfer_to_new_account',
+            },
+          },
+        }
+      );
+      if (owner) {
+        await User.updateOne(
+          { _id: ownerId },
+          {
+            $set: {
+              'subscription.appleOriginalTransactionId': null,
+              'subscription.appleTransactionId': null,
+            },
+          }
+        );
+      }
+      logger.payment('[AppleReceipt] OID Apple liberado de cuenta inactiva para transfer', {
+        fromUserId: ownerId,
+        toUserId: currentUserId,
+        originalTransactionId: oid,
+      });
+    }
+
+    return { ok: true };
+  }
+
+  /**
    * Validar recibo con Apple
    * @param {string} receiptData - Datos del recibo (base64)
    * @param {boolean} isSandbox - Si es sandbox o producción
@@ -270,6 +353,18 @@ class AppleReceiptService {
         originalTransactionId: transaction.original_transaction_id,
       });
 
+      const ownership = await this.assertAppleOriginalTransactionOwnership(
+        userId,
+        transaction.original_transaction_id
+      );
+      if (!ownership.ok) {
+        return {
+          success: false,
+          code: ownership.code,
+          error: ownership.error,
+        };
+      }
+
       const appleTransactionId = String(transaction.transaction_id);
       if (transactionId && String(transactionId) !== appleTransactionId) {
         logger.warn('[AppleReceipt] transactionId del cliente difiere del recibo; usando transaction_id de Apple', {
@@ -482,8 +577,14 @@ class AppleReceiptService {
         subscription.currentPeriodEnd = expiresDate;
         subscription.trialStart = null;
         subscription.trialEnd = null;
+        const prevMeta = subscription.metadata && typeof subscription.metadata === 'object'
+          ? { ...subscription.metadata }
+          : {};
+        delete prevMeta.releasedAt;
+        delete prevMeta.releasedReason;
+        delete prevMeta.releasedAppleOriginalTransactionId;
         subscription.metadata = {
-          ...subscription.metadata,
+          ...prevMeta,
           provider: 'apple',
           appleTransactionId,
           appleOriginalTransactionId: transaction.original_transaction_id,
@@ -514,6 +615,23 @@ class AppleReceiptService {
         isActive: subscription.isActive,
         saveDuration: `${subscriptionSaveDuration}ms`,
       });
+
+      // Reaplicar ASN skipped (user_not_found) ahora que el OID está vinculado
+      try {
+        const { reprocessSkippedAsnForOriginalTransactionId } = await import(
+          './appleServerNotificationService.js'
+        );
+        await reprocessSkippedAsnForOriginalTransactionId(
+          transaction.original_transaction_id,
+          userId,
+          { limit: 20 }
+        );
+      } catch (asnReprocessErr) {
+        logger.warn('[AppleReceipt] No se pudieron reprocesar ASN skipped', {
+          userId: userId.toString(),
+          error: asnReprocessErr?.message,
+        });
+      }
 
       if (!skipDuplicateSideEffects) {
         const transactionCreateStartTime = Date.now();
@@ -748,6 +866,20 @@ class AppleReceiptService {
       return { success: false, error: 'Usuario no encontrado' };
     }
 
+    if (originalTransactionId) {
+      const ownership = await this.assertAppleOriginalTransactionOwnership(
+        userId,
+        originalTransactionId
+      );
+      if (!ownership.ok) {
+        return {
+          success: false,
+          code: ownership.code,
+          error: ownership.error,
+        };
+      }
+    }
+
     const trialGrantedAtPreserve = user.subscription?.trialGrantedAt;
     user.subscription = {
       status: isActive ? 'premium' : 'expired',
@@ -790,8 +922,14 @@ class AppleReceiptService {
       subscription.currentPeriodEnd = expiresDate;
       subscription.trialStart = null;
       subscription.trialEnd = null;
+      const prevMeta = subscription.metadata && typeof subscription.metadata === 'object'
+        ? { ...subscription.metadata }
+        : {};
+      delete prevMeta.releasedAt;
+      delete prevMeta.releasedReason;
+      delete prevMeta.releasedAppleOriginalTransactionId;
       subscription.metadata = {
-        ...subscription.metadata,
+        ...prevMeta,
         provider: 'apple',
         appleTransactionId,
         appleOriginalTransactionId: originalTransactionId,

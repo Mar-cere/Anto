@@ -16,6 +16,8 @@ const ERROR_MESSAGES = {
   TOKEN_INVALID: 'Token inválido',
   TOKEN_EXPIRED: 'Token expirado',
   TOKEN_INVALID_FORMAT: 'Token no proporcionado o formato inválido',
+  USER_NOT_FOUND: 'Usuario no encontrado',
+  ACCOUNT_DEACTIVATED: 'Cuenta desactivada',
   USER_NOT_AUTHENTICATED: 'Usuario no autenticado',
   PERMISSION_DENIED: 'No tienes permiso para realizar esta acción',
   RESOURCE_NOT_FOUND: 'Recurso no encontrado',
@@ -65,7 +67,8 @@ const handleTokenError = (error, res) => {
  * Middleware para autenticar usuarios mediante JWT
  * Extrae el token del header Authorization y lo verifica
  * Asigna req.user con los datos del usuario decodificado
- * Incluye el rol del usuario desde el token o la base de datos
+ * Si MongoDB está disponible, exige que el User exista y esté activo
+ * (evita sesiones huérfanas con JWT válido tras borrado/reset de BD)
  */
 export async function authenticateToken(req, res, next) {
   const token = extractToken(req);
@@ -87,31 +90,40 @@ export async function authenticateToken(req, res, next) {
         message: ERROR_MESSAGES.TOKEN_INVALID 
       });
     }
-    
-    // Si el token tiene rol, usarlo; si no, obtenerlo de la BD
-    let userRole = decoded.role;
-    if (!userRole) {
-      try {
-        // Verificar que MongoDB esté conectado antes de hacer la query
-        const mongoose = (await import('mongoose')).default;
-        if (mongoose.connection.readyState !== 1) {
-          // Si MongoDB no está conectado, usar rol por defecto
-          logger.warn('MongoDB no conectado, usando rol por defecto', { userId });
-          userRole = 'user';
-        } else {
-          // Importar User dinámicamente para evitar dependencias circulares
-          const User = (await import('../models/User.js')).default;
-          const user = await User.findById(userId).select('role').lean();
-          userRole = user?.role || 'user';
+
+    let userRole = decoded.role || 'user';
+
+    try {
+      const mongoose = (await import('mongoose')).default;
+      if (mongoose.connection.readyState !== 1) {
+        // Sin Mongo: no se puede comprobar existencia; rol del JWT o default
+        logger.warn('MongoDB no conectado; autenticación solo por JWT', { userId });
+        userRole = decoded.role || 'user';
+      } else {
+        const User = (await import('../models/User.js')).default;
+        const user = await User.findById(userId).select('role isActive').lean();
+
+        if (!user) {
+          return res.status(HTTP_UNAUTHORIZED).json({
+            message: ERROR_MESSAGES.USER_NOT_FOUND,
+          });
         }
-      } catch (dbError) {
-        // Si hay error al consultar la BD, usar rol por defecto
-        logger.warn('Error al obtener rol de usuario, usando rol por defecto', { 
-          userId, 
-          error: dbError.message 
-        });
-        userRole = 'user';
+
+        if (user.isActive === false) {
+          return res.status(HTTP_FORBIDDEN).json({
+            message: ERROR_MESSAGES.ACCOUNT_DEACTIVATED,
+          });
+        }
+
+        userRole = user.role || decoded.role || 'user';
       }
+    } catch (dbError) {
+      // Error transitorio de BD: no bloquear a todos; usar claims del JWT
+      logger.warn('Error al verificar usuario en autenticación; usando claims del JWT', {
+        userId,
+        error: dbError.message,
+      });
+      userRole = decoded.role || 'user';
     }
     
     // Asegurar que userId sea un string válido

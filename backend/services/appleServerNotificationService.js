@@ -359,42 +359,152 @@ async function safeDecodeRenewal(verifier, signedJws) {
   }
 }
 
+async function isActiveUserId(userId) {
+  if (!userId) return false;
+  const user = await User.findById(userId).select('isActive').lean();
+  return Boolean(user && user.isActive !== false);
+}
+
+/**
+ * Resuelve userId Anto desde IDs Apple.
+ * Ignora Subscriptions con OID liberado (releasedAt) y usuarios soft-deleted.
+ */
 async function resolveUserIdFromAppleIds(originalTransactionId, transactionId) {
   const oid = originalTransactionId ? String(originalTransactionId) : null;
   const tid = transactionId ? String(transactionId) : null;
 
   if (oid) {
-    const sub = await Subscription.findOne({
+    const subs = await Subscription.find({
       $or: [
         { 'metadata.appleOriginalTransactionId': oid },
         ...(tid ? [{ 'metadata.appleTransactionId': tid }] : []),
       ],
     })
-      .select('userId')
+      .select('userId metadata')
       .lean();
-    if (sub?.userId) return sub.userId;
+
+    for (const sub of subs) {
+      if (sub.metadata?.releasedAt) continue;
+      if (await isActiveUserId(sub.userId)) {
+        return sub.userId;
+      }
+    }
   }
   if (tid) {
-    const txn = await Transaction.findOne({
+    const txns = await Transaction.find({
       paymentProvider: 'apple',
       providerTransactionId: tid,
     })
       .sort({ createdAt: -1 })
       .select('userId')
+      .limit(5)
       .lean();
-    if (txn?.userId) return txn.userId;
+    for (const txn of txns) {
+      if (await isActiveUserId(txn.userId)) {
+        return txn.userId;
+      }
+    }
   }
   if (oid) {
-    const txn2 = await Transaction.findOne({
+    const txns2 = await Transaction.find({
       paymentProvider: 'apple',
       'metadata.originalTransactionId': oid,
     })
       .sort({ createdAt: -1 })
       .select('userId')
+      .limit(5)
       .lean();
-    if (txn2?.userId) return txn2.userId;
+    for (const txn of txns2) {
+      if (await isActiveUserId(txn.userId)) {
+        return txn.userId;
+      }
+    }
   }
   return null;
+}
+
+/**
+ * Tras validate-receipt exitoso: reaplicar ASN skipped por user_not_found
+ * (p. ej. cancelAtPeriodEnd) ahora que el OID está vinculado.
+ *
+ * @param {string} originalTransactionId
+ * @param {string|import('mongoose').Types.ObjectId} userId
+ * @param {{ limit?: number }} [options]
+ */
+export async function reprocessSkippedAsnForOriginalTransactionId(
+  originalTransactionId,
+  userId,
+  options = {}
+) {
+  const oid = originalTransactionId ? String(originalTransactionId) : null;
+  if (!oid || !userId) {
+    return { processed: 0 };
+  }
+  const limit = Math.min(Math.max(Number(options.limit) || 20, 1), 50);
+  const docs = await AppleServerNotification.find({
+    originalTransactionId: oid,
+    processingStatus: 'skipped',
+    skipReason: 'user_not_found',
+  })
+    .sort({ createdAt: -1 })
+    .limit(limit);
+
+  let processed = 0;
+  for (const doc of docs) {
+    try {
+      if (
+        doc.notificationType === NotificationTypeV2.DID_CHANGE_RENEWAL_STATUS ||
+        doc.notificationType === 'DID_CHANGE_RENEWAL_STATUS'
+      ) {
+        const sub = await Subscription.findOne({ userId });
+        if (sub) {
+          if (doc.subtype === Subtype.AUTO_RENEW_DISABLED || doc.subtype === 'AUTO_RENEW_DISABLED') {
+            sub.cancelAtPeriodEnd = true;
+            sub.metadata = {
+              ...sub.metadata,
+              appleAutoRenewDisabledAt: new Date(),
+              asnReprocessedFromSkip: doc.notificationUUID,
+            };
+            await sub.save();
+          } else if (
+            doc.subtype === Subtype.AUTO_RENEW_ENABLED ||
+            doc.subtype === 'AUTO_RENEW_ENABLED'
+          ) {
+            sub.cancelAtPeriodEnd = false;
+            sub.metadata = {
+              ...sub.metadata,
+              appleAutoRenewEnabledAt: new Date(),
+              asnReprocessedFromSkip: doc.notificationUUID,
+            };
+            await sub.save();
+          }
+        }
+      }
+
+      doc.processingStatus = 'processed';
+      doc.skipReason = null;
+      doc.userId = userId;
+      doc.errorMessage = null;
+      await doc.save();
+      processed += 1;
+    } catch (err) {
+      logger.warn('[AppleASN] Error reprocesando ASN skipped', {
+        notificationUUID: doc.notificationUUID,
+        error: err?.message,
+      });
+    }
+  }
+
+  if (processed > 0) {
+    await cacheService.invalidateUserCache(userId.toString()).catch(() => {});
+    logger.payment('[AppleASN] ASN skipped reprocesados tras bind OID', {
+      originalTransactionId: oid,
+      userId: userId.toString(),
+      processed,
+    });
+  }
+
+  return { processed };
 }
 
 function isAutoRenewableSubscription(tx) {

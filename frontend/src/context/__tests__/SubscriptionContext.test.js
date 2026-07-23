@@ -15,6 +15,7 @@ jest.mock('../../services/paymentService', () => ({
     getSubscriptionStatus: jest.fn(),
     getTrialInfo: jest.fn(),
     refreshSubscriptionStatusAfterPayment: jest.fn(),
+    syncPendingApplePurchases: jest.fn(async () => null),
   },
   setSubscriptionStatusChangeHandler: jest.fn(),
 }));
@@ -47,6 +48,7 @@ describe('SubscriptionContext', () => {
       plan: 'yearly',
       isActive: true,
     });
+    paymentService.syncPendingApplePurchases.mockResolvedValue(null);
   });
 
   it('carga suscripción y trial al montar con usuario autenticado', async () => {

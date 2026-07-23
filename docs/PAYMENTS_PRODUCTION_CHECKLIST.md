@@ -6,8 +6,8 @@ Este documento fija **invariantes** y pasos de validación manual. Complementa e
 
 | Capa | Campos relevantes | Uso |
 |------|-------------------|-----|
-| `User.subscription` | `status` (`free\|trial\|premium\|expired`), fechas de trial y premium, `plan`, `trialGrantedAt` | UI, trial banner, compatibilidad legacy |
-| `Subscription` (colección) | `status`, `plan`, `currentPeriodEnd`, IDs MP/Apple | Preferido en `checkSubscription` si existe documento |
+| `User.subscription` | `status` (`free\|trial\|premium\|expired`), fechas, `plan`, `trialGrantedAt`, `provider`, `appleOriginalTransactionId` | UI, trial banner; IDs Apple también aquí tras validate-receipt |
+| `Subscription` (colección) | `status`, `plan`, `currentPeriodEnd`, `metadata.appleOriginalTransactionId` (único sparse) | Fuente canónica Apple↔usuario; ASN resuelve por este OID |
 | `Transaction` | `status`, `amount`, `plan`, `metadata` (MP payment/preapproval ids, idempotencia) | Webhooks, auditoría, recuperación |
 
 ## Invariantes de acceso (chat y premium)
@@ -42,11 +42,16 @@ Este documento fija **invariantes** y pasos de validación manual. Complementa e
 
 - [ ] Registro nuevo → `GET /api/payments/trial-info` muestra trial y días coherentes.
 - [ ] iOS: compra sandbox/prod → `POST /api/payments/validate-receipt` → estado premium y chat OK.
+- [ ] iOS Sandbox: **delete cuenta → register → Restaurar compras** (mismo Apple ID) → validate-receipt 200, premium en cuenta nueva, un solo OID en `Subscription`.
+- [ ] iOS: restore con OID ya ligado a **otra cuenta activa** → `409` ownership.
+- [ ] ASN `DID_CHANGE_RENEWAL_STATUS` tras restore → resuelve `userId` nuevo (no `user_not_found`).
+- [ ] JWT de usuario soft-deleted / inexistente → `401`/`403` en APIs autenticadas (no sesión fantasma).
 - [ ] Android: checkout MP → webhook → premium y chat desde backend.
 - [ ] Repetir webhook (simulación o reintento MP) → **sin** doble extensión de período.
 - [ ] Email de pago distinto al usuario → **no** activar (si strict activo).
 - [ ] Trial vencido → `403` en chat con mensaje coherente.
 - [ ] Admin: `GET /api/payments/metrics/integrity` → sin alertas críticas inesperadas.
+- [ ] (Opcional ops) `node backend/scripts/ensureAppleOidUniqueIndex.js [--apply]` si hay duplicados OID previos.
 
 ## Variables de entorno relacionadas
 

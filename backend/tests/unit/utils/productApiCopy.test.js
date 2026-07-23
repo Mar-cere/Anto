@@ -27,6 +27,12 @@ describe('product API copy (tasks, habits, chat, payments)', () => {
   it('paymentApiCopy en inglés', () => {
     const copy = paymentApiCopy('en');
     expect(copy.checkoutError).toMatch(/checkout/i);
+    expect(copy.appleOwnershipConflict).toMatch(/Apple purchase/i);
+  });
+
+  it('paymentApiCopy ES/EN comparten appleOwnershipConflict', () => {
+    expect(paymentApiCopy('es').appleOwnershipConflict).toBeTruthy();
+    expect(paymentApiCopy('en').appleOwnershipConflict).toBeTruthy();
   });
 
   it('resolveRequestLanguage prioriza header', () => {

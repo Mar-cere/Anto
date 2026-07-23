@@ -432,6 +432,20 @@ const userSchema = new mongoose.Schema({
     trialRetentionEmailSentAt: {
       type: Date,
       default: null
+    },
+    /** Proveedor de facturación (apple | mercadopago). Fuente canónica también en Subscription.metadata. */
+    provider: {
+      type: String,
+      enum: ['apple', 'mercadopago'],
+      default: null
+    },
+    appleTransactionId: {
+      type: String,
+      default: null
+    },
+    appleOriginalTransactionId: {
+      type: String,
+      default: null
     }
   },
   // Contactos de emergencia (máximo 2)

@@ -288,6 +288,36 @@ describe('Auth Routes', () => {
 
       expect(response.body).toHaveProperty('message');
     });
+
+    it('debe rechazar JWT de usuario soft-deleted (sesión huérfana)', async () => {
+      const user = await User.findOne({ email: validUser.email.toLowerCase() });
+      expect(user).toBeTruthy();
+      user.isActive = false;
+      await user.save();
+
+      const response = await request(app)
+        .get('/api/users/me')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(403);
+
+      expect(response.body).toHaveProperty('message');
+    });
+
+    it('debe rechazar JWT cuyo userId ya no existe en BD', async () => {
+      const jwt = (await import('jsonwebtoken')).default;
+      const ghostToken = jwt.sign(
+        { userId: new mongoose.Types.ObjectId().toString(), role: 'user' },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      const response = await request(app)
+        .get('/api/users/me')
+        .set('Authorization', `Bearer ${ghostToken}`)
+        .expect(401);
+
+      expect(response.body).toHaveProperty('message');
+    });
   });
 
   describe('POST /api/auth/verify-email', () => {

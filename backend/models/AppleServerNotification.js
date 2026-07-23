@@ -37,5 +37,10 @@ const appleServerNotificationSchema = new mongoose.Schema(
 );
 
 appleServerNotificationSchema.index({ createdAt: -1 });
+appleServerNotificationSchema.index({
+  originalTransactionId: 1,
+  processingStatus: 1,
+  skipReason: 1,
+});
 
 export default mongoose.model('AppleServerNotification', appleServerNotificationSchema);

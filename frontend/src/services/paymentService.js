@@ -483,6 +483,7 @@ class PaymentService {
           console.error('[PaymentService] ❌ Validación falló', {
             productId: receiptData.productId,
             error: response.error,
+            code: response.code || null,
             totalDuration: `${totalDuration}ms`,
           });
         }
@@ -490,6 +491,7 @@ class PaymentService {
         return {
           success: response.success,
           error: response.error || null,
+          code: response.code || null,
           subscription: response.subscription || null,
           appleStatus: response.appleStatus ?? response.status ?? null,
         };
@@ -649,6 +651,54 @@ class PaymentService {
     }
 
     return result;
+  }
+
+  /**
+   * Reintenta enlace Apple→Anto cuando hay historial StoreKit pero la cuenta local no es premium.
+   * Usa el mismo camino que «Restaurar compras» (validate-receipt con restore: true).
+   * Debounce in-flight para no spamear al abrir/enfocar la app.
+   *
+   * @returns {Promise<Object|null>}
+   */
+  async syncPendingApplePurchases() {
+    if (!storeKitService.isAvailable()) {
+      return null;
+    }
+    if (this._pendingAppleSyncInFlight) {
+      return this._pendingAppleSyncInFlight;
+    }
+
+    this._pendingAppleSyncInFlight = (async () => {
+      try {
+        console.log('[PaymentService] syncPendingApplePurchases: intentando restaurar/vincular');
+        const result = await this.restorePurchases();
+        if (result?.success && result.subscription) {
+          console.log('[PaymentService] syncPendingApplePurchases: vínculo OK', {
+            status: result.subscription?.status,
+            plan: result.subscription?.plan,
+          });
+        } else if (result && result.success === false) {
+          console.warn('[PaymentService] syncPendingApplePurchases: sin vínculo', {
+            errorCode: result.errorCode,
+            error: result.error,
+          });
+        }
+        return result;
+      } catch (err) {
+        console.warn('[PaymentService] syncPendingApplePurchases falló', {
+          error: err?.message,
+        });
+        return {
+          success: false,
+          error: err?.message || 'Error sincronizando compras Apple',
+          errorCode: 'PENDING_SYNC_EXCEPTION',
+        };
+      } finally {
+        this._pendingAppleSyncInFlight = null;
+      }
+    })();
+
+    return this._pendingAppleSyncInFlight;
   }
 
   /**

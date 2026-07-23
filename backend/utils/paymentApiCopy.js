@@ -26,6 +26,8 @@ const COPY = {
     statsError: 'Error al obtener estadísticas',
     receiptRestored: 'Compras restauradas correctamente',
     receiptActivated: 'Suscripción activada correctamente',
+    appleOwnershipConflict:
+      'Esta compra de Apple ya está vinculada a otra cuenta de Anto. Inicia sesión con esa cuenta o contacta soporte.',
     validateReceiptError: 'Error al validar el recibo',
     webhookInternalError: 'Error interno',
     webhookInvalidStructure: 'Invalid webhook structure',
@@ -63,6 +65,8 @@ const COPY = {
     statsError: 'Could not load statistics',
     receiptRestored: 'Purchases restored successfully',
     receiptActivated: 'Subscription activated successfully',
+    appleOwnershipConflict:
+      'This Apple purchase is already linked to another Anto account. Sign in with that account or contact support.',
     validateReceiptError: 'Could not validate receipt',
     webhookInternalError: 'Internal error',
     webhookInvalidStructure: 'Invalid webhook structure',

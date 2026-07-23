@@ -117,9 +117,10 @@ subscriptionSchema.index({ userId: 1, status: 1 });
 subscriptionSchema.index({ status: 1, trialEnd: 1 }); // Para consultas de trial
 subscriptionSchema.index({ plan: 1, status: 1 }); // Para métricas por plan
 subscriptionSchema.index({ currentPeriodEnd: 1 }); // Para suscripciones que expiran
+// Un OID Apple solo puede pertenecer a una Subscription a la vez (null/ausente permitido por sparse).
 subscriptionSchema.index(
   { 'metadata.appleOriginalTransactionId': 1 },
-  { sparse: true }
+  { unique: true, sparse: true, name: 'metadata_appleOriginalTransactionId_unique_sparse' }
 );
 
 // Virtual: verificar si la suscripción está activa

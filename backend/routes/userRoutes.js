@@ -166,8 +166,9 @@ router.get('/me', authenticateToken, validateUserObjectId, async (req, res) => {
 
     const user = await findUserById(userId, '-password -salt -__v -resetPasswordCode -resetPasswordExpires', true);
     
+    // 401 (no 404): el cliente debe tratarlo como sesión inválida y limpiar el JWT local.
     if (!user) {
-      return res.status(404).json({ message: req.apiCopy.userNotFound });
+      return res.status(401).json({ message: req.apiCopy.userNotFound });
     }
 
     if (!user.isActive) {
@@ -455,11 +456,32 @@ router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter,
 
     const userId = req.user._id;
 
-    // Cancelar suscripciones activas antes de eliminar la cuenta
+    // Cancelar suscripciones activas y liberar vínculos Apple antes de eliminar la cuenta
     try {
       const Subscription = (await import('../models/Subscription.js')).default;
       const paymentService = (await import('../services/paymentService.js')).default;
       const paymentAuditService = (await import('../services/paymentAuditService.js')).default;
+
+      const releaseAppleOriginalTransactionId = (subscription, releasedAt) => {
+        const meta = subscription.metadata && typeof subscription.metadata === 'object'
+          ? { ...subscription.metadata }
+          : {};
+        const oid = meta.appleOriginalTransactionId
+          ? String(meta.appleOriginalTransactionId)
+          : null;
+        if (oid) {
+          meta.releasedAppleOriginalTransactionId = oid;
+          meta.releasedAt = releasedAt;
+          meta.releasedReason = 'account_deletion';
+        }
+        meta.appleOriginalTransactionId = null;
+        meta.appleTransactionId = null;
+        meta.canceledOnAccountDeletion = true;
+        meta.accountDeletedAt = releasedAt.toISOString();
+        meta.canceledBy = 'account_deletion';
+        subscription.metadata = meta;
+        return oid;
+      };
 
       // Buscar suscripciones activas
       const activeSubscriptions = await Subscription.find({
@@ -483,6 +505,7 @@ router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter,
             // Verificar si es suscripción de Apple
             const isApple = (subscription.metadata && subscription.metadata.provider === 'apple') ||
                            (subscription.metadata && subscription.metadata.appleTransactionId) ||
+                           (subscription.metadata && subscription.metadata.appleOriginalTransactionId) ||
                            (subscription.metadata && subscription.metadata.productId && subscription.metadata.productId.startsWith('com.anto.app'));
 
             if (isMercadoPago) {
@@ -496,9 +519,8 @@ router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter,
             } else if (isApple) {
               // Para suscripciones de Apple, no podemos cancelarlas directamente desde el backend
               // Apple maneja las cancelaciones desde la app o App Store Connect
-              // Solo actualizamos el estado local
-              logger.info(`Suscripción de Apple detectada para usuario ${userId}. Cancelación local aplicada.`);
-              // Nota: El usuario debería cancelar desde la app iOS o App Store Connect
+              // Solo actualizamos el estado local y liberamos el OID para restore en otra cuenta
+              logger.info(`Suscripción de Apple detectada para usuario ${userId}. Cancelación local + liberación OID.`);
             } else {
               // Proveedor desconocido o sin proveedor específico, cancelar localmente
               logger.info(`Suscripción sin proveedor específico detectada para usuario ${userId}. Cancelación local aplicada.`);
@@ -511,14 +533,18 @@ router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter,
             subscription.canceledAt = cancellationDate;
             subscription.endedAt = cancellationDate;
             subscription.cancelAtPeriodEnd = false;
-            
-            // Agregar información de cancelación en metadata
-            subscription.metadata = {
-              ...subscription.metadata,
-              canceledOnAccountDeletion: true,
-              accountDeletedAt: cancellationDate.toISOString(),
-              canceledBy: 'account_deletion',
-            };
+
+            const releasedOid = isApple
+              ? releaseAppleOriginalTransactionId(subscription, cancellationDate)
+              : null;
+            if (!isApple) {
+              subscription.metadata = {
+                ...subscription.metadata,
+                canceledOnAccountDeletion: true,
+                accountDeletedAt: cancellationDate.toISOString(),
+                canceledBy: 'account_deletion',
+              };
+            }
             
             await subscription.save();
 
@@ -539,6 +565,7 @@ router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter,
               plan: subscription.plan,
               provider: provider,
               canceledAt: subscription.canceledAt,
+              releasedAppleOriginalTransactionId: releasedOid,
               isMercadoPago,
               isApple,
             }, userId.toString(), null);
@@ -551,10 +578,30 @@ router.delete('/me', authenticateToken, validateUserObjectId, deleteUserLimiter,
         }
       }
 
+      // Liberar OID Apple en cualquier Subscription restante (p. ej. canceled/expired) para restore futuro
+      const appleLinkedSubs = await Subscription.find({
+        userId,
+        'metadata.appleOriginalTransactionId': { $exists: true, $nin: [null, ''] },
+      });
+      for (const subscription of appleLinkedSubs) {
+        const releasedAt = new Date();
+        const releasedOid = releaseAppleOriginalTransactionId(subscription, releasedAt);
+        await subscription.save();
+        logger.info(`OID Apple liberado en suscripción ${subscription._id} al eliminar cuenta`, {
+          userId: userId.toString(),
+          releasedOid,
+        });
+      }
+
       // Actualizar estado de suscripción en el modelo User
       if (user.subscription && (user.subscription.status === 'premium' || user.subscription.status === 'trial')) {
         user.subscription.status = 'expired';
         user.subscription.subscriptionEndDate = new Date();
+      }
+      if (user.subscription) {
+        user.subscription.provider = undefined;
+        user.subscription.appleTransactionId = null;
+        user.subscription.appleOriginalTransactionId = null;
       }
     } catch (subscriptionError) {
       logger.error('Error cancelando suscripciones al eliminar cuenta:', subscriptionError);

@@ -4,6 +4,7 @@
  * Flujo de sesión:
  * 1. Inicio (mount): Se lee AsyncStorage (userToken, userData). Si existen, se valida
  *    contra /api/users/me (con refresh automático si el access token expiró).
+ *    401/403/404 en /me → clearAuthSession (sesión inválida o usuario inexistente).
  * 2. Login: Se llama a api.login (config/api), que guarda token, refreshToken y user.
  * 3. Logout: Se llama a api.logout (limpia AsyncStorage) y setUser(null).
  * 4. refreshSession(): Valida sesión remota o lee userData tras login/register externo.
@@ -37,7 +38,10 @@ async function handleSessionLoadError(error, { logLabel }) {
     console.warn(`[AuthContext] ${logLabel}: sin conexión; se usa sesión local`);
     return restoreUserFromCache();
   }
-  if (isAuthError(error)) {
+  const status = error?.response?.status;
+  // 401/403: token inválido o cuenta desactivada.
+  // 404 en /me: usuario ya no existe en BD (sesión huérfana con JWT local).
+  if (isAuthError(error) || status === 404) {
     console.warn(`[AuthContext] ${logLabel}: sesión inválida`);
     await clearAuthSession();
     return null;

@@ -43,7 +43,10 @@ Incluye: validación, límites, análisis emocional, intención, tema, urgencia,
 - **iOS (StoreKit):** La app usa `storeKitService` y `paymentService.purchaseWithStoreKit(plan)`. Tras la compra, el frontend envía el recibo al backend para validación; solo entonces se finaliza la transacción en StoreKit.
 - **Android:** Flujo con Mercado Pago (checkout session, URL de pago).
 - **Estado de suscripción:** `GET /api/payments/subscription-status` (frontend: `paymentService.getSubscriptionStatus()`).
-- **Restaurar compras (iOS):** `storeKitService.restorePurchases()` y validación de cada recibo con el backend.
+- **Restaurar compras (iOS):** `storeKitService.restorePurchases()` valida con el backend la compra plausible **más reciente** del historial (`POST /api/payments/validate-receipt` con `restore: true`).
+- **Sync automático (iOS):** Si la cuenta no es premium usable, al login/foco `paymentService.syncPendingApplePurchases()` intenta el mismo restore (útil tras borrar cuenta y registrarse de nuevo).
+- **Ownership Apple:** un `originalTransactionId` solo puede pertenecer a una cuenta Anto **activa**. Si pertenece a otra cuenta activa → `409`. Si el dueño está soft-deleted o el OID fue liberado al borrar cuenta → se transfiere al JWT actual.
+- **Borrar cuenta:** cancela localmente y **libera** `metadata.appleOriginalTransactionId` (queda en `releasedAppleOriginalTransactionId` para auditoría) para permitir restore en una cuenta nueva.
 
 ### Documentación detallada
 - **StoreKit y validación de recibos:** [REVISION_STOREKIT_COMPRAS.md](./REVISION_STOREKIT_COMPRAS.md).

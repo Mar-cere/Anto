@@ -81,6 +81,8 @@ const PING_INTERVAL = 25000; // 25 segundos
 const ERROR_MESSAGES = {
   AUTH_REQUIRED: 'Autenticación requerida',
   INVALID_TOKEN: 'Token inválido',
+  USER_NOT_FOUND: 'Usuario no encontrado',
+  ACCOUNT_DEACTIVATED: 'Cuenta desactivada',
   USER_NOT_AUTHENTICATED: 'Usuario no autenticado'
 };
 
@@ -138,11 +140,27 @@ export const setupSocketIO = (server) => {
     pingInterval: PING_INTERVAL
   });
 
-  // Middleware de autenticación para sockets
-  io.use((socket, next) => {
+  // Middleware de autenticación para sockets (JWT + User existente/activo)
+  io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth.token;
       const payload = verifySocketToken(token);
+      const userId = payload.userId || payload._id;
+
+      if (!userId) {
+        return next(new Error(ERROR_MESSAGES.INVALID_TOKEN));
+      }
+
+      if (mongoose.connection.readyState === 1) {
+        const user = await User.findById(userId).select('isActive').lean();
+        if (!user) {
+          return next(new Error(ERROR_MESSAGES.USER_NOT_FOUND));
+        }
+        if (user.isActive === false) {
+          return next(new Error(ERROR_MESSAGES.ACCOUNT_DEACTIVATED));
+        }
+      }
+
       socket.user = payload;
       next();
     } catch (error) {
@@ -163,15 +181,23 @@ export const setupSocketIO = (server) => {
      * El cliente debe enviar su userId para unirse a su sala personal
      */
     socket.on(SOCKET_EVENTS.AUTHENTICATE, ({ userId }) => {
-      if (!userId) {
-        socket.emit(SOCKET_EVENTS.ERROR, { 
-          message: 'userId es requerido para autenticación' 
+      // La identidad real viene del JWT del handshake; no confiar solo en el client payload.
+      const tokenUserId = (socket.user?.userId || socket.user?._id)?.toString();
+      if (!tokenUserId) {
+        socket.emit(SOCKET_EVENTS.ERROR, {
+          message: ERROR_MESSAGES.USER_NOT_AUTHENTICATED,
         });
         return;
       }
-      
-      currentUserId = userId;
-      socket.join(userId); // Unir al socket a una sala específica del usuario
+      if (userId && userId.toString() !== tokenUserId) {
+        socket.emit(SOCKET_EVENTS.ERROR, {
+          message: ERROR_MESSAGES.INVALID_TOKEN,
+        });
+        return;
+      }
+
+      currentUserId = tokenUserId;
+      socket.join(tokenUserId);
       console.log(`[SocketIO] Socket ${socket.id} autenticado como usuario ${currentUserId}`);
     });
     

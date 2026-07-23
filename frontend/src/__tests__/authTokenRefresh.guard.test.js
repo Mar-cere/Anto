@@ -48,6 +48,9 @@ describe('authTokenRefresh guard', () => {
     expect(src).toMatch(/registerOnSessionInvalidated/);
     expect(src).toMatch(/isNetworkError/);
     expect(src).toMatch(/handleSessionLoadError/);
+    // Sesión huérfana: 404 de /me debe limpiar JWT local (no solo 401/403)
+    expect(src).toMatch(/status === 404/);
+    expect(src).toMatch(/clearAuthSession/);
   });
 
   it('login por pantalla guarda refreshToken con la misma clave que api.ts', () => {
