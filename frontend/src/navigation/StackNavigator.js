@@ -65,6 +65,7 @@ import FocusOnboardingScreen from '../screens/focus/FocusOnboardingScreen';
 import FocusProgressScreen from '../screens/focus/FocusProgressScreen';
 import UserFactsScreen from '../screens/userFacts/UserFactsScreen';
 import ExperientialPatternsScreen from '../screens/experientialPatterns/ExperientialPatternsScreen';
+import SessionCommitmentsScreen from '../screens/SessionCommitmentsScreen';
 import ScheduledSessionsScreen from '../screens/scheduledSessions/ScheduledSessionsScreen';
 import { useTheme } from '../context/ThemeContext';
 import TabNavigator from './TabNavigator';
@@ -427,6 +428,11 @@ const StackNavigator = ({ initialRouteName = ROUTE_NAMES.HOME }) => {
       <Stack.Screen
         name={ROUTES.EXPERIENTIAL_PATTERNS}
         component={ExperientialPatternsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name={ROUTES.SESSION_COMMITMENTS}
+        component={SessionCommitmentsScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

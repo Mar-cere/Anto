@@ -27,12 +27,73 @@ import {
 } from './sessionInsightHeadlineService.js';
 import { inferChatSessionPhase } from './chat/sessionPhaseHints.js';
 import topicDetector from './topicDetector.js';
+import {
+  isGenericInterventionCatalogLabel,
+  SHORT_SOFT_RESUME_LABEL_EN,
+  SHORT_SOFT_RESUME_LABEL_ES,
+} from '../utils/commitmentLabelUtils.js';
 
 const MIN_USER_TURNS = 2;
 const MIN_USER_CHARS = 40;
 const MESSAGE_LIMIT = 80;
 const SESSION_LOOKBACK_MINUTES = 45;
 const MAX_SESSION_DURATION_MINUTES = 180;
+const MAX_SUGGESTED_COMMITMENTS = 2;
+
+/** Textos concretos por intervención para cierre de sesión (v1.1 / #234). */
+const COMMITMENT_HINT_BY_INTERVENTION = {
+  breathing_exercise: {
+    es: 'Probar una pausa breve de respiración cuando notes tensión',
+    en: 'Try a short breathing pause when you notice tension',
+  },
+  grounding_technique: {
+    es: 'Usar grounding una vez cuando todo se sienta demasiado',
+    en: 'Use grounding once when things feel too much',
+  },
+  behavioral_activation: {
+    es: 'Hacer un paso pequeño que dé un poco de energía',
+    en: 'Do one small step that gives a little energy',
+  },
+  mindfulness_reminder: {
+    es: 'Parar un minuto a notar el cuerpo sin juzgar',
+    en: 'Pause one minute to notice your body without judging',
+  },
+  self_compassion: {
+    es: 'Decirte una frase amable cuando aparezca la autocrítica',
+    en: 'Tell yourself one kind line when self-criticism shows up',
+  },
+};
+
+/**
+ * Hasta 2 sugerencias de texto para guardar como compromiso (#234).
+ * @param {{ suggestedStep?: object|null, themes?: string[], language?: string }} p
+ * @returns {string[]}
+ */
+export function buildSuggestedCommitments({ suggestedStep = null, themes = [], language = 'es' } = {}) {
+  const en = normalizeInsightLanguage(language) === 'en';
+  const out = [];
+  const stepId = suggestedStep?.id ? String(suggestedStep.id) : '';
+  const hint = COMMITMENT_HINT_BY_INTERVENTION[stepId];
+  if (hint) {
+    out.push(en ? hint.en : hint.es);
+  } else if (suggestedStep?.label && !isGenericInterventionCatalogLabel(suggestedStep.label)) {
+    out.push(String(suggestedStep.label).trim().slice(0, 240));
+  } else if (suggestedStep) {
+    out.push(en ? SHORT_SOFT_RESUME_LABEL_EN : SHORT_SOFT_RESUME_LABEL_ES);
+  }
+
+  const theme = Array.isArray(themes) ? String(themes[0] || '').trim() : '';
+  if (theme && out.length < MAX_SUGGESTED_COMMITMENTS) {
+    const second = en
+      ? `Come back to “${theme}” when you want`
+      : `Volver a lo de «${theme}» cuando te venga bien`;
+    if (second.length >= 2 && second.length <= 240 && !out.includes(second)) {
+      out.push(second);
+    }
+  }
+
+  return out.slice(0, MAX_SUGGESTED_COMMITMENTS);
+}
 
 function messageTimestampMs(msg) {
   const t = new Date(msg?.createdAt).getTime();
@@ -426,6 +487,13 @@ export async function buildSessionInsight({ userId, conversationId, language = '
         language: lang,
         threadStartedAt,
       });
+  const suggestedCommitments = crisisSession
+    ? []
+    : buildSuggestedCommitments({
+        suggestedStep,
+        themes,
+        language: lang,
+      });
   const sessionIntentionLabel = localizeSessionIntention(
     conversation.sessionIntention,
     lang,
@@ -493,6 +561,7 @@ export async function buildSessionInsight({ userId, conversationId, language = '
     thoughtPattern,
     themes,
     suggestedStep,
+    suggestedCommitments,
     sessionIntention: conversation.sessionIntention || null,
     crisisTier: crisisSession ? peakRiskTier : null,
     sessionPhase: crisisRecovered ? 'crisis_recovered' : sessionPhase,
@@ -507,4 +576,4 @@ export async function buildSessionInsight({ userId, conversationId, language = '
   };
 }
 
-export default { buildSessionInsight };
+export default { buildSessionInsight, buildSuggestedCommitments };

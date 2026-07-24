@@ -419,7 +419,7 @@ const createStyles = (themeColors, c, dark) =>
   });
 
 const COMMITMENT_FOLLOW_UP_COPY = {
-  es: { yes: 'Lo hice', partial: 'A medias', no: 'Aún no', skip: 'Omitir por ahora' },
+  es: { yes: 'Lo hice', partial: 'En parte', no: 'Aún no', skip: 'Omitir por ahora' },
   en: { yes: 'I did it', partial: 'Partly', no: 'Not yet', skip: 'Skip for now' },
 };
 

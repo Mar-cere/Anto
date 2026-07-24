@@ -189,12 +189,12 @@ describe('commitmentLabelUtils', () => {
     expect(
       isDashboardCommitmentActionable({
         id: '3',
-        label: 'X',
+        label: 'Caminar 10 minutos',
         status: 'active',
         followUpAnswer: 'partial',
-        followUpDue: true,
+        followUpDue: false,
       }),
-    ).toBe(false);
+    ).toBe(true);
     expect(
       isDashboardCommitmentActionable({
         id: '5',

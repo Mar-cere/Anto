@@ -189,6 +189,7 @@ export const DASH = {
   FOCUS_NEXT_HABIT_OPEN_A11Y: 'Open next habit',
   FOCUS_SUMMARY: 'Week summary',
   FOCUS_COMMITMENTS: 'Commitments and focus',
+  FOCUS_COMMITMENTS_SEE_ALL: 'See all',
   FOCUS_UPCOMING_TASKS: 'Upcoming tasks',
   FOCUS_RECENT_CHATS: 'Recent conversations',
   FOCUS_PROGRESS: 'Progress this week',
@@ -213,6 +214,11 @@ export const DASH = {
   FOCUS_COMMITMENT_FALLBACK_TITLE: 'Your commitment',
   FOCUS_COMMITMENT_YES: 'Yes',
   FOCUS_COMMITMENT_PARTIAL: 'Partly',
+  FOCUS_COMMITMENT_PARTIAL_HINT:
+    'What part went okay, and what is still open? You can leave a note or adjust the agreement.',
+  FOCUS_COMMITMENT_PARTIAL_NOTE_PLACEHOLDER: 'Short note (optional)',
+  FOCUS_COMMITMENT_PARTIAL_NOTE_SAVE: 'Save note',
+  FOCUS_COMMITMENT_PARTIAL_DONE: 'Done',
   FOCUS_COMMITMENT_NO: 'Not yet',
   FOCUS_COMMITMENT_OMIT: 'Skip for now',
   FOCUS_COMMITMENT_RENEGOTIATE: 'Adjust commitment',
@@ -1217,6 +1223,11 @@ export const CHAT = {
   SOFT_CRISIS_KICKER: 'Brief pause',
   SOFT_CRISIS_OPEN: 'Open',
   SOFT_CRISIS_DISMISS_A11Y: 'Hide regulation suggestion',
+  SOFT_LANDING_KICKER: 'After a hard moment',
+  SOFT_LANDING_OPEN: 'Open',
+  SOFT_LANDING_DISMISS_A11Y: 'Hide soft landing suggestion',
+  SOFT_LANDING_HOME_MESSAGE:
+    'I am here when you want. No pressure to do more right now.',
   CRISIS_POST_CONTACT_ALERT_NOTICE:
     'If you had active emergency contacts, we sent them a brief notice that you might need support. It does not include this conversation.',
   EMERGENCY_CONTACT_ALERT_OFFER_YES: 'Yes, notify them',
@@ -3210,11 +3221,12 @@ export const SESSION_INSIGHT = {
   CTA_DONE: 'Continue',
   CTA_SKIP_STEP: 'I will do it later',
   CTA_SAVE_COMMITMENT: 'Save as commitment',
+  CTA_SAVE_ANOTHER_COMMITMENT: 'Save another commitment',
   CTA_COMMITMENT_SAVED: 'Commitment saved',
   CTA_COMMITMENT_ERROR: 'Could not save the commitment. Try a concrete action.',
   COMMITMENT_TITLE: 'A small action',
   COMMITMENT_HINT:
-    'Describe something concrete you can try, not just the name of the suggested technique.',
+    'Pick a suggestion or write something concrete you can try, not just the technique name.',
   COMMITMENT_PLACEHOLDER: 'E.g. Walk 10 min after lunch',
   COMMITMENT_GENERIC_ERROR:
     'Write a concrete action (for example, "walk for 10 minutes"), not just the technique name.',
@@ -3296,6 +3308,32 @@ export const EXPERIENTIAL_PATTERNS = {
   CHIP_SKIP: 'Skip',
   OPEN_FROM_PRIVACY: 'View process memory',
   DASHBOARD_CTA: 'Something from your process is ready to revisit',
+};
+
+export const SESSION_COMMITMENTS = {
+  SCREEN_TITLE: 'My commitments',
+  SCREEN_INTRO: 'What you agreed to revisit. You can close, adjust, or skip without guilt.',
+  FILTER_ACTIVE: 'Active',
+  FILTER_DONE: 'Closed',
+  FILTER_ALL: 'All',
+  SEARCH_PLACEHOLDER: 'Search…',
+  EMPTY_TITLE: 'No commitments yet',
+  EMPTY_MESSAGE: 'When you save an agreement after a chat, it will show up here.',
+  LOADING: 'Loading…',
+  ERROR_LOADING: 'Could not load',
+  RETRY: 'Retry',
+  MARK_DONE: 'Mark done',
+  OMIT: 'Skip for now',
+  ADJUST: 'Adjust',
+  OPEN_CHAT: 'Open chat',
+  STATUS_ACTIVE: 'Active',
+  STATUS_COMPLETED: 'Done',
+  STATUS_SKIPPED: 'Skipped',
+  STATUS_ARCHIVED: 'Archived',
+  PARTIAL_BADGE: 'Partly',
+  TOAST_ERROR: 'Could not save. Try again.',
+  BACK_A11Y: 'Back',
+  SAVE_ADJUST: 'Save adjustment',
 };
 
 export const USER_FACTS = {
@@ -3446,6 +3484,7 @@ export default {
   SUBSCRIPTION,
   USER_FACTS,
   EXPERIENTIAL_PATTERNS,
+  SESSION_COMMITMENTS,
   SCHEDULED_SESSIONS,
   API_ERRORS,
 };

@@ -627,6 +627,29 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: null
     }
+  },
+  /**
+   * Soft landing post-crisis (#225): ack del strip por ancla de métrica.
+   * Si stripAckAnchorAt >= windowAnchorAt, no se vuelve a mostrar el strip.
+   */
+  softLandingState: {
+    stripAckAnchorAt: {
+      type: Date,
+      default: null
+    },
+    stripShownAt: {
+      type: Date,
+      default: null
+    },
+    stripDismissedAt: {
+      type: Date,
+      default: null
+    },
+    /** Ancla para la que ya se registró soft_landing_entered (dedupe v1.1). */
+    enteredAckAnchorAt: {
+      type: Date,
+      default: null
+    }
   }
 }, {
   timestamps: true,

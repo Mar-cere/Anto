@@ -142,6 +142,17 @@ describe('dashboardFocusCard guard', () => {
     expect(src).toMatch(/handleCommitmentAnswer/);
     expect(src).toMatch(/handleCommitmentOmit/);
     expect(src).toMatch(/handleCommitmentRenegotiate/);
+    expect(src).toMatch(/handlePartialNoteSave/);
+  });
+
+  it('home enlaza a Mis compromisos y panel En parte', () => {
+    const section = readSrc('components/dashboard/DashboardFocusCommitmentsSection.js');
+    expect(section).toMatch(/FOCUS_COMMITMENTS_SEE_ALL/);
+    expect(section).toMatch(/SESSION_COMMITMENTS/);
+    expect(section).toMatch(/FOCUS_COMMITMENT_PARTIAL_HINT/);
+    expect(section).toMatch(/handlePartialNoteSave/);
+    expect(section).toMatch(/dismissWithoutNote/);
+    expect(section).toMatch(/item\.partialNote == null/);
   });
 
   it('edición de objetivo se cierra si cambia el foco activo', () => {

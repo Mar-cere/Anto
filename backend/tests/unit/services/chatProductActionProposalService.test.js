@@ -39,6 +39,12 @@ describe('chatProductActionProposalService', () => {
     expect(shouldOfferProductActions({ riskLevel: 'LOW', isCrisis: false })).toBe(true);
   });
 
+  it('shouldOfferProductActions false si soft landing activo', () => {
+    expect(
+      shouldOfferProductActions({ riskLevel: 'LOW', isCrisis: false, softLandingActive: true }),
+    ).toBe(false);
+  });
+
   it('buildProposedProductActions devuelve propose_task con intención plan', () => {
     const actions = buildProposedProductActions({
       ...base,

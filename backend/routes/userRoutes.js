@@ -74,6 +74,14 @@ const patchContactLimiter = createRateLimiter({
   legacyHeaders: false
 });
 
+const softLandingDismissLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: (req) => userApiCopy(resolveRequestLanguage(req)).rateLimitSoftLandingDismiss,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Configuración de Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -1115,6 +1123,30 @@ router.post('/me/emergency-contacts/dismiss-alert-from-chat', authenticateToken,
     return res.json({ success: true });
   } catch (error) {
     logger.error('Error al rechazar oferta de alerta desde chat', {
+      error: error.message,
+      userId: req.user._id,
+    });
+    return res.status(500).json({
+      message: req.apiCopy.testAlertError,
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+});
+
+// Soft landing post-crisis (#225): dismiss strip (idempotente)
+router.post('/me/soft-landing/dismiss-strip', authenticateToken, validateUserObjectId, softLandingDismissLimiter, async (req, res) => {
+  try {
+    const { dismissSoftLandingStrip } = await import('../services/softLandingPostCrisisService.js');
+    const outcome = await dismissSoftLandingStrip(req.user._id);
+    if (!outcome.success) {
+      return res.status(400).json({
+        message: req.apiCopy.invalidRequest || 'Solicitud inválida',
+        code: outcome.reason || 'dismiss_failed',
+      });
+    }
+    return res.json({ success: true, skipped: outcome.skipped === true });
+  } catch (error) {
+    logger.error('Error al descartar soft landing strip', {
       error: error.message,
       userId: req.user._id,
     });

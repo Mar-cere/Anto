@@ -121,7 +121,14 @@ const dashSrc = fs.readFileSync(
   path.join(root, 'frontend/src/components/DashboardFocusCard.js'),
   'utf8',
 );
-if (dashSrc.includes('item.followUpDue === true') && dashSrc.includes('FOCUS_COMMITMENT_OMIT')) {
+const dashCommitmentsSrc = fs.readFileSync(
+  path.join(root, 'frontend/src/components/dashboard/DashboardFocusCommitmentsSection.js'),
+  'utf8',
+);
+if (
+  dashSrc.includes('item?.followUpDue === true') &&
+  dashCommitmentsSrc.includes('FOCUS_COMMITMENT_OMIT')
+) {
   pass('dashboard follow-up estricto + omitir');
 } else {
   fail('dashboard follow-up estricto + omitir');
@@ -220,9 +227,9 @@ if (
 }
 
 if (fs.existsSync(path.join(root, 'backend/utils/commitmentPostCrisisGuard.js'))) {
-  pass('guard post-crisis 24h compromisos');
+  pass('guard post-crisis 48h compromisos');
 } else {
-  fail('guard post-crisis 24h compromisos');
+  fail('guard post-crisis 48h compromisos');
 }
 
 const sessionSvc = fs.readFileSync(
@@ -279,6 +286,35 @@ if (schedulerSrc2.includes('commitmentWeeklyReminders !== true')) {
   pass('push semanal exige opt-in en scheduler');
 } else {
   fail('push semanal exige opt-in en scheduler');
+}
+
+if (
+  commitmentSvcSrc.includes("followUpAnswer === 'partial'") &&
+  commitmentSvcSrc.includes('partialNote') &&
+  commitmentSvcSrc.includes("'skipped', 'archived'")
+) {
+  pass('v1.1 En parte keep-open + lista completa');
+} else {
+  fail('v1.1 En parte keep-open + lista completa');
+}
+
+const sessionInsightSrc = fs.readFileSync(
+  path.join(root, 'backend/services/sessionInsightService.js'),
+  'utf8',
+);
+if (
+  sessionInsightSrc.includes('buildSuggestedCommitments') &&
+  sessionInsightSrc.includes('suggestedCommitments')
+) {
+  pass('v1.1 sugerencias compromiso en cierre (máx 2)');
+} else {
+  fail('v1.1 sugerencias compromiso en cierre (máx 2)');
+}
+
+if (fs.existsSync(path.join(root, 'frontend/src/screens/SessionCommitmentsScreen.js'))) {
+  pass('pantalla Mis compromisos (#234)');
+} else {
+  fail('pantalla Mis compromisos (#234)');
 }
 
 const failed = checks.filter((c) => !c.ok);

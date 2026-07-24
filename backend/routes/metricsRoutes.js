@@ -31,6 +31,12 @@ const productActionMetricSchema = Joi.object({
     }),
 });
 
+const softLandingMetricSchema = Joi.object({
+  event: Joi.string().valid('regulation_tap').required(),
+  techniqueId: Joi.string().valid('breathing', 'grounding').required(),
+  surface: Joi.string().valid('chat_strip').default('chat_strip'),
+});
+
 const router = express.Router();
 
 router.use(attachApiCopy(metricsApiCopy));
@@ -118,6 +124,36 @@ router.post('/commitment', authenticateToken, async (req, res) => {
     return res.status(200).json({ success: true });
   } catch (e) {
     console.error('POST /api/metrics/commitment', e);
+    return res.status(500).json({
+      success: false,
+      message: copy.recordMetricError,
+    });
+  }
+});
+
+router.post('/soft-landing', authenticateToken, async (req, res) => {
+  const copy = req.apiCopy;
+  try {
+    const { error, value } = softLandingMetricSchema.validate(req.body, {
+      stripUnknown: true,
+    });
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.details[0]?.message || copy.invalidData,
+      });
+    }
+    await metricsService.recordMetric(
+      'soft_landing_regulation_tap',
+      {
+        techniqueId: value.techniqueId,
+        surface: value.surface,
+      },
+      req.user._id.toString(),
+    );
+    return res.status(200).json({ success: true });
+  } catch (e) {
+    console.error('POST /api/metrics/soft-landing', e);
     return res.status(500).json({
       success: false,
       message: copy.recordMetricError,

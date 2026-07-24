@@ -72,6 +72,8 @@ import {
   normalizeCrisisResourcesPayload,
 } from '../utils/crisisResources';
 import { normalizeSoftCrisisCheckInPayload } from '../utils/softCrisisCheckIn';
+import { normalizeSoftLandingPayload } from '../utils/softLandingPostCrisis';
+import { postSoftLandingTelemetry } from '../utils/softLandingTelemetry';
 import { fetchCrisisResources } from '../services/crisisResourcesService';
 import { updateSessionCommitment } from '../services/sessionCommitmentsService';
 import userService from '../services/userService';
@@ -166,10 +168,12 @@ export function useChatScreen() {
   const [tccLiteAtHandoff, setTccLiteAtHandoff] = useState(null);
   const [crisisResourcesPanel, setCrisisResourcesPanel] = useState(null);
   const [softCrisisCheckInPanel, setSoftCrisisCheckInPanel] = useState(null);
+  const [softLandingStrip, setSoftLandingStrip] = useState(null);
   const [crisisContactAlertNotice, setCrisisContactAlertNotice] = useState(null);
   const [emergencyContactAlertConfirmingId, setEmergencyContactAlertConfirmingId] = useState(null);
   const crisisResourcesDismissedRef = useRef(false);
   const softCrisisCheckInDismissedRef = useRef(false);
+  const softLandingDismissedRef = useRef(false);
   const pendingTccLiteResumeRef = useRef(null);
   // Señal #202: al abrir desde "retomar conversación", forzar el follow-up de
   // compromiso en el primer mensaje aunque el hilo ya tenga historial.
@@ -351,11 +355,13 @@ export function useChatScreen() {
   const applyCrisisResourcesFromTurn = useCallback((payload) => {
     const normalizedResources = normalizeCrisisResourcesPayload(payload?.crisisResources);
     const normalizedSoft = normalizeSoftCrisisCheckInPayload(payload?.softCrisisCheckIn);
+    const normalizedLanding = normalizeSoftLandingPayload(payload?.softLanding);
 
     if (normalizedResources) {
       crisisResourcesDismissedRef.current = false;
       setCrisisResourcesPanel(normalizedResources);
       setSoftCrisisCheckInPanel(null);
+      setSoftLandingStrip(null);
       return;
     }
 
@@ -363,11 +369,20 @@ export function useChatScreen() {
       softCrisisCheckInDismissedRef.current = false;
       setSoftCrisisCheckInPanel(normalizedSoft);
       setCrisisResourcesPanel(null);
+      setSoftLandingStrip(null);
       return;
     }
 
     if (!normalizedSoft) {
       setSoftCrisisCheckInPanel(null);
+    }
+
+    if (normalizedLanding?.strip && !normalizedSoft) {
+      // Servidor solo reenvía strip en primera emisión o ancla nueva.
+      softLandingDismissedRef.current = false;
+      setSoftLandingStrip(normalizedLanding.strip);
+    } else if (!normalizedLanding?.strip) {
+      /* keep existing strip until dismiss; do not clear on later turns without strip */
     }
   }, []);
 
@@ -383,9 +398,38 @@ export function useChatScreen() {
     }
   }, []);
 
+  const dismissSoftLandingStrip = useCallback(async () => {
+    softLandingDismissedRef.current = true;
+    setSoftLandingStrip(null);
+    try {
+      await userService.dismissSoftLandingStrip();
+    } catch (e) {
+      console.warn('[useChatScreen] soft landing dismiss:', e?.message || e);
+    }
+  }, []);
+
   const handleOpenSoftCrisisTechnique = useCallback(
     (technique) => {
       if (!technique?.screen) return;
+      navigation.navigate(technique.screen, technique.params || {});
+    },
+    [navigation],
+  );
+
+  const handleOpenSoftLandingTechnique = useCallback(
+    (technique) => {
+      if (!technique?.screen) return;
+      const techniqueId =
+        technique.id === 'grounding' || technique.id === 'breathing'
+          ? technique.id
+          : null;
+      if (techniqueId) {
+        postSoftLandingTelemetry({
+          event: 'regulation_tap',
+          techniqueId,
+          surface: 'chat_strip',
+        });
+      }
       navigation.navigate(technique.screen, technique.params || {});
     },
     [navigation],
@@ -1723,6 +1767,8 @@ export function useChatScreen() {
       setCrisisResourcesPanel(null);
       softCrisisCheckInDismissedRef.current = false;
       setSoftCrisisCheckInPanel(null);
+      softLandingDismissedRef.current = false;
+      setSoftLandingStrip(null);
       userTurnBaselineRef.current = 0;
       captureVisitBaselineRef.current = true;
       pendingTccLiteResumeRef.current = null;
@@ -2241,6 +2287,9 @@ export function useChatScreen() {
     handleDismissTccLiteAtHandoff,
     crisisResourcesPanel,
     softCrisisCheckInPanel,
+    softLandingStrip,
+    dismissSoftLandingStrip,
+    handleOpenSoftLandingTechnique,
     crisisContactAlertNotice,
     dismissCrisisResourcesPanel,
     dismissSoftCrisisCheckInPanel,

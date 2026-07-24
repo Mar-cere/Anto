@@ -70,6 +70,8 @@ const COPY = {
       'Demasiadas eliminaciones de contactos. Por favor, intente más tarde.',
     rateLimitPatchContact:
       'Demasiadas modificaciones de contactos. Por favor, intente más tarde.',
+    rateLimitSoftLandingDismiss:
+      'Demasiados intentos de ocultar el acompañamiento. Por favor, intente más tarde.',
     joiNameMin: 'El nombre debe tener al menos 2 caracteres',
     joiNameMax: 'El nombre debe tener máximo 50 caracteres',
     joiUsernameMin: 'El nombre de usuario debe tener al menos 3 caracteres',
@@ -189,6 +191,8 @@ const COPY = {
     rateLimitDeleteUser: 'Too many account deletion attempts. Please try again later.',
     rateLimitDeleteContact: 'Too many contact deletions. Please try again later.',
     rateLimitPatchContact: 'Too many contact updates. Please try again later.',
+    rateLimitSoftLandingDismiss:
+      'Too many dismiss attempts for this suggestion. Please try again later.',
     joiNameMin: 'Name must be at least 2 characters',
     joiNameMax: 'Name must be at most 50 characters',
     joiUsernameMin: 'Username must be at least 3 characters',

@@ -448,6 +448,11 @@ export const userService = {
     );
     return response.data;
   },
+
+  async dismissSoftLandingStrip() {
+    const response = await apiClient.post(ENDPOINTS.SOFT_LANDING_DISMISS_STRIP, {});
+    return response.data;
+  },
 };
 
 export const loginUser = async (credentials) => {

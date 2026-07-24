@@ -78,6 +78,29 @@ describe('moodCheckInActions', () => {
     ).toBe('next_habit');
   });
 
+  it('en soft landing no ofrece BA/hábito/tarea', () => {
+    expect(
+      resolveMoodSecondaryAction({
+        checkIn: { mood: 'tired' },
+        softLandingActive: true,
+        focus: { baWeekNext: { isToday: true, slotId: 's1' } },
+      })?.kind,
+    ).toBe('grounding');
+    expect(
+      resolveMoodSecondaryAction({
+        checkIn: { mood: 'calm' },
+        softLandingActive: true,
+        focus: { nextHabit: { _id: 'h1', title: 'Caminar' } },
+      }),
+    ).toBeNull();
+    expect(
+      resolveMoodSecondaryAction({
+        checkIn: { mood: 'anxious' },
+        softLandingActive: true,
+      })?.kind,
+    ).toBe('breathing');
+  });
+
   it('valida payload de acción secundaria', () => {
     expect(isValidMoodSecondaryAction({ kind: 'breathing' })).toBe(true);
     expect(isValidMoodSecondaryAction({ kind: 'ba_today' })).toBe(false);

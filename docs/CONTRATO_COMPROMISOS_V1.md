@@ -1,8 +1,8 @@
 # Contrato v1: compromisos entre sesiones (#202)
 
-**Versión:** 1.0  
+**Versión:** 1.1  
 **Fecha:** Julio 2026  
-**Relacionado:** [PROPUESTAS_ACOMPANAMIENTO_IA_MATRIZ.md](./PROPUESTAS_ACOMPANAMIENTO_IA_MATRIZ.md) (**#20**, **#202**), [CONTRATO_CHAT_ACCIONES_V1.md](./CONTRATO_CHAT_ACCIONES_V1.md) (**#52**, **#53**), [PROTOCOLO_CRISIS_V1.md](./PROTOCOLO_CRISIS_V1.md).
+**Relacionado:** [PROPUESTAS_ACOMPANAMIENTO_IA_MATRIZ.md](./PROPUESTAS_ACOMPANAMIENTO_IA_MATRIZ.md) (**#20**, **#202**, **#234**), [CONTRATO_CHAT_ACCIONES_V1.md](./CONTRATO_CHAT_ACCIONES_V1.md) (**#52**, **#53**), [PROTOCOLO_CRISIS_V1.md](./PROTOCOLO_CRISIS_V1.md).
 
 Este documento fija el **contrato de producto** para acuerdos entre sesiones: visión de acompañamiento (instar, observar, ayudar — no obligar ni «revisar deberes»), superficies (dashboard + chat), API, reglas de prompt y criterios de aceptación. No sustituye OpenAPI; alinea frontend, backend y copy antes de cerrar la implementación.
 
@@ -38,11 +38,11 @@ Este documento fija el **contrato de producto** para acuerdos entre sesiones: vi
 
 | Ítem | Notas |
 |------|--------|
-| Pantalla dedicada «Mis compromisos» | Lista completa; v2 si hace falta |
+| Pantalla dedicada «Mis compromisos» | **v1.1 (#234):** lista completa con búsqueda |
 | Recordatorio **diario** por compromiso | Demasiado «revisión»; contradice visión |
 | Auto-completar compromiso al marcar hábito | Solo mención suave en follow-up conversacional |
 | Chat invitado | Sin compromisos |
-| **Crisis** y post-crisis reciente | Sin crear ni follow-up (§8) |
+| **Crisis** y post-crisis reciente (48 h) | Sin crear ni follow-up (§8); alineado a soft landing #225 |
 | Inferencia sin confirmación | Prohibido |
 
 ---
@@ -161,11 +161,13 @@ Body parcial:
 
 | Campo | Efecto |
 |-------|--------|
-| `followUpAnswer: yes` \| `partial` | Marca `completed` + `completedAt` |
+| `followUpAnswer: yes` | Marca `completed` + `completedAt` |
+| `followUpAnswer: partial` | **v1.1:** mantiene `active`; opcional `partialNote`; no cierra el acuerdo |
 | `followUpAnswer: no` | Mantiene `active`; dispara flujo renegociación en cliente |
 | `status: skipped` | **Omitir** — no cuenta como fracaso |
 | `status: archived` | Archivo tras renegociación |
-| `label` (v1.1) | Renegociación: nuevo texto, opcional `renegotiatedFrom` |
+| `partialNote` | Nota breve tras «En parte» (máx. 280). `null` = panel pendiente; `''` = ack sin texto; string = nota. Al guardar nota se rearma `followUpAnswer: pending` para re-pregunta suave |
+| `label` / `renegotiate: true` | Renegociación: nuevo texto; `renegotiate` archiva y crea con `renegotiatedFrom` |
 
 ### 6.4 Integración dashboard
 
@@ -204,7 +206,7 @@ Body parcial:
 | Respuesta | Acción sistema | Copy orientativo (ES) |
 |-----------|----------------|------------------------|
 | **Sí** | `completed` | Breve validación del esfuerzo; sin gamificación infantil |
-| **En parte** | `completed` o mantener `active` según producto | Una pregunta: «¿Qué parte sí y qué faltó?» + opción «Ajustar compromiso» |
+| **En parte** | Mantener `active` + nota opcional (`partialNote`) | Una pregunta: «¿Qué parte sí y qué faltó?» + opción «Ajustar compromiso» |
 | **Aún no** | `followUpAnswer: no`, `active` | «Está bien. ¿Lo hacemos más pequeño, lo dejamos para otro momento o lo omitimos por ahora?» |
 | **Omitir** | `status: skipped` | Sin culpa; no reintentar salvo reactivación manual |
 
@@ -219,7 +221,7 @@ Tras **2** intentos sin cierre positivo: sugerir **archivar** o **renegociar** (
 | Usuario autenticado normal | Sí (con reglas §4) | Sí (§7) | Opt-in §9 |
 | Chat invitado | **No** | **No** | **No** |
 | Crisis / hard-stop activo | **No** | **No** | **No** |
-| `crisis_recovered` &lt; 24 h | **No** crear | **No** follow-up | **No** |
+| `crisis_recovered` / post-crisis &lt; 48 h | **No** crear | **No** follow-up | **No** |
 | Sesión WAI / cierre tramo pánico | Crear solo si usuario pide explícito en insight | Igual reglas |
 
 ---
@@ -319,7 +321,7 @@ Tono: **tú**, español neutro; EN en `en.js` con misma intención.
 - [x] Puente post task/habit → compromiso opcional (`source: chat_action`)
 - [x] Puente compromiso → tarea/hábito en insight
 - [x] Inyección prompt: compromisos pendientes en apertura chat (§7.2), **unificada** con chips (sin doble snippet)
-- [x] Exclusión crisis activa + **post-crisis 24 h** (`crisis_hard_stop` / `crisis_protocol_exit`) en propuesta y follow-up
+- [x] Exclusión crisis activa + **post-crisis 48 h** (`crisis_hard_stop` / `crisis_protocol_exit`; soft landing #225) en propuesta y follow-up
 - [x] Chat invitado sin compromisos (rutas autenticadas)
 - [x] Notificación semanal opt-in (máx. 1/7 días)
 - [x] Telemetría §12 (mayoría; `commitment_follow_up_shown` en chat)
@@ -328,13 +330,14 @@ Tono: **tú**, español neutro; EN en `en.js` con misma intención.
 - [x] Chip **Omitir** en follow-up de chat
 - [x] Tests: crisis, cap 30 min, follow-up, smoke `smoke-commitments-v1.mjs`, paridad v1 follow-up
 
-### v1.1 — siguiente iteración
+### v1.1 — cerrado en código (#234, jul 2026)
 
-- [ ] Pantalla dedicada «Mis compromisos» (lista completa, búsqueda)
-- [ ] `PATCH /:id` con solo `label` documentado como renegociación in-place (deprecar en favor de `renegotiate`)
+- [x] Pantalla dedicada «Mis compromisos» (lista, filtros, búsqueda)
+- [x] Respuesta «En parte» mantiene `active` + `partialNote` opcional
+- [x] Máx. **2** sugerencias de texto en cierre de sesión (`suggestedCommitments`)
+- [x] `GET ?status=all` incluye skipped/archived
 - [x] Telemetría `commitment_follow_up_shown` con `surface: dashboard` y `push`
-- [ ] Respuesta «En parte» puede mantener `active` (hoy siempre `completed`)
-- [ ] Máx. **2** sugerencias de texto en cierre de sesión (hoy 1 `suggestedStep`)
+- [ ] `PATCH` solo `label` documentado como path secundario (oficial: `renegotiate`)
 - [ ] Variación de copy en follow-ups estructurados tras varios turnos en protocolo
 - [ ] Tests de integración HTTP `/api/session-commitments`
 - [ ] Clave i18n dedicada `NOTIF_COMMITMENT_WEEKLY` (hoy pool push)
@@ -355,4 +358,4 @@ Tono: **tú**, español neutro; EN en `en.js` con misma intención.
 
 ---
 
-*Última actualización: Julio 2026 (v1.0 cerrado). Revisar `backend/scripts/smoke-commitments-v1.mjs` antes de abrir v1.1.*
+*Última actualización: Julio 2026 (v1.1 / #234 cerrado en código). Smoke: `backend/scripts/smoke-commitments-v1.mjs`.*

@@ -110,6 +110,8 @@ const DashboardFocusCard = ({
 
   const [renegotiateId, setRenegotiateId] = React.useState(null);
   const [renegotiateLabel, setRenegotiateLabel] = React.useState('');
+  const [partialNoteId, setPartialNoteId] = React.useState(null);
+  const [partialNote, setPartialNote] = React.useState('');
 
   useEffect(() => {
     visibleCommitments.forEach((item) => {
@@ -125,13 +127,22 @@ const DashboardFocusCard = ({
       if (!id) return;
       try {
         await updateSessionCommitment(id, { followUpAnswer: answer });
+        const item = commitments.find((c) => c.id === id);
         if (answer === 'no') {
-          const item = commitments.find((c) => c.id === id);
+          setPartialNoteId(null);
+          setPartialNote('');
           setRenegotiateId(id);
           setRenegotiateLabel(String(item?.label || ''));
+        } else if (answer === 'partial') {
+          setRenegotiateId(null);
+          setRenegotiateLabel(String(item?.label || ''));
+          setPartialNoteId(id);
+          setPartialNote(String(item?.partialNote || ''));
         } else {
           setRenegotiateId(null);
           setRenegotiateLabel('');
+          setPartialNoteId(null);
+          setPartialNote('');
         }
         onCommitmentsChanged?.();
       } catch (_) {
@@ -148,6 +159,8 @@ const DashboardFocusCard = ({
         await updateSessionCommitment(id, { status: 'skipped' });
         setRenegotiateId(null);
         setRenegotiateLabel('');
+        setPartialNoteId(null);
+        setPartialNote('');
         onCommitmentsChanged?.();
       } catch (_) {
         showToast({ message: DASH.FOCUS_COMMITMENT_ACTION_ERROR, type: 'error' });
@@ -164,12 +177,30 @@ const DashboardFocusCard = ({
         await renegotiateSessionCommitment(id, { label });
         setRenegotiateId(null);
         setRenegotiateLabel('');
+        setPartialNoteId(null);
+        setPartialNote('');
         onCommitmentsChanged?.();
       } catch (_) {
         showToast({ message: DASH.FOCUS_COMMITMENT_ACTION_ERROR, type: 'error' });
       }
     },
     [onCommitmentsChanged, renegotiateLabel, showToast, DASH.FOCUS_COMMITMENT_ACTION_ERROR],
+  );
+
+  const handlePartialNoteSave = useCallback(
+    async (id, { dismissWithoutNote = false } = {}) => {
+      if (!id) return;
+      try {
+        const note = dismissWithoutNote ? '' : String(partialNote || '').trim();
+        await updateSessionCommitment(id, { partialNote: note });
+        setPartialNoteId(null);
+        setPartialNote('');
+        onCommitmentsChanged?.();
+      } catch (_) {
+        showToast({ message: DASH.FOCUS_COMMITMENT_ACTION_ERROR, type: 'error' });
+      }
+    },
+    [onCommitmentsChanged, partialNote, showToast, DASH.FOCUS_COMMITMENT_ACTION_ERROR],
   );
 
   const baWeekCopy = useMemo(() => buildFocusBaWeekCopy(baWeekNext, DASH), [baWeekNext, DASH]);
@@ -440,10 +471,15 @@ const DashboardFocusCard = ({
           renegotiateLabel={renegotiateLabel}
           setRenegotiateId={setRenegotiateId}
           setRenegotiateLabel={setRenegotiateLabel}
+          partialNoteId={partialNoteId}
+          partialNote={partialNote}
+          setPartialNoteId={setPartialNoteId}
+          setPartialNote={setPartialNote}
           isCommitmentFollowUpDue={isCommitmentFollowUpDue}
           handleCommitmentAnswer={handleCommitmentAnswer}
           handleCommitmentOmit={handleCommitmentOmit}
           handleCommitmentRenegotiate={handleCommitmentRenegotiate}
+          handlePartialNoteSave={handlePartialNoteSave}
           handleConv={handleConv}
           onOpenChat={onOpenChat}
         />

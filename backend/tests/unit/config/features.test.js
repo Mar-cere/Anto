@@ -24,6 +24,7 @@ describe('config/features', () => {
     delete process.env.ENABLE_INTENSE_CHAT_CHECKIN;
     delete process.env.ENABLE_NOTIFICATION_SCHEDULER;
     delete process.env.ENABLE_OPENAI_DAILY_COST_REPORT;
+    delete process.env.ENABLE_SOFT_LANDING_POST_CRISIS;
     const { features } = await import('../../../config/features.js');
     expect(features.reminders).toBe(false);
     expect(features.crisisFollowUp).toBe(true);
@@ -31,6 +32,7 @@ describe('config/features', () => {
     expect(features.notificationScheduler).toBe(true);
     expect(features.openaiDailyCostReport).toBe(true);
     expect(features.weeklySummaryEmail).toBe(false);
+    expect(features.softLandingPostCrisis).toBe(true);
   });
 
   it('ENABLE_WEEKLY_SUMMARY_EMAIL=true activa correo de resumen semanal', async () => {
@@ -54,9 +56,11 @@ describe('config/features', () => {
   it('ENABLE_*=false desactiva el flag correspondiente', async () => {
     process.env.ENABLE_CRISIS_FOLLOWUP = 'false';
     process.env.ENABLE_OPENAI_DAILY_COST_REPORT = 'false';
+    process.env.ENABLE_SOFT_LANDING_POST_CRISIS = 'false';
     const { features } = await import('../../../config/features.js');
     expect(features.crisisFollowUp).toBe(false);
     expect(features.openaiDailyCostReport).toBe(false);
+    expect(features.softLandingPostCrisis).toBe(false);
   });
 
   it('swagger en desarrollo sin ENABLE_SWAGGER', async () => {

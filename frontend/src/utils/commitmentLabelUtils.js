@@ -149,6 +149,11 @@ export function isDashboardCommitmentActionable(commitment, options = {}) {
     return true;
   }
 
+  // v1.1 (#234): «En parte» deja el acuerdo abierto — debe seguir visible para nota/ajuste.
+  if (commitment.followUpAnswer === 'partial') {
+    return true;
+  }
+
   if (
     commitment.followUpAnswer === 'no' &&
     attempts >= 1 &&

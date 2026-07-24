@@ -144,6 +144,7 @@ Debe mostrar **siempre visible** en modo protocolo (§6 — transparencia #10):
 - Transición gradual a modo conversación normal (sin técnicas automáticas en el mismo turno).
 - Opcional: estado de sesión `crisis_recovered` para exclusiones (WAI, etc.).
 - No reabrir protocolo en el mismo hilo salvo nueva señal de batería.
+- **Soft landing post-crisis (#225):** durante **48 h** tras `crisis_protocol_exit` o `crisis_hard_stop`, tono de presencia, CTAs productivos apagados (salvo chat + regulación + recursos), strip una vez, home calmado y push de follow-up alineado. Contrato: [CONTRATO_SOFT_LANDING_POST_CRISIS_V1.md](./CONTRATO_SOFT_LANDING_POST_CRISIS_V1.md).
 
 ### 4.3 Evento analítico
 

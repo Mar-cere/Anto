@@ -65,9 +65,10 @@ export default function SessionInsightScreen() {
     route.params?.loading === true && !routeInsight?.eligible,
   );
   const [commitmentSaving, setCommitmentSaving] = useState(false);
-  const [commitmentSaved, setCommitmentSaved] = useState(false);
+  const [commitmentSavedCount, setCommitmentSavedCount] = useState(0);
   const [commitmentDraft, setCommitmentDraft] = useState('');
   const [savedCommitmentLabel, setSavedCommitmentLabel] = useState('');
+  const commitmentSaved = commitmentSavedCount > 0;
   const [waiSubmitting, setWaiSubmitting] = useState(false);
   const [waiHandled, setWaiHandled] = useState(false);
   const [waiNotice, setWaiNotice] = useState(null);
@@ -404,10 +405,18 @@ export default function SessionInsightScreen() {
     navigation.navigate(step.screen, step.params || {});
   }, [insight, navigation, finish]);
 
+  const suggestedCommitments = useMemo(() => {
+    const raw = insight?.suggestedCommitments;
+    if (!Array.isArray(raw)) return [];
+    return raw.map((s) => String(s || '').trim()).filter((s) => s.length >= 2).slice(0, 2);
+  }, [insight?.suggestedCommitments]);
+
+  const canSaveAnotherCommitment = commitmentSavedCount < 2;
+
   const saveCommitment = useCallback(async () => {
     const step = insight?.suggestedStep;
     const label = String(commitmentDraft || '').trim();
-    if (!label || commitmentSaving || commitmentSaved) return;
+    if (!label || commitmentSaving || !canSaveAnotherCommitment) return;
     if (!isConcreteCommitmentLabel(label, step?.label)) {
       showToast({
         message: TEXTS.COMMITMENT_GENERIC_ERROR || TEXTS.CTA_COMMITMENT_ERROR,
@@ -424,8 +433,9 @@ export default function SessionInsightScreen() {
         sourceMeta: step?.id ? { interventionId: step.id } : null,
       });
       if (saved) {
-        setCommitmentSaved(true);
+        setCommitmentSavedCount((n) => n + 1);
         setSavedCommitmentLabel(label);
+        setCommitmentDraft('');
         showToast({ message: TEXTS.CTA_COMMITMENT_SAVED, type: 'success' });
       }
     } catch (err) {
@@ -442,7 +452,7 @@ export default function SessionInsightScreen() {
     conversationId,
     commitmentDraft,
     commitmentSaving,
-    commitmentSaved,
+    canSaveAnotherCommitment,
     showToast,
     TEXTS.CTA_COMMITMENT_SAVED,
     TEXTS.CTA_COMMITMENT_ERROR,
@@ -600,6 +610,8 @@ export default function SessionInsightScreen() {
   const themes = Array.isArray(insight.themes) ? insight.themes : [];
   const step = isCrisisInsight ? null : insight.suggestedStep;
   const tccLiteResume = isCrisisInsight ? null : insight.tccLiteResume;
+  const showCommitmentCard =
+    !isCrisisInsight && (Boolean(step) || suggestedCommitments.length > 0);
 
   const renderStepIconOrb = (visual) => {
     const { accent, iconBg } = resolveVisualAccent(colors, visual.accentKey || 'primary');
@@ -751,32 +763,55 @@ export default function SessionInsightScreen() {
           </View>
         ) : null}
 
-        {step ? (
+        {showCommitmentCard ? (
           <View style={styles.card}>
             <Text style={styles.cardKicker}>{TEXTS.COMMITMENT_TITLE}</Text>
             <Text style={styles.commitmentHint}>{TEXTS.COMMITMENT_HINT}</Text>
+            {suggestedCommitments.length > 0 ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                {suggestedCommitments.map((suggestion) => (
+                  <TouchableOpacity
+                    key={suggestion}
+                    style={[
+                      styles.ctaSecondary,
+                      { paddingVertical: 8, paddingHorizontal: 12, marginBottom: 0 },
+                    ]}
+                    onPress={() => setCommitmentDraft(suggestion)}
+                    disabled={commitmentSaving || !canSaveAnotherCommitment}
+                    accessibilityRole="button"
+                    accessibilityLabel={suggestion}
+                  >
+                    <Text style={[styles.ctaSecondaryText, { fontSize: 13 }]} numberOfLines={2}>
+                      {suggestion}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
             <TextInput
               style={styles.commitmentInput}
               value={commitmentDraft}
               onChangeText={setCommitmentDraft}
               placeholder={TEXTS.COMMITMENT_PLACEHOLDER}
               placeholderTextColor={colors.textMuted}
-              editable={!commitmentSaving && !commitmentSaved}
+              editable={!commitmentSaving && canSaveAnotherCommitment}
               maxLength={240}
               accessibilityLabel={TEXTS.COMMITMENT_PLACEHOLDER}
             />
             <TouchableOpacity
-              style={[styles.ctaSecondary, commitmentSaved && { opacity: 0.6 }]}
+              style={[styles.ctaSecondary, !canSaveAnotherCommitment && { opacity: 0.6 }]}
               onPress={saveCommitment}
-              disabled={commitmentSaving || commitmentSaved || !commitmentDraft.trim()}
+              disabled={commitmentSaving || !canSaveAnotherCommitment || !commitmentDraft.trim()}
               accessibilityRole="button"
             >
               <Text style={styles.ctaSecondaryText}>
-                {commitmentSaved
+                {!canSaveAnotherCommitment
                   ? TEXTS.CTA_COMMITMENT_SAVED
                   : commitmentSaving
                     ? TEXTS.LOADING
-                    : TEXTS.CTA_SAVE_COMMITMENT}
+                    : commitmentSavedCount > 0
+                      ? TEXTS.CTA_SAVE_ANOTHER_COMMITMENT || TEXTS.CTA_SAVE_COMMITMENT
+                      : TEXTS.CTA_SAVE_COMMITMENT}
               </Text>
             </TouchableOpacity>
           </View>

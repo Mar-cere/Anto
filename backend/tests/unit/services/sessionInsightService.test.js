@@ -224,6 +224,9 @@ describe('buildSessionInsight', () => {
     const insight = await buildSessionInsight({ userId, conversationId, language: 'es' });
     expect(insight.suggestedStep?.id).toBe('behavioral_activation');
     expect(insight.suggestedStep?.screen).toBe('BehavioralActivation');
+    expect(Array.isArray(insight.suggestedCommitments)).toBe(true);
+    expect(insight.suggestedCommitments.length).toBeGreaterThanOrEqual(1);
+    expect(insight.suggestedCommitments[0]).toMatch(/paso pequeño|small step/i);
   });
 
   it('expone tccLiteResume cuando hay patrón cognitivo', async () => {

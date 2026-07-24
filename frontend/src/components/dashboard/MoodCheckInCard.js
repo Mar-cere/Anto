@@ -218,11 +218,16 @@ const MoodCheckInCard = memo(({
     return resolveMoodAcknowledgment(checkIn, moodAckFallback?.line);
   }, [checkIn, moodAckFallback?.line]);
 
-  const suggestChat = resolveMoodSuggestChat(checkIn);
+  const softLandingActive = focusPayload?.softLanding?.active === true;
+  const suggestChat = resolveMoodSuggestChat(checkIn, { softLandingActive });
   const secondary = useMemo(() => {
-    const action = resolveMoodSecondaryAction({ checkIn, focus: focusPayload });
+    const action = resolveMoodSecondaryAction({
+      checkIn,
+      focus: focusPayload,
+      softLandingActive,
+    });
     return isValidMoodSecondaryAction(action) ? action : null;
-  }, [checkIn, focusPayload]);
+  }, [checkIn, focusPayload, softLandingActive]);
   const secondaryLabel = secondary?.labelKey ? DASH[secondary.labelKey] : null;
   const showChatChip = Boolean(onOpenChat) && shouldShowMoodOpenChatChip(secondary);
   const showSecondaryChip = Boolean(secondary && secondaryLabel && onSecondaryAction);

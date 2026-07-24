@@ -74,6 +74,7 @@ Ver también `backend/config/features.js`.
 | `EXPERIENTIAL_EXTRACT_TICK_MS` | `120000` | Intervalo del worker de extracción |
 | `EXPERIENTIAL_EXTRACT_MAX_ATTEMPTS` | `2` | Reintentos LLM de extracción |
 | `ENABLE_CRISIS_HARD_STOP` | activo | Hard-stop sin LLM en HIGH + léxico explícito (#205) |
+| `ENABLE_SOFT_LANDING_POST_CRISIS` | activo | Soft landing 48 h tras exit/hard-stop (#225): tono, mute productivos, strip, home |
 | `ENABLE_CRISIS_ROUTING_SLO_MONITOR` | activo | Monitor SLO camino A/B crisis (agrega Mongo + alerta Sentry) |
 
 ### CTA «Abrir Anto» en correos

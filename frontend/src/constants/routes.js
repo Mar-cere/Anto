@@ -19,6 +19,8 @@ export const ROUTES = {
   USER_FACTS: 'UserFacts',
   /** Memoria del proceso (#203 / #211) */
   EXPERIENTIAL_PATTERNS: 'ExperientialPatterns',
+  /** Mis compromisos (#234 / v1.1) */
+  SESSION_COMMITMENTS: 'SessionCommitments',
   // Scheduled sessions (#15)
   SCHEDULED_SESSIONS: 'ScheduledSessions',
 }; 

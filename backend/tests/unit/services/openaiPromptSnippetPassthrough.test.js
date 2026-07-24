@@ -55,7 +55,14 @@ describe('applyEnhancementSnippetsToPromptContext (passthrough de snippets)', ()
       ]),
     );
     expect(PROMPT_CONTEXT_PASSTHROUGH_KEYS).toEqual(
-      expect.arrayContaining(['productActionToolEnabled', 'softCrisisCheckInActive']),
+      expect.arrayContaining([
+        'productActionToolEnabled',
+        'softCrisisCheckInActive',
+        'softLandingActive',
+      ]),
+    );
+    expect(ENHANCEMENT_PROMPT_SNIPPET_KEYS).toEqual(
+      expect.arrayContaining(['softLandingPromptSnippet']),
     );
   });
 });

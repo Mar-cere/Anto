@@ -10,7 +10,11 @@ import {
   failsClinicalGuardrails,
   sanitizeObservationalText,
 } from '../utils/clinicalContentGuardrails.js';
-import { isGenericInterventionCatalogLabel, looksLikeChatBubbleLabel, SHORT_SOFT_RESUME_LABEL_ES } from '../utils/commitmentLabelUtils.js';
+import {
+  isGenericInterventionCatalogLabel,
+  looksLikeChatBubbleLabel,
+  SHORT_SOFT_RESUME_LABEL_ES,
+} from '../utils/commitmentLabelUtils.js';
 
 const MAX_LABEL = 240;
 const MAX_ACTIVE_COMMITMENTS = 12;
@@ -19,8 +23,26 @@ const DEFAULT_FOLLOW_UP_HOURS = 72;
 const FOLLOW_UP_CHAT_MIN_MS = 48 * 60 * 60 * 1000;
 const MAX_FOLLOW_UP_ATTEMPTS = 2;
 const ACTIVE_STATUSES = ['active'];
-const LIST_STATUSES = ['active', 'completed'];
+/** Lista completa «Mis compromisos» (#234): incluye omitidos y archivados. */
+const LIST_STATUSES = ['active', 'completed', 'skipped', 'archived'];
+const MAX_PARTIAL_NOTE = 280;
 const ALLOWED_SOURCES = new Set(['session_insight', 'manual', 'chat_action', 'chat_proposed']);
+
+function normalizePartialNote(raw) {
+  if (raw == null) return { note: undefined };
+  const trimmed = String(raw).trim().replace(/\s+/g, ' ');
+  if (!trimmed) {
+    // '' = usuario cerró el panel sin nota (ack); distinto de null (aún no respondió).
+    return { note: '' };
+  }
+  if (trimmed.length > MAX_PARTIAL_NOTE) {
+    return { error: 'labelTooLong' };
+  }
+  if (failsClinicalGuardrails(trimmed)) return { error: 'labelClinical' };
+  const safe = sanitizeObservationalText(trimmed, MAX_PARTIAL_NOTE);
+  if (!safe) return { error: 'labelClinical' };
+  return { note: safe };
+}
 
 export function sanitizeCommitmentSourceMeta(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
@@ -89,6 +111,8 @@ function toClientCommitment(doc) {
     conversationId: doc.conversationId ? String(doc.conversationId) : null,
     followUpAt: doc.followUpAt || null,
     followUpAnswer: doc.followUpAnswer || 'pending',
+    // null = sin ack; '' = ack sin texto; string = nota
+    partialNote: doc.partialNote == null ? null : String(doc.partialNote),
     followUpAttempts: Number(doc.followUpAttempts) || 0,
     lastFollowUpAt: doc.lastFollowUpAt || null,
     completedAt: doc.completedAt || null,
@@ -208,6 +232,7 @@ export async function updateSessionCommitment(userId, commitmentId, patch = {}) 
     update.followUpAnswer = 'pending';
     update.followUpAttempts = 0;
     update.lastFollowUpAt = null;
+    update.partialNote = null;
   }
 
   if (patch.status) {
@@ -217,15 +242,39 @@ export async function updateSessionCommitment(userId, commitmentId, patch = {}) 
     if (patch.status === 'completed') {
       update.completedAt = new Date();
     }
+    if (patch.status === 'skipped' || patch.status === 'archived') {
+      update.partialNote = null;
+    }
+  }
+
+  if (patch.partialNote != null) {
+    const { note, error } = normalizePartialNote(patch.partialNote);
+    if (error) return { error };
+    update.partialNote = note;
+    // Tras ack/nota: rearmar follow-up suave (ya no insistir en el panel «En parte»).
+    if (patch.followUpAnswer == null) {
+      update.followUpAnswer = 'pending';
+    }
   }
 
   if (patch.followUpAnswer) {
     const allowed = ['pending', 'yes', 'partial', 'no'];
     if (!allowed.includes(patch.followUpAnswer)) return { error: 'invalidFollowUp' };
     update.followUpAnswer = patch.followUpAnswer;
-    if (patch.followUpAnswer === 'yes' || patch.followUpAnswer === 'partial') {
+    if (patch.followUpAnswer === 'yes') {
       update.status = 'completed';
       update.completedAt = new Date();
+      update.partialNote = null;
+    }
+    // v1.1 (#234): «En parte» deja el acuerdo abierto; no completa.
+    if (patch.followUpAnswer === 'partial') {
+      update.status = 'active';
+      update.completedAt = null;
+      update.followUpAt = new Date(Date.now() + DEFAULT_FOLLOW_UP_HOURS * 60 * 60 * 1000);
+      // Nueva respuesta «En parte»: reabrir panel de nota hasta ack.
+      if (patch.partialNote == null) {
+        update.partialNote = null;
+      }
     }
     if (patch.followUpAnswer === 'no') {
       update.status = 'active';
@@ -346,6 +395,7 @@ export function sanitizeCommitmentPatch(raw) {
   if (raw.label != null) patch.label = raw.label;
   if (raw.status != null) patch.status = raw.status;
   if (raw.followUpAnswer != null) patch.followUpAnswer = raw.followUpAnswer;
+  if (raw.partialNote != null) patch.partialNote = raw.partialNote;
   return patch;
 }
 

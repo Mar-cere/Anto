@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
+import { ROUTES } from '../../constants/routes';
 import {
   buildCommitmentDisplayTitle,
   buildCommitmentFollowUpPrompt,
@@ -20,25 +22,51 @@ export default function DashboardFocusCommitmentsSection({
   renegotiateLabel,
   setRenegotiateId,
   setRenegotiateLabel,
+  partialNoteId,
+  partialNote,
+  setPartialNoteId,
+  setPartialNote,
   isCommitmentFollowUpDue,
   handleCommitmentAnswer,
   handleCommitmentOmit,
   handleCommitmentRenegotiate,
+  handlePartialNoteSave,
   handleConv,
   onOpenChat,
 }) {
+  const navigation = useNavigation();
+
   if (visibleCommitments.length === 0) return null;
 
   return (
     <View style={styles.insetSection}>
-      <Text style={styles.insetLabel}>{DASH.FOCUS_COMMITMENTS}</Text>
+      <View style={styles.commitmentSectionHeader}>
+        <Text style={styles.commitmentSectionTitle || styles.insetLabel}>
+          {DASH.FOCUS_COMMITMENTS}
+        </Text>
+        <Pressable
+          onPress={() => navigation.navigate(ROUTES.SESSION_COMMITMENTS)}
+          style={({ pressed }) => [styles.commitmentSeeAll, pressed && { opacity: 0.72 }]}
+          accessibilityRole="button"
+          accessibilityLabel={DASH.FOCUS_COMMITMENTS_SEE_ALL}
+        >
+          <Text style={styles.commitmentSeeAllText}>{DASH.FOCUS_COMMITMENTS_SEE_ALL}</Text>
+        </Pressable>
+      </View>
       {visibleCommitments.map((item, index) => {
         const commitmentTitle = buildCommitmentDisplayTitle(item, DASH);
         const followUpPrompt = buildCommitmentFollowUpPrompt(item, DASH);
         const linkHint = buildCommitmentLinkHint(item, DASH);
         const showFollowUp = isCommitmentFollowUpDue(item);
+        // null = aún sin ack de nota; '' o texto = panel cerrado (salvo edición local).
+        const showPartialPanel =
+          item.status === 'active' &&
+          item.followUpAnswer === 'partial' &&
+          (partialNoteId === item.id || item.partialNote == null);
         const showRenegotiate =
           item.status === 'active' &&
+          !showFollowUp &&
+          !showPartialPanel &&
           (renegotiateId === item.id ||
             (item.followUpAnswer === 'no' &&
               Number(item.followUpAttempts || 0) >= 1 &&
@@ -47,6 +75,7 @@ export default function DashboardFocusCommitmentsSection({
         const canOpenConversation =
           !showFollowUp &&
           !showRenegotiate &&
+          !showPartialPanel &&
           (Boolean(conversationId) || typeof onOpenChat === 'function');
         const isLastCommitment = index === visibleCommitments.length - 1;
         const openCommitment = () => {
@@ -81,6 +110,11 @@ export default function DashboardFocusCommitmentsSection({
                   {commitmentTitle}
                 </Text>
                 {linkHint ? <Text style={styles.commitmentLinkHint}>{linkHint}</Text> : null}
+                {item.partialNote ? (
+                  <Text style={styles.commitmentLinkHint} numberOfLines={2}>
+                    {item.partialNote}
+                  </Text>
+                ) : null}
               </View>
               {canOpenConversation ? (
                 <Ionicons
@@ -134,7 +168,72 @@ export default function DashboardFocusCommitmentsSection({
                 </Pressable>
               </View>
             ) : null}
-            {showRenegotiate && !showFollowUp ? (
+            {showPartialPanel ? (
+              <View style={styles.commitmentActions}>
+                <Text style={styles.commitmentPrompt}>
+                  {DASH.FOCUS_COMMITMENT_PARTIAL_HINT}
+                </Text>
+                <TextInput
+                  style={styles.commitmentRenegotiateInput}
+                  value={partialNoteId === item.id ? partialNote : String(item.partialNote || '')}
+                  onChangeText={(v) => {
+                    setPartialNoteId(item.id);
+                    setPartialNote(v);
+                  }}
+                  placeholder={DASH.FOCUS_COMMITMENT_PARTIAL_NOTE_PLACEHOLDER}
+                  accessibilityLabel={DASH.FOCUS_COMMITMENT_PARTIAL_NOTE_PLACEHOLDER}
+                  maxLength={280}
+                />
+                <View style={styles.commitmentButtons}>
+                  <Pressable
+                    onPress={() => handlePartialNoteSave(item.id)}
+                    style={({ pressed }) => [styles.commitmentChip, pressed && { opacity: 0.88 }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={DASH.FOCUS_COMMITMENT_PARTIAL_NOTE_SAVE}
+                  >
+                    <Text style={styles.commitmentChipText}>
+                      {DASH.FOCUS_COMMITMENT_PARTIAL_NOTE_SAVE}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => handlePartialNoteSave(item.id, { dismissWithoutNote: true })}
+                    style={({ pressed }) => [styles.commitmentChip, pressed && { opacity: 0.88 }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      DASH.FOCUS_COMMITMENT_PARTIAL_DONE || DASH.FOCUS_COMMITMENT_YES
+                    }
+                  >
+                    <Text style={styles.commitmentChipText}>
+                      {DASH.FOCUS_COMMITMENT_PARTIAL_DONE || 'Listo'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      setPartialNoteId(null);
+                      setPartialNote('');
+                      setRenegotiateId(item.id);
+                      setRenegotiateLabel(String(item.label || ''));
+                    }}
+                    style={({ pressed }) => [styles.commitmentChip, pressed && { opacity: 0.88 }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={DASH.FOCUS_COMMITMENT_RENEGOTIATE}
+                  >
+                    <Text style={styles.commitmentChipText}>
+                      {DASH.FOCUS_COMMITMENT_RENEGOTIATE}
+                    </Text>
+                  </Pressable>
+                </View>
+                <Pressable
+                  onPress={() => handleCommitmentOmit(item.id)}
+                  style={({ pressed }) => [styles.commitmentOmitLink, pressed && { opacity: 0.72 }]}
+                  accessibilityRole="button"
+                  accessibilityLabel={DASH.FOCUS_COMMITMENT_OMIT}
+                >
+                  <Text style={styles.commitmentOmitLinkText}>{DASH.FOCUS_COMMITMENT_OMIT}</Text>
+                </Pressable>
+              </View>
+            ) : null}
+            {showRenegotiate ? (
               <View style={styles.commitmentActions}>
                 <Text style={styles.commitmentPrompt}>{DASH.FOCUS_COMMITMENT_RENEGOTIATE_HINT}</Text>
                 <TextInput

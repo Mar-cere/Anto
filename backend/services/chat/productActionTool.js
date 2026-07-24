@@ -96,16 +96,19 @@ export function isProductActionToolEligible({
   userMessage = '',
   sessionIntention = null,
   softCrisisCheckInActive = false,
+  softLandingActive = false,
   capAllows = true,
   riskLevel = null,
   isCrisis = false,
 } = {}) {
   if (isGuest) return false;
   if (softCrisisCheckInActive) return false;
+  if (softLandingActive) return false;
   if (
     !shouldOfferProductActions({
       riskLevel: riskLevel || crisis?.riskLevel,
       isCrisis: isCrisis || Boolean(crisis?.riskLevel === 'HIGH'),
+      softLandingActive,
     })
   ) {
     return false;

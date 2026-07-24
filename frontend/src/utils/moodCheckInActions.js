@@ -28,7 +28,11 @@ export function isValidMoodCheckInKey(mood) {
  * @param {{ mood?: string, suggestChat?: boolean }|null|undefined} checkIn
  * @returns {boolean}
  */
-export function resolveMoodSuggestChat(checkIn) {
+/**
+ * @param {{ mood?: string, suggestChat?: boolean }|null|undefined} checkIn
+ * @param {{ softLandingActive?: boolean }} [_opts] — reservado; el mute productivo va en secondary
+ */
+export function resolveMoodSuggestChat(checkIn, _opts = {}) {
   if (!isValidMoodCheckInKey(checkIn?.mood)) return false;
   if (typeof checkIn.suggestChat === 'boolean') return checkIn.suggestChat;
   return checkIn.mood === 'anxious' || checkIn.mood === 'tired';
@@ -56,6 +60,7 @@ export function resolveMoodAcknowledgment(checkIn, fallbackLine) {
  *     nextHabit?: object|null,
  *     nextTask?: object|null,
  *   }|null,
+ *   softLandingActive?: boolean,
  * }} opts
  * @returns {{
  *   kind: 'breathing'|'grounding'|'ba_today'|'resume_chat'|'next_habit'|'next_task',
@@ -68,9 +73,32 @@ export function resolveMoodAcknowledgment(checkIn, fallbackLine) {
  *   nextTask?: object,
  * }|null}
  */
-export function resolveMoodSecondaryAction({ checkIn, focus } = {}) {
+export function resolveMoodSecondaryAction({ checkIn, focus, softLandingActive = false } = {}) {
   const mood = String(checkIn?.mood || '').trim();
   if (!isValidMoodCheckInKey(mood)) return null;
+
+  // Soft landing (#225 v1.1): solo regulación o retomar chat; sin BA/hábito/tarea.
+  if (softLandingActive === true) {
+    if (mood === 'anxious') {
+      return { kind: 'breathing', labelKey: 'MOOD_CTA_BREATHE' };
+    }
+    if (mood === 'tired') {
+      return { kind: 'grounding', labelKey: 'MOOD_CTA_GROUNDING' };
+    }
+    if (mood === 'calm' || mood === 'good') {
+      const last = focus?.lastSessionSummary;
+      const continuityText = getLastSessionDisplayText(last);
+      const conversationId = last?.conversationId ? String(last.conversationId).trim() : '';
+      if (continuityText && isValidMongoObjectId24(conversationId)) {
+        return {
+          kind: 'resume_chat',
+          labelKey: 'MOOD_CTA_RESUME_CHAT',
+          conversationId,
+        };
+      }
+    }
+    return null;
+  }
 
   if (mood === 'anxious') {
     return { kind: 'breathing', labelKey: 'MOOD_CTA_BREATHE' };

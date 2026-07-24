@@ -27,7 +27,7 @@ describe('productActionTool', () => {
     ).toBe(true);
   });
 
-  it('no elegible en guest, soft check-in o crisis', () => {
+  it('no elegible en guest, soft check-in, soft landing o crisis', () => {
     expect(
       isProductActionToolEligible({
         isGuest: true,
@@ -38,6 +38,13 @@ describe('productActionTool', () => {
     expect(
       isProductActionToolEligible({
         softCrisisCheckInActive: true,
+        userMessage: 'crear tarea ordenar cocina',
+        sessionIntention: 'plan',
+      }),
+    ).toBe(false);
+    expect(
+      isProductActionToolEligible({
+        softLandingActive: true,
         userMessage: 'crear tarea ordenar cocina',
         sessionIntention: 'plan',
       }),

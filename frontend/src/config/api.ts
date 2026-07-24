@@ -66,6 +66,7 @@ export const ENDPOINTS = {
   /** Telemetría §8 contrato chat → tarea/hábito (dismiss / fallo cliente). */
   METRICS_PRODUCT_ACTION: '/api/metrics/product-action',
   METRICS_COMMITMENT: '/api/metrics/commitment',
+  METRICS_SOFT_LANDING: '/api/metrics/soft-landing',
   PROFILE: '/api/users/me',
   UPDATE_PROFILE: '/api/users/me',
   ONBOARDING_PREFERENCES: '/api/users/me/onboarding-preferences',
@@ -139,6 +140,7 @@ export const ENDPOINTS = {
     '/api/users/me/emergency-contacts/dismiss-alert-from-chat',
   EMERGENCY_CONTACTS_DISMISS_SOFT_CHECK_IN_FROM_CHAT:
     '/api/users/me/emergency-contacts/dismiss-soft-check-in-from-chat',
+  SOFT_LANDING_DISMISS_STRIP: '/api/users/me/soft-landing/dismiss-strip',
   CRISIS_SUMMARY: '/api/crisis/summary',
   CRISIS_TRENDS: '/api/crisis/trends',
   CRISIS_BY_MONTH: '/api/crisis/by-month',

@@ -34,6 +34,7 @@ import TccContinuityStrip from '../components/chat/TccContinuityStrip';
 import TccLiteAtHandoffStrip from '../components/chat/TccLiteAtHandoffStrip';
 import CrisisResourcesStrip from '../components/chat/CrisisResourcesStrip';
 import SoftCrisisCheckInStrip from '../components/chat/SoftCrisisCheckInStrip';
+import SoftLandingStrip from '../components/chat/SoftLandingStrip';
 import ChatTypingIndicator from '../components/chat/ChatTypingIndicator';
 import ChatOptionsSheet from '../components/chat/ChatOptionsSheet';
 import ClearConversationModal from '../components/chat/ClearConversationModal';
@@ -353,10 +354,13 @@ const ChatScreen = () => {
     handleDismissTccLiteAtHandoff,
     crisisResourcesPanel,
     softCrisisCheckInPanel,
+    softLandingStrip,
     crisisContactAlertNotice,
     dismissCrisisResourcesPanel,
     dismissSoftCrisisCheckInPanel,
+    dismissSoftLandingStrip,
     handleOpenSoftCrisisTechnique,
+    handleOpenSoftLandingTechnique,
     openCrisisResourcesPanel,
     openEmergencyContactsFromChat,
     handleEmergencyContactAlertConfirm,
@@ -375,6 +379,8 @@ const ChatScreen = () => {
   // Inmersivo oculta distracciones (trial, partículas, continuidad TCC), no seguridad clínica.
   const showSoftCrisisStrip =
     Boolean(softCrisisCheckInPanel) && !crisisResourcesPanel;
+  const showSoftLandingStrip =
+    Boolean(softLandingStrip) && !crisisResourcesPanel && !softCrisisCheckInPanel;
   const showCrisisStrip = Boolean(crisisResourcesPanel);
 
   const onTopChromeLayout = useCallback((e) => {
@@ -745,6 +751,14 @@ const ChatScreen = () => {
             checkIn={softCrisisCheckInPanel}
             onOpenTechnique={handleOpenSoftCrisisTechnique}
             onDismiss={dismissSoftCrisisCheckInPanel}
+          />
+        ) : null}
+
+        {showSoftLandingStrip ? (
+          <SoftLandingStrip
+            strip={softLandingStrip}
+            onOpenTechnique={handleOpenSoftLandingTechnique}
+            onDismiss={dismissSoftLandingStrip}
           />
         ) : null}
 

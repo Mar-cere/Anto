@@ -522,11 +522,12 @@ export function mergeProductActionDraftFromLlm(action, llmPayload) {
 }
 
 /**
- * @param {{ riskLevel?: string, isCrisis?: boolean }} p
+ * @param {{ riskLevel?: string, isCrisis?: boolean, softLandingActive?: boolean }} p
  * @returns {boolean}
  */
-export function shouldOfferProductActions({ riskLevel, isCrisis }) {
+export function shouldOfferProductActions({ riskLevel, isCrisis, softLandingActive = false }) {
   if (isCrisis) return false;
+  if (softLandingActive === true) return false;
   const level = String(riskLevel || 'LOW').trim().toUpperCase();
   if (level === 'HIGH' || level === 'MEDIUM' || level === 'WARNING') return false;
   return true;
@@ -628,6 +629,7 @@ export function buildProposedProductActions(input) {
   const {
     riskLevel,
     isCrisis,
+    softLandingActive = false,
     userContent,
     assistantContent = '',
     sessionIntention,
@@ -636,7 +638,7 @@ export function buildProposedProductActions(input) {
     conversationHistory = [],
   } = input;
 
-  if (!shouldOfferProductActions({ riskLevel, isCrisis })) {
+  if (!shouldOfferProductActions({ riskLevel, isCrisis, softLandingActive })) {
     return [];
   }
 

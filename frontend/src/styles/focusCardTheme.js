@@ -165,6 +165,27 @@ export function createDashboardFocusStyles(colors, resolvedScheme = 'light') {
       ...dash.SECTION_TITLE,
       marginBottom: 8,
     },
+    commitmentSectionHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+      marginBottom: 8,
+    },
+    commitmentSectionTitle: {
+      ...dash.SECTION_TITLE,
+      marginBottom: 0,
+      flex: 1,
+    },
+    commitmentSeeAll: {
+      paddingVertical: 2,
+      paddingHorizontal: 4,
+    },
+    commitmentSeeAllText: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: colors.primary,
+    },
     commitmentRow: {
       marginBottom: 8,
       paddingVertical: SPACING.CARD_INNER_INSET,

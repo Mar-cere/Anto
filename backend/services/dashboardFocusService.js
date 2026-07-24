@@ -38,6 +38,7 @@ import {
 import { buildHomeRotatingInsightForUser } from './homeRotatingInsightService.js';
 import { buildDigitalPhenotypeFocusAlert } from './digitalPhenotypePatternAlertService.js';
 import { getActiveFocus } from './focusService.js';
+import { buildSoftLandingFocusPayload } from './softLandingPostCrisisService.js';
 
 function cacheTtlSecondsUntilUtcEndOfDay() {
   const now = Date.now();
@@ -609,7 +610,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
     language
   });
 
-  const [focusLine, homeInsight, phenotypeAlert, dueExperiential] = await Promise.all([
+  const [focusLine, homeInsight, phenotypeAlert, dueExperiential, softLanding] = await Promise.all([
     maybeLlmFocusLine(
       userId,
       {
@@ -633,6 +634,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
     import('./experientialPatternService.js')
       .then(({ getDueExperientialPattern }) => getDueExperientialPattern(userId))
       .catch(() => null),
+    buildSoftLandingFocusPayload(userId, { language }).catch(() => null),
   ]);
 
   let focusLineText = String(focusLine?.text || '').trim();
@@ -656,6 +658,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
         }
       : null,
     homeInsight,
+    softLanding: softLanding || null,
     phenotypeAlert: phenotypeAlert
       ? { kind: phenotypeAlert.kind, daysWithData: phenotypeAlert.daysWithData }
       : null,
@@ -735,6 +738,7 @@ export async function buildDashboardFocus(userId, opts = {}) {
       followUpAt: c.followUpAt,
       followUpAnswer: c.followUpAnswer,
       followUpAttempts: c.followUpAttempts ?? 0,
+      partialNote: c.partialNote != null ? String(c.partialNote) : null,
       followUpDue: isFollowUpDue(
         {
           status: c.status,

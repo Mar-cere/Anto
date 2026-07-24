@@ -133,6 +133,10 @@ import {
 } from '../services/chatTurnEnhancementsService.js';
 import { shouldShowCommitmentFollowUpChips } from '../services/commitmentFollowUpService.js';
 import { shouldShowExperientialFollowUpChips } from '../services/experientialFollowUpService.js';
+import {
+  isSoftLandingActive,
+  resolveSoftLandingForTurn,
+} from '../services/softLandingPostCrisisService.js';
 import { toTccLiteClientPayload } from '../services/chatTccLiteService.js';
 import { detectsLackOfUnderstanding } from '../services/chat/paraphrasisPolicySnippet.js';
 import { normalizeTccLiteState } from '../services/tccLiteConversationStateService.js';
@@ -1467,6 +1471,9 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           phone: combinedProfile?.phone,
         });
 
+        /** @type {object|null} */
+        let softLandingClientPayload = null;
+
         const attachTurnCrisisResources = (payload, { hardStop = false } = {}) => {
           const protocolActive = crisisTurnClientExtras?.crisisProtocolState?.active === true;
           const batterySignal = hasCrisisBatterySignal(
@@ -1513,6 +1520,9 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           }
           if (crisisTurnClientExtras?.softCrisisCheckIn) {
             out.softCrisisCheckIn = crisisTurnClientExtras.softCrisisCheckIn;
+          }
+          if (softLandingClientPayload) {
+            out.softLanding = softLandingClientPayload;
           }
           return out;
         };
@@ -1672,6 +1682,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         });
         const forceFactualMode = detectFactualModeFromMessage({ currentMessage: content });
 
+        const softLandingActiveEarly = await isSoftLandingActive(req.user._id);
         const turnEnhancements = await planChatTurnEnhancements({
           userId: req.user._id,
           conversationId,
@@ -1687,6 +1698,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           resumeCommitmentFollowUp: resumeCommitmentFollowUp === true,
           resumeExperientialFollowUp: resumeExperientialFollowUp === true,
           isCrisis,
+          softLandingActive: softLandingActiveEarly,
         });
         const { suggestionPlan, tccLitePlan } = turnEnhancements;
         const showCommitmentFollowUpChips = shouldShowCommitmentFollowUpChips({
@@ -1697,10 +1709,12 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           conversationHistory,
           forceFollowUp: resumeExperientialFollowUp === true,
         });
-        const blockCrisisExtras = isLlmCrisisTherapeuticExtrasBlocked({
-          riskLevel,
-          userMessage: content.trim(),
-        });
+        const blockCrisisExtras =
+          softLandingActiveEarly === true ||
+          isLlmCrisisTherapeuticExtrasBlocked({
+            riskLevel,
+            userMessage: content.trim(),
+          });
         const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements, {
           blockCrisisExtras,
           language: appLanguageForChat,
@@ -1708,6 +1722,17 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
         const softCrisisCheckInActive =
           crisisTurnClientExtras?.softCrisisCheckInState?.active === true ||
           Boolean(crisisTurnClientExtras?.softCrisisCheckIn);
+        const softLandingResolved = await resolveSoftLandingForTurn({
+          userId: req.user._id,
+          language: appLanguageForChat,
+          suppressStrip:
+            softCrisisCheckInActive ||
+            crisisTurnClientExtras?.crisisProtocolState?.active === true ||
+            willHardStop ||
+            Boolean(crisisTurnClientExtras?.crisisResources),
+        });
+        softLandingClientPayload = softLandingResolved.softLanding;
+        const softLandingActive = softLandingResolved.softLandingActive === true;
 
         const openaiContext = {
           rollingSummary: conversation?.rollingSummary || null,
@@ -1734,6 +1759,8 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
           userMessage: content.trim(),
           distress: harmDistressContext.distress,
           softCrisisCheckInActive,
+          softLandingActive,
+          softLandingPromptSnippet: softLandingResolved.softLandingPromptSnippet,
           _promptTelemetry: {
             userId: req.user._id,
             conversationId,
@@ -2069,6 +2096,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
                       chatProductActionProposalService.buildProposedProductActions({
                         riskLevel,
                         isCrisis,
+                        softLandingActive,
                         userContent: content,
                         assistantContent: response.content,
                         sessionIntention: conversation?.sessionIntention,
@@ -2620,6 +2648,7 @@ router.post('/messages', protect, requireActiveSubscription(true), sendMessageLi
               chatProductActionProposalService.buildProposedProductActions({
                 riskLevel,
                 isCrisis,
+                softLandingActive,
                 userContent: content,
                 assistantContent: response.content,
                 sessionIntention: conversation?.sessionIntention,

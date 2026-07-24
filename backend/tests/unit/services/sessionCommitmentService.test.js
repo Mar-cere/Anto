@@ -236,14 +236,68 @@ describe('sessionCommitmentService (#202)', () => {
     expect(mockFindOneAndUpdate).toHaveBeenCalled();
   });
 
+  it('En parte mantiene active y no completa (v1.1)', async () => {
+    const updated = {
+      _id: '507f1f77bcf86cd799439012',
+      label: 'Caminar 10 min',
+      status: 'active',
+      source: 'manual',
+      followUpAnswer: 'partial',
+      partialNote: null,
+      completedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    mockFindOneAndUpdate.mockReturnValue({
+      lean: async () => updated,
+    });
+
+    const result = await updateSessionCommitment(userId, '507f1f77bcf86cd799439012', {
+      followUpAnswer: 'partial',
+    });
+
+    expect(result.commitment?.status).toBe('active');
+    expect(result.commitment?.followUpAnswer).toBe('partial');
+    const setArg = mockFindOneAndUpdate.mock.calls[0][1].$set;
+    expect(setArg.status).toBe('active');
+    expect(setArg.completedAt).toBeNull();
+    expect(setArg.partialNote).toBeNull();
+  });
+
+  it('nota En parte rearma follow-up pending y permite ack vacío', async () => {
+    const updated = {
+      _id: '507f1f77bcf86cd799439012',
+      label: 'Caminar 10 min',
+      status: 'active',
+      source: 'manual',
+      followUpAnswer: 'pending',
+      partialNote: '',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    mockFindOneAndUpdate.mockReturnValue({
+      lean: async () => updated,
+    });
+
+    const result = await updateSessionCommitment(userId, '507f1f77bcf86cd799439012', {
+      partialNote: '   ',
+    });
+
+    expect(result.commitment?.followUpAnswer).toBe('pending');
+    const setArg = mockFindOneAndUpdate.mock.calls[0][1].$set;
+    expect(setArg.partialNote).toBe('');
+    expect(setArg.followUpAnswer).toBe('pending');
+  });
+
   it('sanitizeCommitmentPatch ignora campos internos', () => {
     expect(
       sanitizeCommitmentPatch({
         label: 'Paso pequeño',
         recordFollowUpShown: true,
+        partialNote: 'nota',
         extra: 'x',
       }),
-    ).toEqual({ label: 'Paso pequeño' });
+    ).toEqual({ label: 'Paso pequeño', partialNote: 'nota' });
   });
 
   it('isFollowUpDue respeta ventana de 48 h y tope de intentos', () => {

@@ -51,6 +51,13 @@ const sessionCommitmentSchema = new mongoose.Schema(
       enum: ['pending', 'yes', 'partial', 'no'],
       default: 'pending',
     },
+    /** Nota breve tras «En parte» (v1.1 / #234); no cierra el acuerdo. */
+    partialNote: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 280,
+    },
     followUpAttempts: {
       type: Number,
       default: 0,

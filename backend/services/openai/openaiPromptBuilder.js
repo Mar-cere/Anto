@@ -934,6 +934,7 @@ export const ENHANCEMENT_PROMPT_SNIPPET_KEYS = [
   'experientialRecallPromptSnippet',
   'techniqueSuggestionPromptSnippet',
   'gratitudeJournalPromptSnippet',
+  'softLandingPromptSnippet',
 ];
 
 /**
@@ -951,6 +952,7 @@ export const PROMPT_CONTEXT_PASSTHROUGH_KEYS = [
   'language',
   'productActionToolEnabled',
   'softCrisisCheckInActive',
+  'softLandingActive',
 ];
 
 /**
@@ -1082,6 +1084,10 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
   systemMessage += buildSoftCrisisCheckInPromptSnippet(language, {
     active: contexto.softCrisisCheckInActive === true,
   });
+  const softLandingSnippet = String(contexto.softLandingPromptSnippet || '').trim();
+  if (softLandingSnippet && contexto.softLandingActive === true) {
+    systemMessage += `\n\n${softLandingSnippet}`;
+  }
   systemMessage += buildEarlyConversationRetentionSnippet(language, {
     userMessage: userMessageForComprehension,
     history: contexto.history,
@@ -1089,7 +1095,10 @@ export async function buildContextualizedPrompt(mensaje, contexto) {
     dailyMoodCheckIn: contexto.dailyMoodCheckIn,
   });
   systemMessage += buildProductActionProposalPolicySnippet(language, {
-    toolEnabled: contexto.productActionToolEnabled === true && contexto.softCrisisCheckInActive !== true,
+    toolEnabled:
+      contexto.productActionToolEnabled === true &&
+      contexto.softCrisisCheckInActive !== true &&
+      contexto.softLandingActive !== true,
   });
   const techniqueSnippet = String(contexto.techniqueSuggestionPromptSnippet || '').trim();
   if (techniqueSnippet) systemMessage += techniqueSnippet;

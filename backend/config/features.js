@@ -21,6 +21,7 @@
  * | experientialFollowUp       | EXPERIENTIAL_FOLLOWUP_ENABLED  | activo salvo `false` | inyección follow-up evolutivo en chat |
  * | experientialExtract        | EXPERIENTIAL_EXTRACT_ENABLED   | activo salvo `false` | worker extracción al cierre de sesión |
  * | crisisHardStop             | ENABLE_CRISIS_HARD_STOP        | activo  | hard-stop sin LLM en HIGH + léxico explícito (#205) |
+ * | softLandingPostCrisis      | ENABLE_SOFT_LANDING_POST_CRISIS | activo | soft landing 48 h post crisis (#225) |
  * | crisisRoutingSloMonitor    | ENABLE_CRISIS_ROUTING_SLO_MONITOR | activo | SLO camino A/B crisis (Mongo + Sentry) |
  * | swagger                    | ENABLE_SWAGGER + NODE_ENV      | ver abajo | en prod solo si `ENABLE_SWAGGER=true` |
  *
@@ -87,6 +88,8 @@ export const features = Object.freeze({
   experientialExtract: envIsNotFalse(process.env.EXPERIENTIAL_EXTRACT_ENABLED),
   /** Hard-stop crisis sin LLM (#205). Default activo salvo `ENABLE_CRISIS_HARD_STOP=false`. */
   crisisHardStop: envIsNotFalse(process.env.ENABLE_CRISIS_HARD_STOP),
+  /** Soft landing 48 h post crisis (#225). Default activo salvo `ENABLE_SOFT_LANDING_POST_CRISIS=false`. */
+  softLandingPostCrisis: envIsNotFalse(process.env.ENABLE_SOFT_LANDING_POST_CRISIS),
 });
 
 export default features;

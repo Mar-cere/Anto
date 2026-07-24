@@ -190,6 +190,7 @@ export const DASH = {
   FOCUS_NEXT_HABIT_OPEN_A11Y: 'Abrir próximo hábito',
   FOCUS_SUMMARY: 'Resumen de la semana',
   FOCUS_COMMITMENTS: 'Compromisos y foco',
+  FOCUS_COMMITMENTS_SEE_ALL: 'Ver todos',
   FOCUS_UPCOMING_TASKS: 'Próximas tareas',
   FOCUS_RECENT_CHATS: 'Últimas conversaciones',
   FOCUS_PROGRESS: 'Avances esta semana',
@@ -214,6 +215,10 @@ export const DASH = {
   FOCUS_COMMITMENT_FALLBACK_TITLE: 'Tu compromiso',
   FOCUS_COMMITMENT_YES: 'Sí',
   FOCUS_COMMITMENT_PARTIAL: 'En parte',
+  FOCUS_COMMITMENT_PARTIAL_HINT: '¿Qué parte sí y qué faltó? Puedes dejar una nota o ajustar el acuerdo.',
+  FOCUS_COMMITMENT_PARTIAL_NOTE_PLACEHOLDER: 'Nota breve (opcional)',
+  FOCUS_COMMITMENT_PARTIAL_NOTE_SAVE: 'Guardar nota',
+  FOCUS_COMMITMENT_PARTIAL_DONE: 'Listo',
   FOCUS_COMMITMENT_NO: 'Aún no',
   FOCUS_COMMITMENT_OMIT: 'Omitir por ahora',
   FOCUS_COMMITMENT_RENEGOTIATE: 'Ajustar compromiso',
@@ -1222,6 +1227,11 @@ export const CHAT = {
   SOFT_CRISIS_KICKER: 'Pausa breve',
   SOFT_CRISIS_OPEN: 'Abrir',
   SOFT_CRISIS_DISMISS_A11Y: 'Ocultar sugerencia de regulación',
+  SOFT_LANDING_KICKER: 'Después de un momento difícil',
+  SOFT_LANDING_OPEN: 'Abrir',
+  SOFT_LANDING_DISMISS_A11Y: 'Ocultar acompañamiento suave',
+  SOFT_LANDING_HOME_MESSAGE:
+    'Estoy aquí cuando quieras. Sin presión de hacer más ahora.',
   CRISIS_POST_CONTACT_ALERT_NOTICE:
     'Si tenías contactos de emergencia activos, les enviamos un aviso breve de que podrías necesitar apoyo. No incluye el texto de esta conversación.',
   EMERGENCY_CONTACT_ALERT_OFFER_YES: 'Sí, avísales',
@@ -3226,11 +3236,12 @@ export const SESSION_INSIGHT = {
   CTA_DONE: 'Continuar',
   CTA_SKIP_STEP: 'Lo haré después',
   CTA_SAVE_COMMITMENT: 'Guardar como compromiso',
+  CTA_SAVE_ANOTHER_COMMITMENT: 'Guardar otro compromiso',
   CTA_COMMITMENT_SAVED: 'Compromiso guardado',
   CTA_COMMITMENT_ERROR: 'No se pudo guardar el compromiso. Prueba con una acción concreta.',
   COMMITMENT_TITLE: 'Una acción pequeña',
   COMMITMENT_HINT:
-    'Describe algo concreto que puedas intentar, no solo el nombre de la técnica sugerida.',
+    'Elige una sugerencia o escribe algo concreto que puedas intentar, no solo el nombre de la técnica.',
   COMMITMENT_PLACEHOLDER: 'Ej: Caminar 10 min después de comer',
   COMMITMENT_GENERIC_ERROR:
     'Escribe una acción concreta (por ejemplo, «caminar 10 minutos»), no solo el nombre de la técnica.',
@@ -3312,6 +3323,32 @@ export const EXPERIENTIAL_PATTERNS = {
   CHIP_SKIP: 'Omitir',
   OPEN_FROM_PRIVACY: 'Ver memoria del proceso',
   DASHBOARD_CTA: 'Hay algo de tu proceso para retomar',
+};
+
+export const SESSION_COMMITMENTS = {
+  SCREEN_TITLE: 'Mis compromisos',
+  SCREEN_INTRO: 'Lo que quedó para retomar. Puedes cerrar, ajustar u omitir sin culpa.',
+  FILTER_ACTIVE: 'Activos',
+  FILTER_DONE: 'Cerrados',
+  FILTER_ALL: 'Todos',
+  SEARCH_PLACEHOLDER: 'Buscar…',
+  EMPTY_TITLE: 'Aún no hay compromisos',
+  EMPTY_MESSAGE: 'Cuando guardes un acuerdo al cerrar una charla, aparecerá aquí.',
+  LOADING: 'Cargando…',
+  ERROR_LOADING: 'No se pudieron cargar',
+  RETRY: 'Reintentar',
+  MARK_DONE: 'Marcar hecho',
+  OMIT: 'Omitir por ahora',
+  ADJUST: 'Ajustar',
+  OPEN_CHAT: 'Abrir chat',
+  STATUS_ACTIVE: 'Activo',
+  STATUS_COMPLETED: 'Hecho',
+  STATUS_SKIPPED: 'Omitido',
+  STATUS_ARCHIVED: 'Archivado',
+  PARTIAL_BADGE: 'En parte',
+  TOAST_ERROR: 'No se pudo guardar. Intenta de nuevo.',
+  BACK_A11Y: 'Volver',
+  SAVE_ADJUST: 'Guardar ajuste',
 };
 
 export const USER_FACTS = {
@@ -3463,6 +3500,7 @@ export default {
   SUBSCRIPTION,
   USER_FACTS,
   EXPERIENTIAL_PATTERNS,
+  SESSION_COMMITMENTS,
   SCHEDULED_SESSIONS,
   API_ERRORS,
 };

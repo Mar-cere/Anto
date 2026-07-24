@@ -53,6 +53,10 @@ import {
 import { shouldShowCommitmentFollowUpChips } from '../services/commitmentFollowUpService.js';
 import { shouldShowExperientialFollowUpChips } from '../services/experientialFollowUpService.js';
 import {
+  isSoftLandingActive,
+  resolveSoftLandingForTurn,
+} from '../services/softLandingPostCrisisService.js';
+import {
   shouldHardStopCrisisLlm,
 } from '../services/crisisHardStopService.js';
 import { crisisResourcesForTurn } from '../services/crisisResourcesService.js';
@@ -419,6 +423,8 @@ export const setupSocketIO = (server) => {
           preferences: socketPreferences,
           phone: socketUser?.phone || null,
         });
+        /** @type {object|null} */
+        let softLandingClientPayload = null;
         const buildSocketCrisisPayload = ({ hardStop = false } = {}) => {
           const protocolActive = crisisTurnClientExtras?.crisisProtocolState?.active === true;
           const batterySignal = hasCrisisBatterySignal(
@@ -469,6 +475,7 @@ export const setupSocketIO = (server) => {
             ...(crisisTurnClientExtras?.softCrisisCheckIn
               ? { softCrisisCheckIn: crisisTurnClientExtras.softCrisisCheckIn }
               : {}),
+            ...(softLandingClientPayload ? { softLanding: softLandingClientPayload } : {}),
           };
         };
 
@@ -563,6 +570,7 @@ export const setupSocketIO = (server) => {
           return;
         }
 
+        const softLandingActiveEarly = await isSoftLandingActive(userId);
         const turnEnhancements = await planChatTurnEnhancements({
           userId,
           conversationId: conversation._id,
@@ -580,16 +588,19 @@ export const setupSocketIO = (server) => {
           resumeCommitmentFollowUp: data?.resumeCommitmentFollowUp === true,
           resumeExperientialFollowUp: data?.resumeExperientialFollowUp === true,
           isCrisis,
+          softLandingActive: softLandingActiveEarly,
         });
         const socketLang =
           userProfile?.preferences?.language === 'en' || socketUser?.preferences?.language === 'en'
             ? 'en'
             : 'es';
         const promptSnippets = buildOpenaiEnhancementSnippets(turnEnhancements, {
-          blockCrisisExtras: isLlmCrisisTherapeuticExtrasBlocked({
-            riskLevel,
-            userMessage: messageText,
-          }),
+          blockCrisisExtras:
+            softLandingActiveEarly === true ||
+            isLlmCrisisTherapeuticExtrasBlocked({
+              riskLevel,
+              userMessage: messageText,
+            }),
           language: socketLang,
         });
         const showCommitmentFollowUpChips = shouldShowCommitmentFollowUpChips({
@@ -603,6 +614,17 @@ export const setupSocketIO = (server) => {
         const softCrisisCheckInActive =
           crisisTurnClientExtras?.softCrisisCheckInState?.active === true ||
           Boolean(crisisTurnClientExtras?.softCrisisCheckIn);
+        const softLandingResolved = await resolveSoftLandingForTurn({
+          userId,
+          language: socketLang,
+          suppressStrip:
+            softCrisisCheckInActive ||
+            crisisTurnClientExtras?.crisisProtocolState?.active === true ||
+            willHardStop ||
+            Boolean(crisisTurnClientExtras?.crisisResources),
+        });
+        softLandingClientPayload = softLandingResolved.softLanding;
+        const softLandingActive = softLandingResolved.softLandingActive === true;
 
         if (
           shouldIncludeCrisisInOpenaiContext(riskLevel, {
@@ -649,6 +671,8 @@ export const setupSocketIO = (server) => {
           responseStrategyHint,
           language: socketLang,
           softCrisisCheckInActive,
+          softLandingActive,
+          softLandingPromptSnippet: softLandingResolved.softLandingPromptSnippet,
           psychoeducationPromptSnippet: promptSnippets.psychoeducationPromptSnippet,
           activeTccProtocolsPromptSnippet: promptSnippets.activeTccProtocolsPromptSnippet,
           tccLitePromptSnippet: promptSnippets.tccLitePromptSnippet,
@@ -845,6 +869,7 @@ export const setupSocketIO = (server) => {
               chatProductActionProposalService.buildProposedProductActions({
                 riskLevel,
                 isCrisis,
+                softLandingActive,
                 userContent: messageText,
                 assistantContent: response.content,
                 sessionIntention: conversation?.sessionIntention,

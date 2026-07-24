@@ -312,6 +312,7 @@ class OpenAIService {
   async resolveProductActionToolEnabled(contexto, contenidoNormalizado, analisisEmocional, analisisContextual) {
     if (contexto.isGuest === true) return false;
     if (contexto.softCrisisCheckInActive === true) return false;
+    if (contexto.softLandingActive === true) return false;
 
     let capAllows = true;
     if (!isExplicitProductActionRequest(contenidoNormalizado)) {
@@ -335,6 +336,7 @@ class OpenAIService {
       userMessage: contenidoNormalizado,
       sessionIntention: contexto.sessionIntention,
       softCrisisCheckInActive: contexto.softCrisisCheckInActive === true,
+      softLandingActive: contexto.softLandingActive === true,
       capAllows,
       riskLevel: contexto.crisis?.riskLevel,
       isCrisis: Boolean(contexto.crisis?.riskLevel === 'HIGH' || contexto.crisis?.riskLevel === 'MEDIUM'),
@@ -454,6 +456,7 @@ class OpenAIService {
             conversationPattern: contexto.conversationPattern,
             productActionToolEnabled,
             softCrisisCheckInActive: contexto.softCrisisCheckInActive === true,
+            softLandingActive: contexto.softLandingActive === true,
           },
           contexto,
         )
@@ -988,6 +991,7 @@ class OpenAIService {
           conversationPattern: contexto.conversationPattern,
           productActionToolEnabled,
           softCrisisCheckInActive: contexto.softCrisisCheckInActive === true,
+          softLandingActive: contexto.softLandingActive === true,
         },
         contexto,
       )

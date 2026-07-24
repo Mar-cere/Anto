@@ -37,6 +37,7 @@ import DashboardHomeHeader from '../components/dashboard/DashboardHomeHeader';
 import DashboardBrandBackdrop from '../components/dashboard/DashboardBrandBackdrop';
 import MoodCheckInCard from '../components/dashboard/MoodCheckInCard';
 import DashboardRotatingInsightCard from '../components/dashboard/DashboardRotatingInsightCard';
+import SoftLandingHomeCard from '../components/dashboard/SoftLandingHomeCard';
 import DigitalHealthProdromeAlert from '../components/dashboard/DigitalHealthProdromeAlert';
 import DashboardStreakHero from '../components/dashboard/DashboardStreakHero';
 import DashboardStatsRow from '../components/dashboard/DashboardStatsRow';
@@ -942,6 +943,7 @@ const DashScreen = () => {
             onOpenChat={goToChatFromOnboarding}
             streakOnly
           />
+          <SoftLandingHomeCard softLanding={focusPayload?.softLanding} />
           <DashboardRotatingInsightCard insight={focusPayload?.homeInsight} />
           <DigitalHealthProdromeAlert alert={focusPayload?.phenotypeAlert} />
           {hasActiveHabits ? (

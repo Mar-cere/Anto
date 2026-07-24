@@ -80,13 +80,16 @@ export async function planChatTurnEnhancements({
   resumeCommitmentFollowUp = false,
   resumeExperientialFollowUp = false,
   isCrisis = false,
+  softLandingActive = false,
 }) {
   const lang = normalizeApiLanguage(language);
   const blockObservationalSnippets = isChatObservationalContextBlocked(riskLevel);
-  const blockCrisisExtras = isLlmCrisisTherapeuticExtrasBlocked({
-    riskLevel,
-    userMessage: userContent,
-  });
+  const blockCrisisExtras =
+    softLandingActive === true ||
+    isLlmCrisisTherapeuticExtrasBlocked({
+      riskLevel,
+      userMessage: userContent,
+    });
   let persistedTccLiteState = null;
   try {
     persistedTccLiteState = await loadTccLiteStateFromConversation(conversationId);
